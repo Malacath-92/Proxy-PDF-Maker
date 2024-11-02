@@ -1,6 +1,16 @@
 cmake_minimum_required(VERSION 3.17)
 
 # --------------------------------------------------
+# Set global properties
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+# --------------------------------------------------
 # Run conan, needs to happen before project definition
 include(cmake/conan.cmake)
 run_conan(
@@ -9,15 +19,9 @@ run_conan(
     INSTALL_ARGS --build=missing
 )
 
+# --------------------------------------------------
+# Define Project
 project(ProxyPDF CXX C)
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
-set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # --------------------------------------------------
 # Add formatting target
@@ -27,7 +31,6 @@ setup_format_target(format_proxy_pdf)
 # --------------------------------------------------
 # Get version tag
 find_package(Git)
-
 if(NOT GIT_FOUND)
 	SET(GIT_EXECUTABLE git)
 endif()
@@ -43,6 +46,7 @@ execute_process(
 # --------------------------------------------------
 # Find packages
 find_package(fmt REQUIRED)
+find_package(Qt6 REQUIRED)
 
 # --------------------------------------------------
 # Create interface libs
@@ -74,7 +78,11 @@ target_compile_definitions(proxy_pdf_version PRIVATE
 
 add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
-	fmt::fmt)
+	fmt::fmt
+	Qt6::Core
+	Qt6::Gui
+	Qt6::Widgets
+	Qt6::QWindowsIntegrationPlugin)
 
 add_library(proxy_pdf_pch INTERFACE)
 target_precompile_headers(proxy_pdf_pch INTERFACE
@@ -155,6 +163,3 @@ install(TARGETS
 	proxy_pdf
 	RUNTIME
 	DESTINATION .)
-# install(FILES
-# 	res/readme.txt
-# 	DESTINATION .)

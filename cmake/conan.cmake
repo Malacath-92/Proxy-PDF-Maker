@@ -2,6 +2,22 @@
 
 include_guard()
 
+function(delete_inplace IN_FILE pattern)
+  # create list of lines form the contens of a file
+  file (STRINGS ${IN_FILE} LINES)
+
+  # overwrite the file....
+  file(WRITE ${IN_FILE} "")
+  
+  # loop through the lines,
+  # remove unwanted parts 
+  # and write the (changed) line ...
+  foreach(LINE IN LISTS LINES)
+    string(REGEX REPLACE ${pattern} "" STRIPPED "${LINE}")
+    file(APPEND ${IN_FILE} "${STRIPPED}\n")
+  endforeach()
+endfunction()
+
 function(conan_get_version conan_current_version)
   find_program(conan_command "conan" REQUIRED)
   execute_process(
@@ -208,6 +224,9 @@ macro(_run_conan2)
       EXPECTED_HASH SHA256=0a5eb4afbdd94faf06dcbf82d3244331605ef2176de32c09ea9376e768cbb0fc
       # TLS_VERIFY ON # fails on some systems
     )
+
+    # This should be a git patch, but applying a patch won't work on Windows
+    delete_inplace("${CMAKE_BINARY_DIR}/conan_provider.cmake" ".*cmaketoolchain\:generator.*")
   endif()
 
   if(NOT _args_HOST_PROFILE)
