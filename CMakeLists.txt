@@ -24,6 +24,10 @@ run_conan(
 project(ProxyPDF CXX C)
 
 # --------------------------------------------------
+# Add submodules
+add_subdirectory("submodules/dla")
+
+# --------------------------------------------------
 # Add formatting target
 include(cmake/clang-format.cmake)
 setup_format_target(format_proxy_pdf)
@@ -71,13 +75,14 @@ if(PROXY_PDF_UNITY_BUILD)
 endif()
 
 add_library(proxy_pdf_version STATIC
-	"source/version/version.h" "source/version/version.cpp")
+	"source/version/version.hpp" "source/version/version.cpp")
 target_include_directories(proxy_pdf_version PUBLIC source/version)
 target_compile_definitions(proxy_pdf_version PRIVATE
 	PROXY_PDF_VERSION=${PROXY_PDF_GIT_VERSION})
 
 add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
+	dla
 	fmt::fmt
 	Qt6::Core
 	Qt6::Gui
@@ -110,7 +115,7 @@ target_precompile_headers(proxy_pdf_pch INTERFACE
 # --------------------------------------------------
 # Create executbale
 file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
-file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.h" "source/app/*.inl")
+file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
 set(proxy_pdf_resources "res/proxy_pdf.rc")
 add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 target_link_libraries(proxy_pdf PRIVATE
@@ -153,7 +158,7 @@ group_files("${proxy_pdf_sources};${proxy_pdf_headers}")
 # Set debugging properties
 set_target_properties(proxy_pdf PROPERTIES
 	VS_DEBUGGER_COMMAND_ARGUMENTS ""
-	VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:proxy_pdf>)
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 
