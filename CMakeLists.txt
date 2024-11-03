@@ -75,7 +75,7 @@ if(PROXY_PDF_UNITY_BUILD)
 endif()
 
 add_library(proxy_pdf_version STATIC
-	"source/version/version.hpp" "source/version/version.cpp")
+	"source/version/ppp/version.hpp" "source/version/ppp/version.cpp")
 target_include_directories(proxy_pdf_version PUBLIC source/version)
 target_compile_definitions(proxy_pdf_version PRIVATE
 	PROXY_PDF_VERSION=${PROXY_PDF_GIT_VERSION})

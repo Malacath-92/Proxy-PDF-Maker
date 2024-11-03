@@ -1,4 +1,4 @@
-#include "version.hpp"
+#include <ppp/version.hpp>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)

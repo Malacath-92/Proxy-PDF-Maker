@@ -1,4 +1,4 @@
-#include "constants.hpp"
+#include <ppp/constants.hpp>
 
 #include <qdir.h>
 

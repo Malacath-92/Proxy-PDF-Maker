@@ -1,6 +1,6 @@
-#include "config.hpp"
+#include <ppp/config.hpp>
 
-#include "constants.hpp"
+#include <ppp/constants.hpp>
 
 #include <qsettings.h>
 
