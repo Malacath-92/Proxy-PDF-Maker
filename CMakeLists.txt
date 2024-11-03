@@ -48,6 +48,10 @@ execute_process(
 	COMMAND_ERROR_IS_FATAL ANY)
 
 # --------------------------------------------------
+# Timestamp
+string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
+
+# --------------------------------------------------
 # Find packages
 find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
@@ -74,11 +78,14 @@ if(PROXY_PDF_UNITY_BUILD)
 		PROPERTY UNITY_BUILD ON)
 endif()
 
+set(proxy_pdf_version_sources "source/version/ppp/version.cpp")
+set(proxy_pdf_version_headers "source/version/ppp/version.hpp")
 add_library(proxy_pdf_version STATIC
-	"source/version/ppp/version.hpp" "source/version/ppp/version.cpp")
+	${proxy_pdf_version_sources} ${proxy_pdf_version_headers})
 target_include_directories(proxy_pdf_version PUBLIC source/version)
 target_compile_definitions(proxy_pdf_version PRIVATE
-	PROXY_PDF_VERSION=${PROXY_PDF_GIT_VERSION})
+	PROXY_PDF_VERSION=${PROXY_PDF_GIT_VERSION}
+	PROXY_PDF_NOW=${PROXY_PDF_NOW})
 
 add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
@@ -152,7 +159,7 @@ function(group_files sources)
 	endforeach()
 endfunction()
 
-group_files("${proxy_pdf_sources};${proxy_pdf_headers}")
+group_files("${proxy_pdf_sources};${proxy_pdf_headers};${proxy_pdf_version_sources};${proxy_pdf_version_headers}")
 
 # --------------------------------------------------
 # Set debugging properties
