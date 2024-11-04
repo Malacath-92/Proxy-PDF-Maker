@@ -7,7 +7,7 @@ class ProxyPDF(ConanFile):
     def requirements(self):
         self.requires("fmt/9.1.0")
         self.requires("qt/6.7.3")
-        self.requires("libffi/3.4.6", override=True)
+        self.requires("libharu/2.4.4")
 
     def configure(self):
         self.options["qt"].shared = False
@@ -19,5 +19,3 @@ class ProxyPDF(ConanFile):
         self.options["qt"].with_sqlite3 = False
 
         self.options["glib"].with_elf = False
-
-        pass
