@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 
 # --------------------------------------------------
 # Set global properties
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
