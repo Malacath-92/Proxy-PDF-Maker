@@ -6,14 +6,14 @@
 #include <QUrl>
 
 template<class FunT>
-void ForEachFile(const std::filesystem::path& path, FunT&& fun, const std::span<const std::filesystem::path> extensions)
+void ForEachFile(const fs::path& path, FunT&& fun, const std::span<const fs::path> extensions)
 {
     if (!std::filesystem::is_directory(path))
     {
         return;
     }
 
-    std::vector<std::filesystem::path> files;
+    std::vector<fs::path> files;
     for (auto& child : std::filesystem::directory_iterator(path))
     {
         if (!child.is_directory())
@@ -30,14 +30,14 @@ void ForEachFile(const std::filesystem::path& path, FunT&& fun, const std::span<
 }
 
 template<class FunT>
-void ForEachFolder(const std::filesystem::path& path, FunT&& fun)
+void ForEachFolder(const fs::path& path, FunT&& fun)
 {
     if (!std::filesystem::is_directory(path))
     {
         return;
     }
 
-    std::vector<std::filesystem::path> files;
+    std::vector<fs::path> files;
     for (auto& child : std::filesystem::directory_iterator(path))
     {
         if (child.is_directory())
@@ -47,12 +47,12 @@ void ForEachFolder(const std::filesystem::path& path, FunT&& fun)
     }
 }
 
-std::vector<std::filesystem::path> ListFiles(const std::filesystem::path& path, const std::span<const std::filesystem::path> extensions)
+std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions)
 {
-    std::vector<std::filesystem::path> files;
+    std::vector<fs::path> files;
     ForEachFile(
         path,
-        [&files](const std::filesystem::path& path)
+        [&files](const fs::path& path)
         {
             files.push_back(path.filename());
         },
@@ -60,29 +60,29 @@ std::vector<std::filesystem::path> ListFiles(const std::filesystem::path& path, 
     return files;
 }
 
-std::vector<std::filesystem::path> ListFolders(const std::filesystem::path& path)
+std::vector<fs::path> ListFolders(const fs::path& path)
 {
-    std::vector<std::filesystem::path> folders;
+    std::vector<fs::path> folders;
     ForEachFolder(
         path,
-        [&folders](const std::filesystem::path& path)
+        [&folders](const fs::path& path)
         {
             folders.push_back(path.filename());
         });
     return folders;
 }
 
-bool OpenFolder(const std::filesystem::path& path)
+bool OpenFolder(const fs::path& path)
 {
     return OpenPath(path);
 }
 
-bool OpenFile(const std::filesystem::path& path)
+bool OpenFile(const fs::path& path)
 {
     return OpenPath(path);
 }
 
-bool OpenPath(const std::filesystem::path& path)
+bool OpenPath(const fs::path& path)
 {
     return QDesktopServices::openUrl(QUrl("file:///" + QString::fromStdWString(path.c_str()), QUrl::TolerantMode));
 }
