@@ -1,27 +1,8 @@
 #include <ppp/image.hpp>
 
+#include <dla/scalar_math.h>
 #include <opencv2/imgcodecs.hpp>
-
-#include <ppp/util.hpp>
-
-inline const std::array ValidImageExtensions{
-    ".bmp"_p,
-    ".gif"_p,
-    ".jpg"_p,
-    ".jpeg"_p,
-    ".png"_p,
-};
-
-template<class FunT>
-void ForEachImageFile(const fs::path& path, FunT&& fun)
-{
-    ForEachFile(path, std::forward<FunT>(fun), ValidImageExtensions);
-}
-
-std::vector<fs::path> ListImageFiles(const fs::path& path)
-{
-    return ListFiles(path, ValidImageExtensions);
-}
+#include <opencv2/opencv.hpp>
 
 Image::~Image()
 {
@@ -46,22 +27,6 @@ Image& Image::operator=(const Image& rhs)
 {
     m_Impl = rhs.m_Impl;
     return *this;
-}
-
-void Image::Init(const char* program_name)
-{
-    (void)program_name;
-}
-
-void Image::InitFolders(const fs::path& image_dir, const fs::path& crop_dir)
-{
-    for (const auto& folder : { image_dir, crop_dir })
-    {
-        if (!std::filesystem::exists(folder))
-        {
-            std::filesystem::create_directories(folder);
-        }
-    }
 }
 
 Image Image::Read(const fs::path& path)
@@ -105,6 +70,38 @@ Image Image::Rotate(Rotation rotation) const
         img = *this;
     }
     return img;
+}
+
+Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
+{
+    const auto [w, h] = Size().pod();
+    Image img{};
+    img.m_Impl = m_Impl(
+        cv::Range(static_cast<int>(top.value), static_cast<int>((h - bottom).value)),
+        cv::Range(static_cast<int>(left.value), static_cast<int>((w - right).value)));
+    return img;
+}
+
+Image Image::Resize(PixelSize size) const
+{
+    Image img{};
+    cv::resize(m_Impl, img.m_Impl, cv::Size(static_cast<int>(size.x.value), static_cast<int>(size.y.value)), cv::INTER_CUBIC);
+    return img;
+}
+
+PixelSize Image::Size() const
+{
+    return ::PixelSize{
+        Pixel(static_cast<float>(m_Impl.cols)),
+        Pixel(static_cast<float>(m_Impl.rows)),
+    };
+}
+
+PixelDensity Image::Density(::Size real_size) const
+{
+    const auto [w, h] = Size().pod();
+    const auto [bw, bh] = (real_size).pod();
+    return dla::math::min(w / bw, h / bh);
 }
 
 void Image::Release()

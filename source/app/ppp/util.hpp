@@ -1,22 +1,44 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <span>
 #include <vector>
 
+#include <dla/literals.h>
 #include <dla/vector.h>
 
 namespace fs = std::filesystem;
 
 using Length = dla::length_unit;
+
+namespace dla::unit_name
+{
+struct pixel
+{
+    static constexpr const char* id = "pixel";
+    static constexpr const char* symbol = "p";
+};
+} // namespace dla::unit_name
+using pixel_tag = dla::unit_tag<dla::unit_name::pixel, 1, 1>;
+using Pixel = dla::base_unit<pixel_tag>;
+
 using Size = dla::tvec2<Length>;
+using PixelSize = dla::tvec2<Pixel>;
+using PixelDensity = decltype(Pixel{} / Length{});
 
 // clang-format off
-constexpr auto operator ""_mm(long double v) { return Length{ float(v * 0.0010L) }; }
-constexpr auto operator ""_in(long double v) { return Length{ float(v * 0.0254L) }; }
+using namespace dla::literals;
+using namespace dla::int_literals;
 
+constexpr auto operator ""_mm(long double v) { return Length{ float(v * 0.0010L) }; }
 constexpr auto operator ""_mm(unsigned long long v) { return Length{ float(v * 0.0010L) }; }
+
+constexpr auto operator ""_in(long double v) { return Length{ float(v * 0.0254L) }; }
 constexpr auto operator""_in(unsigned long long v) { return Length{ float(v * 0.0254L) }; }
+
+constexpr auto operator ""_dpi(long double v) { return Pixel(float(v)) / 1_in; }
+constexpr auto operator""_dpi(unsigned long long v) { return Pixel{ float(v) } / 1_in; }
 
 inline auto operator ""_p(const char *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator ""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }

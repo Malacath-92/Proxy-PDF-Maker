@@ -1,17 +1,11 @@
 #pragma once
 
-#include <array>
 #include <filesystem>
 #include <vector>
 
 #include <opencv2/core/mat.hpp>
 
 #include <ppp/util.hpp>
-
-template<class FunT>
-void ForEachImageFile(const fs::path& path, FunT&& fun);
-
-std::vector<fs::path> ListImageFiles(const fs::path& path);
 
 class Image
 {
@@ -24,9 +18,6 @@ class Image
 
     Image& operator=(Image&& rhs);
     Image& operator=(const Image& rhs);
-
-    static void Init(const char* program_name);
-    static void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
 
     static Image Read(const fs::path& path);
 
@@ -42,6 +33,13 @@ class Image
         Degree270,
     };
     Image Rotate(Rotation rotation) const;
+
+    Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
+
+    Image Resize(PixelSize size) const;
+
+    PixelSize Size() const;
+    PixelDensity Density(::Size real_size) const;
 
   private:
     void Release();
