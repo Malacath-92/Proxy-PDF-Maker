@@ -42,10 +42,6 @@ ImgDict RunCropper(const fs::path& image_dir,
                    bool uncrop,
                    PrintFn print_fn);
 
-// def image_from_bytes(bytes);
-// def image_to_bytes(img);
-// def to_bytes(file_or_bytes, resize=None);
-
 bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict);
 ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn);
 
