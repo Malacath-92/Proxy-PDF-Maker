@@ -9,6 +9,8 @@
 #include <ppp/constants.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/version.hpp>
+
 inline const std::array ValidImageExtensions{
     ".bmp"_p,
     ".gif"_p,
@@ -317,9 +319,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
     return out_img_dict;
 }
 
-inline constexpr char version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '1' };
-inline constexpr size_t version_uint64{ std::bit_cast<size_t>(version) };
-
 // clang-format off
 template<class T>
 struct TagT{};
@@ -348,7 +347,7 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
         };
 
         const size_t version_uint64_read{ read(Tag<size_t>) };
-        if (version_uint64_read != version_uint64)
+        if (version_uint64_read != ImageCacheFormatVersion())
         {
             in_file.close();
             fs::remove(img_cache_file);
@@ -403,7 +402,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             out_file.write(reinterpret_cast<const char*>(val), data_size);
         };
 
-        write(version_uint64);
+        write(ImageCacheFormatVersion());
         write(img_dict.size());
         for (const auto& [name, image] : img_dict)
         {

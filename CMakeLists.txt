@@ -131,6 +131,7 @@ set(proxy_pdf_resources "res/proxy_pdf.rc")
 add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_warnings
+	proxy_pdf_version
 	proxy_pdf_definitions
 	proxy_pdf_dependencies
 	proxy_pdf_pch)
