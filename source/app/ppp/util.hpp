@@ -16,11 +16,11 @@ namespace dla::unit_name
 {
 struct pixel
 {
-    static constexpr const char* id = "pixel";
-    static constexpr const char* symbol = "p";
+    static constexpr const char* id = "pixels";
+    static constexpr const char* symbol = "pixels";
 };
 } // namespace dla::unit_name
-using pixel_tag = dla::unit_tag<dla::unit_name::pixel, 1, 1>;
+using pixel_tag = dla::unit_tag<dla::unit_name::pixel>;
 using Pixel = dla::base_unit<pixel_tag>;
 
 using Size = dla::tvec2<Length>;
