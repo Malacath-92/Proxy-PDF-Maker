@@ -83,6 +83,22 @@ Image CropImage(const Image& image, std::string_view image_name, Length bleed_ed
     return cropped_image;
 }
 
+Image UncropImage(const Image& image, std::string_view image_name, PrintFn print_fn)
+{
+    if (print_fn == nullptr)
+    {
+        print_fn = [](std::string_view) {};
+    }
+
+    const PixelDensity density{ image.Density(CardSizeWithoutBleed) };
+    Pixel c{ 0.12_in * density };
+
+    const PixelDensity dpi{ (density * 1_in / 1_m) };
+    print_fn(fmt::format("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name, dpi.value, c));
+
+    return image.AddBlackBorder(c, c, c, c);
+}
+
 // def need_run_cropper(image_dir, crop_dir, bleed_edge, do_vibrance_bump):
 //     has_bleed_edge = bleed_edge is not None and bleed_edge > 0
 //

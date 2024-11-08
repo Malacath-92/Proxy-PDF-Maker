@@ -82,6 +82,20 @@ Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
     return img;
 }
 
+Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
+{
+    Image img{};
+    cv::copyMakeBorder(m_Impl,
+                       img.m_Impl,
+                       static_cast<int>(top.value),
+                       static_cast<int>(bottom.value),
+                       static_cast<int>(left.value),
+                       static_cast<int>(right.value),
+                       cv::BORDER_CONSTANT,
+                       0xFFFFFFFF);
+    return img;
+}
+
 Image Image::Resize(PixelSize size) const
 {
     Image img{};

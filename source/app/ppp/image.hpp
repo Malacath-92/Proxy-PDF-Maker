@@ -35,6 +35,7 @@ class Image
     Image Rotate(Rotation rotation) const;
 
     Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
+    Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
     Image Resize(PixelSize size) const;
 
