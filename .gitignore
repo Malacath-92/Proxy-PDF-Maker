@@ -1,3 +1,7 @@
 # Folders used during a build
 build
 publish
+
+# Files generated during testing
+images/*
+img.cache

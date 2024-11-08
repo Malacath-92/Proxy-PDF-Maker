@@ -40,6 +40,9 @@ constexpr auto operator""_in(unsigned long long v) { return Length{ float(v * 0.
 constexpr auto operator ""_dpi(long double v) { return Pixel(float(v)) / 1_in; }
 constexpr auto operator""_dpi(unsigned long long v) { return Pixel{ float(v) } / 1_in; }
 
+constexpr auto operator ""_pix(long double v) { return Pixel(float(v)); }
+constexpr auto operator""_pix(unsigned long long v) { return Pixel{ float(v) }; }
+
 inline auto operator ""_p(const char *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator ""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator ""_p(const char16_t *str, size_t len) { return fs::path(str, str + len); }

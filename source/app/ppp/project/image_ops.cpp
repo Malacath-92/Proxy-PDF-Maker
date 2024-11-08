@@ -44,7 +44,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path)
     return ListFiles(path, ValidImageExtensions);
 }
 
-Image CropImage(const Image& image, std::string_view image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
+Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
 {
     if (print_fn == nullptr)
     {
@@ -60,7 +60,7 @@ Image CropImage(const Image& image, std::string_view image_name, Length bleed_ed
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(c - bleed_pixels);
             print_fn(fmt::format("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
-                                 image_name,
+                                 image_name.string(),
                                  dpi.value,
                                  c,
                                  bleed_edge));
@@ -68,7 +68,7 @@ Image CropImage(const Image& image, std::string_view image_name, Length bleed_ed
         else
         {
             c = dla::math::round(c);
-            print_fn(fmt::format("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name, dpi.value, c));
+            print_fn(fmt::format("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c));
         }
     }
 
@@ -77,13 +77,13 @@ Image CropImage(const Image& image, std::string_view image_name, Length bleed_ed
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        print_fn(fmt::format("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", max_dpi.value, image_name, new_size));
+        print_fn(fmt::format("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", max_dpi.value, image_name.string(), new_size));
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
 }
 
-Image UncropImage(const Image& image, std::string_view image_name, PrintFn print_fn)
+Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn)
 {
     if (print_fn == nullptr)
     {
@@ -94,280 +94,334 @@ Image UncropImage(const Image& image, std::string_view image_name, PrintFn print
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    print_fn(fmt::format("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name, dpi.value, c));
+    print_fn(fmt::format("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c));
 
     return image.AddBlackBorder(c, c, c, c);
 }
 
-// def need_run_cropper(image_dir, crop_dir, bleed_edge, do_vibrance_bump):
-//     has_bleed_edge = bleed_edge is not None and bleed_edge > 0
-//
-//     output_dir = crop_dir
-//     if do_vibrance_bump:
-//         output_dir = os.path.join(output_dir, "vibrance")
-//     if has_bleed_edge:
-//         output_dir = os.path.join(output_dir, str(bleed_edge).replace(".", "p"))
-//
-//     if not os.path.exists(output_dir):
-//         return True
-//
-//     input_files = list_image_files(image_dir)
-//     output_files = list_image_files(output_dir)
-//     return sorted(input_files) != sorted(output_files)
-//
-//
-// def crop_image(image, image_name, bleed_edge, max_dpi, print_fn=None):
-//     print_fn = print_fn if print_fn is not None else lambda *args: args
-//
-//     (h, w, _) = image.shape
-//     (bw, bh) = card_size_with_bleed_inch
-//     dpi = min(w / bw, h / bh)
-//     c = round(0.12 * dpi)
-//     if bleed_edge is not None and bleed_edge > 0:
-//         bleed_edge_inch = mm_to_inch(bleed_edge)
-//         bleed_edge_pixel = dpi * bleed_edge_inch
-//         c = round(0.12 * min(w / bw, h / bh) - bleed_edge_pixel)
-//         print_fn(
-//             f"Cropping images...\n{image_name} - DPI calculated: {dpi}, cropping {c} pixels around frame (adjusted for bleed edge {bleed_edge}mm)"
-//         )
-//     else:
-//         print_fn(
-//             f"Cropping images...\n{image_name} - DPI calculated: {dpi}, cropping {c} pixels around frame"
-//         )
-//     cropped_image = image[c : h - c, c : w - c]
-//     (h, w, _) = cropped_image.shape
-//     if max_dpi is not None and dpi > max_dpi:
-//         new_size = (
-//             int(round(w * max_dpi / dpi)),
-//             int(round(h * max_dpi / dpi)),
-//         )
-//         print_fn(
-//             f"Cropping images...\n{image_name} - Exceeds maximum DPI {max_dpi}, resizing to {new_size[0]}x{new_size[1]}"
-//         )
-//         cropped_image = cv2.resize(
-//             cropped_image, new_size, interpolation=cv2.INTER_CUBIC
-//         )
-//         cropped_image = numpy.array(
-//             Image.fromarray(cropped_image).filter(ImageFilter.UnsharpMask(1, 20, 8))
-//         )
-//     return cropped_image
-//
-//
-// def uncrop_image(image, image_name, print_fn=None):
-//     print_fn = print_fn if print_fn is not None else lambda *args: args
-//
-//     (h, w, _) = image.shape
-//     (bw, bh) = card_size_without_bleed_inch
-//     dpi = min(w / bw, h / bh)
-//     c = round(dpi * 0.12)
-//     print_fn(
-//         f"Reinserting bleed edge...\n{image_name} - DPI calculated: {dpi}, adding {c} pixels around frame"
-//     )
-//
-//     return cv2.copyMakeBorder(image, c, c, c, c, cv2.BORDER_CONSTANT, value=0xFFFFFFFF)
-//
-//
-// def cropper(
-//     image_dir,
-//     crop_dir,
-//     img_cache,
-//     img_dict,
-//     bleed_edge,
-//     max_dpi,
-//     do_vibrance_bump,
-//     uncrop,
-//     print_fn,
-//):
-//     has_bleed_edge = bleed_edge is not None and bleed_edge > 0
-//     if has_bleed_edge:
-//         cropper(
-//             image_dir,
-//             crop_dir,
-//             img_cache,
-//             img_dict,
-//             None,
-//             max_dpi,
-//             do_vibrance_bump,
-//             uncrop,
-//             print_fn,
-//         )
-//     elif do_vibrance_bump:
-//         cropper(
-//             image_dir,
-//             crop_dir,
-//             img_cache,
-//             img_dict,
-//             None,
-//             max_dpi,
-//             False,
-//             uncrop,
-//             print_fn,
-//         )
-//
-//     output_dir = crop_dir
-//     if do_vibrance_bump:
-//         output_dir = os.path.join(output_dir, "vibrance")
-//     if has_bleed_edge:
-//         output_dir = os.path.join(output_dir, str(bleed_edge).replace(".", "p"))
-//     if not os.path.exists(output_dir):
-//         os.makedirs(output_dir)
-//
-//     input_files = list_image_files(image_dir)
-//     for img_file in input_files:
-//         if os.path.exists(os.path.join(output_dir, img_file)):
-//             continue
-//
-//         image = read_image(os.path.join(image_dir, img_file))
-//         cropped_image = crop_image(image, img_file, bleed_edge, max_dpi, print_fn)
-//         if do_vibrance_bump:
-//             cropped_image = numpy.array(
-//                 Image.fromarray(cropped_image).filter(vibrance_cube)
-//             )
-//         write_image(os.path.join(output_dir, img_file), cropped_image)
-//
-//     extra_files = []
-//
-//     output_files = list_image_files(output_dir)
-//     for img_file in output_files:
-//         if not os.path.exists(os.path.join(image_dir, img_file)):
-//             extra_files.append(img_file)
-//
-//     if uncrop and not has_bleed_edge:
-//         for extra_img in extra_files:
-//             image = read_image(os.path.join(output_dir, extra_img))
-//             uncropped_image = uncrop_image(image, extra_img, print_fn)
-//             write_image(os.path.join(image_dir, extra_img), uncropped_image)
-//     else:
-//         for extra in extra_files:
-//             os.remove(os.path.join(output_dir, extra))
-//
-//     if need_cache_previews(crop_dir, img_dict):
-//         cache_previews(img_cache, image_dir, crop_dir, print_fn, img_dict)
-//
-//
-// def image_from_bytes(bytes):
-//     try:
-//         dataBytesIO = io.BytesIO(base64.b64decode(bytes))
-//         buffer = dataBytesIO.getbuffer()
-//         img = cv2.imdecode(numpy.frombuffer(buffer, numpy.uint8), -1)
-//     except Exception as e:
-//         pass
-//     if img is None:
-//         dataBytesIO = io.BytesIO(bytes)
-//         buffer = dataBytesIO.getbuffer()
-//         img = cv2.imdecode(numpy.frombuffer(buffer, numpy.uint8), -1)
-//     return img
-//
-//
-// def image_to_bytes(img):
-//     _, buffer = cv2.imencode(".png", img)
-//     bio = io.BytesIO(buffer)
-//     return bio.getvalue()
-//
-//
-// def to_bytes(file_or_bytes, resize=None):
-//     if isinstance(file_or_bytes, numpy.ndarray):
-//         img = file_or_bytes
-//     elif isinstance(file_or_bytes, str):
-//         img = read_image(file_or_bytes)
-//     else:
-//         img = image_from_bytes(file_or_bytes)
-//
-//     (cur_height, cur_width, _) = img.shape
-//     if resize:
-//         new_width, new_height = resize
-//         scale = min(new_height / cur_height, new_width / cur_width)
-//         img = cv2.resize(
-//             img,
-//             (int(cur_width * scale), int(cur_height * scale)),
-//             interpolation=cv2.INTER_AREA,
-//         )
-//         cur_height, cur_width = new_height, new_width
-//     return image_to_bytes(img), (cur_width, cur_height)
-//
-//
-// def need_cache_previews(crop_dir, img_dict):
-//     crop_list = list_image_files(crop_dir)
-//
-//     for img in crop_list:
-//         if img not in img_dict.keys():
-//             return True
-//
-//     for img, value in img_dict.items():
-//         if (
-//             "size" not in value
-//             or "thumb" not in value
-//             or "uncropped" not in value
-//             or img not in crop_list
-//         ):
-//             return True
-//
-//     return False
-//
-//
-// def cache_previews(file, image_dir, crop_dir, print_fn, data):
-//     deleted_cards = []
-//     for img in data.keys():
-//         fn = os.path.join(crop_dir, img)
-//         if not os.path.exists(fn):
-//             deleted_cards.append(img)
-//
-//     for img in deleted_cards:
-//         del data[img]
-//
-//     for f in list_files(crop_dir, valid_image_extensions):
-//         has_img = f in data
-//         img_dict = data[f] if has_img else None
-//
-//         has_size = has_img and "size" in img_dict
-//         has_thumbnail = has_img and "thumb" in img_dict
-//         need_img = not all([has_img, has_size, has_thumbnail])
-//
-//         if need_img:
-//             img = read_image(os.path.join(crop_dir, f))
-//             (h, w, _) = img.shape
-//             scale = 248 / w
-//             preview_size = (round(w * scale), round(h * scale))
-//
-//             if not has_img or not has_size:
-//                 print_fn(f"Caching preview for image {f}...\n")
-//
-//                 image_data, image_size = to_bytes(img, preview_size)
-//                 data[f] = {
-//                     "data": str(image_data),
-//                     "size": image_size,
-//                 }
-//                 img_dict = data[f]
-//
-//             if not has_thumbnail:
-//                 print_fn(f"Caching thumbnail for image {f}...\n")
-//
-//                 thumb_data, thumb_size = to_bytes(
-//                     img, (preview_size[0] * 0.45, preview_size[1] * 0.45)
-//                 )
-//                 img_dict["thumb"] = {
-//                     "data": str(thumb_data),
-//                     "size": thumb_size,
-//                 }
-//
-//     for f in list_files(image_dir, valid_image_extensions):
-//         if f in data:
-//             img_dict = data[f]
-//             has_img = "uncropped" in img_dict
-//             if not has_img:
-//                 img = read_image(os.path.join(image_dir, f))
-//                 (h, w, _) = img.shape
-//                 scale = 186 / w
-//                 uncropped_size = (round(w * scale), round(h * scale))
-//
-//                 if not has_img or not has_size:
-//                     print_fn(f"Caching uncropped preview for image {f}...\n")
-//
-//                     image_data, image_size = to_bytes(img, uncropped_size)
-//                     img_dict["uncropped"] = {
-//                         "data": str(image_data),
-//                         "size": image_size,
-//                     }
-//
-//     with open(file, "w") as fp:
-//         json.dump(data, fp, ensure_ascii=False)
+fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump)
+{
+    const bool has_bleed_edge{ bleed_edge > 0_mm };
+
+    if (do_vibrance_bump)
+    {
+        return crop_dir / "vibrance";
+    }
+
+    if (has_bleed_edge)
+    {
+        std::string bleed_folder{ std::to_string(bleed_edge.value * 1000) };
+        bleed_folder.erase(bleed_folder.find_last_not_of("0.") + 1);
+        std::replace(bleed_folder.begin(), bleed_folder.end(), '.', 'p');
+        return crop_dir / bleed_folder;
+    }
+
+    return crop_dir;
+}
+
+bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump)
+{
+    const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, do_vibrance_bump) };
+    if (!fs::exists(output_dir))
+    {
+        return true;
+    }
+
+    std::vector input_files{ ListImageFiles(image_dir) };
+    std::ranges::sort(input_files);
+    std::vector output_files{ ListImageFiles(output_dir) };
+    std::ranges::sort(output_files);
+    return input_files != output_files;
+}
+
+ImgDict RunCropper(const fs::path& image_dir,
+                   const fs::path& crop_dir,
+                   const fs::path& img_cache_file,
+                   const ImgDict& img_dict,
+                   Length bleed_edge,
+                   PixelDensity max_density,
+                   bool do_vibrance_bump,
+                   bool uncrop,
+                   PrintFn print_fn)
+{
+    if (print_fn == nullptr)
+    {
+        print_fn = [](std::string_view) {};
+    }
+
+    ImgDict out_img_dict{ img_dict };
+
+    const bool has_bleed_edge{ bleed_edge > 0_mm };
+    if (has_bleed_edge)
+    {
+        // Do base cropping, always needed
+        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, do_vibrance_bump, uncrop, print_fn);
+    }
+    else if (do_vibrance_bump)
+    {
+        // Do base cropping without vibrance for previews
+        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, false, uncrop, print_fn);
+    }
+
+    const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, do_vibrance_bump) };
+    if (!fs::exists(output_dir))
+    {
+        fs::create_directories(output_dir);
+    }
+
+    const std::vector input_files{ ListImageFiles(image_dir) };
+    for (const auto& img_file : input_files)
+    {
+        if (fs::exists(output_dir / img_file))
+        {
+            continue;
+        }
+
+        const Image image{ Image::Read(image_dir / img_file) };
+        const Image cropped_image{ CropImage(image, img_file, bleed_edge, max_density, print_fn) };
+        if (do_vibrance_bump)
+        {
+            throw std::logic_error{ "Not implemented..." };
+        }
+        cropped_image.Write(output_dir / img_file);
+    }
+
+    std::vector<fs::path> extra_files{};
+
+    const std::vector output_files{ ListImageFiles(output_dir) };
+    for (const auto& img_file : output_files)
+    {
+        if (!fs::exists(image_dir / img_file))
+        {
+            extra_files.push_back(img_file);
+        }
+    }
+
+    if (uncrop && !has_bleed_edge)
+    {
+        for (const auto& extra_img : extra_files)
+        {
+            const Image image{ Image::Read(output_dir / extra_img) };
+            const Image uncropped_image{ UncropImage(image, extra_img, print_fn) };
+            uncropped_image.Write(image_dir / extra_img);
+        }
+    }
+    else
+    {
+        for (const auto& extra_img : extra_files)
+        {
+            fs::remove(image_dir / extra_img);
+        }
+    }
+
+    if (NeedCachePreviews(crop_dir, out_img_dict))
+    {
+        out_img_dict = CachePreviews(image_dir, crop_dir, img_cache_file, img_dict, print_fn);
+    }
+
+    return out_img_dict;
+}
+
+bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
+{
+    const std::vector crop_list{ ListImageFiles(crop_dir) };
+
+    for (const auto& img : crop_list)
+    {
+        if (!img_dict.contains(img))
+        {
+            return true;
+        }
+    }
+
+    for (const auto& [img, _] : img_dict)
+    {
+        if (!std::ranges::contains(crop_list, img))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn)
+{
+    if (print_fn == nullptr)
+    {
+        print_fn = [](std::string_view) {};
+    }
+
+    ImgDict out_img_dict{};
+    for (const auto& [img, _] : img_dict)
+    {
+        if (fs::exists(crop_dir / img) && img_dict.contains(img))
+        {
+            out_img_dict[img] = img_dict.at(img);
+        }
+    }
+
+    const std::vector input_files{ ListImageFiles(crop_dir) };
+    for (const auto& img : input_files)
+    {
+        const bool has_img{ out_img_dict.contains(img) };
+        if (has_img)
+        {
+            continue;
+        }
+
+        ImagePreview image_preview{};
+
+        {
+            const Image image{ Image::Read(image_dir / img) };
+            const auto [w, h]{ image.Size().pod() };
+
+            {
+                const float preview_scale{ 248_pix / w };
+                const PixelSize preview_size{ dla::math::round(w * preview_scale), dla::math::round(h * preview_scale) };
+
+                print_fn(fmt::format("Caching preview for image {}...\n", img.string()));
+                image_preview.CroppedImage = image.Resize(preview_size);
+            }
+
+            {
+                const float thumb_scale{ 124_pix / w };
+                const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
+
+                print_fn(fmt::format("Caching thumbnail for image {}...\n", img.string()));
+                image_preview.CroppedThumbImage = image.Resize(thumb_size);
+            }
+        }
+
+        if (fs::exists(crop_dir / img))
+        {
+            const Image image{ Image::Read(crop_dir / img) };
+            const auto [w, h]{ image.Size().pod() };
+
+            const float uncropped_scale{ 186_pix / w };
+            const PixelSize uncropped_size{ dla::math::round(w * uncropped_scale), dla::math::round(h * uncropped_scale) };
+
+            print_fn(fmt::format("Caching uncropped preview for image {}...\n", img.string()));
+            image_preview.UncroppedImage = image.Resize(uncropped_size);
+        }
+        else
+        {
+            print_fn(fmt::format("Failed caching uncropped preview for image {}...\n", img.string()));
+        }
+
+        out_img_dict[img] = std::move(image_preview);
+    }
+
+    WritePreviews(img_cache_file, out_img_dict);
+
+    return out_img_dict;
+}
+
+inline constexpr char version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '1' };
+inline constexpr size_t version_uint64{ std::bit_cast<size_t>(version) };
+
+// clang-format off
+template<class T>
+struct TagT{};
+template<class T>
+inline constexpr TagT<T> Tag{};
+// clang-format on
+
+ImgDict ReadPreviews(const fs::path& img_cache_file)
+{
+    if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
+    {
+        const auto read = [&in_file]<class T>(TagT<T>) -> T
+        {
+            T val;
+            in_file.read(reinterpret_cast<char*>(&val), sizeof(val));
+            return val;
+        };
+        const auto read_arr = [&in_file, &read]<class T>(TagT<T>) -> std::vector<T>
+        {
+            const size_t size{ read(Tag<size_t>) };
+            std::vector<T> buffer(size, T{});
+
+            const size_t data_size{ size * sizeof(T) };
+            in_file.read(reinterpret_cast<char*>(buffer.data()), data_size);
+            return buffer;
+        };
+
+        const size_t version_uint64_read{ read(Tag<size_t>) };
+        if (version_uint64_read != version_uint64)
+        {
+            in_file.close();
+            fs::remove(img_cache_file);
+            return {};
+        }
+
+        const size_t num_images{ read(Tag<size_t>) };
+
+        ImgDict img_dict{};
+        for (size_t i = 0; i < num_images; ++i)
+        {
+            const std::vector img_name_buf{ read_arr(Tag<char>) };
+            const std::string_view img_name{ img_name_buf.data(), img_name_buf.size() };
+
+            ImagePreview img{};
+
+            {
+                const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                img.CroppedImage = Image::Decode(img_buf);
+            }
+
+            {
+                const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                img.UncroppedImage = Image::Decode(img_buf);
+            }
+
+            {
+                const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                img.CroppedThumbImage = Image::Decode(img_buf);
+            }
+
+            img_dict[img_name] = std::move(img);
+        }
+        return img_dict;
+    }
+    return {};
+}
+
+void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
+{
+    if (std::ofstream out_file{ img_cache_file, std::ios_base::binary | std::ios_base::trunc })
+    {
+        const auto write = [&out_file](const auto& val)
+        {
+            out_file.write(reinterpret_cast<const char*>(&val), sizeof(val));
+        };
+        const auto write_arr = [&out_file, &write](const auto* val, size_t size)
+        {
+            write(size);
+
+            const size_t data_size{ size * sizeof(*val) };
+            out_file.write(reinterpret_cast<const char*>(val), data_size);
+        };
+
+        write(version_uint64);
+        write(img_dict.size());
+        for (const auto& [name, image] : img_dict)
+        {
+            const std::string name_str{ name.string() };
+            write_arr(name_str.data(), name_str.size());
+
+            {
+                const std::vector buf{ image.CroppedImage.Encode() };
+                write_arr(buf.data(), buf.size());
+            }
+            {
+                const std::vector buf{ image.UncroppedImage.Encode() };
+                write_arr(buf.data(), buf.size());
+            }
+            {
+                const std::vector buf{ image.CroppedThumbImage.Encode() };
+                write_arr(buf.data(), buf.size());
+            }
+        }
+    }
+}

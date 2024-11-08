@@ -42,6 +42,26 @@ bool Image::Write(const fs::path& path) const
     return true;
 }
 
+Image Image::Decode(const std::vector<std::byte>& buffer)
+{
+    Image img{};
+    const cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()), static_cast<int>(buffer.size()) };
+    img.m_Impl = cv::imdecode(cv_buffer, cv::IMREAD_COLOR);
+    return img;
+}
+
+std::vector<std::byte> Image::Encode() const
+{
+    std::vector<uchar> cv_buffer;
+    if (cv::imencode(".png", m_Impl, cv_buffer))
+    {
+        std::vector<std::byte> out_buffer(cv_buffer.size(), std::byte{});
+        std::memcpy(out_buffer.data(), cv_buffer.data(), cv_buffer.size());
+        return out_buffer;
+    }
+    return {};
+}
+
 Image::operator bool() const
 {
     return !m_Impl.empty();

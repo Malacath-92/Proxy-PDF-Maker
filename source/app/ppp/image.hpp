@@ -7,7 +7,7 @@
 
 #include <ppp/util.hpp>
 
-class Image
+class [[nodiscard]] Image
 {
   public:
     Image() = default;
@@ -20,8 +20,10 @@ class Image
     Image& operator=(const Image& rhs);
 
     static Image Read(const fs::path& path);
-
     bool Write(const fs::path& path) const;
+
+    static Image Decode(const std::vector<std::byte>& buffer);
+    std::vector<std::byte> Encode() const;
 
     explicit operator bool() const;
     bool Valid() const;
