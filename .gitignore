@@ -4,4 +4,5 @@ publish
 
 # Files generated during testing
 images/*
-img.cache
+*.cache
+*.json
