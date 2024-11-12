@@ -7,9 +7,10 @@ class ProxyPDF(ConanFile):
     def requirements(self):
         self.requires("fmt/9.1.0")
         self.requires("qt/6.7.3")
-        self.requires("libharu/2.4.4")
         self.requires("opencv/4.10.0")
-
+        self.requires("libharu/2.4.4")
+        self.requires("nlohmann_json/3.11.3")
+        
     def configure(self):
         self.options["qt"].shared = False
         self.options["qt"].opengl = "no"

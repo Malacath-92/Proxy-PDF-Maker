@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <filesystem>
-#include <functional>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
@@ -10,17 +9,9 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
-using PrintFn = std::function<void(std::string_view)>;
+#include <ppp/project/project.hpp>
 
-struct ImagePreview
-{
-    Image CroppedImage;
-    Image UncroppedImage;
-    Image CroppedThumbImage;
-};
-using ImgDict = std::unordered_map<fs::path, ImagePreview>;
-
-void InitImageSystem(const char* program_name);
+void InitImageSystem();
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
 
 template<class FunT>

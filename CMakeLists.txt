@@ -55,8 +55,9 @@ string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
 # Find packages
 find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
-find_package(libharu REQUIRED)
 find_package(opencv REQUIRED)
+find_package(libharu REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 # --------------------------------------------------
 # Create interface libs
@@ -97,8 +98,9 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Gui
 	Qt6::Widgets
 	Qt6::QWindowsIntegrationPlugin
+	opencv::opencv
 	libharu::libharu
-	opencv::opencv)
+	nlohmann_json::nlohmann_json)
 
 add_library(proxy_pdf_pch INTERFACE)
 target_precompile_headers(proxy_pdf_pch INTERFACE

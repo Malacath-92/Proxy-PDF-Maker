@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <span>
 #include <vector>
 
@@ -9,6 +10,17 @@
 #include <dla/vector.h>
 
 namespace fs = std::filesystem;
+
+using PrintFn = std::function<void(std::string_view)>;
+
+#define PPP_LOG(fmt_str, ...)                              \
+    do                                                     \
+    {                                                      \
+        if (print_fn != nullptr)                           \
+        {                                                  \
+            print_fn(fmt::format(fmt_str, ##__VA_ARGS__)); \
+        }                                                  \
+    } while (false)
 
 using Length = dla::length_unit;
 
@@ -47,6 +59,11 @@ inline auto operator ""_p(const char *str, size_t len) { return fs::path(str, st
 inline auto operator ""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator ""_p(const char16_t *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator ""_p(const char32_t *str, size_t len) { return fs::path(str, str + len); }
+
+template<class T>
+struct TagT{};
+template<class T>
+inline constexpr TagT<T> Tag{};
 // clang-format off
 
 template<class FunT>

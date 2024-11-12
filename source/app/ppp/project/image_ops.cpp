@@ -7,7 +7,6 @@
 #include <dla/vector_math.h>
 
 #include <ppp/constants.hpp>
-#include <ppp/util.hpp>
 
 #include <ppp/version.hpp>
 
@@ -19,9 +18,8 @@ inline const std::array ValidImageExtensions{
     ".png"_p,
 };
 
-void InitImageSystem(const char* program_name)
+void InitImageSystem()
 {
-    (void)program_name;
 }
 
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir)
@@ -48,11 +46,6 @@ std::vector<fs::path> ListImageFiles(const fs::path& path)
 
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
 {
-    if (print_fn == nullptr)
-    {
-        print_fn = [](std::string_view) {};
-    }
-
     const PixelDensity density{ image.Density(CardSizeWithBleed) };
     Pixel c{ 0.12_in * density };
     {
@@ -61,16 +54,16 @@ Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edg
         {
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(c - bleed_pixels);
-            print_fn(fmt::format("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
-                                 image_name.string(),
-                                 dpi.value,
-                                 c,
-                                 bleed_edge));
+            PPP_LOG("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
+                    image_name.string(),
+                    dpi.value,
+                    c,
+                    bleed_edge);
         }
         else
         {
             c = dla::math::round(c);
-            print_fn(fmt::format("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c));
+            PPP_LOG("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
         }
     }
 
@@ -79,7 +72,7 @@ Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edg
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        print_fn(fmt::format("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", max_dpi.value, image_name.string(), new_size));
+        PPP_LOG("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", max_dpi.value, image_name.string(), new_size);
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
@@ -87,16 +80,11 @@ Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edg
 
 Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn)
 {
-    if (print_fn == nullptr)
-    {
-        print_fn = [](std::string_view) {};
-    }
-
     const PixelDensity density{ image.Density(CardSizeWithoutBleed) };
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    print_fn(fmt::format("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c));
+    PPP_LOG("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
 
     return image.AddBlackBorder(c, c, c, c);
 }
@@ -146,11 +134,6 @@ ImgDict RunCropper(const fs::path& image_dir,
                    bool uncrop,
                    PrintFn print_fn)
 {
-    if (print_fn == nullptr)
-    {
-        print_fn = [](std::string_view) {};
-    }
-
     ImgDict out_img_dict{ img_dict };
 
     const bool has_bleed_edge{ bleed_edge > 0_mm };
@@ -249,11 +232,6 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
 
 ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn)
 {
-    if (print_fn == nullptr)
-    {
-        print_fn = [](std::string_view) {};
-    }
-
     ImgDict out_img_dict{};
     for (const auto& [img, _] : img_dict)
     {
@@ -282,7 +260,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
                 const float preview_scale{ 248_pix / w };
                 const PixelSize preview_size{ dla::math::round(w * preview_scale), dla::math::round(h * preview_scale) };
 
-                print_fn(fmt::format("Caching preview for image {}...\n", img.string()));
+                PPP_LOG("Caching preview for image {}...\n", img.string());
                 image_preview.CroppedImage = image.Resize(preview_size);
             }
 
@@ -290,7 +268,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
                 const float thumb_scale{ 124_pix / w };
                 const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
 
-                print_fn(fmt::format("Caching thumbnail for image {}...\n", img.string()));
+                PPP_LOG("Caching thumbnail for image {}...\n", img.string());
                 image_preview.CroppedThumbImage = image.Resize(thumb_size);
             }
         }
@@ -303,12 +281,12 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             const float uncropped_scale{ 186_pix / w };
             const PixelSize uncropped_size{ dla::math::round(w * uncropped_scale), dla::math::round(h * uncropped_scale) };
 
-            print_fn(fmt::format("Caching uncropped preview for image {}...\n", img.string()));
+            PPP_LOG("Caching uncropped preview for image {}...\n", img.string());
             image_preview.UncroppedImage = image.Resize(uncropped_size);
         }
         else
         {
-            print_fn(fmt::format("Failed caching uncropped preview for image {}...\n", img.string()));
+            PPP_LOG("Failed caching uncropped preview for image {}...\n", img.string());
         }
 
         out_img_dict[img] = std::move(image_preview);
@@ -318,13 +296,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
     return out_img_dict;
 }
-
-// clang-format off
-template<class T>
-struct TagT{};
-template<class T>
-inline constexpr TagT<T> Tag{};
-// clang-format on
 
 ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
