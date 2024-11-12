@@ -28,6 +28,7 @@ using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 struct Project
 {
     void Load(const fs::path& json_path, PrintFn print_fn);
+    void Dump(const fs::path& json_path, PrintFn print_fn) const;
 
     void InitProperties(PrintFn print_fn);
     void InitImages(PrintFn print_fn);
