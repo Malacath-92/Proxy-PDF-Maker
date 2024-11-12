@@ -46,6 +46,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
     catch (std::exception e)
     {
         PPP_LOG("Failed loading project from {}: {}", json_path.string(), e.what());
+        PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());
     }
 
     InitProperties(print_fn);
