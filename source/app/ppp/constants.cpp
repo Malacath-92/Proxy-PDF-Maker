@@ -2,9 +2,9 @@
 
 #include <qdir.h>
 
-std::string_view cwd()
+fs::path cwd()
 {
-    static std::string current_working_directory{
+    thread_local fs::path current_working_directory{
         QDir::currentPath().toStdString()
     };
     return current_working_directory;

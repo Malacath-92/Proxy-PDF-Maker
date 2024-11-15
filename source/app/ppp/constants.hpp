@@ -7,7 +7,7 @@
 
 #include <ppp/util.hpp>
 
-std::string_view cwd();
+fs::path cwd();
 
 inline const std::unordered_map<std::string_view, HPDF_PageSizes> PageSizes{
     { "Letter", HPDF_PAGE_SIZE_LETTER },
