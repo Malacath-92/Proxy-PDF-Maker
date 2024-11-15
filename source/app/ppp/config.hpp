@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <string>
 
+#include <ppp/util.hpp>
+
 struct Config
 {
     bool VibranceBump{ false };
     bool EnableUncrop{ true };
-    uint32_t MaxDPI{ 1200 };
+    PixelDensity MaxDPI{ 1200_dpi };
     uint32_t DisplayColumns{ 5 };
     std::string DefaultPageSize{ "Letter" };
 };
