@@ -137,6 +137,7 @@ target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_definitions
 	proxy_pdf_dependencies
 	proxy_pdf_pch)
+set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 
 # --------------------------------------------------

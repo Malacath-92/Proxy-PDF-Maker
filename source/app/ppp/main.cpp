@@ -4,33 +4,34 @@
 #include <QPushButton>
 #include <qplugin.h>
 
-#include <ppp/image.hpp>
-#include <ppp/util.hpp>
+#include <ppp/project/project.hpp>
 
-int main(int argc, char** argv)
+#include <ppp/app.hpp>
+#include <ppp/ui/main_window.hpp>
+
+int main()
 {
+    constexpr auto print_fn{
+        [](std::string_view str)
+        { printf("%.*s\n", (int)str.size(), str.data()); }
+    };
+
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 
-    QApplication app(argc, argv);
+    PrintProxyPrepApplication app;
 
-    QPushButton button("Hello world!");
-    QObject::connect(&button,
-                     &QPushButton::clicked,
-                     &button,
-                     [&]()
-                     { app.closeAllWindows(); });
-    button.show();
+    Project project{};
+    project.Load(app.GetProjectPath(), print_fn);
 
-    Image::Init(argv[0]);
+    auto* tabs{ new MainTabs{} };
+    auto* scroll{ new CardScrollArea{} };
+    auto* preview{ new PrintPreview{} };
+    auto* options{ new OptionsWidget{ app, project } };
 
-    const auto file{ "D:/Programs/print-proxy-prep-main/images/Everywhere (Hans Tseng).png"_p };
-    if (const Image image{ Image::Read(file) })
-    {
-        const Image flipped{ image.Rotate(Image::Rotation::Degree180) };
-        flipped.Write(fs::path{ file }.replace_extension(".flip.jpg"));
-        const Image rotted{ image.Rotate(Image::Rotation::Degree90) };
-        rotted.Write(fs::path{ file }.replace_extension(".rot.bmp"));
-    }
+    auto* main_window{ new PrintProxyPrepMainWindow{ tabs, scroll, preview, options } };
+    app.SetMainWindow(main_window);
+
+    main_window->show();
 
     return app.exec();
 }
