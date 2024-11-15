@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <string_view>
 
-std::string_view proxy_pdf_version();
-std::string_view proxy_pdf_build_time();
+std::string_view ProxyPdfVersion();
+std::string_view ProxyPdfBuildTime();
 
 constexpr uint64_t ImageCacheFormatVersion()
 {
