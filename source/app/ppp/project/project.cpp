@@ -1,10 +1,11 @@
 #include <ppp/project/project.hpp>
 
-#include <ppp/project/image_ops.hpp>
+#include <nlohmann/json.hpp>
 
+#include <ppp/config.hpp>
 #include <ppp/version.hpp>
 
-#include <nlohmann/json.hpp>
+#include <ppp/project/image_ops.hpp>
 
 void Project::Load(const fs::path& json_path, PrintFn print_fn)
 {
@@ -41,6 +42,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
             PageSize = json["pagesize"];
             Orientation = json["orientation"];
             FileName = json["file_name"].get<std::string>();
+            ExtendedGuides = json["extended_guides"];
         }
     }
     catch (std::exception e)
@@ -49,8 +51,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());
     }
 
-    InitProperties(print_fn);
-    InitImages(print_fn);
+    Init(print_fn);
 }
 
 void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
@@ -88,6 +89,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["pagesize"] = PageSize;
         json["orientation"] = Orientation;
         json["file_name"] = FileName.string();
+        json["extended_guides"] = ExtendedGuides;
+
 
         file << json;
         file.close();
@@ -99,6 +102,12 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     {
         PPP_LOG("Failed opening file {} for write...", json_path.string());
     }
+}
+
+void Project::Init(PrintFn print_fn)
+{
+    InitProperties(print_fn);
+    InitImages(print_fn);
 }
 
 void Project::InitProperties(PrintFn print_fn)
@@ -140,4 +149,25 @@ void Project::InitImages(PrintFn print_fn)
 {
     PPP_LOG("Loading preview cache...");
     Previews = ReadPreviews(ImageCache);
+
+    if (NeedRunCropper(ImageDir, CropDir, BleedEdge, CFG.VibranceBump))
+    {
+        PPP_LOG("Cropping images...");
+        Previews = RunCropper(
+            ImageDir,
+            CropDir,
+            ImageCache,
+            Previews,
+            BleedEdge,
+            CFG.MaxDPI,
+            CFG.VibranceBump,
+            CFG.EnableUncrop,
+            print_fn);
+    }
+
+    if (NeedCachePreviews(CropDir, Previews))
+    {
+        PPP_LOG("Generating missing previews...");
+        CachePreviews(ImageDir, CropDir, ImageCache, Previews, print_fn);
+    }
 }
