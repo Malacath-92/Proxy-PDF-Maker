@@ -11,6 +11,14 @@
 
 #include <ppp/project/project.hpp>
 
+inline const std::array ValidImageExtensions{
+    ".bmp"_p,
+    ".gif"_p,
+    ".jpg"_p,
+    ".jpeg"_p,
+    ".png"_p,
+};
+
 void InitImageSystem();
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
 

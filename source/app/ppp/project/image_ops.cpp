@@ -10,14 +10,6 @@
 
 #include <ppp/version.hpp>
 
-inline const std::array ValidImageExtensions{
-    ".bmp"_p,
-    ".gif"_p,
-    ".jpg"_p,
-    ".jpeg"_p,
-    ".png"_p,
-};
-
 void InitImageSystem()
 {
 }
