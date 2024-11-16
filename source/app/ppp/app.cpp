@@ -3,8 +3,8 @@
 #include <QMainWindow>
 #include <QSettings>
 
-#include <ppp/version.hpp>
 #include <ppp/project/image_ops.hpp>
+#include <ppp/version.hpp>
 
 PrintProxyPrepApplication::PrintProxyPrepApplication()
     : QApplication(__argc, __argv)

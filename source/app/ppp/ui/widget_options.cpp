@@ -402,7 +402,7 @@ class CardOptionsWidget : public QGroupBox
     }
     void RefreshWidgets(const Project& /*project*/)
     {
-        //BacksideDefaultPreview->Refresh(project);
+        // BacksideDefaultPreview->Refresh(project);
     }
 
   private:

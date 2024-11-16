@@ -91,7 +91,6 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["file_name"] = FileName.string();
         json["extended_guides"] = ExtendedGuides;
 
-
         file << json;
         file.close();
 
