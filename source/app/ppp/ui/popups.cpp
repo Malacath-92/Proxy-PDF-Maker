@@ -130,13 +130,11 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
     QObject::connect(work_thread,
                      &QThread::finished,
                      this,
-                     [&]()
-                     { close(); });
+                     &QDialog::close);
     QObject::connect(work_thread,
                      &WorkThread::Refresh,
                      this,
-                     [&](std::string text)
-                     { UpdateTextImpl(text); });
+                     &GenericPopup::UpdateTextImpl);
 
     WorkerThread.reset(work_thread);
     Refresh = [work_thread](std::string_view text)

@@ -25,6 +25,8 @@ std::optional<fs::path> OpenProjectDialog(FileDialogType type);
 
 class GenericPopup : public QDialog
 {
+    Q_OBJECT;
+
   public:
     GenericPopup(QWidget* parent, std::string_view text);
 
@@ -38,8 +40,11 @@ class GenericPopup : public QDialog
 
   private:
     void UpdateText(std::string_view text);
+
+  private slots:
     void UpdateTextImpl(std::string_view text);
 
+  private:
     void Recenter();
 
     QLabel* TextLabel;
