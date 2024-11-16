@@ -26,8 +26,8 @@ QWidget* WidgetWithLabel::GetWidget() const
     return Widget;
 }
 
-ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<std::string_view> options, std::string_view default_option)
-    : WidgetWithLabel(label_text, new QLineEdit)
+ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const std::string_view> options, std::string_view default_option)
+    : WidgetWithLabel(label_text, new QComboBox)
 {
     for (const auto& option : options)
     {

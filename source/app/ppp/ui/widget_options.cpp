@@ -291,8 +291,79 @@ class ActionsWidget : public QGroupBox
 class PrintOptionsWidget : public QGroupBox
 {
   public:
-    PrintOptionsWidget(const Project& /*project*/)
+    PrintOptionsWidget(Project& project)
     {
+        setTitle("Print Options");
+
+        using namespace std::string_view_literals;
+        auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.FileName.string() } };
+        auto* paper_size{ new ComboBoxWithLabel{
+            "&Paper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
+        auto* orientation{ new ComboBoxWithLabel{
+            "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
+        auto* guides_checkbox{ new QCheckBox{ "Extended Guides" } };
+        guides_checkbox->setChecked(project.ExtendedGuides);
+
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(print_output);
+        layout->addWidget(paper_size);
+        layout->addWidget(orientation);
+        layout->addWidget(guides_checkbox);
+        setLayout(layout);
+
+        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+
+        auto change_output{
+            [&](QString t)
+            {
+                project.FileName = t.toStdString();
+            }
+        };
+
+        auto change_papersize{
+            [&](QString t)
+            {
+                project.PageSize = t.toStdString();
+                main_window->RefreshPreview(project);
+            }
+        };
+
+        auto change_orientation{
+            [&](QString t)
+            {
+                project.Orientation = t.toStdString();
+                main_window->RefreshPreview(project);
+            }
+        };
+
+        auto change_guides{
+            [&](Qt::CheckState s)
+            {
+                project.ExtendedGuides = s == Qt::CheckState::Checked;
+            }
+        };
+
+        QObject::connect(print_output->GetWidget(),
+                         &QLineEdit::textChanged,
+                         this,
+                         change_output);
+        QObject::connect(paper_size->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_papersize);
+        QObject::connect(orientation->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_orientation);
+        QObject::connect(guides_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         change_guides);
+
+        PrintOutput = print_output->GetWidget();
+        PaperSize = paper_size->GetWidget();
+        Orientation = orientation->GetWidget();
+        ExtendedGuides = guides_checkbox;
     }
 
     void RefreshWidgets(const Project& project)
