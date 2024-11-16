@@ -38,17 +38,17 @@ std::optional<fs::path> OpenFileDialog(std::string_view title, fs::path root, st
     {
         choice = QFileDialog::getOpenFileName(
             nullptr,
-            QString::fromStdString(std::string{ title }),
-            QString::fromStdString(root.string()),
-            QString::fromStdString(std::string{ filter }));
+            QString::fromLatin1(title),
+            QString::fromWCharArray(root.c_str()),
+            QString::fromLatin1(filter));
     }
     else
     {
         choice = QFileDialog::getSaveFileName(
             nullptr,
-            QString::fromStdString(std::string{ title }),
-            QString::fromStdString(root.string()),
-            QString::fromStdString(std::string{ filter }));
+            QString::fromLatin1(title),
+            QString::fromWCharArray(root.c_str()),
+            QString::fromLatin1(filter));
     }
 
     if (choice.isEmpty())
@@ -103,7 +103,7 @@ class WorkThread : public QThread
 GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
     : QDialog(parent)
 {
-    auto* text_widget{ new QLabel{ QString::fromStdString(std::string{ text }) } };
+    auto* text_widget{ new QLabel{ QString::fromLatin1(text) } };
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(text_widget);
@@ -179,7 +179,7 @@ void GenericPopup::UpdateText(std::string_view text)
 void GenericPopup::UpdateTextImpl(std::string_view text)
 {
     adjustSize();
-    TextLabel->setText(QString::fromStdString(std::string{ text }));
+    TextLabel->setText(QString::fromLatin1(text));
     adjustSize();
     Recenter();
 }

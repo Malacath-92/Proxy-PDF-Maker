@@ -61,8 +61,8 @@ void PrintProxyPrepApplication::Load()
 void PrintProxyPrepApplication::Save() const
 {
     QSettings settings{ "Proxy", "PDF Proxy Printer" };
-    settings.setValue("version", QString::fromStdString(std::string{ ProxyPdfVersion() }));
+    settings.setValue("version", QString::fromLatin1(ProxyPdfVersion()));
     settings.setValue("geometry", MainWindow->saveGeometry());
     settings.setValue("state", MainWindow->saveState());
-    settings.setValue("json", QString::fromStdString(ProjectPath.string()));
+    settings.setValue("json", QString::fromWCharArray(ProjectPath.c_str()));
 }

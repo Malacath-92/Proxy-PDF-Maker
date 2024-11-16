@@ -368,7 +368,7 @@ class PrintOptionsWidget : public QGroupBox
 
     void RefreshWidgets(const Project& project)
     {
-        PrintOutput->setText(QString::fromStdString(project.FileName.string()));
+        PrintOutput->setText(QString::fromWCharArray(project.FileName.c_str()));
         PaperSize->setCurrentText(QString::fromStdString(project.PageSize));
         Orientation->setCurrentText(QString::fromStdString(project.Orientation));
         ExtendedGuides->setChecked(project.ExtendedGuides);
