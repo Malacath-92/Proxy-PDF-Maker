@@ -9,7 +9,7 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollAre
 {
     setWindowTitle("PDF Proxy Printer");
 
-    auto* window_layout{ new QVBoxLayout };
+    auto* window_layout{ new QHBoxLayout };
     window_layout->addWidget(tabs);
     window_layout->addWidget(options);
 
