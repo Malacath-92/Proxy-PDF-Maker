@@ -416,59 +416,112 @@ class CardOptionsWidget : public QGroupBox
 class GlobalOptionsWidget : public QGroupBox
 {
   public:
-    GlobalOptionsWidget(const Project& /*project*/)
+    GlobalOptionsWidget(const Project& project)
     {
+        setTitle("Global Config");
+
+        auto* display_columns_spin_box{ new QDoubleSpinBox };
+        display_columns_spin_box->setDecimals(0);
+        display_columns_spin_box->setRange(2, 10);
+        display_columns_spin_box->setSingleStep(1);
+        display_columns_spin_box->setValue(CFG.DisplayColumns);
+        auto* display_columns{ new WidgetWithLabel{ "Display &Columns", display_columns_spin_box } };
+        display_columns->setToolTip("Number columns in card view");
+
+        auto* precropped_checkbox{ new QCheckBox{ "Allow Precropped" } };
+        precropped_checkbox->setChecked(CFG.EnableUncrop);
+        precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
+
+        auto* vibrance_checkbox{ new QCheckBox{ "Vibrance Bump" } };
+        vibrance_checkbox->setChecked(CFG.VibranceBump);
+        vibrance_checkbox->setToolTip("Requires rerunning cropper");
+
+        auto* max_dpi_spin_box{ new QDoubleSpinBox };
+        max_dpi_spin_box->setDecimals(0);
+        max_dpi_spin_box->setRange(300, 1200);
+        max_dpi_spin_box->setSingleStep(100);
+        max_dpi_spin_box->setValue(CFG.MaxDPI / 1_dpi);
+        auto* max_dpi{ new WidgetWithLabel{ "&Max DPI", max_dpi_spin_box } };
+        max_dpi->setToolTip("Requires rerunning cropper");
+
+        auto* paper_sizes{ new ComboBoxWithLabel{
+            "Default P&aper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), CFG.DefaultPageSize } };
+
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(display_columns);
+        layout->addWidget(precropped_checkbox);
+        layout->addWidget(vibrance_checkbox);
+        layout->addWidget(max_dpi);
+        layout->addWidget(paper_sizes);
+        setLayout(layout);
+
+        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+
+        auto change_display_columns{
+            [&](double v)
+            {
+                CFG.DisplayColumns = static_cast<int>(v);
+                SaveConfig(CFG);
+                main_window->Refresh(project);
+            }
+        };
+
+        auto change_precropped{
+            [&](Qt::CheckState s)
+            {
+                CFG.EnableUncrop = s == Qt::CheckState::Checked;
+                SaveConfig(CFG);
+            }
+        };
+
+        auto change_vibrance_bump{
+            [&](Qt::CheckState s)
+            {
+                CFG.VibranceBump = s == Qt::CheckState::Checked;
+                SaveConfig(CFG);
+                main_window->RefreshPreview(project);
+            }
+        };
+
+        auto change_max_dpi{
+            [&](double v)
+            {
+                CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
+                SaveConfig(CFG);
+            }
+        };
+
+        auto change_papersize{
+            [&](const QString& t)
+            {
+                CFG.DefaultPageSize = t.toStdString();
+                SaveConfig(CFG);
+                main_window->RefreshPreview(project);
+            }
+        };
+
+        QObject::connect(display_columns_spin_box,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_display_columns);
+        QObject::connect(precropped_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         change_precropped);
+        QObject::connect(vibrance_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         change_vibrance_bump);
+        QObject::connect(max_dpi_spin_box,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_max_dpi);
+        QObject::connect(paper_sizes->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_papersize);
     }
 };
-
-// class PrintOptionsWidget(QGroupBox):
-//     def __init__(self, print_dict, img_dict):
-//         super().__init__()
-//
-//         self.setTitle("Print Options")
-//
-//         print_output = LineEditWithLabel("PDF &Filename", print_dict["filename"])
-//         paper_size = ComboBoxWithLabel(
-//             "&Paper Size", list(page_sizes.keys()), print_dict["pagesize"]
-//         )
-//         orientation = ComboBoxWithLabel(
-//             "&Orientation", ["Landscape", "Portrait"], print_dict["orient"]
-//         )
-//         guides_checkbox = QCheckBox("Extended Guides")
-//         guides_checkbox.setChecked(print_dict["extended_guides"])
-//
-//         layout = QVBoxLayout()
-//         layout.addWidget(print_output)
-//         layout.addWidget(paper_size)
-//         layout.addWidget(orientation)
-//         layout.addWidget(guides_checkbox)
-//
-//         self.setLayout(layout)
-//
-//         def change_output(t):
-//             print_dict["filename"] = t
-//
-//         def change_papersize(t):
-//             print_dict["pagesize"] = t
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         def change_orientation(t):
-//             print_dict["orient"] = t
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         def change_guides(s):
-//             enabled = s == QtCore.Qt.CheckState.Checked
-//             print_dict["extended_guides"] = enabled
-//
-//         print_output._widget.textChanged.connect(change_output)
-//         paper_size._widget.currentTextChanged.connect(change_papersize)
-//         orientation._widget.currentTextChanged.connect(change_orientation)
-//         guides_checkbox.checkStateChanged.connect(change_guides)
-//
-//         self._print_output = print_output._widget
-//         self._paper_size = paper_size._widget
-//         self._orientation = orientation._widget
-//         self._guides_checkbox = guides_checkbox
 
 // class BacksidePreview(QWidget):
 //     def __init__(self, backside_name, img_dict):
@@ -617,82 +670,6 @@ class GlobalOptionsWidget : public QGroupBox
 //
 //     def refresh(self, print_dict, img_dict):
 //         self._backside_default_preview.refresh(print_dict["backside_default"], img_dict)
-
-// class GlobalOptionsWidget(QGroupBox):
-//     def __init__(self, print_dict, img_dict):
-//         super().__init__()
-//
-//         self.setTitle("Global Config")
-//
-//         display_columns_spin_box = QDoubleSpinBox()
-//         display_columns_spin_box.setDecimals(0)
-//         display_columns_spin_box.setRange(2, 10)
-//         display_columns_spin_box.setSingleStep(1)
-//         display_columns_spin_box.setValue(CFG.DisplayColumns)
-//         display_columns = WidgetWithLabel("Display &Columns", display_columns_spin_box)
-//         display_columns.setToolTip("Number columns in card view")
-//
-//         precropped_checkbox = QCheckBox("Allow Precropped")
-//         precropped_checkbox.setChecked(CFG.EnableUncrop)
-//         precropped_checkbox.setToolTip(
-//             "Allows putting pre-cropped images into images/crop"
-//         )
-//
-//         vibrance_checkbox = QCheckBox("Vibrance Bump")
-//         vibrance_checkbox.setChecked(CFG.VibranceBump)
-//         vibrance_checkbox.setToolTip("Requires rerunning cropper")
-//
-//         max_dpi_spin_box = QDoubleSpinBox()
-//         max_dpi_spin_box.setDecimals(0)
-//         max_dpi_spin_box.setRange(300, 1200)
-//         max_dpi_spin_box.setSingleStep(100)
-//         max_dpi_spin_box.setValue(CFG.MaxDPI)
-//         max_dpi = WidgetWithLabel("&Max DPI", max_dpi_spin_box)
-//         max_dpi.setToolTip("Requires rerunning cropper")
-//
-//         paper_sizes = ComboBoxWithLabel(
-//             "Default P&aper Size", list(page_sizes.keys()), CFG.DefaultPageSize
-//         )
-//
-//         layout = QVBoxLayout()
-//         layout.addWidget(display_columns)
-//         layout.addWidget(precropped_checkbox)
-//         layout.addWidget(vibrance_checkbox)
-//         layout.addWidget(max_dpi)
-//         layout.addWidget(paper_sizes)
-//
-//         self.setLayout(layout)
-//
-//         def change_display_columns(v):
-//             CFG.DisplayColumns = int(v)
-//             save_config(CFG)
-//             self.window().refresh(print_dict, img_dict)
-//
-//         def change_precropped(s):
-//             enabled = s == QtCore.Qt.CheckState.Checked
-//             CFG.EnableUncrop = enabled
-//             save_config(CFG)
-//
-//         def change_vibrance_bump(s):
-//             enabled = s == QtCore.Qt.CheckState.Checked
-//             CFG.VibranceBump = enabled
-//             save_config(CFG)
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         def change_max_dpi(v):
-//             CFG.MaxDPI = int(v)
-//             save_config(CFG)
-//
-//         def change_papersize(t):
-//             CFG.DefaultPageSize = t
-//             save_config(CFG)
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         display_columns_spin_box.valueChanged.connect(change_display_columns)
-//         precropped_checkbox.checkStateChanged.connect(change_precropped)
-//         vibrance_checkbox.checkStateChanged.connect(change_vibrance_bump)
-//         max_dpi_spin_box.valueChanged.connect(change_max_dpi)
-//         paper_sizes._widget.currentTextChanged.connect(change_papersize)
 
 OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& project)
 {
