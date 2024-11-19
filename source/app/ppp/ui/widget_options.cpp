@@ -20,6 +20,7 @@
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
+#include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 class ActionsWidget : public QGroupBox
@@ -61,7 +62,7 @@ class ActionsWidget : public QGroupBox
         setLayout(layout);
 
         const auto render{
-            [&]()
+            [=, &project]()
             {
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
@@ -73,7 +74,7 @@ class ActionsWidget : public QGroupBox
                 }
 
                 const auto render_work{
-                    [&]()
+                    [=, &project]()
                     {
                         const fs::path pdf_path{ fs::path{ project.FileName }.replace_extension(".pdf") };
                         (void)pdf_path;
@@ -102,7 +103,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto run_cropper{
-            [&]()
+            [=, &project]()
             {
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
@@ -113,7 +114,7 @@ class ActionsWidget : public QGroupBox
                     auto* crop_window{ new GenericPopup{ window(), "Cropping images..." } };
 
                     const auto cropper_work{
-                        [&]()
+                        [=, &project, &rebuild_after_cropper]()
                         {
                             const fs::path& image_cache{ project.ImageCache };
                             const auto print_fn{ crop_window->MakePrintFn() };
@@ -136,7 +137,7 @@ class ActionsWidget : public QGroupBox
                                 project.Cards |
                                     std::views::transform([](const auto& item)
                                                           { return std::ref(item.first); }) |
-                                    std::views::filter([&](const auto& img)
+                                    std::views::filter([=, &project](const auto& img)
                                                        { return !project.Previews.contains(img); }),
                             };
                             for (const auto& img : deleted_images)
@@ -170,7 +171,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto save_project{
-            [&]()
+            [=, &project, &application]()
             {
                 if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
                 {
@@ -181,7 +182,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto load_project{
-            [&]()
+            [=, &project, &application]()
             {
                 if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
                 {
@@ -189,7 +190,7 @@ class ActionsWidget : public QGroupBox
                     auto* reload_window{ new GenericPopup{ window(), "Reloading project..." } };
 
                     const auto load_project_work{
-                        [&]()
+                        [=, &project]()
                         {
                             project.Load(new_project_json.value(), reload_window->MakePrintFn());
                         }
@@ -208,7 +209,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto set_images_folder{
-            [&]()
+            [=, &project]()
             {
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
@@ -234,7 +235,7 @@ class ActionsWidget : public QGroupBox
                         auto* reload_window{ new GenericPopup{ window(), "Reloading project..." } };
 
                         const auto reload_work{
-                            [&]()
+                            [=, &project]()
                             {
                                 project.InitImages(reload_window->MakePrintFn());
                             }
@@ -255,9 +256,9 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto open_images_folder{
-            [&]()
+            [=, &project]()
             {
-                // TODO
+                OpenFolder(project.ImageDir);
             }
         };
 
@@ -314,14 +315,14 @@ class PrintOptionsWidget : public QGroupBox
         auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
 
         auto change_output{
-            [&](QString t)
+            [=, &project](QString t)
             {
                 project.FileName = t.toStdString();
             }
         };
 
         auto change_papersize{
-            [&](QString t)
+            [=, &project](QString t)
             {
                 project.PageSize = t.toStdString();
                 main_window->RefreshPreview(project);
@@ -329,7 +330,7 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         auto change_orientation{
-            [&](QString t)
+            [=, &project](QString t)
             {
                 project.Orientation = t.toStdString();
                 main_window->RefreshPreview(project);
@@ -337,7 +338,7 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         auto change_guides{
-            [&](Qt::CheckState s)
+            [=, &project](Qt::CheckState s)
             {
                 project.ExtendedGuides = s == Qt::CheckState::Checked;
             }
@@ -381,16 +382,181 @@ class PrintOptionsWidget : public QGroupBox
     QCheckBox* ExtendedGuides;
 };
 
-class BacksidePreview : public QWidget
+class DefaultBacksidePreview : public QWidget
 {
   public:
+    DefaultBacksidePreview(const Project& project)
+    {
+        const fs::path& backside_name{ project.BacksideDefault };
+        auto* backside_default_image{ new BacksideImage{ backside_name, project } };
+
+        static constexpr auto backside_width{ 120 };
+        const auto backside_height{ backside_default_image->heightForWidth(backside_width) };
+        backside_default_image->setFixedWidth(backside_width);
+        backside_default_image->setFixedHeight(backside_height);
+
+        auto* backside_default_label{ new QLabel{ QString::fromWCharArray(backside_name.c_str()) } };
+
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(backside_default_image);
+        layout->addWidget(backside_default_label);
+        layout->setAlignment(backside_default_image, Qt::AlignmentFlag::AlignHCenter);
+        layout->setAlignment(backside_default_label, Qt::AlignmentFlag::AlignHCenter);
+        layout->setSpacing(0);
+        layout->setContentsMargins(0, 0, 0, 0);
+        setLayout(layout);
+
+        setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+
+        DefaultImage = backside_default_image;
+        DefaultLabel = backside_default_label;
+    }
+
+    void Refresh(const Project& project)
+    {
+        const fs::path& backside_name{ project.BacksideDefault };
+        DefaultImage->Refresh(backside_name, project);
+        DefaultLabel->setText(QString::fromWCharArray(backside_name.c_str()));
+    }
+
+  private:
+    BacksideImage* DefaultImage;
+    QLabel* DefaultLabel;
 };
 
 class CardOptionsWidget : public QGroupBox
 {
   public:
-    CardOptionsWidget(const Project& /*project*/)
+    CardOptionsWidget(Project& project)
     {
+        setTitle("Card Options");
+
+        auto* bleed_edge_spin{ new QDoubleSpinBox };
+        bleed_edge_spin->setDecimals(2);
+        bleed_edge_spin->setRange(0, 0.12_in / 1_mm);
+        bleed_edge_spin->setSingleStep(0.1);
+        bleed_edge_spin->setSuffix("mm");
+        bleed_edge_spin->setValue(float(project.BleedEdge));
+        auto* bleed_edge{ new WidgetWithLabel{ "&Bleed Edge", bleed_edge_spin } };
+
+        auto* bleed_back_divider{ new QFrame };
+        bleed_back_divider->setFrameShape(QFrame::Shape::HLine);
+        bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
+
+        auto* backside_checkbox{ new QCheckBox{ "Enable Backside" } };
+        backside_checkbox->setChecked(project.BacksideEnabled);
+
+        auto* backside_default_button{ new QPushButton{ "Default" } };
+        backside_default_button->setEnabled(project.BacksideEnabled);
+
+        auto* backside_default_preview{ new DefaultBacksidePreview{ project } };
+        backside_default_preview->setEnabled(project.BacksideEnabled);
+
+        auto* backside_offset_spin{ new QDoubleSpinBox };
+        backside_offset_spin->setDecimals(2);
+        backside_offset_spin->setRange(-0.3_in / 1_mm, 0.3_in / 1_mm);
+        backside_offset_spin->setSingleStep(0.1);
+        backside_offset_spin->setSuffix("mm");
+        backside_offset_spin->setValue(project.BacksideOffset / 1_mm);
+        auto* backside_offset{ new WidgetWithLabel{ "Off&set", backside_offset_spin } };
+        backside_offset->setEnabled(project.BacksideEnabled);
+
+        auto* back_over_divider{ new QFrame };
+        back_over_divider->setFrameShape(QFrame::Shape::HLine);
+        back_over_divider->setFrameShadow(QFrame::Shadow::Sunken);
+
+        auto* oversized_checkbox{ new QCheckBox{ "Enable Oversized Option" } };
+        oversized_checkbox->setChecked(project.OversizedEnabled);
+
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(bleed_edge);
+        layout->addWidget(bleed_back_divider);
+        layout->addWidget(backside_checkbox);
+        layout->addWidget(backside_default_button);
+        layout->addWidget(backside_default_preview);
+        layout->addWidget(backside_offset);
+        layout->addWidget(back_over_divider);
+        layout->addWidget(oversized_checkbox);
+
+        layout->setAlignment(backside_default_preview, Qt::AlignmentFlag::AlignHCenter);
+
+        setLayout(layout);
+
+        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+
+        auto change_bleed_edge{
+            [=, &project](double v)
+            {
+                project.BleedEdge = 1_mm * static_cast<float>(v);
+                main_window->Refresh(project);
+            }
+        };
+
+        auto switch_backside_enabled{
+            [=, &project](Qt::CheckState s)
+            {
+                project.BacksideEnabled = s == Qt::CheckState::Checked;
+                backside_default_button->setEnabled(project.BacksideEnabled);
+                backside_default_preview->setEnabled(project.BacksideEnabled);
+                backside_offset->setEnabled(project.BacksideEnabled);
+                main_window->Refresh(project);
+            }
+        };
+
+        auto pick_backside{
+            [=, &project]()
+            {
+                if (const auto default_backside_choice{ OpenImageDialog(project.ImageDir) })
+                {
+                    project.BacksideDefault = default_backside_choice.value();
+                    backside_default_preview->Refresh(project);
+                    main_window->Refresh(project);
+                }
+            }
+        };
+
+        auto change_backside_offset{
+            [=, &project](double v)
+            {
+                project.BacksideOffset = 1_mm * static_cast<float>(v);
+                main_window->RefreshPreview(project);
+            }
+        };
+
+        auto switch_oversized_enabled{
+            [=, &project](Qt::CheckState s)
+            {
+                project.OversizedEnabled = s == Qt::CheckState::Checked;
+                main_window->Refresh(project);
+            }
+        };
+
+        QObject::connect(bleed_edge_spin,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_bleed_edge);
+        QObject::connect(backside_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         switch_backside_enabled);
+        QObject::connect(backside_default_button,
+                         &QPushButton::clicked,
+                         this,
+                         pick_backside);
+        QObject::connect(backside_offset_spin,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_backside_offset);
+        QObject::connect(oversized_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         switch_oversized_enabled);
+
+        BleedEdgeSpin = bleed_edge_spin;
+        BacksideCheckbox = backside_checkbox;
+        BacksideOffsetSpin = backside_offset_spin;
+        BacksideDefaultPreview = backside_default_preview;
+        OversizedCheckbox = oversized_checkbox;
     }
 
     void Refresh(const Project& project)
@@ -400,16 +566,17 @@ class CardOptionsWidget : public QGroupBox
         BacksideOffsetSpin->setValue(project.BacksideOffset.value);
         OversizedCheckbox->setChecked(project.OversizedEnabled);
     }
-    void RefreshWidgets(const Project& /*project*/)
+
+    void RefreshWidgets(const Project& project)
     {
-        // BacksideDefaultPreview->Refresh(project);
+        BacksideDefaultPreview->Refresh(project);
     }
 
   private:
     QDoubleSpinBox* BleedEdgeSpin{ nullptr };
     QCheckBox* BacksideCheckbox{ nullptr };
     QDoubleSpinBox* BacksideOffsetSpin{ nullptr };
-    BacksidePreview* BacksideDefaultPreview{ nullptr };
+    DefaultBacksidePreview* BacksideDefaultPreview{ nullptr };
     QCheckBox* OversizedCheckbox{ nullptr };
 };
 
@@ -458,7 +625,7 @@ class GlobalOptionsWidget : public QGroupBox
         auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
 
         auto change_display_columns{
-            [&](double v)
+            [=, &project](double v)
             {
                 CFG.DisplayColumns = static_cast<int>(v);
                 SaveConfig(CFG);
@@ -467,7 +634,7 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_precropped{
-            [&](Qt::CheckState s)
+            [=, &project](Qt::CheckState s)
             {
                 CFG.EnableUncrop = s == Qt::CheckState::Checked;
                 SaveConfig(CFG);
@@ -475,7 +642,7 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_vibrance_bump{
-            [&](Qt::CheckState s)
+            [=, &project](Qt::CheckState s)
             {
                 CFG.VibranceBump = s == Qt::CheckState::Checked;
                 SaveConfig(CFG);
@@ -484,7 +651,7 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_max_dpi{
-            [&](double v)
+            [=, &project](double v)
             {
                 CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
                 SaveConfig(CFG);
@@ -492,7 +659,7 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_papersize{
-            [&](const QString& t)
+            [=, &project](const QString& t)
             {
                 CFG.DefaultPageSize = t.toStdString();
                 SaveConfig(CFG);
@@ -522,154 +689,6 @@ class GlobalOptionsWidget : public QGroupBox
                          change_papersize);
     }
 };
-
-// class BacksidePreview(QWidget):
-//     def __init__(self, backside_name, img_dict):
-//         super().__init__()
-//
-//         self.setLayout(QVBoxLayout())
-//         self.refresh(backside_name, img_dict)
-//         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-//
-//     def refresh(self, backside_name, img_dict):
-//         backside_default_image = BacksideImage(backside_name, img_dict)
-//
-//         backside_width = 120
-//         backside_height = backside_default_image.heightForWidth(backside_width)
-//         backside_default_image.setFixedWidth(backside_width)
-//         backside_default_image.setFixedHeight(backside_height)
-//
-//         backside_default_label = QLabel(backside_name)
-//
-//         layout = self.layout()
-//         for i in reversed(range(layout.count())):
-//             layout.itemAt(i).widget().setParent(None)
-//
-//         layout.addWidget(backside_default_image)
-//         layout.addWidget(backside_default_label)
-//         layout.setAlignment(
-//             backside_default_image, QtCore.Qt.AlignmentFlag.AlignHCenter
-//         )
-//         layout.setAlignment(
-//             backside_default_label, QtCore.Qt.AlignmentFlag.AlignHCenter
-//         )
-//         layout.setSpacing(0)
-//         layout.setContentsMargins(0, 0, 0, 0)
-//
-//         self.setLayout(layout)
-
-// class CardOptionsWidget(QGroupBox):
-//     def __init__(self, print_dict, img_dict):
-//         super().__init__()
-//
-//         self.setTitle("Card Options")
-//
-//         bleed_edge_spin = QDoubleSpinBox()
-//         bleed_edge_spin.setDecimals(2)
-//         bleed_edge_spin.setRange(0, inch_to_mm(0.12))
-//         bleed_edge_spin.setSingleStep(0.1)
-//         bleed_edge_spin.setSuffix("mm")
-//         bleed_edge_spin.setValue(float(print_dict["bleed_edge"]))
-//         bleed_edge = WidgetWithLabel("&Bleed Edge", bleed_edge_spin)
-//
-//         bleed_back_divider = QFrame()
-//         bleed_back_divider.setFrameShape(QFrame.Shape.HLine)
-//         bleed_back_divider.setFrameShadow(QFrame.Shadow.Sunken)
-//
-//         backside_enabled = print_dict["backside_enabled"]
-//         backside_checkbox = QCheckBox("Enable Backside")
-//         backside_checkbox.setChecked(backside_enabled)
-//
-//         backside_default_button = QPushButton("Default")
-//         backside_default_preview = BacksidePreview(
-//             print_dict["backside_default"], img_dict
-//         )
-//
-//         backside_offset_spin = QDoubleSpinBox()
-//         backside_offset_spin.setDecimals(2)
-//         backside_offset_spin.setRange(-inch_to_mm(0.3), inch_to_mm(0.3))
-//         backside_offset_spin.setSingleStep(0.1)
-//         backside_offset_spin.setSuffix("mm")
-//         backside_offset_spin.setValue(float(print_dict["backside_offset"]))
-//         backside_offset = WidgetWithLabel("Off&set", backside_offset_spin)
-//
-//         backside_default_button.setEnabled(backside_enabled)
-//         backside_default_preview.setEnabled(backside_enabled)
-//         backside_offset.setEnabled(backside_enabled)
-//
-//         back_over_divider = QFrame()
-//         back_over_divider.setFrameShape(QFrame.Shape.HLine)
-//         back_over_divider.setFrameShadow(QFrame.Shadow.Sunken)
-//
-//         oversized_enabled = print_dict["oversized_enabled"]
-//         oversized_checkbox = QCheckBox("Enable Oversized Option")
-//         oversized_checkbox.setChecked(oversized_enabled)
-//
-//         layout = QVBoxLayout()
-//         layout.addWidget(bleed_edge)
-//         layout.addWidget(bleed_back_divider)
-//         layout.addWidget(backside_checkbox)
-//         layout.addWidget(backside_default_button)
-//         layout.addWidget(backside_default_preview)
-//         layout.addWidget(backside_offset)
-//         layout.addWidget(back_over_divider)
-//         layout.addWidget(oversized_checkbox)
-//
-//         layout.setAlignment(
-//             backside_default_preview, QtCore.Qt.AlignmentFlag.AlignHCenter
-//         )
-//
-//         self.setLayout(layout)
-//
-//         def change_bleed_edge(v):
-//             print_dict["bleed_edge"] = v
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         def switch_backside_enabled(s):
-//             enabled = s == QtCore.Qt.CheckState.Checked
-//             print_dict["backside_enabled"] = enabled
-//             backside_default_button.setEnabled(enabled)
-//             backside_default_preview.setEnabled(enabled)
-//             self.window().refresh(print_dict, img_dict)
-//
-//         def pick_backside():
-//             default_backside_choice = image_file_dialog(self, print_dict["image_dir"])
-//             if default_backside_choice is not None:
-//                 print_dict["backside_default"] = default_backside_choice
-//                 backside_default_preview.refresh(
-//                     print_dict["backside_default"], img_dict
-//                 )
-//                 self.window().refresh(print_dict, img_dict)
-//
-//         def change_backside_offset(v):
-//             print_dict["backside_offset"] = v
-//             self.window().refresh_preview(print_dict, img_dict)
-//
-//         def switch_oversized_enabled(s):
-//             enabled = s == QtCore.Qt.CheckState.Checked
-//             print_dict["oversized_enabled"] = enabled
-//             self.window().refresh(print_dict, img_dict)
-//
-//         bleed_edge_spin.valueChanged.connect(change_bleed_edge)
-//         backside_checkbox.checkStateChanged.connect(switch_backside_enabled)
-//         backside_default_button.clicked.connect(pick_backside)
-//         backside_offset_spin.valueChanged.connect(change_backside_offset)
-//         oversized_checkbox.checkStateChanged.connect(switch_oversized_enabled)
-//
-//         self._bleed_edge_spin = bleed_edge_spin
-//         self._backside_checkbox = backside_checkbox
-//         self._backside_offset_spin = backside_offset_spin
-//         self._backside_default_preview = backside_default_preview
-//         self._oversized_checkbox = oversized_checkbox
-//
-//     def refresh_widgets(self, print_dict):
-//         self._bleed_edge_spin.setValue(float(print_dict["bleed_edge"]))
-//         self._backside_checkbox.setChecked(print_dict["backside_enabled"])
-//         self._backside_offset_spin.setValue(float(print_dict["backside_offset"]))
-//         self._oversized_checkbox.setChecked(print_dict["oversized_enabled"])
-//
-//     def refresh(self, print_dict, img_dict):
-//         self._backside_default_preview.refresh(print_dict["backside_default"], img_dict)
 
 OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& project)
 {

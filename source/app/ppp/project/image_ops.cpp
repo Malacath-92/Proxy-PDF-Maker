@@ -284,6 +284,19 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         out_img_dict[img] = std::move(image_preview);
     }
 
+    {
+        const fs::path fallback_img{ "fallback.png" };
+        const bool has_img{ out_img_dict.contains(fallback_img) };
+        if (!has_img)
+        {
+            PPP_LOG("Caching fallback image {}...\n", fallback_img.string());
+            ImagePreview& image_preview{ out_img_dict[fallback_img] };
+            image_preview.CroppedImage = Image::Read(fallback_img);
+            image_preview.CroppedThumbImage = image_preview.CroppedImage;
+            image_preview.UncroppedImage = image_preview.CroppedImage;
+        }
+    }
+
     WritePreviews(img_cache_file, out_img_dict);
 
     return out_img_dict;

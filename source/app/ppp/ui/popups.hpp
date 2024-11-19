@@ -17,10 +17,10 @@ enum class FileDialogType
     Save,
 };
 
-std::optional<fs::path> OpenFolderDialog(fs::path root);
+std::optional<fs::path> OpenFolderDialog(const fs::path& root);
 
-std::optional<fs::path> OpenFileDialog(std::string_view title, fs::path root, std::string_view filter, FileDialogType type);
-std::optional<fs::path> OpenImageDialog(fs::path root);
+std::optional<fs::path> OpenFileDialog(std::string_view title, const fs::path& root, std::string_view filter, FileDialogType type);
+std::optional<fs::path> OpenImageDialog(const fs::path& root);
 std::optional<fs::path> OpenProjectDialog(FileDialogType type);
 
 class GenericPopup : public QDialog

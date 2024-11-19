@@ -178,8 +178,12 @@ set_target_properties(proxy_pdf PROPERTIES
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 
 # --------------------------------------------------
-# Install shared lib and launcher
+# Install exectuable and resource files
 install(TARGETS
 	proxy_pdf
 	RUNTIME
+	DESTINATION .)
+install(FILES
+	config.ini
+	fallback.png
 	DESTINATION .)

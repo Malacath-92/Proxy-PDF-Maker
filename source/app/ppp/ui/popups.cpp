@@ -11,13 +11,13 @@
 
 #include <ppp/project/image_ops.hpp>
 
-std::optional<fs::path> OpenFolderDialog(fs::path root)
+std::optional<fs::path> OpenFolderDialog(const fs::path& root)
 {
     const QString choice{
         QFileDialog::getExistingDirectory(
             nullptr,
             "Choose Folder",
-            ".",
+            QString::fromWCharArray(root.c_str()),
             QFileDialog::Option::ShowDirsOnly | QFileDialog::Option::DontResolveSymlinks)
     };
 
@@ -31,7 +31,7 @@ std::optional<fs::path> OpenFolderDialog(fs::path root)
     }
 }
 
-std::optional<fs::path> OpenFileDialog(std::string_view title, fs::path root, std::string_view filter, FileDialogType type)
+std::optional<fs::path> OpenFileDialog(std::string_view title, const fs::path& root, std::string_view filter, FileDialogType type)
 {
     QString choice{};
     if (type == FileDialogType::Open)
@@ -61,16 +61,20 @@ std::optional<fs::path> OpenFileDialog(std::string_view title, fs::path root, st
     }
 }
 
-std::optional<fs::path> OpenImageDialog(fs::path root)
+std::optional<fs::path> OpenImageDialog(const fs::path& root)
 {
-    const auto image_filters{ ValidImageExtensions |
-                              std::views::transform([](const fs::path& ext)
-                                                    { return "*" + ext.string(); }) |
-                              std::ranges::to<std::vector>() };
+    std::string image_filters_str{ "Images (*" + ValidImageExtensions[0].string() };
+    for (const fs::path& valid_extension : ValidImageExtensions | std::views::drop(1))
+    {
+        image_filters_str.append(" *");
+        image_filters_str.append(valid_extension.string());
+    }
+    image_filters_str.append(")");
+
     return OpenFileDialog(
         "Open Image",
         root,
-        fmt::format("Image Files ({})", image_filters),
+        image_filters_str,
         FileDialogType::Open);
 }
 

@@ -7,6 +7,8 @@
 
 #include <ppp/util.hpp>
 
+class QPixmap;
+
 class [[nodiscard]] Image
 {
   public:
@@ -25,11 +27,14 @@ class [[nodiscard]] Image
     static Image Decode(const std::vector<std::byte>& buffer);
     std::vector<std::byte> Encode() const;
 
+    QPixmap StoreIntoQtPixmap() const;
+
     explicit operator bool() const;
     bool Valid() const;
 
     enum class Rotation
     {
+        None,
         Degree90,
         Degree180,
         Degree270,

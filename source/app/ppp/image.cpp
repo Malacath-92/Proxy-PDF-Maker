@@ -1,8 +1,11 @@
 #include <ppp/image.hpp>
 
 #include <dla/scalar_math.h>
+
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
+
+#include <qpixmap.h>
 
 Image::~Image()
 {
@@ -60,6 +63,11 @@ std::vector<std::byte> Image::Encode() const
         return out_buffer;
     }
     return {};
+}
+
+QPixmap Image::StoreIntoQtPixmap() const
+{
+    return QPixmap::fromImage(QImage(reinterpret_cast<const uchar*>(m_Impl.data), m_Impl.cols, m_Impl.rows, QImage::Format_BGR888));
 }
 
 Image::operator bool() const
