@@ -390,7 +390,7 @@ class DefaultBacksidePreview : public QWidget
         const fs::path& backside_name{ project.BacksideDefault };
         auto* backside_default_image{ new BacksideImage{ backside_name, project } };
 
-        static constexpr auto backside_width{ 120 };
+        static constexpr auto backside_width{ 130 };
         const auto backside_height{ backside_default_image->heightForWidth(backside_width) };
         backside_default_image->setFixedWidth(backside_width);
         backside_default_image->setFixedHeight(backside_height);
