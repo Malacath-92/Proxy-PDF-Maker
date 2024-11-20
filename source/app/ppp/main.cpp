@@ -23,12 +23,12 @@ int main()
     Project project{};
     project.Load(app.GetProjectPath(), print_fn);
 
-    auto* tabs{ new MainTabs{} };
-    auto* scroll{ new CardScrollArea{} };
-    auto* preview{ new PrintPreview{} };
+    auto* scroll_area{ new CardScrollArea{} };
+    auto* print_preview{ new PrintPreview{} };
+    auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
     auto* options{ new OptionsWidget{ app, project } };
 
-    auto* main_window{ new PrintProxyPrepMainWindow{ tabs, scroll, preview, options } };
+    auto* main_window{ new PrintProxyPrepMainWindow{ tabs, scroll_area, print_preview, options } };
     app.SetMainWindow(main_window);
 
     main_window->show();
