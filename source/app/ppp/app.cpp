@@ -55,7 +55,7 @@ void PrintProxyPrepApplication::Load()
     {
         WindowGeometry.emplace() = settings.value("geometry").toByteArray();
         WindowState.emplace() = settings.value("state").toByteArray();
-        ProjectPath = settings.value("project").toString().toStdString();
+        ProjectPath = settings.value("json").toString().toStdString();
     }
 }
 void PrintProxyPrepApplication::Save() const

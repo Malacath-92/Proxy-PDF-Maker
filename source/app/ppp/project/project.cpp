@@ -15,35 +15,37 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
 
     try
     {
-        const nlohmann::json json{ nlohmann::json::parse(json_path.string()) };
-        if (json.contains("version") && !json["version"].is_string() && json["version"].get_ref<const std::string&>() != JsonFormatVersion())
+        const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ json_path }) };
+        if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
-            ImageDir = json["image_dir"].get<std::string>();
-            CropDir = ImageDir / "crop";
-            ImageCache = json["img_cache"].get<std::string>();
-
-            for (const nlohmann::json& card_json : json["cards"])
-            {
-                CardInfo& card{ Cards[card_json["name"]] };
-                card.Num = card_json["num"];
-                card.Backside = card_json["backside"].get<std::string>();
-                card.BacksideShortEdge = card_json["backside_short_edge"];
-                card.Oversized = card_json["oversized"];
-            }
-
-            BleedEdge.value = json["bleed_edge"];
-
-            BacksideEnabled = json["backside_enabled"];
-            BacksideDefault = json["backside_default"].get<std::string>();
-            BacksideOffset.value = json["backside_offset"];
-
-            OversizedEnabled = json["oversized_enabled"];
-
-            PageSize = json["pagesize"];
-            Orientation = json["orientation"];
-            FileName = json["file_name"].get<std::string>();
-            ExtendedGuides = json["extended_guides"];
+            throw std::logic_error{ "Project version not compatible with App version..." };
         }
+
+        ImageDir = json["image_dir"].get<std::string>();
+        CropDir = ImageDir / "crop";
+        ImageCache = json["img_cache"].get<std::string>();
+
+        for (const nlohmann::json& card_json : json["cards"])
+        {
+            CardInfo& card{ Cards[card_json["name"]] };
+            card.Num = card_json["num"];
+            card.Backside = card_json["backside"].get<std::string>();
+            card.BacksideShortEdge = card_json["backside_short_edge"];
+            card.Oversized = card_json["oversized"];
+        }
+
+        BleedEdge.value = json["bleed_edge"];
+
+        BacksideEnabled = json["backside_enabled"];
+        BacksideDefault = json["backside_default"].get<std::string>();
+        BacksideOffset.value = json["backside_offset"];
+
+        OversizedEnabled = json["oversized_enabled"];
+
+        PageSize = json["pagesize"];
+        Orientation = json["orientation"];
+        FileName = json["file_name"].get<std::string>();
+        ExtendedGuides = json["extended_guides"];
     }
     catch (std::exception e)
     {

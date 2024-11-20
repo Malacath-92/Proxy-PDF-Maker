@@ -33,5 +33,7 @@ int main()
 
     main_window->show();
 
-    return app.exec();
+    const int return_code{ app.exec() };
+    project.Dump(app.GetProjectPath(), print_fn);
+    return return_code;
 }
