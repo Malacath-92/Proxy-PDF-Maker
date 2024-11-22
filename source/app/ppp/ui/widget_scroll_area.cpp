@@ -273,10 +273,10 @@ class DummyCardWidget : public CardWidget
     {
         CardName = card_name;
 
-        // auto sp_retain{ sizePolicy() };
-        // sp_retain.setRetainSizeWhenHidden(true);
-        // setSizePolicy(sp_retain);
-        // hide();
+        auto sp_retain{ sizePolicy() };
+        sp_retain.setRetainSizeWhenHidden(true);
+        setSizePolicy(sp_retain);
+        hide();
     }
 
   private slots:
@@ -368,7 +368,7 @@ class CardScrollArea::CardGrid : public QWidget
         }
 
         FirstItem = Cards.begin()->second;
-        Columns = cols; 
+        Columns = cols;
         Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / Columns));
 
         setMinimumWidth(TotalWidthFromItemWidth(FirstItem->minimumWidth()));
