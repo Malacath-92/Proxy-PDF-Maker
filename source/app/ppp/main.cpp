@@ -23,7 +23,7 @@ int main()
     Project project{};
     project.Load(app.GetProjectPath(), print_fn);
 
-    auto* scroll_area{ new CardScrollArea{} };
+    auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{} };
     auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
     auto* options{ new OptionsWidget{ app, project } };
