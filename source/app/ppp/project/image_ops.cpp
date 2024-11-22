@@ -292,8 +292,8 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             PPP_LOG("Caching fallback image {}...\n", fallback_img.string());
             ImagePreview& image_preview{ out_img_dict[fallback_img] };
             image_preview.CroppedImage = Image::Read(fallback_img);
-            image_preview.CroppedThumbImage = image_preview.CroppedImage;
-            image_preview.UncroppedImage = image_preview.CroppedImage;
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize({ 124_pix, 160_pix });
+            image_preview.UncroppedImage = image_preview.CroppedImage.Resize({ 186_pix, 242_pix });
         }
     }
 

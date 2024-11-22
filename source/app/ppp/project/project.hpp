@@ -34,6 +34,11 @@ struct Project
     void InitProperties(PrintFn print_fn);
     void InitImages(PrintFn print_fn);
 
+    const ImagePreview& GetPreview(const fs::path& image_name) const;
+    const ImagePreview& GetBacksidePreview(const fs::path& image_name) const;
+
+    const fs::path& GetBacksideImage(const fs::path& image_name) const;
+
     // Project options
     fs::path ImageDir{ "images" };
     fs::path CropDir{ "images/crop" };
@@ -42,6 +47,7 @@ struct Project
     // List of all cards
     CardMap Cards{};
     ImgDict Previews{};
+    ImagePreview FallbackPreview{};
 
     // Bleed edge options
     Length BleedEdge{ 0_mm };

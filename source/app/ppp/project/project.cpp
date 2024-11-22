@@ -169,6 +169,35 @@ void Project::InitImages(PrintFn print_fn)
     if (NeedCachePreviews(CropDir, Previews))
     {
         PPP_LOG("Generating missing previews...");
-        CachePreviews(ImageDir, CropDir, ImageCache, Previews, print_fn);
+        Previews = CachePreviews(ImageDir, CropDir, ImageCache, Previews, print_fn);
     }
+
+    FallbackPreview = Previews["fallback.png"_p];
+}
+
+const ImagePreview& Project::GetPreview(const fs::path& image_name) const
+{
+    if (Previews.contains(image_name))
+    {
+        return Previews.at(image_name);
+    }
+    return FallbackPreview;
+}
+
+const ImagePreview& Project::GetBacksidePreview(const fs::path& image_name) const
+{
+    return GetPreview(GetBacksideImage(image_name));
+}
+
+const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
+{
+    if (Cards.contains(image_name))
+    {
+        const CardInfo& card{ Cards.at(image_name) };
+        if (!card.Backside.empty())
+        {
+            return card.Backside;
+        }
+    }
+    return BacksideDefault;
 }
