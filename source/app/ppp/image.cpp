@@ -127,7 +127,7 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
 Image Image::Resize(PixelSize size) const
 {
     Image img{};
-    cv::resize(m_Impl, img.m_Impl, cv::Size(static_cast<int>(size.x.value), static_cast<int>(size.y.value)), cv::INTER_CUBIC);
+    cv::resize(m_Impl, img.m_Impl, cv::Size(static_cast<int>(size.x.value), static_cast<int>(size.y.value)), cv::INTER_AREA);
     return img;
 }
 
@@ -144,6 +144,12 @@ PixelDensity Image::Density(::Size real_size) const
     const auto [w, h] = Size().pod();
     const auto [bw, bh] = (real_size).pod();
     return dla::math::min(w / bw, h / bh);
+}
+
+void Image::DebugDisplay() const
+{
+    cv::imshow("Debug Display", m_Impl);
+    cv::waitKey();
 }
 
 void Image::Release()
