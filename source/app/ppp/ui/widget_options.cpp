@@ -133,14 +133,15 @@ class ActionsWidget : public QGroupBox
                                 }
                             }
 
-                            auto deleted_images{
+                            const std::vector deleted_images{
                                 project.Cards |
                                     std::views::transform([](const auto& item)
                                                           { return std::ref(item.first); }) |
                                     std::views::filter([=, &project](const auto& img)
-                                                       { return !project.Previews.contains(img); }),
+                                                       { return !project.Previews.contains(img); }) |
+                                    std::ranges::to<std::vector>(),
                             };
-                            for (const auto& img : deleted_images)
+                            for (const fs::path& img : deleted_images)
                             {
                                 project.Cards.erase(img);
                                 rebuild_after_cropper = !deleted_images.empty();
@@ -436,7 +437,7 @@ class CardOptionsWidget : public QGroupBox
         bleed_edge_spin->setRange(0, 0.12_in / 1_mm);
         bleed_edge_spin->setSingleStep(0.1);
         bleed_edge_spin->setSuffix("mm");
-        bleed_edge_spin->setValue(float(project.BleedEdge));
+        bleed_edge_spin->setValue(project.BleedEdge / 1_mm);
         auto* bleed_edge{ new WidgetWithLabel{ "&Bleed Edge", bleed_edge_spin } };
 
         auto* bleed_back_divider{ new QFrame };

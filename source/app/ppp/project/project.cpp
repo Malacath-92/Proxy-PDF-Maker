@@ -107,8 +107,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
 
 void Project::Init(PrintFn print_fn)
 {
-    InitProperties(print_fn);
     InitImages(print_fn);
+    InitProperties(print_fn);
 }
 
 void Project::InitProperties(PrintFn print_fn)

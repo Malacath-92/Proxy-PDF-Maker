@@ -187,7 +187,7 @@ ImgDict RunCropper(const fs::path& image_dir,
     {
         for (const auto& extra_img : extra_files)
         {
-            fs::remove(image_dir / extra_img);
+            fs::remove(crop_dir / extra_img);
         }
     }
 
@@ -213,6 +213,11 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
 
     for (const auto& [img, _] : img_dict)
     {
+        if (img == "fallback.png")
+        {
+            continue;
+        }
+
         if (!std::ranges::contains(crop_list, img))
         {
             return true;
@@ -232,8 +237,12 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             out_img_dict[img] = img_dict.at(img);
         }
     }
+    if (img_dict.contains("fallback.png"))
+    {
+        out_img_dict["fallback.png"] = img_dict.at("fallback.png");
+    }
 
-    const std::vector input_files{ ListImageFiles(crop_dir) };
+    const std::vector input_files{ ListImageFiles(image_dir) };
     for (const auto& img : input_files)
     {
         const bool has_img{ out_img_dict.contains(img) };
@@ -252,7 +261,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
                 const float preview_scale{ 248_pix / w };
                 const PixelSize preview_size{ dla::math::round(w * preview_scale), dla::math::round(h * preview_scale) };
 
-                PPP_LOG("Caching preview for image {}...\n", img.string());
+                PPP_LOG("Caching preview for image {}...", img.string());
                 image_preview.CroppedImage = image.Resize(preview_size);
             }
 
@@ -260,7 +269,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
                 const float thumb_scale{ 124_pix / w };
                 const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
 
-                PPP_LOG("Caching thumbnail for image {}...\n", img.string());
+                PPP_LOG("Caching thumbnail for image {}...", img.string());
                 image_preview.CroppedThumbImage = image.Resize(thumb_size);
             }
         }
@@ -273,12 +282,12 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             const float uncropped_scale{ 186_pix / w };
             const PixelSize uncropped_size{ dla::math::round(w * uncropped_scale), dla::math::round(h * uncropped_scale) };
 
-            PPP_LOG("Caching uncropped preview for image {}...\n", img.string());
+            PPP_LOG("Caching uncropped preview for image {}...", img.string());
             image_preview.UncroppedImage = image.Resize(uncropped_size);
         }
         else
         {
-            PPP_LOG("Failed caching uncropped preview for image {}...\n", img.string());
+            PPP_LOG("Failed caching uncropped preview for image {}...", img.string());
         }
 
         out_img_dict[img] = std::move(image_preview);
@@ -289,7 +298,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         const bool has_img{ out_img_dict.contains(fallback_img) };
         if (!has_img)
         {
-            PPP_LOG("Caching fallback image {}...\n", fallback_img.string());
+            PPP_LOG("Caching fallback image {}...", fallback_img.string());
             ImagePreview& image_preview{ out_img_dict[fallback_img] };
             image_preview.CroppedImage = Image::Read(fallback_img);
             image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize({ 124_pix, 160_pix });

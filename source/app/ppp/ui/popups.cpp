@@ -92,7 +92,7 @@ class WorkThread : public QThread
         : Work{ std::move(work) }
     {
     }
-    void Run()
+    virtual void run() override
     {
         Work();
     }
@@ -129,8 +129,8 @@ GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
 void GenericPopup::ShowDuringWork(std::function<void()> work)
 {
     auto* work_thread{ new WorkThread{ std::move(work) } };
+    work_thread->setObjectName("Work Thread");
 
-    open();
     QObject::connect(work_thread,
                      &QThread::finished,
                      this,
@@ -139,12 +139,15 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
                      &WorkThread::Refresh,
                      this,
                      &GenericPopup::UpdateTextImpl);
+    work_thread->start();
 
     WorkerThread.reset(work_thread);
     Refresh = [work_thread](std::string_view text)
     {
         work_thread->Refresh(std::string{ text });
     };
+
+    open();
     exec();
     Refresh = nullptr;
     WorkerThread.reset();
