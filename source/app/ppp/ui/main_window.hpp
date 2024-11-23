@@ -14,9 +14,9 @@ class PrintProxyPrepMainWindow : public QMainWindow
   public:
     PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options);
 
-    void Refresh(const Project& project);
-    void RefreshWidgets(const Project& project);
-    void RefreshPreview(const Project& project);
+    void Refresh(Project& project);
+    void RefreshWidgets(Project& project);
+    void RefreshPreview(Project& project);
 
   private:
     CardScrollArea* Scroll;

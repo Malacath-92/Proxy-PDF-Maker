@@ -19,19 +19,19 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollAre
     setCentralWidget(window_area);
 }
 
-void PrintProxyPrepMainWindow::Refresh(const Project& project)
+void PrintProxyPrepMainWindow::Refresh(Project& project)
 {
-    // Scroll->Refresh(project);
-    // Options->Refresh(project);
+    Scroll->Refresh(project);
+    Options->Refresh(project);
     RefreshWidgets(project);
 }
 
-void PrintProxyPrepMainWindow::RefreshWidgets(const Project& /*project*/)
+void PrintProxyPrepMainWindow::RefreshWidgets(Project& project)
 {
-    // Options->RefreshWidgets(project);
+    Options->RefreshWidgets(project);
 }
 
-void PrintProxyPrepMainWindow::RefreshPreview(const Project& /*project*/)
+void PrintProxyPrepMainWindow::RefreshPreview(Project& project)
 {
-    // Preview->Refresh(project);
+    Preview->Refresh(project);
 }
