@@ -110,48 +110,61 @@ class ActionsWidget : public QGroupBox
                 const fs::path& crop_dir{ project.CropDir };
                 if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump))
                 {
-                    std::atomic_bool rebuild_after_cropper{ false };
-                    auto* crop_window{ new GenericPopup{ window(), "Cropping images..." } };
+                    std::atomic_bool data_available{ false };
+                    bool rebuild_after_cropper{ false };
+                    auto cards{ project.Cards };
+                    auto previews{ project.Previews };
+                    const auto img_cache{ project.ImageCache };
 
+                    auto* crop_window{ new GenericPopup{ window(), "Cropping images..." } };
                     const auto cropper_work{
-                        [=, &project, &rebuild_after_cropper]()
+                        [=, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache]()
                         {
-                            const fs::path& image_cache{ project.ImageCache };
+                            const fs::path& image_cache{ img_cache };
                             const auto print_fn{ crop_window->MakePrintFn() };
-                            project.Previews = RunCropper(image_dir, crop_dir, image_cache, project.Previews, bleed_edge, CFG.MaxDPI, CFG.VibranceBump, CFG.EnableUncrop, print_fn);
+                            previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.VibranceBump, CFG.EnableUncrop, print_fn);
                             for (const auto& img : ListImageFiles(crop_dir))
                             {
-                                // TODO: Make project access thread-safe!!!
-                                if (!project.Cards.contains(img))
+                                if (!cards.contains(img))
                                 {
-                                    project.Cards[img] = CardInfo{};
+                                    cards[img] = CardInfo{};
                                     if (img.string().starts_with("__"))
                                     {
-                                        project.Cards[img].Num = 0;
+                                        cards[img].Num = 0;
                                     }
                                     rebuild_after_cropper = true;
                                 }
                             }
 
                             const std::vector deleted_images{
-                                project.Cards |
+                                cards |
                                     std::views::transform([](const auto& item)
                                                           { return std::ref(item.first); }) |
-                                    std::views::filter([=, &project](const auto& img)
-                                                       { return !project.Previews.contains(img); }) |
+                                    std::views::filter([=, &previews](const auto& img)
+                                                       { return !previews.contains(img); }) |
                                     std::ranges::to<std::vector>(),
                             };
                             for (const fs::path& img : deleted_images)
                             {
-                                project.Cards.erase(img);
+                                cards.erase(img);
                                 rebuild_after_cropper = !deleted_images.empty();
                             }
+
+                            data_available.store(true, std::memory_order::release);
                         }
                     };
 
                     window()->setEnabled(false);
                     crop_window->ShowDuringWork(cropper_work);
                     delete crop_window;
+
+                    while (!data_available.load(std::memory_order::acquire))
+                    {
+                        /*spin*/
+                    }
+
+                    std::swap(cards, project.Cards);
+                    std::swap(previews, project.Previews);
 
                     auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
                     if (rebuild_after_cropper)
