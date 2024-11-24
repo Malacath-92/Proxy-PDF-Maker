@@ -337,6 +337,7 @@ class CardScrollArea::CardGrid : public QWidget
         for (auto& [_, card] : Cards)
         {
             this_layout->removeWidget(card);
+            delete card;
         }
         Cards.clear();
 

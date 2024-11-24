@@ -27,6 +27,8 @@ using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
 struct Project
 {
+    Project() = default;
+
     void Load(const fs::path& json_path, PrintFn print_fn);
     void Dump(const fs::path& json_path, PrintFn print_fn) const;
 
@@ -65,4 +67,10 @@ struct Project
     std::string Orientation{ "Portrait" };
     fs::path FileName{ "_printme" };
     bool ExtendedGuides{ false };
+
+  private:
+    Project(const Project&) = default;
+    Project(Project&&) = default;
+    Project& operator=(const Project&) = default;
+    Project& operator=(Project&&) = default;
 };

@@ -187,7 +187,7 @@ ImgDict RunCropper(const fs::path& image_dir,
     {
         for (const auto& extra_img : extra_files)
         {
-            fs::remove(crop_dir / extra_img);
+            fs::remove(output_dir / extra_img);
         }
     }
 

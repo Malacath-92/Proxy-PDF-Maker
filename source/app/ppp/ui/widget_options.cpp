@@ -95,9 +95,8 @@ class ActionsWidget : public QGroupBox
                 };
 
                 window()->setEnabled(false);
-                auto* render_window{ new GenericPopup{ window(), "Rendering PDF..." } };
-                render_window->ShowDuringWork(render_work);
-                delete render_window;
+                GenericPopup render_window{ window(), "Rendering PDF..." };
+                render_window.ShowDuringWork(render_work);
                 window()->setEnabled(true);
             }
         };
@@ -116,47 +115,43 @@ class ActionsWidget : public QGroupBox
                     auto previews{ project.Previews };
                     const auto img_cache{ project.ImageCache };
 
-                    auto* crop_window{ new GenericPopup{ window(), "Cropping images..." } };
-                    const auto cropper_work{
-                        [=, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache]()
-                        {
-                            const fs::path& image_cache{ img_cache };
-                            const auto print_fn{ crop_window->MakePrintFn() };
-                            previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.VibranceBump, CFG.EnableUncrop, print_fn);
-                            for (const auto& img : ListImageFiles(crop_dir))
+                    {
+                        GenericPopup crop_window{ window(), "Cropping images..." };
+                        const auto cropper_work{
+                            [=, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache, &crop_window]()
                             {
-                                if (!cards.contains(img))
+                                const fs::path& image_cache{ img_cache };
+                                const auto print_fn{ crop_window.MakePrintFn() };
+                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.VibranceBump, CFG.EnableUncrop, print_fn);
+                                for (const auto& img : ListImageFiles(crop_dir))
                                 {
-                                    cards[img] = CardInfo{};
-                                    if (img.string().starts_with("__"))
+                                    if (!cards.contains(img))
                                     {
-                                        cards[img].Num = 0;
+                                        cards[img] = CardInfo{};
+                                        if (img.string().starts_with("__"))
+                                        {
+                                            cards[img].Num = 0;
+                                        }
+                                        rebuild_after_cropper = true;
                                     }
-                                    rebuild_after_cropper = true;
                                 }
+
+                                for (const auto& [img, _] : cards)
+                                {
+                                    if (!previews.contains(img))
+                                    {
+                                        cards.erase(img);
+                                        rebuild_after_cropper = true;
+                                    }
+                                }
+
+                                data_available.store(true, std::memory_order::release);
                             }
+                        };
 
-                            const std::vector deleted_images{
-                                cards |
-                                    std::views::transform([](const auto& item)
-                                                          { return std::ref(item.first); }) |
-                                    std::views::filter([=, &previews](const auto& img)
-                                                       { return !previews.contains(img); }) |
-                                    std::ranges::to<std::vector>(),
-                            };
-                            for (const fs::path& img : deleted_images)
-                            {
-                                cards.erase(img);
-                                rebuild_after_cropper = !deleted_images.empty();
-                            }
-
-                            data_available.store(true, std::memory_order::release);
-                        }
-                    };
-
-                    window()->setEnabled(false);
-                    crop_window->ShowDuringWork(cropper_work);
-                    delete crop_window;
+                        window()->setEnabled(false);
+                        crop_window.ShowDuringWork(cropper_work);
+                    }
 
                     while (!data_available.load(std::memory_order::acquire))
                     {
@@ -166,14 +161,14 @@ class ActionsWidget : public QGroupBox
                     std::swap(cards, project.Cards);
                     std::swap(previews, project.Previews);
 
-                    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                    auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
                     if (rebuild_after_cropper)
                     {
-                        main_window->Refresh(project);
+                        main_window->Refresh();
                     }
                     else
                     {
-                        main_window->RefreshPreview(project);
+                        main_window->RefreshPreview();
                     }
                     window()->setEnabled(true);
                 }
@@ -201,22 +196,21 @@ class ActionsWidget : public QGroupBox
                 if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
                 {
                     application.SetProjectPath(new_project_json.value());
-                    auto* reload_window{ new GenericPopup{ window(), "Reloading project..." } };
+                    GenericPopup reload_window{ window(), "Reloading project..." };
 
                     const auto load_project_work{
-                        [=, &project]()
+                        [=, &project, &reload_window]()
                         {
-                            project.Load(new_project_json.value(), reload_window->MakePrintFn());
+                            project.Load(new_project_json.value(), reload_window.MakePrintFn());
                         }
                     };
 
-                    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                    auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
 
                     main_window->setEnabled(false);
-                    reload_window->ShowDuringWork(load_project_work);
-                    delete reload_window;
-                    main_window->RefreshWidgets(project);
-                    main_window->Refresh(project);
+                    reload_window.ShowDuringWork(load_project_work);
+                    main_window->RefreshWidgets();
+                    main_window->Refresh();
                     main_window->setEnabled(true);
                 }
             }
@@ -239,31 +233,30 @@ class ActionsWidget : public QGroupBox
 
                     project.InitProperties(nullptr);
 
-                    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                    auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
 
                     const Length bleed_edge{ project.BleedEdge };
                     const fs::path& image_dir{ project.ImageDir };
                     const fs::path& crop_dir{ project.CropDir };
                     if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump) || NeedCachePreviews(crop_dir, project.Previews))
                     {
-                        auto* reload_window{ new GenericPopup{ window(), "Reloading project..." } };
+                        GenericPopup reload_window{ window(), "Reloading project..." };
 
                         const auto reload_work{
-                            [=, &project]()
+                            [=, &project, &reload_window]()
                             {
-                                project.InitImages(reload_window->MakePrintFn());
+                                project.InitImages(reload_window.MakePrintFn());
                             }
                         };
 
                         main_window->setEnabled(false);
-                        reload_window->ShowDuringWork(reload_work);
-                        delete reload_window;
-                        main_window->Refresh(project);
+                        reload_window.ShowDuringWork(reload_work);
+                        main_window->Refresh();
                         main_window->setEnabled(true);
                     }
                     else
                     {
-                        main_window->Refresh(project);
+                        main_window->Refresh();
                     }
                 }
             }
@@ -326,7 +319,10 @@ class PrintOptionsWidget : public QGroupBox
         layout->addWidget(guides_checkbox);
         setLayout(layout);
 
-        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+        auto main_window{
+            [this]()
+            { return static_cast<PrintProxyPrepMainWindow*>(window()); }
+        };
 
         auto change_output{
             [=, &project](QString t)
@@ -339,7 +335,7 @@ class PrintOptionsWidget : public QGroupBox
             [=, &project](QString t)
             {
                 project.PageSize = t.toStdString();
-                main_window->RefreshPreview(project);
+                main_window()->RefreshPreview();
             }
         };
 
@@ -347,7 +343,7 @@ class PrintOptionsWidget : public QGroupBox
             [=, &project](QString t)
             {
                 project.Orientation = t.toStdString();
-                main_window->RefreshPreview(project);
+                main_window()->RefreshPreview();
             }
         };
 
@@ -496,13 +492,16 @@ class CardOptionsWidget : public QGroupBox
 
         setLayout(layout);
 
-        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+        auto main_window{
+            [this]()
+            { return static_cast<PrintProxyPrepMainWindow*>(window()); }
+        };
 
         auto change_bleed_edge{
             [=, &project](double v)
             {
                 project.BleedEdge = 1_mm * static_cast<float>(v);
-                main_window->Refresh(project);
+                main_window()->Refresh();
             }
         };
 
@@ -513,7 +512,7 @@ class CardOptionsWidget : public QGroupBox
                 backside_default_button->setEnabled(project.BacksideEnabled);
                 backside_default_preview->setEnabled(project.BacksideEnabled);
                 backside_offset->setEnabled(project.BacksideEnabled);
-                main_window->Refresh(project);
+                main_window()->Refresh();
             }
         };
 
@@ -524,7 +523,7 @@ class CardOptionsWidget : public QGroupBox
                 {
                     project.BacksideDefault = default_backside_choice.value();
                     backside_default_preview->Refresh(project);
-                    main_window->Refresh(project);
+                    main_window()->Refresh();
                 }
             }
         };
@@ -533,7 +532,7 @@ class CardOptionsWidget : public QGroupBox
             [=, &project](double v)
             {
                 project.BacksideOffset = 1_mm * static_cast<float>(v);
-                main_window->RefreshPreview(project);
+                main_window()->RefreshPreview();
             }
         };
 
@@ -541,7 +540,7 @@ class CardOptionsWidget : public QGroupBox
             [=, &project](Qt::CheckState s)
             {
                 project.OversizedEnabled = s == Qt::CheckState::Checked;
-                main_window->Refresh(project);
+                main_window()->Refresh();
             }
         };
 
@@ -597,7 +596,7 @@ class CardOptionsWidget : public QGroupBox
 class GlobalOptionsWidget : public QGroupBox
 {
   public:
-    GlobalOptionsWidget(const Project& project)
+    GlobalOptionsWidget()
     {
         setTitle("Global Config");
 
@@ -636,19 +635,22 @@ class GlobalOptionsWidget : public QGroupBox
         layout->addWidget(paper_sizes);
         setLayout(layout);
 
-        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+        auto main_window{
+            [this]()
+            { return static_cast<PrintProxyPrepMainWindow*>(window()); }
+        };
 
         auto change_display_columns{
-            [=, &project](double v)
+            [=](double v)
             {
                 CFG.DisplayColumns = static_cast<int>(v);
                 SaveConfig(CFG);
-                main_window->Refresh(project);
+                main_window()->Refresh();
             }
         };
 
         auto change_precropped{
-            [=, &project](Qt::CheckState s)
+            [=](Qt::CheckState s)
             {
                 CFG.EnableUncrop = s == Qt::CheckState::Checked;
                 SaveConfig(CFG);
@@ -656,16 +658,16 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_vibrance_bump{
-            [=, &project](Qt::CheckState s)
+            [=](Qt::CheckState s)
             {
                 CFG.VibranceBump = s == Qt::CheckState::Checked;
                 SaveConfig(CFG);
-                main_window->RefreshPreview(project);
+                main_window()->RefreshPreview();
             }
         };
 
         auto change_max_dpi{
-            [=, &project](double v)
+            [=](double v)
             {
                 CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
                 SaveConfig(CFG);
@@ -673,11 +675,11 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_papersize{
-            [=, &project](const QString& t)
+            [=](const QString& t)
             {
                 CFG.DefaultPageSize = t.toStdString();
                 SaveConfig(CFG);
-                main_window->RefreshPreview(project);
+                main_window()->RefreshPreview();
             }
         };
 
@@ -709,7 +711,7 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     auto* actions_widget{ new ActionsWidget{ application, project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
-    auto* global_options{ new GlobalOptionsWidget{ project } };
+    auto* global_options{ new GlobalOptionsWidget{} };
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions_widget);

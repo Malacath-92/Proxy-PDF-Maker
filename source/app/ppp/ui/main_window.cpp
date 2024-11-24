@@ -2,8 +2,9 @@
 
 #include <QHBoxLayout>
 
-PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options)
-    : Scroll{ scroll }
+PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(Project& project, MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options)
+    : AppProject{ project }
+    , Scroll{ scroll }
     , Preview{ preview }
     , Options{ options }
 {
@@ -19,19 +20,19 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollAre
     setCentralWidget(window_area);
 }
 
-void PrintProxyPrepMainWindow::Refresh(Project& project)
+void PrintProxyPrepMainWindow::Refresh()
 {
-    Scroll->Refresh(project);
-    Options->Refresh(project);
-    RefreshWidgets(project);
+    Scroll->Refresh(AppProject);
+    Options->Refresh(AppProject);
+    RefreshWidgets();
 }
 
-void PrintProxyPrepMainWindow::RefreshWidgets(Project& project)
+void PrintProxyPrepMainWindow::RefreshWidgets()
 {
-    Options->RefreshWidgets(project);
+    Options->RefreshWidgets(AppProject);
 }
 
-void PrintProxyPrepMainWindow::RefreshPreview(Project& project)
+void PrintProxyPrepMainWindow::RefreshPreview()
 {
-    Preview->Refresh(project);
+    Preview->Refresh(AppProject);
 }

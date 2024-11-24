@@ -12,13 +12,15 @@
 class PrintProxyPrepMainWindow : public QMainWindow
 {
   public:
-    PrintProxyPrepMainWindow(MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options);
+    PrintProxyPrepMainWindow(Project& project, MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options);
 
-    void Refresh(Project& project);
-    void RefreshWidgets(Project& project);
-    void RefreshPreview(Project& project);
+    void Refresh();
+    void RefreshWidgets();
+    void RefreshPreview();
 
   private:
+    Project& AppProject;
+
     CardScrollArea* Scroll;
     PrintPreview* Preview;
     OptionsWidget* Options;

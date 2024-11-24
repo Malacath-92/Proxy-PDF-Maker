@@ -70,7 +70,7 @@ endif()
 
 add_library(proxy_pdf_definitions INTERFACE)
 target_compile_definitions(proxy_pdf_definitions INTERFACE
-	_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+	_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
 	WIN32_LEAN_AND_MEAN
 	NOMINMAX)
 
