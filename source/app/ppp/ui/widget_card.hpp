@@ -44,6 +44,8 @@ class StackedCardBacksideView : public QStackedWidget
 
     void RefreshBackside(QWidget* new_backside);
 
+    virtual int heightForWidth(int width) const override;
+
   signals:
     void BacksideReset();
     void BacksideClicked();

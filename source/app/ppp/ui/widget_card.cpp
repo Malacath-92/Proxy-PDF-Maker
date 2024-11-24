@@ -140,6 +140,7 @@ StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backsi
 
     auto* this_layout{ static_cast<QStackedLayout*>(layout()) };
     this_layout->setStackingMode(QStackedLayout::StackingMode::StackAll);
+    this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
     this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
 
     Image = image;
@@ -158,6 +159,11 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     Backside = new_backside;
 
     RefreshSizes(rect().size());
+}
+
+int StackedCardBacksideView::heightForWidth(int width) const
+{
+    return Image->heightForWidth(width);
 }
 
 void StackedCardBacksideView::RefreshSizes(QSize size)
