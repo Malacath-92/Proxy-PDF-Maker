@@ -19,8 +19,8 @@ using CardMap = std::unordered_map<fs::path, CardInfo>;
 
 struct ImagePreview
 {
-    Image CroppedImage;
     Image UncroppedImage;
+    Image CroppedImage;
     Image CroppedThumbImage;
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;

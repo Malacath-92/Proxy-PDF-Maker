@@ -71,6 +71,14 @@ class PageGrid : public QWidget
                         }()
                     };
 
+                    bool show{ false };
+                    if (show)
+                    {
+                        std::visit([](const auto& image)
+                                   { static_cast<const Image&>(image).DebugDisplay(); },
+                                   image);
+                    }
+
                     const Image::Rotation rotation{ GetCardRotation(params.IsBackside, oversized, backside_short_edge) };
                     auto* image_widget{
                         new CardImage{

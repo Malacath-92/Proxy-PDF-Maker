@@ -67,7 +67,7 @@ std::vector<std::byte> Image::Encode() const
 
 QPixmap Image::StoreIntoQtPixmap() const
 {
-    return QPixmap::fromImage(QImage(reinterpret_cast<const uchar*>(m_Impl.data), m_Impl.cols, m_Impl.rows, QImage::Format_BGR888));
+    return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
 }
 
 Image::operator bool() const

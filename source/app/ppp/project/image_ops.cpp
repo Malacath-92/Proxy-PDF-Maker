@@ -253,37 +253,25 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
         ImagePreview image_preview{};
 
-        {
-            const Image image{ Image::Read(crop_dir / img) };
-            const auto [w, h]{ image.Size().pod() };
-
-            {
-                const float preview_scale{ 248_pix / w };
-                const PixelSize preview_size{ dla::math::round(w * preview_scale), dla::math::round(h * preview_scale) };
-
-                PPP_LOG("Caching preview for image {}...", img.string());
-                image_preview.CroppedImage = image.Resize(preview_size);
-            }
-
-            {
-                const float thumb_scale{ 124_pix / w };
-                const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
-
-                PPP_LOG("Caching thumbnail for image {}...", img.string());
-                image_preview.CroppedThumbImage = image.Resize(thumb_size);
-            }
-        }
-
         if (fs::exists(image_dir / img))
         {
-            const Image image{ Image::Read(crop_dir / img) };
+            const Image image{ Image::Read(image_dir / img) };
             const auto [w, h]{ image.Size().pod() };
 
-            const float uncropped_scale{ 186_pix / w };
+            const float uncropped_scale{ 248_pix / w };
             const PixelSize uncropped_size{ dla::math::round(w * uncropped_scale), dla::math::round(h * uncropped_scale) };
+
+            const float thumb_scale{ 124_pix / w };
+            const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
 
             PPP_LOG("Caching uncropped preview for image {}...", img.string());
             image_preview.UncroppedImage = image.Resize(uncropped_size);
+
+            PPP_LOG("Caching cropped preview for image {}...", img.string());
+            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, img, 0_mm, 1200_dpi, nullptr);
+
+            PPP_LOG("Caching cropped preview for image {}...", img.string());
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
         }
         else
         {
@@ -300,9 +288,9 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         {
             PPP_LOG("Caching fallback image {}...", fallback_img.string());
             ImagePreview& image_preview{ out_img_dict[fallback_img] };
-            image_preview.CroppedImage = Image::Read(fallback_img);
+            image_preview.UncroppedImage = Image::Read(fallback_img);
+            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
             image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize({ 124_pix, 160_pix });
-            image_preview.UncroppedImage = image_preview.CroppedImage.Resize({ 186_pix, 242_pix });
         }
     }
 
