@@ -107,10 +107,11 @@ class ActionsWidget : public QGroupBox
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
                 const fs::path& crop_dir{ project.CropDir };
-                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump))
+                const bool need_cache_previews{ NeedCachePreviews(crop_dir, project.Previews) };
+                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump) || need_cache_previews)
                 {
                     std::atomic_bool data_available{ false };
-                    bool rebuild_after_cropper{ false };
+                    bool rebuild_after_cropper{ need_cache_previews };
                     auto cards{ project.Cards };
                     auto previews{ project.Previews };
                     const auto img_cache{ project.ImageCache };
@@ -136,12 +137,17 @@ class ActionsWidget : public QGroupBox
                                     }
                                 }
 
-                                for (const auto& [img, _] : cards)
+                                for (auto it = cards.begin(); it != cards.end();)
                                 {
+                                    const auto& [img, _]{ *it };
                                     if (!previews.contains(img))
                                     {
-                                        cards.erase(img);
+                                        it = cards.erase(it);
                                         rebuild_after_cropper = true;
+                                    }
+                                    else
+                                    {
+                                        ++it;
                                     }
                                 }
 
@@ -616,6 +622,15 @@ class GlobalOptionsWidget : public QGroupBox
         vibrance_checkbox->setChecked(CFG.VibranceBump);
         vibrance_checkbox->setToolTip("Requires rerunning cropper");
 
+        auto* preview_width_spin_box{ new QDoubleSpinBox };
+        preview_width_spin_box->setDecimals(0);
+        preview_width_spin_box->setRange(120, 1000);
+        preview_width_spin_box->setSingleStep(60);
+        preview_width_spin_box->setSuffix("pixels");
+        preview_width_spin_box->setValue(CFG.BasePreviewWidth / 1_pix);
+        auto* preview_width{ new WidgetWithLabel{ "&Preview Width", preview_width_spin_box } };
+        preview_width->setToolTip("Requires rerunning cropper to take effect");
+
         auto* max_dpi_spin_box{ new QDoubleSpinBox };
         max_dpi_spin_box->setDecimals(0);
         max_dpi_spin_box->setRange(300, 1200);
@@ -631,6 +646,7 @@ class GlobalOptionsWidget : public QGroupBox
         layout->addWidget(display_columns);
         layout->addWidget(precropped_checkbox);
         layout->addWidget(vibrance_checkbox);
+        layout->addWidget(preview_width);
         layout->addWidget(max_dpi);
         layout->addWidget(paper_sizes);
         setLayout(layout);
@@ -666,6 +682,14 @@ class GlobalOptionsWidget : public QGroupBox
             }
         };
 
+        auto change_preview_width{
+            [=](double v)
+            {
+                CFG.BasePreviewWidth = static_cast<float>(v) * 1_pix;
+                SaveConfig(CFG);
+            }
+        };
+
         auto change_max_dpi{
             [=](double v)
             {
@@ -695,6 +719,10 @@ class GlobalOptionsWidget : public QGroupBox
                          &QCheckBox::checkStateChanged,
                          this,
                          change_vibrance_bump);
+        QObject::connect(preview_width_spin_box,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_preview_width);
         QObject::connect(max_dpi_spin_box,
                          &QDoubleSpinBox::valueChanged,
                          this,

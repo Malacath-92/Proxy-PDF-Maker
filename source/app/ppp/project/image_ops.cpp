@@ -205,7 +205,7 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
 
     for (const auto& img : crop_list)
     {
-        if (!img_dict.contains(img))
+        if (!img_dict.contains(img) || img_dict.at(img).UncroppedImage.Width() != CFG.BasePreviewWidth)
         {
             return true;
         }
@@ -232,14 +232,31 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
     ImgDict out_img_dict{};
     for (const auto& [img, _] : img_dict)
     {
-        if (fs::exists(crop_dir / img) && img_dict.contains(img))
+        if (fs::exists(crop_dir / img) && img_dict.contains(img) && img_dict.at(img).UncroppedImage.Width() == CFG.BasePreviewWidth)
         {
             out_img_dict[img] = img_dict.at(img);
         }
     }
-    if (img_dict.contains("fallback.png"))
+
+    const fs::path fallback_img{ "fallback.png" };
+    if (img_dict.contains(fallback_img) && img_dict.at(fallback_img).UncroppedImage.Width() == CFG.BasePreviewWidth)
     {
-        out_img_dict["fallback.png"] = img_dict.at("fallback.png");
+        out_img_dict[fallback_img] = img_dict.at(fallback_img);
+    }
+
+    const PixelSize uncropped_size{ CFG.BasePreviewWidth, dla::math::round(CFG.BasePreviewWidth / CardRatio) };
+    const PixelSize thumb_size{ uncropped_size / 2.0f };
+
+    {
+        const bool has_img{ out_img_dict.contains(fallback_img) };
+        if (!has_img)
+        {
+            PPP_LOG("Caching fallback image {}...", fallback_img.string());
+            ImagePreview& image_preview{ out_img_dict[fallback_img] };
+            image_preview.UncroppedImage = Image::Read(fallback_img);
+            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
+        }
     }
 
     const std::vector input_files{ ListImageFiles(image_dir) };
@@ -251,18 +268,11 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             continue;
         }
 
-        ImagePreview image_preview{};
+        ImagePreview& image_preview{ out_img_dict[img] };
 
         if (fs::exists(image_dir / img))
         {
             const Image image{ Image::Read(image_dir / img) };
-            const auto [w, h]{ image.Size().pod() };
-
-            const float uncropped_scale{ 248_pix / w };
-            const PixelSize uncropped_size{ dla::math::round(w * uncropped_scale), dla::math::round(h * uncropped_scale) };
-
-            const float thumb_scale{ 124_pix / w };
-            const PixelSize thumb_size{ dla::math::round(w * thumb_scale), dla::math::round(h * thumb_scale) };
 
             PPP_LOG("Caching uncropped preview for image {}...", img.string());
             image_preview.UncroppedImage = image.Resize(uncropped_size);
@@ -276,21 +286,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         else
         {
             PPP_LOG("Failed caching uncropped preview for image {}...", img.string());
-        }
-
-        out_img_dict[img] = std::move(image_preview);
-    }
-
-    {
-        const fs::path fallback_img{ "fallback.png" };
-        const bool has_img{ out_img_dict.contains(fallback_img) };
-        if (!has_img)
-        {
-            PPP_LOG("Caching fallback image {}...", fallback_img.string());
-            ImagePreview& image_preview{ out_img_dict[fallback_img] };
-            image_preview.UncroppedImage = Image::Read(fallback_img);
-            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize({ 124_pix, 160_pix });
+            image_preview = out_img_dict[fallback_img];
         }
     }
 

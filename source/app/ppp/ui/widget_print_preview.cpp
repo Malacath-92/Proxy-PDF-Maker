@@ -141,6 +141,11 @@ class PageGrid : public QWidget
         return HasMissingPreviews;
     }
 
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
+
     virtual int heightForWidth(int width) const override
     {
         return static_cast<int>(static_cast<float>(width) / CardRatio * (static_cast<float>(Rows) / Columns));
@@ -206,6 +211,11 @@ class PrintPreview::PagePreview : public QWidget
     bool DoesHaveMissingPreviews() const
     {
         return Grid->DoesHaveMissingPreviews();
+    }
+
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
     }
 
     virtual int heightForWidth(int width) const

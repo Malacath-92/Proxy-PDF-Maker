@@ -16,6 +16,7 @@ Config LoadConfig()
         settings.beginGroup("DEFAULT");
 
         config.VibranceBump = settings.value("Vibrance.Bump", false).toBool();
+        config.BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
         config.MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
         config.DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
         config.EnableUncrop = settings.value("Enable.Uncrop", true).toBool();
@@ -35,6 +36,7 @@ void SaveConfig(Config config)
         settings.beginGroup("DEFAULT");
 
         settings.setValue("Vibrance.Bump", config.VibranceBump);
+        settings.setValue("Base.Preview.Width", config.BasePreviewWidth / 1_pix);
         settings.setValue("Max.DPI", config.MaxDPI / 1_dpi);
         settings.setValue("Page.Size", QString::fromStdString(config.DefaultPageSize));
         settings.setValue("Enable.Uncrop", config.EnableUncrop);

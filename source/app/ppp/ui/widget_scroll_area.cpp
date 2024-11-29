@@ -90,14 +90,17 @@ class CardWidget : public QWidget
                 }
             };
 
-            QObject::connect(stacked_widget,
-                             &StackedCardBacksideView::BacksideReset,
-                             this,
-                             backside_reset);
-            QObject::connect(stacked_widget,
-                             &StackedCardBacksideView::BacksideClicked,
-                             this,
-                             backside_choose);
+            if (!card_name.empty())
+            {
+                QObject::connect(stacked_widget,
+                                 &StackedCardBacksideView::BacksideReset,
+                                 this,
+                                 backside_reset);
+                QObject::connect(stacked_widget,
+                                 &StackedCardBacksideView::BacksideClicked,
+                                 this,
+                                 backside_choose);
+            }
         }
         else
         {
@@ -110,7 +113,7 @@ class CardWidget : public QWidget
 
             if (backside_enabled)
             {
-                const bool is_short_edge{ project.Cards[card_name].BacksideShortEdge };
+                const bool is_short_edge{ card_name.empty() ? false : project.Cards[card_name].BacksideShortEdge };
 
                 auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
                 short_edge_checkbox->setChecked(is_short_edge);
@@ -126,7 +129,7 @@ class CardWidget : public QWidget
 
             if (oversized_enabled)
             {
-                const bool is_oversized{ project.Cards[card_name].Oversized };
+                const bool is_oversized{ card_name.empty() ? false : project.Cards[card_name].Oversized };
 
                 auto* short_edge_checkbox{ new QCheckBox{ "Big" } };
                 short_edge_checkbox->setChecked(is_oversized);
@@ -191,6 +194,11 @@ class CardWidget : public QWidget
         const auto minimum_img_width{ card_image->minimumWidth() };
         const auto minimum_width{ minimum_img_width + margins.left() + margins.right() };
         setMinimumSize(minimum_width, heightForWidth(minimum_width));
+    }
+
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
     }
 
     virtual int heightForWidth(int width) const override
@@ -309,6 +317,11 @@ class CardScrollArea::CardGrid : public QWidget
         return item_width * Columns + margins.left() + margins.right() + spacing * (Columns - 1);
     }
 
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
+
     virtual int heightForWidth(int width) const override
     {
         const auto margins{ layout()->contentsMargins() };
@@ -366,6 +379,11 @@ class CardScrollArea::CardGrid : public QWidget
             Cards[std::move(card_name)] = card_widget;
             this_layout->addWidget(card_widget, 0, static_cast<int>(j));
             ++i;
+        }
+
+        for (int c = 0; c < this_layout->columnCount(); c++)
+        {
+            this_layout->setColumnStretch(c, 1);
         }
 
         FirstItem = Cards.begin()->second;

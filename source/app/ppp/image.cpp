@@ -131,6 +131,16 @@ Image Image::Resize(PixelSize size) const
     return img;
 }
 
+Pixel Image::Width() const
+{
+    return Size().x;
+}
+
+Pixel Image::Height() const
+{
+    return Size().y;
+}
+
 PixelSize Image::Size() const
 {
     return ::PixelSize{

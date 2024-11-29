@@ -21,6 +21,10 @@ class CardImage : public QLabel
 
     void Refresh(const Image& image, Params params);
 
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
     virtual int heightForWidth(int width) const override;
 
   private:
@@ -44,6 +48,10 @@ class StackedCardBacksideView : public QStackedWidget
 
     void RefreshBackside(QWidget* new_backside);
 
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
     virtual int heightForWidth(int width) const override;
 
   signals:
