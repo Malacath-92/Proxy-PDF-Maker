@@ -501,7 +501,7 @@ class CardOptionsWidget : public QGroupBox
             [=, &project](double v)
             {
                 project.BleedEdge = 1_mm * static_cast<float>(v);
-                main_window()->Refresh();
+                main_window()->RefreshPreview();
             }
         };
 

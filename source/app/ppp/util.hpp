@@ -43,22 +43,25 @@ using PixelDensity = decltype(Pixel{} / Length{});
 using namespace dla::literals;
 using namespace dla::int_literals;
 
-constexpr auto operator ""_mm(long double v) { return Length{ float(v * 0.0010L) }; }
-constexpr auto operator ""_mm(unsigned long long v) { return Length{ float(v * 0.0010L) }; }
+constexpr auto operator""_mm(long double v) { return Length{ float(v * 0.0010L) }; }
+constexpr auto operator""_mm(unsigned long long v) { return Length{ float(v * 0.0010L) }; }
 
-constexpr auto operator ""_in(long double v) { return Length{ float(v * 0.0254L) }; }
+constexpr auto operator""_in(long double v) { return Length{ float(v * 0.0254L) }; }
 constexpr auto operator""_in(unsigned long long v) { return Length{ float(v * 0.0254L) }; }
 
-constexpr auto operator ""_dpi(long double v) { return Pixel(float(v)) / 1_in; }
+constexpr auto operator""_pts(long double v) { return 0.0138889_in * float(v); }
+constexpr auto operator""_pts(unsigned long long v) { return 0.0138889_in * float(v); }
+
+constexpr auto operator""_dpi(long double v) { return Pixel(float(v)) / 1_in; }
 constexpr auto operator""_dpi(unsigned long long v) { return Pixel{ float(v) } / 1_in; }
 
-constexpr auto operator ""_pix(long double v) { return Pixel(float(v)); }
+constexpr auto operator""_pix(long double v) { return Pixel(float(v)); }
 constexpr auto operator""_pix(unsigned long long v) { return Pixel{ float(v) }; }
 
-inline auto operator ""_p(const char *str, size_t len) { return fs::path(str, str + len); }
-inline auto operator ""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
-inline auto operator ""_p(const char16_t *str, size_t len) { return fs::path(str, str + len); }
-inline auto operator ""_p(const char32_t *str, size_t len) { return fs::path(str, str + len); }
+inline auto operator""_p(const char *str, size_t len) { return fs::path(str, str + len); }
+inline auto operator""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
+inline auto operator""_p(const char16_t *str, size_t len) { return fs::path(str, str + len); }
+inline auto operator""_p(const char32_t *str, size_t len) { return fs::path(str, str + len); }
 
 template<class T>
 struct TagT{};

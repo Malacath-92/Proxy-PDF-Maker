@@ -254,7 +254,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         ImagePreview image_preview{};
 
         {
-            const Image image{ Image::Read(image_dir / img) };
+            const Image image{ Image::Read(crop_dir / img) };
             const auto [w, h]{ image.Size().pod() };
 
             {
@@ -274,7 +274,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             }
         }
 
-        if (fs::exists(crop_dir / img))
+        if (fs::exists(image_dir / img))
         {
             const Image image{ Image::Read(crop_dir / img) };
             const auto [w, h]{ image.Size().pod() };
