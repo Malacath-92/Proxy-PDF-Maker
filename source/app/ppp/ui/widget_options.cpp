@@ -462,7 +462,7 @@ class CardOptionsWidget : public QGroupBox
         auto* backside_checkbox{ new QCheckBox{ "Enable Backside" } };
         backside_checkbox->setChecked(project.BacksideEnabled);
 
-        auto* backside_default_button{ new QPushButton{ "Default" } };
+        auto* backside_default_button{ new QPushButton{ "Choose Default" } };
         backside_default_button->setEnabled(project.BacksideEnabled);
 
         auto* backside_default_preview{ new DefaultBacksidePreview{ project } };
