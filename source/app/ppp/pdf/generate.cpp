@@ -33,14 +33,14 @@ void DrawLine(HPDF_Page page, HPDF_REAL fx, HPDF_REAL fy, HPDF_REAL tx, HPDF_REA
 
     // First layer
     HPDF_Page_SetDash(page, dash_ptn, 1, 0);
-    HPDF_Page_SetRGBStroke(page, 0.75, 0.75, 0.75);
+    HPDF_Page_SetRGBStroke(page, 0.75f, 0.75f, 0.75f);
     HPDF_Page_MoveTo(page, fx, fy);
     HPDF_Page_LineTo(page, tx, ty);
     HPDF_Page_Stroke(page);
 
     // Second layer with phase offset
     HPDF_Page_SetDash(page, dash_ptn, 1, 1);
-    HPDF_Page_SetRGBStroke(page, 0.75, 0.75, 0.75);
+    HPDF_Page_SetRGBStroke(page, 0.0f, 0.0f, 0.0f);
     HPDF_Page_MoveTo(page, fx, fy);
     HPDF_Page_LineTo(page, tx, ty);
     HPDF_Page_Stroke(page);
