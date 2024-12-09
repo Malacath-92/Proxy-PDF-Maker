@@ -122,7 +122,7 @@ class CardWidget : public QWidget
                 QObject::connect(short_edge_checkbox,
                                  &QCheckBox::checkStateChanged,
                                  this,
-                                 std::bind_front(&CardWidget::ToggleShortEdge, this, std::ref(project)));
+                                 std::bind_front(&CardWidget::SetShortEdge, this, std::ref(project)));
 
                 extra_options.push_back(short_edge_checkbox);
             }
@@ -138,7 +138,7 @@ class CardWidget : public QWidget
                 QObject::connect(short_edge_checkbox,
                                  &QCheckBox::checkStateChanged,
                                  this,
-                                 std::bind_front(&CardWidget::ToggleOversized, this, std::ref(project)));
+                                 std::bind_front(&CardWidget::SetOversized, this, std::ref(project)));
 
                 extra_options.push_back(short_edge_checkbox);
             }
@@ -243,22 +243,16 @@ class CardWidget : public QWidget
         ApplyNumber(project, number);
     }
 
-    virtual void ToggleShortEdge(Project& project, Qt::CheckState s)
+    virtual void SetShortEdge(Project& project, Qt::CheckState s)
     {
-        if (s == Qt::CheckState::Checked)
-        {
-            auto& card{ project.Cards[CardName] };
-            card.BacksideShortEdge = !card.BacksideShortEdge;
-        }
+        auto& card{ project.Cards[CardName] };
+        card.BacksideShortEdge = s == Qt::CheckState::Checked;
     }
 
-    virtual void ToggleOversized(Project& project, Qt::CheckState s)
+    virtual void SetOversized(Project& project, Qt::CheckState s)
     {
-        if (s == Qt::CheckState::Checked)
-        {
-            auto& card{ project.Cards[CardName] };
-            card.Oversized = !card.Oversized;
-        }
+        auto& card{ project.Cards[CardName] };
+        card.Oversized = s == Qt::CheckState::Checked;
     }
 
   protected:
@@ -292,8 +286,8 @@ class DummyCardWidget : public CardWidget
     virtual void EditNumber(Project&) {}
     virtual void IncrementNumber(Project&) {}
     virtual void DecrementNumber(Project&) {}
-    virtual void ToggleShortEdge(Project&, Qt::CheckState) {}
-    virtual void ToggleOversized(Project&, Qt::CheckState) {}
+    virtual void SetShortEdge(Project&, Qt::CheckState) {}
+    virtual void SetOversized(Project&, Qt::CheckState) {}
     // clang-format on
 };
 
