@@ -6,3 +6,4 @@ publish
 images/*
 *.cache
 *.json
+*.pdf
