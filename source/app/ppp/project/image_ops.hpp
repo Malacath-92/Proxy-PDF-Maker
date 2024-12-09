@@ -30,6 +30,8 @@ std::vector<fs::path> ListImageFiles(const fs::path& path);
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn = nullptr);
 Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn = nullptr);
 
+fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump);
+
 bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump);
 ImgDict RunCropper(const fs::path& image_dir,
                    const fs::path& crop_dir,

@@ -15,6 +15,8 @@
 
 #include <ppp/app.hpp>
 
+#include <ppp/pdf/generate.hpp>
+
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
@@ -73,29 +75,23 @@ class ActionsWidget : public QGroupBox
                     return;
                 }
 
+                GenericPopup render_window{ window(), "Rendering PDF..." };
+
                 const auto render_work{
-                    [=, &project]()
+                    [=, &project, &render_window]()
                     {
-                        const fs::path pdf_path{ fs::path{ project.FileName }.replace_extension(".pdf") };
-                        (void)pdf_path;
-                        //  pages = pdf.generate(
-                        //      print_dict,
-                        //      crop_dir,
-                        //      page_sizes[print_dict["pagesize"]],
-                        //      pdf_path,
-                        //      make_popup_print_fn(render_window),
-                        //  )
-                        //  make_popup_print_fn(render_window)("Saving PDF...")
-                        //  pages.save()
-                        //  try:
-                        //      subprocess.Popen([pdf_path], shell=True)
-                        //  except Exception as e:
-                        //      print(e)
+                        if (auto file_path{ GeneratePdf(project, render_window.MakePrintFn()) })
+                        {
+                            OpenFile(file_path.value());
+                        }
+                        else
+                        {
+                            QToolTip::showText(QCursor::pos(), "Failure while creating pdf...");
+                        }
                     }
                 };
 
                 window()->setEnabled(false);
-                GenericPopup render_window{ window(), "Rendering PDF..." };
                 render_window.ShowDuringWork(render_work);
                 window()->setEnabled(true);
             }
