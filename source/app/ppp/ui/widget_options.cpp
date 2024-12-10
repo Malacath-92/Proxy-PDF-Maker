@@ -524,7 +524,6 @@ class CardOptionsWidget : public QGroupBox
                 if (const auto default_backside_choice{ OpenImageDialog(project.ImageDir) })
                 {
                     project.BacksideDefault = default_backside_choice.value();
-                    backside_default_preview->Refresh(project);
                     main_window()->Refresh();
                 }
             }

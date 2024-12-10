@@ -16,7 +16,7 @@
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 
-class CardWidget : public QWidget
+class CardWidget : public QFrame
 {
     Q_OBJECT;
 
@@ -168,11 +168,6 @@ class CardWidget : public QWidget
         }
         setLayout(this_layout);
 
-        auto this_palette{ palette() };
-        this_palette.setColor(backgroundRole(), 0x111111);
-        setPalette(this_palette);
-        setAutoFillBackground(true);
-
         QObject::connect(number_edit,
                          &QLineEdit::editingFinished,
                          this,
@@ -194,6 +189,9 @@ class CardWidget : public QWidget
         const auto minimum_img_width{ card_image->minimumWidth() };
         const auto minimum_width{ minimum_img_width + margins.left() + margins.right() };
         setMinimumSize(minimum_width, heightForWidth(minimum_width));
+
+        setFrameShape(Shape::Box);
+        setFrameShadow(Shadow::Raised);
     }
 
     virtual bool hasHeightForWidth() const override
