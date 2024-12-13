@@ -28,7 +28,7 @@ void CardImage::Refresh(const Image& image, Params params)
         const Length card_corner_radius_inch{ 1_in / 8 };
         const Pixel card_corner_radius_pixels{ card_corner_radius_inch * image.Size().x / CardSizeWithoutBleed.x };
 
-        QPixmap clipped_pixmap{ int(image.Size().x.value), int(image.Size().x.value) };
+        QPixmap clipped_pixmap{ int(image.Width().value), int(image.Height().value) };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
 
         QPainterPath path{};
@@ -42,6 +42,8 @@ void CardImage::Refresh(const Image& image, Params params)
         painter.setRenderHint(QPainter::RenderHint::SmoothPixmapTransform, true);
         painter.setClipPath(path);
         painter.drawPixmap(0, 0, pixmap);
+
+        pixmap = clipped_pixmap;
     }
 
     if (params.Rotation != Image::Rotation::None)
