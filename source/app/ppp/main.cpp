@@ -2,26 +2,28 @@
 
 #include <QApplication>
 #include <QPushButton>
+
+#ifdef WIN32
 #include <qplugin.h>
+#endif
 
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
+#include <ppp/style.hpp>
 #include <ppp/ui/main_window.hpp>
 
 int main()
 {
-    constexpr auto print_fn{
-        [](std::string_view str)
-        { printf("%.*s\n", (int)str.size(), str.data()); }
-    };
-
+#ifdef WIN32
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+#endif
 
     PrintProxyPrepApplication app;
+    SetStyle(app, app.GetTheme());
 
     Project project{};
-    project.Load(app.GetProjectPath(), print_fn);
+    project.Load(app.GetProjectPath(), nullptr);
 
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
@@ -34,6 +36,6 @@ int main()
     main_window->show();
 
     const int return_code{ app.exec() };
-    project.Dump(app.GetProjectPath(), print_fn);
+    project.Dump(app.GetProjectPath(), nullptr);
     return return_code;
 }

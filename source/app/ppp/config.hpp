@@ -13,6 +13,7 @@ struct Config
     PixelDensity MaxDPI{ 1200_dpi };
     uint32_t DisplayColumns{ 5 };
     std::string DefaultPageSize{ "Letter" };
+    std::string Theme{ "Default" };
 };
 
 Config LoadConfig();

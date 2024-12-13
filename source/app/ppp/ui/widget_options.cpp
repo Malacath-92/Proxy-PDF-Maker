@@ -14,6 +14,7 @@
 #include <QWidget>
 
 #include <ppp/app.hpp>
+#include <ppp/style.hpp>
 
 #include <ppp/pdf/generate.hpp>
 
@@ -597,7 +598,7 @@ class CardOptionsWidget : public QGroupBox
 class GlobalOptionsWidget : public QGroupBox
 {
   public:
-    GlobalOptionsWidget()
+    GlobalOptionsWidget(PrintProxyPrepApplication& application)
     {
         setTitle("Global Config");
 
@@ -637,6 +638,9 @@ class GlobalOptionsWidget : public QGroupBox
         auto* paper_sizes{ new ComboBoxWithLabel{
             "Default P&aper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), CFG.DefaultPageSize } };
 
+        auto* themes{ new ComboBoxWithLabel{
+            "&Theme", AvailableStyles, application.GetTheme() } };
+
         auto* layout{ new QVBoxLayout };
         layout->addWidget(display_columns);
         layout->addWidget(precropped_checkbox);
@@ -644,6 +648,7 @@ class GlobalOptionsWidget : public QGroupBox
         layout->addWidget(preview_width);
         layout->addWidget(max_dpi);
         layout->addWidget(paper_sizes);
+        layout->addWidget(themes);
         setLayout(layout);
 
         auto main_window{
@@ -702,6 +707,14 @@ class GlobalOptionsWidget : public QGroupBox
             }
         };
 
+        auto change_theme{
+            [=, &application](const QString& t)
+            {
+                application.SetTheme(t.toStdString());
+                SetStyle(application, application.GetTheme());
+            }
+        };
+
         QObject::connect(display_columns_spin_box,
                          &QDoubleSpinBox::valueChanged,
                          this,
@@ -726,6 +739,10 @@ class GlobalOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_papersize);
+        QObject::connect(themes->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_theme);
     }
 };
 
@@ -734,7 +751,7 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     auto* actions_widget{ new ActionsWidget{ application, project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
-    auto* global_options{ new GlobalOptionsWidget{} };
+    auto* global_options{ new GlobalOptionsWidget{ application } };
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions_widget);

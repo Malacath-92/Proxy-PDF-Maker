@@ -19,6 +19,9 @@ class PrintProxyPrepApplication : public QApplication
     void SetProjectPath(fs::path project_path);
     const fs::path& GetProjectPath() const;
 
+    void SetTheme(std::string theme);
+    const std::string& GetTheme() const;
+
   private:
     void Load();
     void Save() const;
@@ -26,6 +29,7 @@ class PrintProxyPrepApplication : public QApplication
     QMainWindow* MainWindow{ nullptr };
 
     fs::path ProjectPath{ cwd() / "print.json" };
+    std::string Theme{ "Default" };
 
     std::optional<QByteArray> WindowGeometry{};
     std::optional<QByteArray> WindowState{};

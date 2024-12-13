@@ -186,11 +186,7 @@ class PrintPreview::PagePreview : public QWidget
         layout->setAlignment(grid, Qt::AlignmentFlag::AlignTop);
 
         setLayout(layout);
-
-        auto this_palette{ palette() };
-        this_palette.setColor(backgroundRole(), 0xFFFFFF);
-        setPalette(this_palette);
-        setAutoFillBackground(true);
+        setStyleSheet("background-color: white;");
 
         const auto& [page_width, page_height]{ params.PageSize.pod() };
         PageRatio = page_width / page_height;

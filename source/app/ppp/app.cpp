@@ -48,6 +48,15 @@ const fs::path& PrintProxyPrepApplication::GetProjectPath() const
     return ProjectPath;
 }
 
+void PrintProxyPrepApplication::SetTheme(std::string theme)
+{
+    Theme = std::move(theme);
+}
+const std::string& PrintProxyPrepApplication::GetTheme() const
+{
+    return Theme;
+}
+
 void PrintProxyPrepApplication::Load()
 {
     QSettings settings{ "Proxy", "PDF Proxy Printer" };
@@ -56,6 +65,7 @@ void PrintProxyPrepApplication::Load()
         WindowGeometry.emplace() = settings.value("geometry").toByteArray();
         WindowState.emplace() = settings.value("state").toByteArray();
         ProjectPath = settings.value("json").toString().toStdString();
+        Theme = settings.value("theme", "Default").toString().toStdString();
     }
 }
 void PrintProxyPrepApplication::Save() const
@@ -65,4 +75,5 @@ void PrintProxyPrepApplication::Save() const
     settings.setValue("geometry", MainWindow->saveGeometry());
     settings.setValue("state", MainWindow->saveState());
     settings.setValue("json", QString::fromWCharArray(ProjectPath.c_str()));
+    settings.setValue("theme", QString::fromStdString(Theme));
 }
