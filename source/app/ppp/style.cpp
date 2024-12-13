@@ -32,8 +32,10 @@ void SetStyle(QApplication& application, std::string_view style)
             application.setStyle("fusion");
         }
     }
-
-    QFile style_file{ QString::asprintf("res/styles/%.*s.qss", static_cast<int>(style.size()), style.data()) };
-    style_file.open(QFile::ReadOnly);
-    application.setStyleSheet(QLatin1String{ style_file.readAll() });
+    else
+    {
+        QFile style_file{ QString::asprintf("res/styles/%.*s.qss", static_cast<int>(style.size()), style.data()) };
+        style_file.open(QFile::ReadOnly);
+        application.setStyleSheet(QLatin1String{ style_file.readAll() });
+    }
 }
