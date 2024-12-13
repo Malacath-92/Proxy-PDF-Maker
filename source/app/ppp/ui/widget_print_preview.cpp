@@ -201,6 +201,7 @@ class PrintPreview::PagePreview : public QWidget
 
         PaddingWidth = (page_width - params.GridParams.Columns * card_width) / 2.0f;
         PaddingHeight = (page_height - params.GridParams.Rows * card_height) / 2.0f;
+        BacksideOffset = params.GridParams.IsBackside ? project.BacksideOffset : 0_mm;
 
         Grid = grid;
     }
@@ -228,12 +229,15 @@ class PrintPreview::PagePreview : public QWidget
         const auto height{ heightForWidth(width) };
         setFixedHeight(height);
 
-        const auto padding_width_pixels{ static_cast<int>(PaddingWidth * width / PageWidth) };
+        const auto padding_width_left{ PaddingWidth + BacksideOffset };
+        const auto padding_width_right{ PaddingWidth - BacksideOffset };
+        const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * width / PageWidth) };
+        const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * width / PageWidth) };
         const auto padding_height_pixels{ static_cast<int>(PaddingHeight * height / PageHeight) };
         setContentsMargins(
-            padding_width_pixels,
+            padding_width_left_pixels,
             padding_height_pixels,
-            padding_width_pixels,
+            padding_width_right_pixels,
             padding_height_pixels);
     }
 
@@ -247,6 +251,7 @@ class PrintPreview::PagePreview : public QWidget
 
     Length PaddingWidth;
     Length PaddingHeight;
+    Length BacksideOffset;
 
     PageGrid* Grid;
 };
