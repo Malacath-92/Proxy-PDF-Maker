@@ -4,6 +4,7 @@
 
 #include <QGridLayout>
 #include <QResizeEvent>
+#include <QScrollBar>
 
 #include <ppp/constants.hpp>
 #include <ppp/util.hpp>
@@ -259,6 +260,7 @@ PrintPreview::PrintPreview(const Project& project)
 
 void PrintPreview::Refresh(const Project& project)
 {
+    const auto current_scroll{ verticalScrollBar()->value() };
     if (auto* current_widget{ widget() })
     {
         delete current_widget;
@@ -357,4 +359,6 @@ void PrintPreview::Refresh(const Project& project)
     pages_widget->setLayout(layout);
 
     setWidget(pages_widget);
+
+    verticalScrollBar()->setValue(current_scroll);
 }
