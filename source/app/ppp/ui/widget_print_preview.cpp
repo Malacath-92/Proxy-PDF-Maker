@@ -185,7 +185,7 @@ class GuidesOverlay : public QWidget
         {
             for (uint32_t y = 0; y < rows; y++)
             {
-                if (card_grid[x][y].has_value())
+                if (card_grid[y][x].has_value())
                 {
                     Cards.push_back({ x, y });
                 }
