@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include <ppp/color.hpp>
 #include <ppp/config.hpp>
 #include <ppp/constants.hpp>
 #include <ppp/image.hpp>
@@ -67,6 +68,8 @@ struct Project
     std::string Orientation{ "Portrait" };
     fs::path FileName{ "_printme" };
     bool ExtendedGuides{ false };
+    ColorRGB8 GuidesColorA{ 0, 0, 0 };
+    ColorRGB8 GuidesColorB{ 190, 190, 190 };
 
   private:
     Project(const Project&) = default;

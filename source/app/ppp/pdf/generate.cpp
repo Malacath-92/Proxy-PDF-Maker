@@ -25,7 +25,7 @@ constexpr std::array CrossSegmentOffsets{
     dla::vec2{ +1.0f, +1.0f },
 };
 
-void DrawLine(HPDF_Page page, HPDF_REAL fx, HPDF_REAL fy, HPDF_REAL tx, HPDF_REAL ty)
+void DrawLine(HPDF_Page page, std::array<ColorRGB32f, 2> colors, HPDF_REAL fx, HPDF_REAL fy, HPDF_REAL tx, HPDF_REAL ty)
 {
     HPDF_Page_SetLineWidth(page, 1.0);
 
@@ -33,28 +33,28 @@ void DrawLine(HPDF_Page page, HPDF_REAL fx, HPDF_REAL fy, HPDF_REAL tx, HPDF_REA
 
     // First layer
     HPDF_Page_SetDash(page, dash_ptn, 1, 0);
-    HPDF_Page_SetRGBStroke(page, 0.75f, 0.75f, 0.75f);
+    HPDF_Page_SetRGBStroke(page, colors[0].r, colors[0].g, colors[0].b);
     HPDF_Page_MoveTo(page, fx, fy);
     HPDF_Page_LineTo(page, tx, ty);
     HPDF_Page_Stroke(page);
 
     // Second layer with phase offset
     HPDF_Page_SetDash(page, dash_ptn, 1, 1);
-    HPDF_Page_SetRGBStroke(page, 0.0f, 0.0f, 0.0f);
+    HPDF_Page_SetRGBStroke(page, colors[1].r, colors[1].g, colors[1].b);
     HPDF_Page_MoveTo(page, fx, fy);
     HPDF_Page_LineTo(page, tx, ty);
     HPDF_Page_Stroke(page);
 }
 
 // Draws black-white dashed cross segment at `(x, y)`
-void DrawCross(HPDF_Page page, HPDF_REAL x, HPDF_REAL y, CrossSegment s)
+void DrawCross(HPDF_Page page, std::array<ColorRGB32f, 2> colors, HPDF_REAL x, HPDF_REAL y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
     const auto tx{ x + 6.0f * dx };
     const auto ty{ y + 6.0f * dy };
 
-    DrawLine(page, x, y, tx, y);
-    DrawLine(page, x, y, x, ty);
+    DrawLine(page, colors, x, y, tx, y);
+    DrawLine(page, colors, x, y, x, ty);
 }
 
 HPDF_REAL ToReal(Length l)
@@ -65,6 +65,19 @@ HPDF_REAL ToReal(Length l)
 std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 {
     const auto output_dir{ GetOutputDir(project.CropDir, project.BleedEdge, CFG.VibranceBump) };
+
+    std::array<ColorRGB32f, 2> guides_colors{
+        ColorRGB32f{
+            static_cast<float>(project.GuidesColorA.r) / 255.0f,
+            static_cast<float>(project.GuidesColorA.g) / 255.0f,
+            static_cast<float>(project.GuidesColorA.b) / 255.0f,
+        },
+        ColorRGB32f{
+            static_cast<float>(project.GuidesColorB.r) / 255.0f,
+            static_cast<float>(project.GuidesColorB.g) / 255.0f,
+            static_cast<float>(project.GuidesColorB.b) / 255.0f,
+        },
+    };
 
     auto page_size{ PredefinedPageSizes[PageSizes.at(project.PageSize)] };
     if (project.Orientation == "Landscape")
@@ -163,25 +176,25 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
             {
                 const auto real_x{ ToReal(start_x + float(x) * card_width + dx) };
                 const auto real_y{ ToReal(start_y - float(y) * card_height + dy) };
-                DrawCross(page, real_x, real_y, s);
+                DrawCross(page, guides_colors, real_x, real_y, s);
 
                 if (project.ExtendedGuides)
                 {
                     if (x == 0)
                     {
-                        DrawLine(page, real_x, real_y, 0, real_y);
+                        DrawLine(page, guides_colors, real_x, real_y, 0, real_y);
                     }
                     if (x == columns)
                     {
-                        DrawLine(page, real_x, real_y, ToReal(page_width), real_y);
+                        DrawLine(page, guides_colors, real_x, real_y, ToReal(page_width), real_y);
                     }
                     if (y == rows)
                     {
-                        DrawLine(page, real_x, real_y, real_x, 0);
+                        DrawLine(page, guides_colors, real_x, real_y, real_x, 0);
                     }
                     if (y == 0)
                     {
-                        DrawLine(page, real_x, real_y, real_x, ToReal(page_height));
+                        DrawLine(page, guides_colors, real_x, real_y, real_x, ToReal(page_height));
                     }
                 }
             }

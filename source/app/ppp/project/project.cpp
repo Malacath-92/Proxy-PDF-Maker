@@ -46,6 +46,12 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Orientation = json["orientation"];
         FileName = json["file_name"].get<std::string>();
         ExtendedGuides = json["extended_guides"];
+        GuidesColorA.r = json["guides_color_a"][0];
+        GuidesColorA.g = json["guides_color_a"][1];
+        GuidesColorA.b = json["guides_color_a"][2];
+        GuidesColorB.r = json["guides_color_b"][0];
+        GuidesColorB.g = json["guides_color_b"][1];
+        GuidesColorB.b = json["guides_color_b"][2];
     }
     catch (std::exception e)
     {
@@ -92,6 +98,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["orientation"] = Orientation;
         json["file_name"] = FileName.string();
         json["extended_guides"] = ExtendedGuides;
+        json["guides_color_a"] = std::array{ GuidesColorA.r, GuidesColorA.g, GuidesColorA.b };
+        json["guides_color_b"] = std::array{ GuidesColorB.r, GuidesColorB.g, GuidesColorB.b };
 
         file << json;
         file.close();

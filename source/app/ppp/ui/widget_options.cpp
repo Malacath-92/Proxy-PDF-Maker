@@ -5,6 +5,7 @@
 #include <ranges>
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QCursor>
 #include <QDoubleSpinBox>
 #include <QGroupBox>
@@ -306,6 +307,13 @@ class PrintOptionsWidget : public QGroupBox
     {
         setTitle("Print Options");
 
+        const auto color_to_bg_style{
+            [](const ColorRGB8& color)
+            {
+                return QString::fromStdString(fmt::format("background-color: #{:0>6x}", ColorToInt(color)));
+            }
+        };
+
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.FileName.string() } };
         auto* paper_size{ new ComboBoxWithLabel{
@@ -314,12 +322,20 @@ class PrintOptionsWidget : public QGroupBox
             "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
         auto* guides_checkbox{ new QCheckBox{ "Extended Guides" } };
         guides_checkbox->setChecked(project.ExtendedGuides);
+        auto* guides_color_a_button{ new QPushButton };
+        guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
+        auto* guides_color_a{ new WidgetWithLabel{ "Guides Color A", guides_color_a_button } };
+        auto* guides_color_b_button{ new QPushButton };
+        guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
+        auto* guides_color_b{ new WidgetWithLabel{ "Guides Color B", guides_color_b_button } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
         layout->addWidget(paper_size);
         layout->addWidget(orientation);
         layout->addWidget(guides_checkbox);
+        layout->addWidget(guides_color_a);
+        layout->addWidget(guides_color_b);
         setLayout(layout);
 
         auto main_window{
@@ -357,6 +373,39 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
+        auto pick_color{
+            [&project](const ColorRGB8& color)
+            {
+                const QColor initial_color{ color.r, color.g, color.b };
+                const std::string new_color{ QColorDialog::getColor(initial_color).name().toStdString() };
+                uint32_t color_uint{};
+                std::from_chars(new_color.c_str() + 1, new_color.c_str() + new_color.size(), color_uint, 16);
+                return ColorRGB8{
+                    (color_uint >> 16) & 0xff,
+                    (color_uint >> 8) & 0xff,
+                    color_uint & 0xff,
+                };
+            }
+        };
+
+        auto pick_color_a{
+            [=, &project]()
+            {
+                project.GuidesColorA = pick_color(project.GuidesColorA);
+                guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
+                main_window()->RefreshPreview();
+            }
+        };
+
+        auto pick_color_b{
+            [=, &project]()
+            {
+                project.GuidesColorB = pick_color(project.GuidesColorB);
+                guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
+                main_window()->RefreshPreview();
+            }
+        };
+
         QObject::connect(print_output->GetWidget(),
                          &QLineEdit::textChanged,
                          this,
@@ -373,6 +422,14 @@ class PrintOptionsWidget : public QGroupBox
                          &QCheckBox::checkStateChanged,
                          this,
                          change_guides);
+        QObject::connect(guides_color_a_button,
+                         &QPushButton::clicked,
+                         this,
+                         pick_color_a);
+        QObject::connect(guides_color_b_button,
+                         &QPushButton::clicked,
+                         this,
+                         pick_color_b);
 
         PrintOutput = print_output->GetWidget();
         PaperSize = paper_size->GetWidget();

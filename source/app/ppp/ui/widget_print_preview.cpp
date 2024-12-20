@@ -204,13 +204,14 @@ class GuidesOverlay : public QWidget
         const Length padding_height{ (page_height - rows * card_height) / 2.0f };
         FirstCardCorner = Size{ padding_width, padding_height };
 
-        GrayPen.setDashPattern({ 2.0f, 4.0f });
-        GrayPen.setWidth(1);
+        PenOne.setDashPattern({ 2.0f, 4.0f });
+        PenOne.setWidth(1);
+        PenOne.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorA.g, project.GuidesColorA.b });
 
-        WhitePen.setDashPattern({ 2.0f, 4.0f });
-        WhitePen.setDashOffset(2.0f);
-        WhitePen.setWidth(1);
-        WhitePen.setColor("white");
+        PenTwo.setDashPattern({ 2.0f, 4.0f });
+        PenTwo.setDashOffset(2.0f);
+        PenTwo.setWidth(1);
+        PenTwo.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorB.g, project.GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -222,10 +223,10 @@ class GuidesOverlay : public QWidget
         QPainter painter(this);
         painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
-        painter.setPen(GrayPen);
+        painter.setPen(PenOne);
         painter.drawLines(Lines);
 
-        painter.setPen(WhitePen);
+        painter.setPen(PenTwo);
         painter.drawLines(Lines);
     }
 
@@ -273,8 +274,8 @@ class GuidesOverlay : public QWidget
     Size CardSizeWithBleedEdge;
     Size FirstCardCorner;
 
-    QPen GrayPen;
-    QPen WhitePen;
+    QPen PenOne;
+    QPen PenTwo;
     QList<QLineF> Lines;
 };
 
