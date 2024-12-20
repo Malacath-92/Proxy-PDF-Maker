@@ -74,18 +74,26 @@ void CardImage::Refresh(const Image& image, Params params)
     static constexpr Pixel card_size_minimum_width_pixels{ 130_pix };
     setMinimumWidth(card_size_minimum_width_pixels.value);
 
+    BleedEdge = params.BleedEdge;
     Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
 }
 
 int CardImage::heightForWidth(int width) const
 {
+    float card_ratio{ CardRatio };
+    if (BleedEdge > 0_mm)
+    {
+        const auto card_size{ CardSizeWithoutBleed + 2.0f * BleedEdge };
+        card_ratio = card_size.x / card_size.y;
+    }
+
     if (Rotated)
     {
-        return int(width * CardRatio);
+        return int(width * card_ratio);
     }
     else
     {
-        return int(width / CardRatio);
+        return int(width / card_ratio);
     }
 }
 

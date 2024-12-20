@@ -15,6 +15,7 @@ class CardImage : public QLabel
     {
         bool RoundedCorners{ true };
         Image::Rotation Rotation{ Image::Rotation::None };
+        Length BleedEdge{ 0_mm };
     };
 
     CardImage(const Image& image, Params params);
@@ -29,6 +30,7 @@ class CardImage : public QLabel
 
   private:
     bool Rotated;
+    Length BleedEdge;
 };
 
 class BacksideImage : public CardImage
