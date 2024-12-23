@@ -134,7 +134,11 @@ target_precompile_headers(proxy_pdf_pch INTERFACE
 file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
 file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
 set(proxy_pdf_resources "res/proxy_pdf.rc")
-add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+if (WIN32)
+	add_executable(proxy_pdf WIN32 ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+else()
+	add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+endif()
 target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_warnings
 	proxy_pdf_version
