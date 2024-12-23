@@ -1,18 +1,17 @@
 #include <ppp/project/image_ops.hpp>
 
 #include <array>
+#include <ranges>
 
 #include <dla/fmt_format.h>
 #include <dla/scalar_math.h>
 #include <dla/vector_math.h>
 
+#include <opencv2/opencv.hpp>
+
 #include <ppp/constants.hpp>
 
 #include <ppp/version.hpp>
-
-void InitImageSystem()
-{
-}
 
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir)
 {
@@ -87,7 +86,7 @@ fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, bool do_vibra
 
     if (do_vibrance_bump)
     {
-        return crop_dir / "vibrance";
+        return GetOutputDir(crop_dir / "vibrance", bleed_edge, false);
     }
 
     if (has_bleed_edge)
@@ -158,9 +157,13 @@ ImgDict RunCropper(const fs::path& image_dir,
         const Image cropped_image{ CropImage(image, img_file, bleed_edge, max_density, print_fn) };
         if (do_vibrance_bump)
         {
-            throw std::logic_error{ "Not implemented..." };
+            const Image vibrant_image{ cropped_image.ApplyVibranceBump() };
+            vibrant_image.Write(output_dir / img_file);
         }
-        cropped_image.Write(output_dir / img_file);
+        else
+        {
+            cropped_image.Write(output_dir / img_file);
+        }
     }
 
     std::vector<fs::path> extra_files{};

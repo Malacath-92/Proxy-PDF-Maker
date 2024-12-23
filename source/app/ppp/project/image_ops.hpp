@@ -19,7 +19,6 @@ inline const std::array ValidImageExtensions{
     ".png"_p,
 };
 
-void InitImageSystem();
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
 
 template<class FunT>

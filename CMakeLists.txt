@@ -69,10 +69,14 @@ else()
 endif()
 
 add_library(proxy_pdf_definitions INTERFACE)
-target_compile_definitions(proxy_pdf_definitions INTERFACE
-	_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
-	WIN32_LEAN_AND_MEAN
-	NOMINMAX)
+if(MSVC)
+	target_compile_definitions(proxy_pdf_definitions INTERFACE
+		_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING
+		_CRT_SECURE_NO_WARNINGS
+		WIN32_LEAN_AND_MEAN
+		NOMINMAX)
+else()
+endif()
 
 option(PROXY_PDF_UNITY_BUILD "Build batch sources for faster builds." OFF)
 if(PROXY_PDF_UNITY_BUILD)
@@ -186,4 +190,8 @@ install(TARGETS
 install(FILES
 	config.ini
 	fallback.png
+	res/styles/Combinear.qss
+	res/styles/Darkeum.qss
+	res/styles/Wstartpage.qss
+	res/vibrance.CUBE
 	DESTINATION .)

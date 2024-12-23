@@ -9,7 +9,6 @@
 PrintProxyPrepApplication::PrintProxyPrepApplication()
     : QApplication(__argc, __argv)
 {
-    InitImageSystem();
     Load();
 }
 

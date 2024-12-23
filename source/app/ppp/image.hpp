@@ -44,6 +44,8 @@ class [[nodiscard]] Image
     Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
+    Image ApplyVibranceBump() const;
+
     Image Resize(PixelSize size) const;
 
     Pixel Width() const;
@@ -57,4 +59,6 @@ class [[nodiscard]] Image
     void Release();
 
     cv::Mat m_Impl{};
+
+    static cv::Mat g_VibranceCube;
 };
