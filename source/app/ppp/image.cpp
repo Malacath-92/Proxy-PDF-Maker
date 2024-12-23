@@ -242,6 +242,7 @@ Image Image::ApplyVibranceBump() const
                       const float g{ (static_cast<float>(col[1]) / 255) * 15 };
                       const float b{ (static_cast<float>(col[0]) / 255) * 15 };
 
+        // clang-format off
 #ifdef NDEBUG
                       const int r_lo{ static_cast<int>(std::floor(r)) };
                       const int r_hi{ static_cast<int>(std::ceil(r)) };
@@ -320,6 +321,7 @@ Image Image::ApplyVibranceBump() const
                       const auto res{ g_VibranceCube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
                       vibrance_bumped.m_Impl.at<cv::Vec3b>(x, y) = res;
 #endif
+                      // clang-format on
                   });
     return vibrance_bumped;
 }
