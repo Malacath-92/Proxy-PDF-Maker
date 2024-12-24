@@ -7,6 +7,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <QFile>
 #include <QPixmap>
 
 #include <ppp/color.hpp>
@@ -14,42 +15,11 @@
 cv::Mat Image::g_VibranceCube{
     []()
     {
-        auto read_whole_file{
-            [](std::string_view file_path) -> std::string
-            {
-                if (FILE * file{ fopen(std::string{ file_path }.c_str(), "rb") })
-                {
-                    struct CloseFileOnScopeExit
-                    {
-                        ~CloseFileOnScopeExit()
-                        {
-                            fclose(File);
-                        }
-                        FILE* File;
-                    };
-                    auto close_file = CloseFileOnScopeExit{ file };
+        Q_INIT_RESOURCE(resources);
 
-                    fseek(file, 0, SEEK_END);
-                    const size_t file_size = ftell(file);
-                    fseek(file, 0, SEEK_SET);
-
-                    std::string code(file_size, '\0');
-
-                    const auto size_read = fread(code.data(), 1, file_size, file);
-                    if (size_read != file_size)
-                    {
-                        code.clear();
-                        return code;
-                    }
-
-                    std::erase(code, '\r');
-                    return code;
-                }
-                return {};
-            }
-        };
-
-        const std::string vibrance_cube_raw{ read_whole_file("res/vibrance.CUBE") };
+        QFile vibrance_cube_file{ ":/res/vibrance.CUBE" };
+        vibrance_cube_file.open(QFile::ReadOnly);
+        const std::string vibrance_cube_raw{ QLatin1String{ vibrance_cube_file.readAll() }.toString().toStdString() };
 
         static constexpr auto to_string_views{ std::views::transform(
             [](auto str)

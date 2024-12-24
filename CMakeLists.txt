@@ -8,6 +8,7 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+set(CMAKE_AUTORCC ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # --------------------------------------------------
@@ -129,15 +130,20 @@ target_precompile_headers(proxy_pdf_pch INTERFACE
 	<mutex>
 	<fmt/format.h>)
 
+if (WIN32)
+	set(proxy_pdf_resources "resources.qrc;res/proxy_pdf.rc")
+else()
+	set(proxy_pdf_resources "resources.qrc")
+endif()
+
 # --------------------------------------------------
 # Create executbale
 file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
 file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
-set(proxy_pdf_resources "res/proxy_pdf.rc")
 if (WIN32)
-	add_executable(proxy_pdf WIN32 ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+	qt_add_executable(proxy_pdf WIN32 ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 else()
-	add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+	qt_add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 endif()
 target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_warnings
@@ -194,8 +200,4 @@ install(TARGETS
 install(FILES
 	config.ini
 	fallback.png
-	res/styles/Combinear.qss
-	res/styles/Darkeum.qss
-	res/styles/Wstartpage.qss
-	res/vibrance.CUBE
 	DESTINATION .)

@@ -7,3 +7,6 @@ images/*
 *.cache
 *.json
 *.pdf
+
+# Intermediate file created from resource build
+*.aps
