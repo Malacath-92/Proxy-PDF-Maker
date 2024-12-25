@@ -223,7 +223,7 @@ Image Image::ApplyColorCube(const cv::Mat& color_cube) const
                       };
 #else
                       // In Debug we just get the nearest element
-                      const auto res{ g_VibranceCube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
+                      const auto res{ color_cube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
                       filtered.m_Impl.at<cv::Vec3b>(x, y) = res;
 #endif
                       // clang-format on
