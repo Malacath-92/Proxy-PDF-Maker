@@ -11,7 +11,9 @@
 
 #include <ppp/app.hpp>
 #include <ppp/style.hpp>
+
 #include <ppp/ui/main_window.hpp>
+#include <ppp/ui/popups.hpp>
 
 int main()
 {
@@ -23,7 +25,16 @@ int main()
     SetStyle(app, app.GetTheme());
 
     Project project{};
-    project.Load(app.GetProjectPath(), nullptr);
+    {
+        GenericPopup startup_window{ nullptr, "Rendering PDF..." };
+        const auto render_work{
+            [&]()
+            {
+                project.Load(app.GetProjectPath(), startup_window.MakePrintFn());
+            }
+        };
+        startup_window.ShowDuringWork(render_work);
+    }
 
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
