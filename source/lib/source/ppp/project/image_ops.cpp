@@ -121,22 +121,23 @@ ImgDict RunCropper(const fs::path& image_dir,
                    const ImgDict& img_dict,
                    Length bleed_edge,
                    PixelDensity max_density,
-                   bool do_vibrance_bump,
+                   const cv::Mat* vibrance_cube,
                    bool uncrop,
                    PrintFn print_fn)
 {
     ImgDict out_img_dict{ img_dict };
 
     const bool has_bleed_edge{ bleed_edge > 0_mm };
+    const bool do_vibrance_bump{ vibrance_cube != nullptr };
     if (has_bleed_edge)
     {
         // Do base cropping, always needed
-        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, do_vibrance_bump, uncrop, print_fn);
+        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, vibrance_cube, uncrop, print_fn);
     }
     else if (do_vibrance_bump)
     {
         // Do base cropping without vibrance for previews
-        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, false, uncrop, print_fn);
+        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, nullptr, uncrop, print_fn);
     }
 
     const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, do_vibrance_bump) };
@@ -157,7 +158,7 @@ ImgDict RunCropper(const fs::path& image_dir,
         const Image cropped_image{ CropImage(image, img_file, bleed_edge, max_density, print_fn) };
         if (do_vibrance_bump)
         {
-            const Image vibrant_image{ cropped_image.ApplyVibranceBump() };
+            const Image vibrant_image{ cropped_image.ApplyColorCube(*vibrance_cube) };
             vibrant_image.Write(output_dir / img_file);
         }
         else

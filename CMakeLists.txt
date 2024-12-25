@@ -137,7 +137,22 @@ else()
 endif()
 
 # --------------------------------------------------
-# Create executbale
+# Create library
+file(GLOB_RECURSE proxy_pdf_lib_sources CONFIGURE_DEPENDS "source/lib/*.cpp")
+file(GLOB_RECURSE proxy_pdf_lib_headers CONFIGURE_DEPENDS "source/lib/*.hpp" "source/lib/*.inl")
+add_library(proxy_pdf_lib STATIC ${proxy_pdf_lib_sources} ${proxy_pdf_lib_headers})
+target_link_libraries(proxy_pdf_lib PUBLIC
+	proxy_pdf_warnings
+	proxy_pdf_version
+	proxy_pdf_definitions
+	proxy_pdf_dependencies
+	proxy_pdf_pch)
+set_target_properties(proxy_pdf_lib PROPERTIES AUTOMOC TRUE)
+target_include_directories(proxy_pdf_lib PUBLIC "source/lib/include")
+target_include_directories(proxy_pdf_lib PRIVATE "source/lib/source")
+
+# --------------------------------------------------
+# Create executable
 file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
 file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
 if (WIN32)
@@ -146,11 +161,7 @@ else()
 	qt_add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 endif()
 target_link_libraries(proxy_pdf PRIVATE
-	proxy_pdf_warnings
-	proxy_pdf_version
-	proxy_pdf_definitions
-	proxy_pdf_dependencies
-	proxy_pdf_pch)
+	proxy_pdf_lib)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 
@@ -168,20 +179,28 @@ function(group_files sources)
 		string(REPLACE "/" "\\" GROUP "${GROUP}")
 
 		# Strip the root parts for each possible component
-		if("${FILE}" MATCHES "source/launcher/.*")
-			string(SUBSTRING ${GROUP} 16 -1 GROUP)
-		elseif("${FILE}" MATCHES "source/proxy_pdf/.*")
-			string(SUBSTRING ${GROUP} 17 -1 GROUP)
-		elseif("${FILE}" MATCHES "source/shared/.*")
-			string(SUBSTRING ${GROUP} 14 -1 GROUP)
+		if("${FILE}" MATCHES "source/app/.*")
+			string(LENGTH "source/app/." STR_LEN)
+			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
+		elseif("${FILE}" MATCHES "source/version/.*")
+			string(LENGTH "source/version/." STR_LEN)
+			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
+		elseif("${FILE}" MATCHES "source/lib/include/.*")
+			string(LENGTH "source/lib/include/." STR_LEN)
+			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
+		elseif("${FILE}" MATCHES "source/lib/source/.*")
+			string(LENGTH "source/lib/source/." STR_LEN)
+			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
 		endif()
+		message(${FILE})
+		message(${GROUP})
 
 		# Do the grouping
 		source_group("${GROUP}" FILES "${FILE}")
 	endforeach()
 endfunction()
 
-group_files("${proxy_pdf_sources};${proxy_pdf_headers};${proxy_pdf_version_sources};${proxy_pdf_version_headers}")
+group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sources};${proxy_pdf_headers};${proxy_pdf_version_sources};${proxy_pdf_version_headers}")
 
 # --------------------------------------------------
 # Set debugging properties

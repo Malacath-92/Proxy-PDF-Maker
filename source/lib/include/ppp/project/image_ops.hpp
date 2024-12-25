@@ -11,6 +11,11 @@
 
 #include <ppp/project/project.hpp>
 
+namespace cv
+{
+class Mat;
+}
+
 inline const std::array ValidImageExtensions{
     ".bmp"_p,
     ".gif"_p,
@@ -38,7 +43,7 @@ ImgDict RunCropper(const fs::path& image_dir,
                    const ImgDict& img_dict,
                    Length bleed_edge,
                    PixelDensity max_density,
-                   bool do_vibrance_bump,
+                   const cv::Mat* vibrance_cube,
                    bool uncrop,
                    PrintFn print_fn);
 

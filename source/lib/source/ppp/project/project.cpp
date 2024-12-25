@@ -7,7 +7,7 @@
 
 #include <ppp/project/image_ops.hpp>
 
-void Project::Load(const fs::path& json_path, PrintFn print_fn)
+void Project::Load(const fs::path& json_path, const cv::Mat* vibrance_cube, PrintFn print_fn)
 {
     *this = Project();
 
@@ -59,7 +59,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());
     }
 
-    Init(print_fn);
+    Init(vibrance_cube, print_fn);
 }
 
 void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
@@ -113,9 +113,9 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     }
 }
 
-void Project::Init(PrintFn print_fn)
+void Project::Init(const cv::Mat* vibrance_cube, PrintFn print_fn)
 {
-    InitImages(print_fn);
+    InitImages(vibrance_cube, print_fn);
     InitProperties(print_fn);
 }
 
@@ -154,7 +154,7 @@ void Project::InitProperties(PrintFn print_fn)
     }
 }
 
-void Project::InitImages(PrintFn print_fn)
+void Project::InitImages(const cv::Mat* vibrance_cube, PrintFn print_fn)
 {
     PPP_LOG("Loading preview cache...");
     Previews = ReadPreviews(ImageCache);
@@ -169,7 +169,7 @@ void Project::InitImages(PrintFn print_fn)
             Previews,
             BleedEdge,
             CFG.MaxDPI,
-            CFG.VibranceBump,
+            vibrance_cube,
             CFG.EnableUncrop,
             print_fn);
     }

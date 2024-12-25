@@ -100,7 +100,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto run_cropper{
-            [=, &project]()
+            [=, &application, &project]()
             {
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
@@ -117,11 +117,11 @@ class ActionsWidget : public QGroupBox
                     {
                         GenericPopup crop_window{ window(), "Cropping images..." };
                         const auto cropper_work{
-                            [=, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache, &crop_window]()
+                            [=, &application, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache, &crop_window]()
                             {
                                 const fs::path& image_cache{ img_cache };
                                 const auto print_fn{ crop_window.MakePrintFn() };
-                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.VibranceBump, CFG.EnableUncrop, print_fn);
+                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, application.GetVibranceCube(), CFG.EnableUncrop, print_fn);
                                 for (const auto& img : ListImageFiles(crop_dir))
                                 {
                                     if (!cards.contains(img))
@@ -203,9 +203,9 @@ class ActionsWidget : public QGroupBox
                     GenericPopup reload_window{ window(), "Reloading project..." };
 
                     const auto load_project_work{
-                        [=, &project, &reload_window]()
+                        [=, &project, &application, &reload_window]()
                         {
-                            project.Load(new_project_json.value(), reload_window.MakePrintFn());
+                            project.Load(new_project_json.value(), application.GetVibranceCube(), reload_window.MakePrintFn());
                         }
                     };
 
@@ -221,7 +221,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto set_images_folder{
-            [=, &project]()
+            [=, &project, &application]()
             {
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
@@ -247,9 +247,9 @@ class ActionsWidget : public QGroupBox
                         GenericPopup reload_window{ window(), "Reloading project..." };
 
                         const auto reload_work{
-                            [=, &project, &reload_window]()
+                            [=, &project, &application, &reload_window]()
                             {
-                                project.InitImages(reload_window.MakePrintFn());
+                                project.InitImages(application.GetVibranceCube(), reload_window.MakePrintFn());
                             }
                         };
 

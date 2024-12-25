@@ -7,79 +7,9 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <QFile>
 #include <QPixmap>
 
 #include <ppp/color.hpp>
-
-cv::Mat Image::g_VibranceCube{
-    []()
-    {
-        Q_INIT_RESOURCE(resources);
-
-        QFile vibrance_cube_file{ ":/res/vibrance.CUBE" };
-        vibrance_cube_file.open(QFile::ReadOnly);
-        const std::string vibrance_cube_raw{ QLatin1String{ vibrance_cube_file.readAll() }.toString().toStdString() };
-
-        static constexpr auto to_string_views{ std::views::transform(
-            [](auto str)
-            { return std::string_view(str.data(), str.size()); }) };
-        static constexpr auto to_float{ std::views::transform(
-            [](std::string_view str)
-            {
-                float val;
-                std::from_chars(str.data(), str.data() + str.size(), val);
-                return val;
-            }) };
-        static constexpr auto float_color_to_byte{ std::views::transform(
-            [](float val)
-            { return static_cast<uint8_t>(val * 255); }) };
-        static constexpr auto to_color{ std::views::transform(
-            [](std::string_view str)
-            {
-                return std::views::split(str, ' ') |
-                       to_string_views |
-                       to_float |
-                       float_color_to_byte |
-                       std::ranges::to<std::vector>();
-            }) };
-        const std::vector vibrance_cube_data{
-            std::views::split(vibrance_cube_raw, '\n') |
-            std::views::drop(11) |
-            to_string_views |
-            to_color |
-            std::views::join |
-            std::ranges::to<std::vector>()
-        };
-
-        cv::Mat vibrance_cube;
-        vibrance_cube.create(std::vector<int>{ 16, 16, 16 }, CV_8UC3);
-        vibrance_cube.cols = 16;
-        vibrance_cube.rows = 16;
-        assert(vibrance_cube.dataend - vibrance_cube.datastart == 16 * 16 * 16 * 3);
-        memcpy(vibrance_cube.data, vibrance_cube_data.data(), 16 * 16 * 16 * 3);
-
-        // for (int i = 0; i < 16; i++)
-        //{
-        //     std::vector<cv::Range> ranges{
-        //         cv::Range::all(),
-        //         cv::Range::all(),
-        //         cv::Range(i, i + 1)
-        //     };
-        //
-        //     cv::Mat slice = vibrance_cube(ranges).clone();
-        //     cv::Mat mat2D;
-        //     mat2D.create(2, &(vibrance_cube.size[0]), vibrance_cube.type());
-        //     slice.copySize(mat2D);
-        //
-        //     // cv::imshow("tst", slice);
-        //     cv::imshow(fmt::format("tst {}", i), slice);
-        //     cv::waitKey();
-        // }
-
-        return vibrance_cube;
-    }()
-};
 
 Image::~Image()
 {
@@ -198,9 +128,11 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
     return img;
 }
 
-Image Image::ApplyVibranceBump() const
+Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
-    Image vibrance_bumped{ *this };
+    const int cube_size_minus_one{ color_cube.cols - 1 };
+
+    Image filtered{ *this };
     auto flat_range{ std::views::iota(0, m_Impl.rows * m_Impl.cols) };
     std::for_each(flat_range.begin(), flat_range.end(), [&](int i)
                   {
@@ -208,12 +140,14 @@ Image Image::ApplyVibranceBump() const
                       const int y{ i / m_Impl.rows };
                       const auto& col{ m_Impl.at<cv::Vec3b>(x, y) };
 
-                      const float r{ (static_cast<float>(col[2]) / 255) * 15 };
-                      const float g{ (static_cast<float>(col[1]) / 255) * 15 };
-                      const float b{ (static_cast<float>(col[0]) / 255) * 15 };
+                      const float r{ (static_cast<float>(col[2]) / 255) * cube_size_minus_one };
+                      const float g{ (static_cast<float>(col[1]) / 255) * cube_size_minus_one };
+                      const float b{ (static_cast<float>(col[0]) / 255) * cube_size_minus_one };
 
         // clang-format off
 #ifdef NDEBUG
+                      // In Release we interpolate between the eight cube-elements
+
                       const int r_lo{ static_cast<int>(std::floor(r)) };
                       const int r_hi{ static_cast<int>(std::ceil(r)) };
                       const float r_frac{ r - static_cast<float>(r_lo) };
@@ -255,10 +189,10 @@ Image Image::ApplyVibranceBump() const
                           },
                       };
 
-                      static constexpr auto color_at{
-                          [](int r, int g, int b)
+                      auto color_at{
+                          [&](int r, int g, int b)
                           {
-                              const auto v{ g_VibranceCube.at<cv::Vec3b>(r, g, b) };
+                              const auto v{ color_cube.at<cv::Vec3b>(r, g, b) };
                               return ColorRGB32f{
                                   static_cast<float>(v[0]),
                                   static_cast<float>(v[1]),
@@ -282,18 +216,19 @@ Image Image::ApplyVibranceBump() const
                       };
 
                       const ColorRGB32f interpolated{ trilinear_interpolate(corners, { r_frac, g_frac, b_frac }) };
-                      vibrance_bumped.m_Impl.at<cv::Vec3b>(x, y) = cv::Vec3b{
+                      filtered.m_Impl.at<cv::Vec3b>(x, y) = cv::Vec3b{
                           static_cast<uchar>(interpolated.r),
                           static_cast<uchar>(interpolated.g),
                           static_cast<uchar>(interpolated.b),
                       };
 #else
+                      // In Debug we just get the nearest element
                       const auto res{ g_VibranceCube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
-                      vibrance_bumped.m_Impl.at<cv::Vec3b>(x, y) = res;
+                      filtered.m_Impl.at<cv::Vec3b>(x, y) = res;
 #endif
                       // clang-format on
                   });
-    return vibrance_bumped;
+    return filtered;
 }
 
 Image Image::Resize(PixelSize size) const
