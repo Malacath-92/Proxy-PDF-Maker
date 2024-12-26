@@ -24,16 +24,21 @@ jobs:
             compiler: msvc
           - os: Windows
             compiler: gcc
+          - os: Windows
+            compiler: clang # conan does not play well with clang :(
         include:
           - compiler: gcc
             c_compiler: gcc-12
             cxx_compiler: g++-12
+            generator: Ninja
           - compiler: clang
             c_compiler: clang-15
             cxx_compiler: clang++-15
+            generator: Ninja
           - compiler: msvc
             c_compiler: cl
             cxx_compiler: cl
+            generator: Visual Studio 17 2022
           - os: MacOS
             runs_on: macos-14
           - os: Ubuntu
@@ -52,28 +57,17 @@ jobs:
 
       - uses: lukka/get-cmake@latest
 
-      - uses: seanmiddleditch/gha-setup-ninja@v5
-
       - name: Install Conan
         run: |
             python -m pip install --upgrade pip
             pip install conan
             conan --version
 
-      - name: Configure (Windows - Clang)
-        id: configure_windows_clang
-        if: ${{ matrix.os == 'Windows' && matrix.compiler == 'clang' }}
-        run: |
-          mkdir build
-          cd build
-          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DPPP_BUILD_TESTS=ON
-
       - name: Configure
-        if: ${{ steps.configure_windows_clang.conclusion == 'skipped' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}} -DPPP_BUILD_TESTS=ON
+          cmake .. -Wno-dev -G"${{matrix.generator}}" -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}} -DPPP_BUILD_TESTS=ON
 
       - name: Build
         run: |
