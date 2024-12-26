@@ -20,7 +20,9 @@ function(proxyPdfAddTest NAME)
 	target_link_libraries(${TEST_NAME} PRIVATE
 		catch2_main
 		proxy_pdf_test)
-	add_test(${TEST_NAME} ${TEST_NAME})
+	add_test(NAME ${TEST_NAME}
+	    COMMAND ${TEST_NAME}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 	set_target_properties(${TEST_NAME} PROPERTIES
 		FOLDER proxy_pdf_tests
 		VS_DEBUGGER_COMMAND_ARGUMENTS ""
