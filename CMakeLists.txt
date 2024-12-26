@@ -12,6 +12,10 @@ set(CMAKE_AUTORCC ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # --------------------------------------------------
+# Define options
+option(PPP_BUILD_TESTS "Build test suite" OFF)
+
+# --------------------------------------------------
 # Run conan, needs to happen before project definition
 include(cmake/conan.cmake)
 run_conan(
@@ -166,6 +170,25 @@ set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 
 # --------------------------------------------------
+# Set debugging properties
+set_target_properties(proxy_pdf PROPERTIES
+	VS_DEBUGGER_COMMAND_ARGUMENTS ""
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# --------------------------------------------------
+# Create tests
+if(PPP_BUILD_TESTS)
+	message(STATUS "Building ppp test suite")
+
+	add_library(proxy_pdf_test INTERFACE)
+	target_link_libraries(proxy_pdf_test INTERFACE
+		proxy_pdf_lib)
+
+	enable_testing()
+	add_subdirectory(tests)
+endif()
+
+# --------------------------------------------------
 # Merge files from source and include in the IDE
 function(group_files sources)
 	foreach(FILE ${sources})
@@ -192,8 +215,6 @@ function(group_files sources)
 			string(LENGTH "source/lib/source/." STR_LEN)
 			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
 		endif()
-		message(${FILE})
-		message(${GROUP})
 
 		# Do the grouping
 		source_group("${GROUP}" FILES "${FILE}")
@@ -201,12 +222,6 @@ function(group_files sources)
 endfunction()
 
 group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sources};${proxy_pdf_headers};${proxy_pdf_version_sources};${proxy_pdf_version_headers}")
-
-# --------------------------------------------------
-# Set debugging properties
-set_target_properties(proxy_pdf PROPERTIES
-	VS_DEBUGGER_COMMAND_ARGUMENTS ""
-	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 

@@ -1,5 +1,6 @@
 from conan import ConanFile
 
+
 class ProxyPDF(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
@@ -10,7 +11,8 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.10.0")
         self.requires("libharu/2.4.4")
         self.requires("nlohmann_json/3.11.3")
-        
+        self.requires("catch2/3.1.0")
+
     def configure(self):
         self.options["qt"].shared = False
         self.options["qt"].opengl = "no"
@@ -38,4 +40,3 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pfm = False
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
-    
