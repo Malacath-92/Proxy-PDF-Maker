@@ -42,7 +42,16 @@ jobs:
             pip install conan
             conan --version
 
+      - name: Configure (Windows)
+        id: configure_windows
+        if: ${{ matrix.os == 'Windows' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -G"${{matrix.generator}}" -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+
       - name: Configure
+        if: ${{ steps.configure_windows.conclusion == 'skipped' }}
         run: |
           mkdir build
           cd build
