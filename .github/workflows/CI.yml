@@ -14,7 +14,7 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [MacOS, Ubuntu, Windows]
+        os: [MacOS, Windows]
         compiler: [gcc, clang, msvc]
         build_type: [Debug, Release]
         exclude:
@@ -35,7 +35,7 @@ jobs:
             c_compiler: cl
             cxx_compiler: cl
           - os: MacOS
-            runs_on: macos-12
+            runs_on: macos-14
           - os: Ubuntu
             runs_on: ubuntu-22.04
           - os: Windows
@@ -68,16 +68,8 @@ jobs:
           cd build
           cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DPPP_BUILD_TESTS=ON
 
-      - name: Configure (MacOS - Clang)
-        id: configure_macos_clang
-        if: ${{ matrix.os == 'MacOS' && matrix.compiler == 'clang' }}
-        run: |
-          mkdir build
-          cd build
-          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=$(brew --prefix llvm@15)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@15)/bin/clang++ -DPPP_BUILD_TESTS=ON
-
       - name: Configure
-        if: ${{ steps.configure_windows_clang.conclusion == 'skipped' && steps.configure_macos_clang.conclusion == 'skipped' }}
+        if: ${{ steps.configure_windows_clang.conclusion == 'skipped' }}
         run: |
           mkdir build
           cd build
