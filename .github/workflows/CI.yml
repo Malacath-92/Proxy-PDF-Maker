@@ -1,0 +1,94 @@
+name: Github Actions CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.runs_on }}
+    strategy:
+      fail-fast: True
+      max-parallel: 1
+      matrix:
+        os: [MacOS, Ubuntu, Windows]
+        compiler: [gcc, clang, msvc]
+        build_type: [Debug, Release]
+        exclude:
+          - os: MacOS
+            compiler: msvc
+          - os: Ubuntu
+            compiler: msvc
+          - os: Windows
+            compiler: gcc
+        include:
+          - compiler: gcc
+            c_compiler: gcc-12
+            cxx_compiler: g++-12
+          - compiler: clang
+            c_compiler: clang-15
+            cxx_compiler: clang++-15
+          - compiler: msvc
+            c_compiler: cl
+            cxx_compiler: cl
+          - os: MacOS
+            runs_on: macos-12
+          - os: Ubuntu
+            runs_on: ubuntu-22.04
+          - os: Windows
+            runs_on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: True
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - uses: lukka/get-cmake@latest
+
+      - uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Install Conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            conan --version
+
+      - name: Configure (Windows - Clang)
+        id: configure_windows_clang
+        if: ${{ matrix.os == 'Windows' && matrix.compiler == 'clang' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DPPP_BUILD_TESTS=ON
+
+      - name: Configure (MacOS - Clang)
+        id: configure_macos_clang
+        if: ${{ matrix.os == 'MacOS' && matrix.compiler == 'clang' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=$(brew --prefix llvm@15)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm@15)/bin/clang++ -DPPP_BUILD_TESTS=ON
+
+      - name: Configure
+        if: ${{ steps.configure_windows_clang.conclusion == 'skipped' && steps.configure_macos_clang.conclusion == 'skipped' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}} -DPPP_BUILD_TESTS=ON
+
+      - name: Build
+        run: |
+            cd build
+            cmake --build . --config ${{matrix.build_type}}
+
+      - name: Test
+        run: |
+            cd build
+            ctest . -C ${{matrix.build_type}} --output-on-failure
