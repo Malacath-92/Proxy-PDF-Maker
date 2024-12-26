@@ -53,6 +53,8 @@ class [[nodiscard]] Image
     PixelSize Size() const;
     PixelDensity Density(::Size real_size) const;
 
+    uint64_t Hash() const;
+
     void DebugDisplay() const;
 
   private:

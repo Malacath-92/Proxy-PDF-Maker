@@ -4,6 +4,7 @@
 
 #include <dla/scalar_math.h>
 
+#include <opencv2/img_hash.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -261,6 +262,13 @@ PixelDensity Image::Density(::Size real_size) const
     const auto [w, h] = Size().pod();
     const auto [bw, bh] = (real_size).pod();
     return dla::math::min(w / bw, h / bh);
+}
+
+uint64_t Image::Hash() const
+{
+    cv::Mat hash;
+    cv::img_hash::pHash(m_Impl, hash);
+    return *reinterpret_cast<uint64_t*>(hash.data);
 }
 
 void Image::DebugDisplay() const
