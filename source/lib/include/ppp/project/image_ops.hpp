@@ -52,3 +52,5 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
 ImgDict ReadPreviews(const fs::path& img_cache_file);
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict);
+
+cv::Mat LoadColorCube(const fs::path& file_path);
