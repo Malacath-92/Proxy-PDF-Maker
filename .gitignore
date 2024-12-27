@@ -10,3 +10,6 @@ images/*
 
 # Intermediate file created from resource build
 *.aps
+
+# Conan home, local in this repo for stability and CI
+.conan_home

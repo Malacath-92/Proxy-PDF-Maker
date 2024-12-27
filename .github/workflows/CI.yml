@@ -26,8 +26,8 @@ jobs:
             runs_on: windows-2022
           - os: MacOS
             compiler: AppleClang
-            c_compiler: $(brew --prefix llvm@15)/bin/clang
-            cxx_compiler: $(brew --prefix llvm@15)/bin/clang++
+            c_compiler: c
+            cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
@@ -55,6 +55,13 @@ jobs:
             python -m pip install --upgrade pip
             pip install conan
             conan --version
+
+      - name: Cache conan
+        uses: actions/cache@v4.2.0
+        with:
+          path: |
+            ./.conan_home
+          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('**/conanfile.py') }}
 
       - name: Configure
         run: |
