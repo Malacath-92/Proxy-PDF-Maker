@@ -1,21 +1,19 @@
-name: Github Actions CI
+name: Github Actions Publish
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - "v*"
 
 jobs:
   build:
-    name: ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.build_type }}
+    name: ${{ matrix.os }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.runs_on }}
     strategy:
       fail-fast: True
       max-parallel: 1
       matrix:
         os: [Windows, MacOS]
-        build_type: [Debug, Release]
         include:
           - os: Windows
             compiler: MSVC
@@ -24,6 +22,7 @@ jobs:
             generator: Visual Studio 17 2022
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-windows_amd64.zip
           - os: MacOS (ARM64)
             compiler: AppleClang
             c_compiler: c
@@ -31,13 +30,15 @@ jobs:
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
-          - os: MacOS (AMD4)
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_arm64.zip
+          - os: MacOS (AMD64)
             compiler: AppleClang
             c_compiler: c
             cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-12
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_amd64.zip
         #   - os: Ubuntu
         #     compiler: Clang
         #     c_compiler: clang
@@ -45,6 +46,7 @@ jobs:
         #     generator: Ninja
         #     build_type_variable: CMAKE_BUILD_TYPE
         #     runs_on: ubuntu-22
+        #     asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
 
     steps:
       - uses: actions/checkout@v4
@@ -63,25 +65,45 @@ jobs:
             pip install conan
             conan --version
 
-      - name: Cache conan
+      - name: Cache Conan
         uses: actions/cache@v4.2.0
         with:
           path: |
             ./.conan_home
-          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('**/conanfile.py') }}
+          key: ${{ matrix.os }}-Release-conan-cpp23-${{ hashFiles('**/conanfile.py') }}
 
       - name: Configure
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
+          cmake .. -Wno-dev -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=Release -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
 
       - name: Build
         run: |
             cd build
-            cmake --build . --config ${{matrix.build_type}}
+            cmake --build . --config Release
 
-      - name: Test
+      - name: Install
         run: |
-            cd build
-            ctest . -C ${{matrix.build_type}} --output-on-failure
+          cd build
+          cmake --install . --config Release
+
+      - name: Get Release Notes
+        id: extract_release_notes
+        uses: ffurrer2/extract-release-notes@v2.2.0
+
+      - name: Zip Release
+        run: |
+          cd publish
+          tar -a -c -f ../${{ matrix.asset_name }} *
+
+      - name: Upload Binaries
+        uses: svenstaro/upload-release-action@2.9.0
+        with:
+          release_name: Release ${{ github.ref }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.asset_name }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
+          body: ${{ steps.extract_release_notes.outputs.release_notes }}
+          draft: false
