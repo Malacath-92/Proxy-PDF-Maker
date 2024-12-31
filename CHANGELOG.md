@@ -9,4 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-??-01
 
 ### Added
-- Initial release, see README.md for features
+- Initial release, with same features as [print-proxy-prep](https://github.com/preshtildeath/print-proxy-prep).
+- Configurable preview resolution.
+- Multiple themes, including possibility to add more themes.
+- Cutting guides and backside offset shown in preview.
