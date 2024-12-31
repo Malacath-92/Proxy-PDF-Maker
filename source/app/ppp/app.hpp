@@ -32,7 +32,7 @@ class PrintProxyPrepApplication : public QApplication
 
     QMainWindow* MainWindow{ nullptr };
 
-    fs::path ProjectPath{ cwd() / "print.json" };
+    fs::path ProjectPath{ cwd() / "proj.json" };
     std::string Theme{ "Default" };
 
     cv::Mat VibranceCube;

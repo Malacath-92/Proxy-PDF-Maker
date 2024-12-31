@@ -45,7 +45,7 @@ struct Project
     // Project options
     fs::path ImageDir{ "images" };
     fs::path CropDir{ "images/crop" };
-    fs::path ImageCache{ "img.cache" };
+    fs::path ImageCache{ "proj.cache" };
 
     // List of all cards
     CardMap Cards{};

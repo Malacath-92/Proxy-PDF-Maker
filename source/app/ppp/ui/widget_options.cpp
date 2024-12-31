@@ -226,14 +226,7 @@ class ActionsWidget : public QGroupBox
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
                     project.ImageDir = new_image_dir.value();
-                    if (project.ImageDir == "images")
-                    {
-                        project.ImageCache = "img.cache";
-                    }
-                    else
-                    {
-                        project.ImageCache = project.ImageDir.filename().replace_extension(".cache");
-                    }
+                    project.ImageCache = project.ImageDir.filename().replace_extension(".cache");
 
                     project.InitProperties(nullptr);
 

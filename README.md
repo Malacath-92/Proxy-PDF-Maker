@@ -43,7 +43,7 @@ When you're done getting your print setup, hit this button in the top right and 
 
 # SOME NOTES:
 - If you need support for a new feature, please open an Issue.
-- The program will automatically save if you close the window. It will not save if it crashes! The data is stored in `print.json`.
-- `image.cache` is a file that is made that stores the data for the thumbnails.
+- The program will automatically save if you close the window. It will not save if it crashes! The data is stored in `proj.json`.
+- `proj.cache` is a file that is made that stores the data for the thumbnails.
 - If the program crashes on startup first try to delete these two files, if that doesn't do it open an issue.
-- When opening an issue to report a bug, please attach a zip file containing your `images` folder. `print.json`, and `img.cache`.
+- When opening an issue to report a bug, please attach a zip file containing your `images` folder. `proj.json`, and `proj.cache`.
