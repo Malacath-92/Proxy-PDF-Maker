@@ -71,7 +71,7 @@ TEST_CASE("Uncrop image", "[image_uncrop]")
 TEST_CASE("Apply color cube", "[image_color_cube]")
 {
     {
-        const cv::Mat vibrance_cube{ LoadColorCube("res/vibrance.CUBE") };
+        const cv::Mat vibrance_cube{ LoadColorCube("res/cubes/vibrance.CUBE") };
         const Image filtered_image{ g_BaseImage.ApplyColorCube(vibrance_cube) };
         REQUIRE(filtered_image.Width() == 248_pix);
         REQUIRE(filtered_image.Height() == 322_pix);

@@ -15,7 +15,7 @@ PrintProxyPrepApplication::PrintProxyPrepApplication()
     Load();
 
     Q_INIT_RESOURCE(resources);
-    VibranceCube = LoadColorCube(":/res/vibrance.CUBE");
+    VibranceCube = LoadColorCube(":/res/cubes/vibrance.CUBE");
 }
 
 PrintProxyPrepApplication::~PrintProxyPrepApplication()

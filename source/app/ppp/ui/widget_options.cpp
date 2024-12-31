@@ -689,7 +689,7 @@ class GlobalOptionsWidget : public QGroupBox
             "Default P&aper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), CFG.DefaultPageSize } };
 
         auto* themes{ new ComboBoxWithLabel{
-            "&Theme", AvailableStyles, application.GetTheme() } };
+            "&Theme", GetStyles(), application.GetTheme() } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(display_columns);

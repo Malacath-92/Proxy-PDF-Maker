@@ -4,6 +4,7 @@
         <file>res/styles/Combinear.qss</file>
         <file>res/styles/Darkeum.qss</file>
         <file>res/styles/Wstartpage.qss</file>
-        <file compress="1" compress-algo="zstd">res/vibrance.CUBE</file>
+        <file>res/styles/Material Dark.qss</file>
+        <file compress="1" compress-algo="zstd">res/cubes/vibrance.CUBE</file>
     </qresource>
 </RCC>
