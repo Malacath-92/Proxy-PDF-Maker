@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <string>
 
 #include <ppp/util.hpp>
@@ -21,7 +22,7 @@ struct Config
         Length BaseUnit;
         uint32_t Decimals;
     };
-    std::unordered_map<std::string, PageSizeInfo> PageSizes{
+    std::map<std::string, PageSizeInfo> PageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
         { "Legal", { { 14_in, 8.5_in }, 1_in, 1u } },
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },

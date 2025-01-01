@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QFile>
 #include <QSettings>
 
 #include <ppp/constants.hpp>
@@ -12,6 +13,11 @@ Config CFG{ LoadConfig() };
 Config LoadConfig()
 {
     Config config{};
+    if (!QFile::exists("config.ini"))
+    {
+        SaveConfig(config);
+        return config;
+    }
 
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)

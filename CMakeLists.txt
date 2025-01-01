@@ -231,6 +231,5 @@ install(TARGETS
 	RUNTIME
 	DESTINATION .)
 install(FILES
-	config.ini
 	fallback.png
 	DESTINATION .)

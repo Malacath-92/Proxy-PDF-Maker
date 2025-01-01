@@ -4,6 +4,7 @@ publish
 
 # Files generated during testing
 images/*
+config.ini
 *.cache
 *.json
 *.pdf
