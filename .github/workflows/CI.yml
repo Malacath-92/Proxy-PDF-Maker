@@ -76,6 +76,13 @@ jobs:
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
 
+      - name: Save Cache Conan
+        uses: actions/cache/save@v4.2.0
+        with:
+          path: |
+            ./.conan_home
+          key: ${{ matrix.os }}-Release-conan-cpp23-${{ hashFiles('**/conanfile.py') }}
+
       - name: Build
         run: |
             cd build
