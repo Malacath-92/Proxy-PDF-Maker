@@ -68,7 +68,7 @@ jobs:
         with:
           path: |
             ./.conan_home
-          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('**/conanfile.py') }}
+          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
       - name: Configure
         run: |
