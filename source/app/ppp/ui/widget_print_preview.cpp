@@ -407,7 +407,7 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    auto page_size{ PredefinedPageSizes[PageSizes.at(project.PageSize)] };
+    auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
     if (project.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);

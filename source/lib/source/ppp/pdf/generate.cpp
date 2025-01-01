@@ -79,7 +79,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    auto page_size{ PredefinedPageSizes[PageSizes.at(project.PageSize)] };
+    auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
     if (project.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);

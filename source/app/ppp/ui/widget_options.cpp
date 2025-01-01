@@ -310,7 +310,7 @@ class PrintOptionsWidget : public QGroupBox
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.FileName.string() } };
         auto* paper_size{ new ComboBoxWithLabel{
-            "&Paper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
+            "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
         auto* orientation{ new ComboBoxWithLabel{
             "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
         auto* guides_checkbox{ new QCheckBox{ "Extended Guides" } };
@@ -686,7 +686,7 @@ class GlobalOptionsWidget : public QGroupBox
         max_dpi->setToolTip("Requires rerunning cropper");
 
         auto* paper_sizes{ new ComboBoxWithLabel{
-            "Default P&aper Size", std::views::keys(PageSizes) | std::ranges::to<std::vector>(), CFG.DefaultPageSize } };
+            "Default P&aper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), CFG.DefaultPageSize } };
 
         auto* themes{ new ComboBoxWithLabel{
             "&Theme", GetStyles(), application.GetTheme() } };
