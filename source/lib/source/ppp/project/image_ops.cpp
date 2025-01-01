@@ -231,7 +231,7 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
         }
     }
 
-    return false;
+    return !img_dict.contains("fallback.png");
 }
 
 ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn)
