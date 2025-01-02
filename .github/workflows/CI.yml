@@ -51,7 +51,7 @@ jobs:
             pip install conan
             conan --version
 
-      - name: Cache conan
+      - name: Cache Conan
         uses: actions/cache@v4.2.0
         with:
           path: |
@@ -64,12 +64,12 @@ jobs:
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -D${{matrix.build_type_variable}}=${{matrix.build_type}}
 
-      - name: Save Cache Conan
+      - name: Cache-Save Conan
         uses: actions/cache/save@v4.2.0
         with:
           path: |
             ./.conan_home
-          key: ${{ matrix.os }}-Release-conan-cpp23-${{ hashFiles('conanfile.py') }}
+          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
       - name: Build
         run: |
