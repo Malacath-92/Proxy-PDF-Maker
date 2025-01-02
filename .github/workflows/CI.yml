@@ -26,14 +26,14 @@ jobs:
             runs_on: windows-2022
           - os: MacOS (ARM64)
             compiler: AppleClang
-            c_compiler: c
+            c_compiler: cc
             cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
           - os: MacOS (AMD4)
             compiler: AppleClang
-            c_compiler: c
+            c_compiler: cc
             cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
