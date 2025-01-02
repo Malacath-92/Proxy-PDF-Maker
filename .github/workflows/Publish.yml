@@ -13,7 +13,7 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [Windows, MacOS (ARM64), MacOS (AMD4)]
+        os: [MacOS (ARM64), MacOS (AMD4), Windows]
         include:
           - os: Windows
             compiler: MSVC
