@@ -52,6 +52,7 @@ jobs:
             python -m pip install --upgrade pip
             pip install conan
             conan --version
+            conan profile detect --force
 
       - name: Cache Conan
         uses: actions/cache@v4.2.0
