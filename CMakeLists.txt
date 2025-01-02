@@ -13,6 +13,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------------------------------------
 # Define options
 option(PPP_BUILD_TESTS "Build test suite" OFF)
+option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
@@ -33,8 +34,10 @@ add_subdirectory("submodules/dla")
 
 # --------------------------------------------------
 # Add formatting target
-include(cmake/clang-format.cmake)
-setup_format_target(format_proxy_pdf)
+if (PPP_FORMAT_TARGETS)
+	include(cmake/clang-format.cmake)
+	setup_format_target(format_proxy_pdf)
+endif()
 
 # --------------------------------------------------
 # Get version tag

@@ -77,8 +77,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=Release -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
-          cmake .. -Wno-dev -D${{matrix.build_type_variable}}=Release
+          cmake .. -Wno-dev -DPPP_FORMAT_TARGETS=OFF -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=Release -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
 
       - name: Build
         run: |
