@@ -17,21 +17,33 @@ jobs:
         include:
           - os: Windows
             compiler: MSVC
+            c_compiler: cl
+            cxx_compiler: cl
+            generator: Visual Studio 17 2022
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-windows_amd64.zip
           - os: MacOS (ARM64)
             compiler: AppleClang
+            c_compiler: cc
+            cxx_compiler: c++
+            generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_arm64.zip
           - os: MacOS (AMD64)
             compiler: AppleClang
+            c_compiler: cc
+            cxx_compiler: c++
+            generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-12
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_amd64.zip
         #   - os: Ubuntu
         #     compiler: Clang
+        #     c_compiler: clang
+        #     cxx_compiler: clang++
+        #     generator: Ninja
         #     build_type_variable: CMAKE_BUILD_TYPE
         #     runs_on: ubuntu-22
         #     asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
@@ -65,6 +77,7 @@ jobs:
         run: |
           mkdir build
           cd build
+          cmake .. -Wno-dev -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=Release -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
           cmake .. -Wno-dev -D${{matrix.build_type_variable}}=Release
 
       - name: Build

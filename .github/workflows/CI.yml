@@ -19,21 +19,29 @@ jobs:
         include:
           - os: Windows
             compiler: MSVC
+            c_compiler: cl
+            cxx_compiler: cl
             generator: Visual Studio 17 2022
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
           - os: MacOS (ARM64)
             compiler: AppleClang
+            c_compiler: cc
+            cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
           - os: MacOS (AMD4)
             compiler: AppleClang
+            c_compiler: cc
+            cxx_compiler: c++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-12
         #   - os: Ubuntu
         #     compiler: Clang
+        #     c_compiler: clang
+        #     cxx_compiler: clang++
         #     generator: Ninja
         #     build_type_variable: CMAKE_BUILD_TYPE
         #     runs_on: ubuntu-22
@@ -67,7 +75,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}}
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
 
       - name: Cache-Save Conan
         uses: actions/cache/save@v4.2.0
