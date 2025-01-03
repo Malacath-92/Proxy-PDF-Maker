@@ -28,15 +28,15 @@ jobs:
             compiler: AppleClang
             c_compiler: cc
             cxx_compiler: c++
-            generator: Unix Makefiles
-            build_type_variable: CMAKE_BUILD_TYPE
+            generator: Xcode
+            build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: macos-14
           - os: MacOS (AMD64)
             compiler: AppleClang
             c_compiler: cc
             cxx_compiler: c++
-            generator: Unix Makefiles
-            build_type_variable: CMAKE_BUILD_TYPE
+            generator: Xcode
+            build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: macos-13
         #   - os: Ubuntu
         #     compiler: Clang
