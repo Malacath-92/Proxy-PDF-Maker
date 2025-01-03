@@ -14,7 +14,7 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [MacOS (AMD4), MacOS (ARM64), Windows]
+        os: [MacOS (AMD64), MacOS (ARM64), Windows]
         build_type: [Debug, Release]
         include:
           - os: Windows
@@ -31,13 +31,13 @@ jobs:
             generator: Unix Makefiles
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: macos-14
-          - os: MacOS (AMD4)
+          - os: MacOS (AMD64)
             compiler: AppleClang
             c_compiler: cc
             cxx_compiler: c++
             generator: Unix Makefiles
             build_type_variable: CMAKE_BUILD_TYPE
-            runs_on: macos-12
+            runs_on: macos-13
         #   - os: Ubuntu
         #     compiler: Clang
         #     c_compiler: clang
