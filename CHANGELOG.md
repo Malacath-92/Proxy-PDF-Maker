@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple themes, including possibility to add more themes.
 - Cutting guides and backside offset shown in preview.
 - Configurable page sizes.
+- Possibility to load color cubes dynamically.
