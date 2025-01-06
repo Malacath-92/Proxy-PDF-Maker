@@ -1,8 +1,8 @@
 #pragma once
 
-#include <array>
 #include <string>
 #include <string_view>
+#include <vector>
 
 class QApplication;
 

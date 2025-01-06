@@ -1,7 +1,6 @@
 #include <ppp/style.hpp>
 
 #include <ranges>
-#include <unordered_map>
 
 #include <QApplication>
 #include <QDirIterator>
@@ -32,7 +31,7 @@ std::vector<std::string> GetStyles()
         while (it.hasNext())
         {
             const QFileInfo next{ it.nextFileInfo() };
-            if (!next.isFile())
+            if (!next.isFile() || next.suffix().toLower() != "qss")
             {
                 continue;
             }
