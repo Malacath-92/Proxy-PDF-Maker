@@ -24,7 +24,8 @@ class PrintProxyPrepApplication : public QApplication
     void SetTheme(std::string theme);
     const std::string& GetTheme() const;
 
-    const cv::Mat* GetVibranceCube() const;
+    void SetCube(std::string cube_name, cv::Mat cube);
+    const cv::Mat* GetCube(const std::string& cube_name) const;
 
   private:
     void Load();
@@ -35,7 +36,7 @@ class PrintProxyPrepApplication : public QApplication
     fs::path ProjectPath{ cwd() / "proj.json" };
     std::string Theme{ "Default" };
 
-    cv::Mat VibranceCube;
+    std::unordered_map<std::string, cv::Mat> Cubes;
 
     std::optional<QByteArray> WindowGeometry{};
     std::optional<QByteArray> WindowState{};

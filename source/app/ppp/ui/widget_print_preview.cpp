@@ -480,7 +480,7 @@ void PrintPreview::Refresh(const Project& project)
         header_layout->addWidget(bleed_info);
     }
 
-    if (CFG.VibranceBump)
+    if (CFG.ColorCube != "None")
     {
         auto* vibrance_info{ new QLabel{ "Preview does not respect 'Vibrance Bump' setting" } };
         vibrance_info->setStyleSheet("QLabel { color : red; }");

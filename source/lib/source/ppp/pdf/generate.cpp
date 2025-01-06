@@ -64,7 +64,7 @@ HPDF_REAL ToReal(Length l)
 
 std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 {
-    const auto output_dir{ GetOutputDir(project.CropDir, project.BleedEdge, CFG.VibranceBump) };
+    const auto output_dir{ GetOutputDir(project.CropDir, project.BleedEdge, CFG.ColorCube) };
 
     std::array<ColorRGB32f, 2> guides_colors{
         ColorRGB32f{

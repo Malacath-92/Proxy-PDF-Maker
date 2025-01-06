@@ -10,6 +10,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
+#include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 
 #include <ppp/ui/main_window.hpp>
@@ -30,7 +31,7 @@ int main()
         const auto render_work{
             [&]()
             {
-                project.Load(app.GetProjectPath(), app.GetVibranceCube(), startup_window.MakePrintFn());
+                project.Load(app.GetProjectPath(), GetCubeImage(app, CFG.ColorCube), startup_window.MakePrintFn());
             }
         };
         startup_window.ShowDuringWork(render_work);

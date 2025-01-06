@@ -6,16 +6,12 @@
 #include <QMainWindow>
 #include <QSettings>
 
-#include <ppp/project/image_ops.hpp>
 #include <ppp/version.hpp>
 
 PrintProxyPrepApplication::PrintProxyPrepApplication()
     : QApplication(__argc, __argv)
 {
     Load();
-
-    Q_INIT_RESOURCE(resources);
-    VibranceCube = LoadColorCube(":/res/cubes/vibrance.CUBE");
 }
 
 PrintProxyPrepApplication::~PrintProxyPrepApplication()
@@ -62,9 +58,20 @@ const std::string& PrintProxyPrepApplication::GetTheme() const
     return Theme;
 }
 
-const cv::Mat* PrintProxyPrepApplication::GetVibranceCube() const
+void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 {
-    return CFG.VibranceBump ? &VibranceCube : nullptr;
+    if (!Cubes.contains(cube_name))
+    {
+        Cubes[std::move(cube_name)] = std::move(cube);
+    }
+}
+const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
+{
+    if (Cubes.contains(cube_name))
+    {
+        return &Cubes.at(cube_name);
+    }
+    return nullptr;
 }
 
 void PrintProxyPrepApplication::Load()

@@ -34,16 +34,17 @@ std::vector<fs::path> ListImageFiles(const fs::path& path);
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn = nullptr);
 Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn = nullptr);
 
-fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump);
+fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 
-bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length bleed_edge, bool do_vibrance_bump);
+bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 ImgDict RunCropper(const fs::path& image_dir,
                    const fs::path& crop_dir,
                    const fs::path& img_cache_file,
                    const ImgDict& img_dict,
                    Length bleed_edge,
                    PixelDensity max_density,
-                   const cv::Mat* vibrance_cube,
+                   const std::string& color_cube_name,
+                   const cv::Mat* color_cube,
                    bool uncrop,
                    PrintFn print_fn);
 

@@ -15,6 +15,7 @@
 #include <QWidget>
 
 #include <ppp/app.hpp>
+#include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 
 #include <ppp/pdf/generate.hpp>
@@ -71,7 +72,7 @@ class ActionsWidget : public QGroupBox
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
                 const fs::path& crop_dir{ project.CropDir };
-                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump))
+                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube))
                 {
                     QToolTip::showText(QCursor::pos(), "Cropper needs to be run first");
                     return;
@@ -106,7 +107,7 @@ class ActionsWidget : public QGroupBox
                 const fs::path& image_dir{ project.ImageDir };
                 const fs::path& crop_dir{ project.CropDir };
                 const bool need_cache_previews{ NeedCachePreviews(crop_dir, project.Previews) };
-                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump) || need_cache_previews)
+                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || need_cache_previews)
                 {
                     std::atomic_bool data_available{ false };
                     bool rebuild_after_cropper{ need_cache_previews };
@@ -121,7 +122,7 @@ class ActionsWidget : public QGroupBox
                             {
                                 const fs::path& image_cache{ img_cache };
                                 const auto print_fn{ crop_window.MakePrintFn() };
-                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, application.GetVibranceCube(), CFG.EnableUncrop, print_fn);
+                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.ColorCube, GetCubeImage(application, CFG.ColorCube), CFG.EnableUncrop, print_fn);
                                 for (const auto& img : ListImageFiles(crop_dir))
                                 {
                                     if (!cards.contains(img))
@@ -205,7 +206,7 @@ class ActionsWidget : public QGroupBox
                     const auto load_project_work{
                         [=, &project, &application, &reload_window]()
                         {
-                            project.Load(new_project_json.value(), application.GetVibranceCube(), reload_window.MakePrintFn());
+                            project.Load(new_project_json.value(), GetCubeImage(application, CFG.ColorCube), reload_window.MakePrintFn());
                         }
                     };
 
@@ -235,14 +236,14 @@ class ActionsWidget : public QGroupBox
                     const Length bleed_edge{ project.BleedEdge };
                     const fs::path& image_dir{ project.ImageDir };
                     const fs::path& crop_dir{ project.CropDir };
-                    if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.VibranceBump) || NeedCachePreviews(crop_dir, project.Previews))
+                    if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || NeedCachePreviews(crop_dir, project.Previews))
                     {
                         GenericPopup reload_window{ window(), "Reloading project..." };
 
                         const auto reload_work{
                             [=, &project, &application, &reload_window]()
                             {
-                                project.InitImages(application.GetVibranceCube(), reload_window.MakePrintFn());
+                                project.InitImages(GetCubeImage(application, CFG.ColorCube), reload_window.MakePrintFn());
                             }
                         };
 
@@ -664,9 +665,9 @@ class GlobalOptionsWidget : public QGroupBox
         precropped_checkbox->setChecked(CFG.EnableUncrop);
         precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
 
-        auto* vibrance_checkbox{ new QCheckBox{ "Vibrance Bump" } };
-        vibrance_checkbox->setChecked(CFG.VibranceBump);
-        vibrance_checkbox->setToolTip("Requires rerunning cropper");
+        auto* color_cube{ new ComboBoxWithLabel{
+            "Color C&ube", GetCubeNames(), "None" } };
+        color_cube->GetWidget()->setToolTip("Requires rerunning cropper");
 
         auto* preview_width_spin_box{ new QDoubleSpinBox };
         preview_width_spin_box->setDecimals(0);
@@ -694,7 +695,7 @@ class GlobalOptionsWidget : public QGroupBox
         auto* layout{ new QVBoxLayout };
         layout->addWidget(display_columns);
         layout->addWidget(precropped_checkbox);
-        layout->addWidget(vibrance_checkbox);
+        layout->addWidget(color_cube);
         layout->addWidget(preview_width);
         layout->addWidget(max_dpi);
         layout->addWidget(paper_sizes);
@@ -723,12 +724,11 @@ class GlobalOptionsWidget : public QGroupBox
             }
         };
 
-        auto change_vibrance_bump{
-            [=](Qt::CheckState s)
+        auto change_color_cube{
+            [=, &application](const QString& t)
             {
-                CFG.VibranceBump = s == Qt::CheckState::Checked;
-                SaveConfig(CFG);
-                main_window()->RefreshPreview();
+                CFG.ColorCube = t.toStdString();
+                PreloadCube(application, CFG.ColorCube);
             }
         };
 
@@ -773,10 +773,10 @@ class GlobalOptionsWidget : public QGroupBox
                          &QCheckBox::checkStateChanged,
                          this,
                          change_precropped);
-        QObject::connect(vibrance_checkbox,
-                         &QCheckBox::checkStateChanged,
+        QObject::connect(color_cube->GetWidget(),
+                         &QComboBox::currentTextChanged,
                          this,
-                         change_vibrance_bump);
+                         change_color_cube);
         QObject::connect(preview_width_spin_box,
                          &QDoubleSpinBox::valueChanged,
                          this,
