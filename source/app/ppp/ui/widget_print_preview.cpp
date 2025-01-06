@@ -33,8 +33,8 @@ class PageGrid : public QWidget
 
         HasMissingPreviews = false;
 
-        const auto rows{ card_grid.size() };
-        const auto columns{ card_grid.front().size() };
+        const auto rows{ card_grid.front().size() };
+        const auto columns{ card_grid.size() };
 
         for (uint32_t x = 0; x < columns; x++)
         {
