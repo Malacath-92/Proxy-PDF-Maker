@@ -74,12 +74,12 @@ std::vector<fs::path> ListFolders(const fs::path& path)
 
 bool OpenFolder(const fs::path& path)
 {
-    return OpenPath(path);
+    return OpenPath(fs::absolute(path));
 }
 
 bool OpenFile(const fs::path& path)
 {
-    return OpenPath(path);
+    return OpenPath(fs::absolute(path));
 }
 
 bool OpenPath(const fs::path& path)
