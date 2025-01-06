@@ -14,7 +14,7 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [MacOS (AMD64), MacOS (ARM64), Windows]
+        os: [Ubuntu, Windows]
         build_type: [Debug, Release]
         include:
           - os: Windows
@@ -24,27 +24,27 @@ jobs:
             generator: Visual Studio 17 2022
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
-          - os: MacOS (ARM64)
-            compiler: AppleClang
-            c_compiler: cc
-            cxx_compiler: c++
-            generator: Xcode
-            build_type_variable: CMAKE_CONFIGURATION_TYPES
-            runs_on: macos-14
-          - os: MacOS (AMD64)
-            compiler: AppleClang
-            c_compiler: cc
-            cxx_compiler: c++
-            generator: Xcode
-            build_type_variable: CMAKE_CONFIGURATION_TYPES
-            runs_on: macos-13
-        #   - os: Ubuntu
-        #     compiler: Clang
-        #     c_compiler: clang
-        #     cxx_compiler: clang++
-        #     generator: Ninja
-        #     build_type_variable: CMAKE_BUILD_TYPE
-        #     runs_on: ubuntu-22
+          # - os: MacOS (ARM64)
+          #   compiler: AppleClang
+          #   c_compiler: cc
+          #   cxx_compiler: c++
+          #   generator: Xcode
+          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
+          #   runs_on: macos-14
+          # - os: MacOS (AMD64)
+          #   compiler: AppleClang
+          #   c_compiler: cc
+          #   cxx_compiler: c++
+          #   generator: Xcode
+          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
+          #   runs_on: macos-13
+          - os: Ubuntu
+            compiler: Clang
+            c_compiler: clang
+            cxx_compiler: clang++
+            generator: Ninja
+            build_type_variable: CMAKE_BUILD_TYPE
+            runs_on: ubuntu-22
 
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
       - uses: lukka/get-cmake@latest
 
       - name: Xcode Select Version
-        if: ${{ matrix.runs_on == 'macos-13' || matrix.runs_on == 'macos-14' }}
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '15.0.1'
