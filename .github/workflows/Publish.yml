@@ -45,7 +45,7 @@ jobs:
             cxx_compiler: clang++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
-            runs_on: ubuntu-22
+            runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
 
     steps:

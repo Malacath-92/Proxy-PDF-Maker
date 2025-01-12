@@ -44,7 +44,7 @@ jobs:
             cxx_compiler: clang++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
-            runs_on: ubuntu-22
+            runs_on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
