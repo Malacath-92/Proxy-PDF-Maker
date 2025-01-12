@@ -70,6 +70,13 @@ jobs:
             conan --version
             conan profile detect --force
 
+      - name: Conan Change Profile
+        if: ${{ matrix.os == 'Ubuntu' }}
+        run: |
+          cd .conan_home/profiles
+          echo "[conf]" >> default
+          echo "tools.system.package_manager:mode=install" >> default
+
       - name: Cache Conan
         uses: actions/cache@v4.2.0
         with:
