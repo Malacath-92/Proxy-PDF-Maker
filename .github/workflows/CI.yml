@@ -24,6 +24,7 @@ jobs:
             generator: Visual Studio 17 2022
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
+            sudo:
           # - os: MacOS (ARM64)
           #   compiler: AppleClang
           #   c_compiler: cc
@@ -31,6 +32,7 @@ jobs:
           #   generator: Xcode
           #   build_type_variable: CMAKE_CONFIGURATION_TYPES
           #   runs_on: macos-14
+          #   sudo:
           # - os: MacOS (AMD64)
           #   compiler: AppleClang
           #   c_compiler: cc
@@ -38,6 +40,7 @@ jobs:
           #   generator: Xcode
           #   build_type_variable: CMAKE_CONFIGURATION_TYPES
           #   runs_on: macos-13
+          #   sudo:
           - os: Ubuntu
             compiler: Clang
             c_compiler: clang
@@ -45,6 +48,7 @@ jobs:
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: ubuntu-24.04
+            sudo: sudo
 
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +92,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
+          ${{matrix.sudo}} cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
 
       - name: Cache-Save Conan
         uses: actions/cache/save@v4.2.0
