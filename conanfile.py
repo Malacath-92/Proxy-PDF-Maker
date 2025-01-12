@@ -11,7 +11,7 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.10.0")
         self.requires("libharu/2.4.4")
         self.requires("nlohmann_json/3.11.3")
-        self.requires("catch2/3.1.0")
+        self.requires("catch2/3.7.1")
 
     def configure(self):
         self.options["qt"].shared = False
