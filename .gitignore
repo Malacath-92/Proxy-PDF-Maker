@@ -1,5 +1,5 @@
 # Folders used during a build
-build
+build*
 publish
 
 # Files generated during testing
