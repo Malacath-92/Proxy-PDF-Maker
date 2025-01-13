@@ -1,8 +1,11 @@
 #include <ppp/util.hpp>
 
+#include <ppp/qt_util.hpp>
+
 #include <ranges>
 
 #include <QDesktopServices>
+#include <QString>
 #include <QUrl>
 
 template<class FunT>
@@ -84,5 +87,5 @@ bool OpenFile(const fs::path& path)
 
 bool OpenPath(const fs::path& path)
 {
-    return QDesktopServices::openUrl(QUrl("file:///" + QString::fromStdWString(path.c_str()), QUrl::TolerantMode));
+    return QDesktopServices::openUrl(QUrl("file:///" + ToQString(path), QUrl::TolerantMode));
 }

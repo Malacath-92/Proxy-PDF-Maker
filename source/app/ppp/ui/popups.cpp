@@ -10,6 +10,7 @@
 #include <fmt/ranges.h>
 
 #include <ppp/project/image_ops.hpp>
+#include <ppp/qt_util.hpp>
 
 std::optional<fs::path> OpenFolderDialog(const fs::path& root)
 {
@@ -17,7 +18,7 @@ std::optional<fs::path> OpenFolderDialog(const fs::path& root)
         QFileDialog::getExistingDirectory(
             nullptr,
             "Choose Folder",
-            QString::fromWCharArray(root.c_str()),
+            ToQString(root),
             QFileDialog::Option::ShowDirsOnly | QFileDialog::Option::DontResolveSymlinks)
     };
 
@@ -38,17 +39,17 @@ std::optional<fs::path> OpenFileDialog(std::string_view title, const fs::path& r
     {
         choice = QFileDialog::getOpenFileName(
             nullptr,
-            QString::fromLatin1(title),
-            QString::fromWCharArray(root.c_str()),
-            QString::fromLatin1(filter));
+            ToQString(title),
+            ToQString(root),
+            ToQString(filter));
     }
     else
     {
         choice = QFileDialog::getSaveFileName(
             nullptr,
-            QString::fromLatin1(title),
-            QString::fromWCharArray(root.c_str()),
-            QString::fromLatin1(filter));
+            ToQString(title),
+            ToQString(root),
+            ToQString(filter));
     }
 
     if (choice.isEmpty())
@@ -107,7 +108,7 @@ class WorkThread : public QThread
 GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
     : QDialog(parent)
 {
-    auto* text_widget{ new QLabel{ QString::fromLatin1(text) } };
+    auto* text_widget{ new QLabel{ ToQString(text) } };
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(text_widget);
@@ -186,7 +187,7 @@ void GenericPopup::UpdateText(std::string_view text)
 void GenericPopup::UpdateTextImpl(std::string_view text)
 {
     adjustSize();
-    TextLabel->setText(QString::fromLatin1(text));
+    TextLabel->setText(ToQString(text));
     adjustSize();
     Recenter();
 }

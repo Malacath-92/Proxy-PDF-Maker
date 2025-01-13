@@ -421,7 +421,7 @@ void PrintPreview::Refresh(const Project& project)
 
     struct TempPage
     {
-        Page Page;
+        Page ThePage;
         bool Backside;
     };
 
@@ -452,7 +452,7 @@ void PrintPreview::Refresh(const Project& project)
             {
                 return new PagePreview{
                     project,
-                    page.Page,
+                    page.ThePage,
                     PagePreview::Params{
                         GuidesOverlay::Params{
                             PageGrid::Params{

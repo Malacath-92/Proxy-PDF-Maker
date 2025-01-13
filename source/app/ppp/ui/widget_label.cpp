@@ -3,11 +3,13 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
+#include <ppp/qt_util.hpp>
+
 WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
     , Widget{ widget }
 {
-    auto* label{ new QLabel(QString::fromLatin1(label_text) + ":") };
+    auto* label{ new QLabel(ToQString(label_text) + ":") };
     if (label_text.contains("&"))
     {
         label->setBuddy(widget);
@@ -42,12 +44,12 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<cons
 {
     for (const auto& option : options)
     {
-        GetWidget()->addItem(QString::fromLatin1(option));
+        GetWidget()->addItem(ToQString(option));
     }
 
     if (std::ranges::contains(options, default_option))
     {
-        GetWidget()->setCurrentText(QString::fromLatin1(default_option));
+        GetWidget()->setCurrentText(ToQString(default_option));
     }
 }
 
@@ -57,7 +59,7 @@ QComboBox* ComboBoxWithLabel::GetWidget() const
 }
 
 LineEditWithLabel::LineEditWithLabel(std::string_view label_text, std::string_view default_text)
-    : WidgetWithLabel(label_text, new QLineEdit{ QString::fromLatin1(default_text) })
+    : WidgetWithLabel(label_text, new QLineEdit{ ToQString(default_text) })
 {
 }
 

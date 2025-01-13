@@ -53,7 +53,7 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
         GuidesColorB.g = json["guides_color_b"][1];
         GuidesColorB.b = json["guides_color_b"][2];
     }
-    catch (std::exception e)
+    catch (const std::exception& e)
     {
         PPP_LOG("Failed loading project from {}: {}", json_path.string(), e.what());
         PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());

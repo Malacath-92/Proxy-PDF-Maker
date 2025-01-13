@@ -9,6 +9,7 @@
 #include <QResizeEvent>
 #include <QScrollBar>
 
+#include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 #include <ppp/project/project.hpp>
@@ -350,7 +351,7 @@ class CardScrollArea::CardGrid : public QWidget
         const auto cols{ CFG.DisplayColumns };
         for (auto& [card_name, _] : project.Cards)
         {
-            if (std::basic_string_view{ card_name.c_str() }.starts_with(L"__") || !project.Previews.contains(card_name))
+            if (ToQString(card_name).startsWith("__") || !project.Previews.contains(card_name))
             {
                 continue;
             }
@@ -386,7 +387,8 @@ class CardScrollArea::CardGrid : public QWidget
         setMinimumHeight(FirstItem->heightForWidth(FirstItem->minimumWidth()));
     }
 
-    std::unordered_map<fs::path, CardWidget*>& GetCards()
+    std::unordered_map<fs::path, CardWidget*>&
+    GetCards()
     {
         return Cards;
     }

@@ -6,6 +6,7 @@
 #include <QSettings>
 
 #include <ppp/constants.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 Config CFG{ LoadConfig() };
@@ -150,8 +151,8 @@ void SaveConfig(Config config)
             settings.setValue("Base.Preview.Width", config.BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.MaxDPI / 1_dpi);
             settings.setValue("Display.Columns", config.DisplayColumns);
-            settings.setValue("Page.Size", QString::fromStdString(config.DefaultPageSize));
-            settings.setValue("Color.Cube", QString::fromStdString(config.ColorCube));
+            settings.setValue("Page.Size", ToQString(config.DefaultPageSize));
+            settings.setValue("Color.Cube", ToQString(config.ColorCube));
 
             settings.endGroup();
         }

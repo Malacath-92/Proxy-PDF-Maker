@@ -13,7 +13,7 @@
 #include <QString>
 
 #include <ppp/constants.hpp>
-
+#include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir)
@@ -404,7 +404,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
 
 cv::Mat LoadColorCube(const fs::path& file_path)
 {
-    QFile color_cube_file{ QString::fromWCharArray(file_path.c_str()) };
+    QFile color_cube_file{ ToQString(file_path) };
     color_cube_file.open(QFile::ReadOnly);
     const std::string color_cube_raw{ QLatin1String{ color_cube_file.readAll() }.toString().toStdString() };
 

@@ -16,6 +16,7 @@
 
 #include <ppp/app.hpp>
 #include <ppp/cubes.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/style.hpp>
 
 #include <ppp/pdf/generate.hpp>
@@ -67,7 +68,7 @@ class ActionsWidget : public QGroupBox
         setLayout(layout);
 
         const auto render{
-            [=, &project]()
+            [=, this, &project]()
             {
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
@@ -101,7 +102,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto run_cropper{
-            [=, &application, &project]()
+            [=, this, &application, &project]()
             {
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
@@ -196,7 +197,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto load_project{
-            [=, &project, &application]()
+            [=, this, &project, &application]()
             {
                 if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
                 {
@@ -222,7 +223,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto set_images_folder{
-            [=, &project, &application]()
+            [=, this, &project, &application]()
             {
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
@@ -304,7 +305,7 @@ class PrintOptionsWidget : public QGroupBox
         const auto color_to_bg_style{
             [](const ColorRGB8& color)
             {
-                return QString::fromStdString(fmt::format("background-color: #{:0>6x}", ColorToInt(color)));
+                return ToQString(fmt::format("background-color: #{:0>6x}", ColorToInt(color)));
             }
         };
 
@@ -375,15 +376,15 @@ class PrintOptionsWidget : public QGroupBox
                 uint32_t color_uint{};
                 std::from_chars(new_color.c_str() + 1, new_color.c_str() + new_color.size(), color_uint, 16);
                 return ColorRGB8{
-                    (color_uint >> 16) & 0xff,
-                    (color_uint >> 8) & 0xff,
-                    color_uint & 0xff,
+                    static_cast<uint8_t>((color_uint >> 16) & 0xff),
+                    static_cast<uint8_t>((color_uint >> 8) & 0xff),
+                    static_cast<uint8_t>(color_uint & 0xff),
                 };
             }
         };
 
         auto pick_color_a{
-            [=, &project]()
+            [=, this, &project]()
             {
                 project.GuidesColorA = pick_color(project.GuidesColorA);
                 guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
@@ -433,9 +434,9 @@ class PrintOptionsWidget : public QGroupBox
 
     void RefreshWidgets(const Project& project)
     {
-        PrintOutput->setText(QString::fromWCharArray(project.FileName.c_str()));
-        PaperSize->setCurrentText(QString::fromStdString(project.PageSize));
-        Orientation->setCurrentText(QString::fromStdString(project.Orientation));
+        PrintOutput->setText(ToQString(project.FileName.c_str()));
+        PaperSize->setCurrentText(ToQString(project.PageSize));
+        Orientation->setCurrentText(ToQString(project.Orientation));
         ExtendedGuides->setChecked(project.ExtendedGuides);
     }
 
@@ -459,7 +460,7 @@ class DefaultBacksidePreview : public QWidget
         backside_default_image->setFixedWidth(backside_width);
         backside_default_image->setFixedHeight(backside_height);
 
-        auto* backside_default_label{ new QLabel{ QString::fromWCharArray(backside_name.c_str()) } };
+        auto* backside_default_label{ new QLabel{ ToQString(backside_name.c_str()) } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
@@ -480,7 +481,7 @@ class DefaultBacksidePreview : public QWidget
     {
         const fs::path& backside_name{ project.BacksideDefault };
         DefaultImage->Refresh(backside_name, project);
-        DefaultLabel->setText(QString::fromWCharArray(backside_name.c_str()));
+        DefaultLabel->setText(ToQString(backside_name.c_str()));
     }
 
   private:

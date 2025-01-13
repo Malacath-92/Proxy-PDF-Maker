@@ -4,7 +4,7 @@
 #include <QPushButton>
 
 #ifdef WIN32
-#include <qplugin.h>
+#include <QtPlugin>
 #endif
 
 #include <ppp/project/project.hpp>
@@ -16,13 +16,13 @@
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
-int main()
+int main(int argc, char** argv)
 {
 #ifdef WIN32
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 #endif
 
-    PrintProxyPrepApplication app;
+    PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
 
     Project project{};

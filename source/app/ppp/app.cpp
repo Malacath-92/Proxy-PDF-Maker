@@ -6,10 +6,11 @@
 #include <QMainWindow>
 #include <QSettings>
 
+#include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
-PrintProxyPrepApplication::PrintProxyPrepApplication()
-    : QApplication(__argc, __argv)
+PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
+    : QApplication(argc, argv)
 {
     Load();
 }
@@ -88,9 +89,9 @@ void PrintProxyPrepApplication::Load()
 void PrintProxyPrepApplication::Save() const
 {
     QSettings settings{ "Proxy", "PDF Proxy Printer" };
-    settings.setValue("version", QString::fromLatin1(ProxyPdfVersion()));
+    settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", MainWindow->saveGeometry());
     settings.setValue("state", MainWindow->saveState());
-    settings.setValue("json", QString::fromWCharArray(ProjectPath.c_str()));
-    settings.setValue("theme", QString::fromStdString(Theme));
+    settings.setValue("json", ToQString(ProjectPath));
+    settings.setValue("theme", ToQString(Theme));
 }

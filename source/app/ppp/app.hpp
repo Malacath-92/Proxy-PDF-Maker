@@ -12,7 +12,7 @@ class QMainWindow;
 class PrintProxyPrepApplication : public QApplication
 {
   public:
-    PrintProxyPrepApplication();
+    PrintProxyPrepApplication(int& argc, char** argv);
     ~PrintProxyPrepApplication();
 
     void SetMainWindow(QMainWindow* main_window);

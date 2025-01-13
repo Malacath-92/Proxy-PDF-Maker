@@ -108,10 +108,20 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
-	Qt6::QWindowsIntegrationPlugin
 	opencv::opencv
 	libharu::libharu
 	nlohmann_json::nlohmann_json)
+
+if(WIN32)
+	target_link_libraries(proxy_pdf_dependencies INTERFACE
+		Qt6::QWindowsIntegrationPlugin)
+elseif(APPLE)
+	target_link_libraries(proxy_pdf_dependencies INTERFACE
+		Qt6::QCocoaIntegrationPlugin)
+elseif(UNIX)
+	target_link_libraries(proxy_pdf_dependencies INTERFACE
+		Qt6::QXcbIntegrationPlugin)
+endif() 
 
 add_library(proxy_pdf_pch INTERFACE)
 target_precompile_headers(proxy_pdf_pch INTERFACE

@@ -11,7 +11,7 @@ MainTabs::MainTabs(Project& project, CardScrollArea* scroll_area, PrintPreview* 
     addTab(print_preview, "Preview");
 
     auto current_changed{
-        [=, &project](int i)
+        [=, this, &project](int i)
         {
             if (widget(i) == scroll_area)
             {
