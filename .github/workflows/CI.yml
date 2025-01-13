@@ -39,9 +39,9 @@ jobs:
           #   build_type_variable: CMAKE_CONFIGURATION_TYPES
           #   runs_on: macos-13
           - os: Ubuntu
-            compiler: Clang
-            c_compiler: clang
-            cxx_compiler: clang++
+            compiler: Gcc
+            c_compiler: gcc
+            cxx_compiler: g++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: ubuntu-24.04

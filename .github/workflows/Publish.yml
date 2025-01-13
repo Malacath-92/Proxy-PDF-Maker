@@ -40,9 +40,9 @@ jobs:
           #   runs_on: macos-13
           #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_amd64.zip
           - os: Ubuntu
-            compiler: Clang
-            c_compiler: clang
-            cxx_compiler: clang++
+            compiler: Gcc
+            c_compiler: gcc
+            cxx_compiler: g++
             generator: Ninja
             build_type_variable: CMAKE_BUILD_TYPE
             runs_on: ubuntu-24.04
