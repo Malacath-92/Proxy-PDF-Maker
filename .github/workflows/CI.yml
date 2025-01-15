@@ -14,36 +14,17 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [Ubuntu, Windows]
+        os: [MacOS, Ubuntu, Windows]
         build_type: [Debug, Release]
         include:
           - os: Windows
             compiler: MSVC
-            c_compiler: cl
-            cxx_compiler: cl
-            generator: Visual Studio 17 2022
-            build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
-          # - os: MacOS (ARM64)
-          #   compiler: AppleClang
-          #   c_compiler: cc
-          #   cxx_compiler: c++
-          #   generator: Xcode
-          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
-          #   runs_on: macos-14
-          # - os: MacOS (AMD64)
-          #   compiler: AppleClang
-          #   c_compiler: cc
-          #   cxx_compiler: c++
-          #   generator: Xcode
-          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
-          #   runs_on: macos-13
+          - os: MacOS
+            compiler: AppleClang
+            runs_on: macos-14
           - os: Ubuntu
             compiler: Gcc
-            c_compiler: gcc-14
-            cxx_compiler: g++-14
-            generator: Ninja
-            build_type_variable: CMAKE_BUILD_TYPE
             runs_on: ubuntu-24.04
 
     steps:
@@ -67,7 +48,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'MacOS') }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.0.1'
+          xcode-version: '15.4'
 
       - name: Install Extra Packages
         if: ${{ matrix.os == 'Ubuntu' }}
@@ -91,11 +72,26 @@ jobs:
             ./.conan_home
           key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
-      - name: Configure
+      - name: Configure (MacOS)
+        if: ${{ matrix.os == 'MacOS' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=${{matrix.build_type}} -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXCode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Configure (Ubuntu)
+        if: ${{ matrix.os == 'Ubuntu' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+
+      - name: Configure (Windows)
+        if: ${{ matrix.os == 'Windows' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Build
         run: |
