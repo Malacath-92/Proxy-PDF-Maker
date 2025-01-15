@@ -45,12 +45,12 @@ jobs:
       - uses: lukka/get-cmake@latest
 
       - name: Xcode Select Version
-        if: ${{ startsWith(matrix.os, 'MacOS') }}
+        if: ${{ matrix.os == 'MacOS' }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '15.4'
 
-      - name: Install Extra Packages
+      - name: Install Extra Packages (Ubuntu)
         if: ${{ matrix.os == 'Ubuntu' }}
         run: |
           sudo add-apt-repository universe
@@ -65,13 +65,13 @@ jobs:
             conan --version
             conan profile detect --force
 
-      - name: Cache Conan
-        uses: actions/cache@v4.2.0
-        with:
-          path: |
-            ./.conan_home
-          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
-
+      - name: Conan set Xcode Generator (MacOS)
+        if: ${{ matrix.os == 'MacOS' }}
+        run: |
+          cd .conan_home/profiles
+          echo "[conf]" >> default
+          echo "tools.cmake.cmaketoolchain:generator=Xcode" >> default
+          
       - name: Configure (MacOS)
         if: ${{ matrix.os == 'MacOS' }}
         run: |
