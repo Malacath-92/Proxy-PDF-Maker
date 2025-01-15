@@ -65,12 +65,13 @@ jobs:
             conan --version
             conan profile detect --force
 
-      - name: Conan set Xcode Generator (MacOS)
+      - name: Conan set Ninja Generator (MacOS)
         if: ${{ matrix.os == 'MacOS' }}
         run: |
           cd .conan_home/profiles
           echo "[conf]" >> default
-          echo "tools.cmake.cmaketoolchain:generator=Xcode" >> default
+          echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
+          echo "" >> default
           
       - name: Configure (MacOS)
         if: ${{ matrix.os == 'MacOS' }}
