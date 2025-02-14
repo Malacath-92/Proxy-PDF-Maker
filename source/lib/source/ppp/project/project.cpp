@@ -45,6 +45,7 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
         PageSize = json["pagesize"];
         Orientation = json["orientation"];
         FileName = json["file_name"].get<std::string>();
+        EnableGuides = json["enable_guides"];
         ExtendedGuides = json["extended_guides"];
         GuidesColorA.r = json["guides_color_a"][0];
         GuidesColorA.g = json["guides_color_a"][1];
@@ -97,6 +98,7 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["pagesize"] = PageSize;
         json["orientation"] = Orientation;
         json["file_name"] = FileName.string();
+        json["enable_guides"] = EnableGuides;
         json["extended_guides"] = ExtendedGuides;
         json["guides_color_a"] = std::array{ GuidesColorA.r, GuidesColorA.g, GuidesColorA.b };
         json["guides_color_b"] = std::array{ GuidesColorB.r, GuidesColorB.g, GuidesColorB.b };

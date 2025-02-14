@@ -67,6 +67,7 @@ struct Project
     std::string PageSize{ CFG.DefaultPageSize };
     std::string Orientation{ "Portrait" };
     fs::path FileName{ "_printme" };
+    bool EnableGuides{ true };
     bool ExtendedGuides{ false };
     ColorRGB8 GuidesColorA{ 0, 0, 0 };
     ColorRGB8 GuidesColorB{ 190, 190, 190 };

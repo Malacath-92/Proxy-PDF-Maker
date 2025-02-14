@@ -305,7 +305,7 @@ class PrintOptionsWidget : public QGroupBox
         const auto color_to_bg_style{
             [](const ColorRGB8& color)
             {
-                return ToQString(fmt::format("background-color: #{:0>6x}", ColorToInt(color)));
+                return ToQString(fmt::format(":enabled {{ background-color:#{:0>6x}; }}", ColorToInt(color)));
             }
         };
 
@@ -315,20 +315,26 @@ class PrintOptionsWidget : public QGroupBox
             "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
         auto* orientation{ new ComboBoxWithLabel{
             "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
-        auto* guides_checkbox{ new QCheckBox{ "Extended Guides" } };
-        guides_checkbox->setChecked(project.ExtendedGuides);
+        auto* enable_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
+        enable_guides_checkbox->setChecked(project.EnableGuides);
+        auto* extended_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
+        extended_guides_checkbox->setChecked(project.ExtendedGuides);
+        extended_guides_checkbox->setEnabled(project.EnableGuides);
         auto* guides_color_a_button{ new QPushButton };
         guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
         auto* guides_color_a{ new WidgetWithLabel{ "Guides Color A", guides_color_a_button } };
+        guides_color_a->setEnabled(project.EnableGuides);
         auto* guides_color_b_button{ new QPushButton };
         guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
         auto* guides_color_b{ new WidgetWithLabel{ "Guides Color B", guides_color_b_button } };
+        guides_color_b->setEnabled(project.EnableGuides);
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
         layout->addWidget(paper_size);
         layout->addWidget(orientation);
-        layout->addWidget(guides_checkbox);
+        layout->addWidget(enable_guides_checkbox);
+        layout->addWidget(extended_guides_checkbox);
         layout->addWidget(guides_color_a);
         layout->addWidget(guides_color_b);
         setLayout(layout);
@@ -361,7 +367,19 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
-        auto change_guides{
+        auto change_enable_guides{
+            [=, &project](Qt::CheckState s)
+            {
+                const bool enabled{ s == Qt::CheckState::Checked };
+                project.EnableGuides = enabled;
+
+                extended_guides_checkbox->setEnabled(enabled);
+                guides_color_a->setEnabled(enabled);
+                guides_color_b->setEnabled(enabled);
+            }
+        };
+
+        auto change_extended_guides{
             [=, &project](Qt::CheckState s)
             {
                 project.ExtendedGuides = s == Qt::CheckState::Checked;
@@ -413,10 +431,14 @@ class PrintOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_orientation);
-        QObject::connect(guides_checkbox,
+        QObject::connect(enable_guides_checkbox,
                          &QCheckBox::checkStateChanged,
                          this,
-                         change_guides);
+                         change_enable_guides);
+        QObject::connect(extended_guides_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         change_extended_guides);
         QObject::connect(guides_color_a_button,
                          &QPushButton::clicked,
                          this,
@@ -429,7 +451,10 @@ class PrintOptionsWidget : public QGroupBox
         PrintOutput = print_output->GetWidget();
         PaperSize = paper_size->GetWidget();
         Orientation = orientation->GetWidget();
-        ExtendedGuides = guides_checkbox;
+        EnableGuides = enable_guides_checkbox;
+        ExtendedGuides = extended_guides_checkbox;
+        GuidesColorA = guides_color_a;
+        GuidesColorB = guides_color_b;
     }
 
     void RefreshWidgets(const Project& project)
@@ -437,14 +462,21 @@ class PrintOptionsWidget : public QGroupBox
         PrintOutput->setText(ToQString(project.FileName.c_str()));
         PaperSize->setCurrentText(ToQString(project.PageSize));
         Orientation->setCurrentText(ToQString(project.Orientation));
-        ExtendedGuides->setChecked(project.ExtendedGuides);
+        EnableGuides->setChecked(project.EnableGuides);
+
+        ExtendedGuides->setEnabled(project.EnableGuides);
+        GuidesColorA->setEnabled(project.EnableGuides);
+        GuidesColorB->setEnabled(project.EnableGuides);
     }
 
   private:
     QLineEdit* PrintOutput;
     QComboBox* PaperSize;
     QComboBox* Orientation;
+    QCheckBox* EnableGuides;
     QCheckBox* ExtendedGuides;
+    WidgetWithLabel* GuidesColorA;
+    WidgetWithLabel* GuidesColorB;
 };
 
 class DefaultBacksidePreview : public QWidget

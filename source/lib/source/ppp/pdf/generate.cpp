@@ -222,6 +222,11 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
+                        if (!project.EnableGuides)
+                        {
+                            continue;
+                        }
+
                         const Length bleed{ card->Oversized ? 2 * project.BleedEdge : project.BleedEdge };
                         if (card->Oversized)
                         {
