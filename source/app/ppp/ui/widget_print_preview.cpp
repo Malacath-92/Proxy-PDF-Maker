@@ -304,7 +304,7 @@ class PrintPreview::PagePreview : public QWidget
         setLayout(layout);
         setStyleSheet("background-color: white;");
 
-        if (params.GuidesParams.GridParams.IsBackside)
+        if (params.GuidesParams.GridParams.IsBackside || !project.EnableGuides)
         {
             Overlay = nullptr;
         }

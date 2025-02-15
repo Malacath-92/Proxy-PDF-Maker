@@ -315,9 +315,9 @@ class PrintOptionsWidget : public QGroupBox
             "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
         auto* orientation{ new ComboBoxWithLabel{
             "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
-        auto* enable_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
+        auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
         enable_guides_checkbox->setChecked(project.EnableGuides);
-        auto* extended_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
+        auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
         extended_guides_checkbox->setChecked(project.ExtendedGuides);
         extended_guides_checkbox->setEnabled(project.EnableGuides);
         auto* guides_color_a_button{ new QPushButton };
@@ -376,6 +376,8 @@ class PrintOptionsWidget : public QGroupBox
                 extended_guides_checkbox->setEnabled(enabled);
                 guides_color_a->setEnabled(enabled);
                 guides_color_b->setEnabled(enabled);
+
+                main_window()->RefreshPreview();
             }
         };
 
