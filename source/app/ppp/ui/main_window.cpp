@@ -2,6 +2,8 @@
 
 #include <QHBoxLayout>
 
+#include <ppp/ui/popups.hpp>
+
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(Project& project, MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options)
     : AppProject{ project }
     , Scroll{ scroll }
@@ -35,4 +37,18 @@ void PrintProxyPrepMainWindow::RefreshWidgets()
 void PrintProxyPrepMainWindow::RefreshPreview()
 {
     Preview->Refresh(AppProject);
+}
+
+void PrintProxyPrepMainWindow::OpenAboutPopup()
+{
+    if (!isEnabled())
+    {
+        return;
+    }
+
+    AboutPopup about{ nullptr };
+
+    setEnabled(false);
+    about.Show();
+    setEnabled(true);
 }

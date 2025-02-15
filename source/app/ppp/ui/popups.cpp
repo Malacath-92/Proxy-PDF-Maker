@@ -2,15 +2,21 @@
 
 #include <ranges>
 
+#include <QDesktopServices>
 #include <QFileDialog>
+#include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QPushButton>
 #include <QThread>
 #include <QVBoxLayout>
 
 #include <fmt/ranges.h>
 
 #include <ppp/project/image_ops.hpp>
+
 #include <ppp/qt_util.hpp>
+#include <ppp/version.hpp>
 
 std::optional<fs::path> OpenFolderDialog(const fs::path& root)
 {
@@ -84,6 +90,53 @@ std::optional<fs::path> OpenProjectDialog(FileDialogType type)
     return OpenFileDialog("Open Project", ".", "Json Files (*.json)", type);
 }
 
+PopupBase::PopupBase(QWidget* parent)
+    : QDialog(parent)
+{
+    setWindowFlags(Qt::WindowType::FramelessWindowHint |
+                   Qt::WindowType::WindowStaysOnTopHint);
+
+    QPalette old_palette{ palette() };
+    old_palette.setColor(backgroundRole(), 0x111111);
+    setPalette(old_palette);
+    setAutoFillBackground(true);
+}
+
+void PopupBase::Show()
+{
+    open();
+    exec();
+}
+
+void PopupBase::showEvent(QShowEvent* event)
+{
+    QDialog::showEvent(event);
+
+    Recenter();
+}
+
+void PopupBase::resizeEvent(QResizeEvent* event)
+{
+    QDialog::resizeEvent(event);
+
+    // Three times???
+    Recenter();
+    Recenter();
+    Recenter();
+}
+
+void PopupBase::Recenter()
+{
+    const QWidget* parent{ parentWidget() };
+    if (parent != nullptr)
+    {
+        const auto center{ rect().center() };
+        const auto parent_half_size{ parent->rect().size() / 2 };
+        const auto offset{ QPoint(parent_half_size.width(), parent_half_size.height()) - center };
+        move(offset);
+    }
+}
+
 class WorkThread : public QThread
 {
     Q_OBJECT;
@@ -106,21 +159,13 @@ class WorkThread : public QThread
 };
 
 GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
-    : QDialog(parent)
+    : PopupBase(parent)
 {
     auto* text_widget{ new QLabel{ ToQString(text) } };
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(text_widget);
     setLayout(layout);
-
-    setWindowFlags(Qt::WindowType::FramelessWindowHint |
-                   Qt::WindowType::WindowStaysOnTopHint);
-
-    QPalette old_palette{ palette() };
-    old_palette.setColor(backgroundRole(), 0x111111);
-    setPalette(old_palette);
-    setAutoFillBackground(true);
 
     TextLabel = text_widget;
 
@@ -148,8 +193,8 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
         work_thread->Refresh(std::string{ text });
     };
 
-    open();
-    exec();
+    PopupBase::Show();
+
     Refresh = nullptr;
     WorkerThread.reset();
 }
@@ -161,22 +206,6 @@ std::function<void(std::string_view)> GenericPopup::MakePrintFn()
         fmt::print("{}", text);
         UpdateText(text);
     };
-}
-
-void GenericPopup::showEvent(QShowEvent* event)
-{
-    QDialog::showEvent(event);
-    Recenter();
-}
-
-void GenericPopup::resizeEvent(QResizeEvent* event)
-{
-    QDialog::resizeEvent(event);
-
-    // Three times???
-    Recenter();
-    Recenter();
-    Recenter();
 }
 
 void GenericPopup::UpdateText(std::string_view text)
@@ -192,15 +221,56 @@ void GenericPopup::UpdateTextImpl(std::string_view text)
     Recenter();
 }
 
-void GenericPopup::Recenter()
+AboutPopup::AboutPopup(QWidget* parent)
+    : PopupBase(parent)
 {
-    const QWidget* parent{ parentWidget() };
-    if (parent != nullptr)
+    auto* app_text{ new QLabel{ ToQString("Proxy-PDF-Maker") } };
+    auto* version_text{ new QLabel{ ToQString(fmt::format("Version: {}", ProxyPdfVersion())) } };
+    auto* built_text{ new QLabel{ ToQString(fmt::format("Built: {}", ProxyPdfBuildTime())) } };
+    auto* license_text{ new QLabel{ ToQString("Released under MIT License") } };
+
+    auto* buttons{ new QWidget{} };
     {
-        const auto center{ rect().center() };
-        const auto parent_half_size{ parent->rect().size() / 2 };
-        const auto offset{ QPoint(parent_half_size.width(), parent_half_size.height()) - center };
-        move(offset);
+        auto* close_button{ new QPushButton{ "Close" } };
+        auto* issue_button{ new QPushButton{ "Report Issue" } };
+
+        auto* layout{ new QHBoxLayout };
+        layout->addWidget(close_button);
+        layout->addWidget(issue_button);
+        buttons->setLayout(layout);
+
+        auto open_issues_page{
+            [this]()
+            {
+                QDesktopServices::openUrl(ToQString("https://github.com/Malacath-92/Proxy-PDF-Maker/issues"));
+                close();
+            }
+        };
+
+        QObject::connect(close_button,
+                         &QPushButton::clicked,
+                         this,
+                         &AboutPopup::close);
+        QObject::connect(issue_button,
+                         &QPushButton::clicked,
+                         this,
+                         open_issues_page);
+    }
+
+    auto* layout{ new QVBoxLayout };
+    layout->addWidget(app_text);
+    layout->addWidget(version_text);
+    layout->addWidget(built_text);
+    layout->addWidget(license_text);
+    layout->addWidget(buttons);
+    setLayout(layout);
+}
+
+void AboutPopup::keyReleaseEvent(QKeyEvent* event)
+{
+    if (event->key() == Qt::Key::Key_Escape)
+    {
+        close();
     }
 }
 

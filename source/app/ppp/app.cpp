@@ -3,11 +3,14 @@
 #include <ranges>
 
 #include <QFile>
+#include <QKeyEvent>
 #include <QMainWindow>
 #include <QSettings>
 
 #include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
+
+#include <ppp/ui/main_window.hpp>
 
 PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     : QApplication(argc, argv)
@@ -73,6 +76,24 @@ const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) 
         return &Cubes.at(cube_name);
     }
     return nullptr;
+}
+
+bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
+{
+    if (auto* key_event{ dynamic_cast<QKeyEvent*>(event) })
+    {
+        // Catch all F1 events ...
+        if (key_event->key() == Qt::Key::Key_F1)
+        {
+            // ... but only open the About window on the release
+            if (key_event->type() == QEvent::Type::KeyRelease)
+            {
+                static_cast<PrintProxyPrepMainWindow*>(MainWindow)->OpenAboutPopup();
+            }
+            return true;
+        }
+    }
+    return QApplication::notify(object, event);
 }
 
 void PrintProxyPrepApplication::Load()

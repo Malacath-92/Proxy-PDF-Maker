@@ -1,6 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <ppp/constants.hpp>
 #include <ppp/project/project.hpp>
 
 TEST_CASE("Setup folders for tests", "[project_setup_fs]")

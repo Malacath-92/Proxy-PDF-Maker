@@ -23,7 +23,24 @@ std::optional<fs::path> OpenFileDialog(std::string_view title, const fs::path& r
 std::optional<fs::path> OpenImageDialog(const fs::path& root);
 std::optional<fs::path> OpenProjectDialog(FileDialogType type);
 
-class GenericPopup : public QDialog
+class PopupBase : public QDialog
+{
+    Q_OBJECT;
+
+  public:
+    PopupBase(QWidget* parent);
+
+    void Show();
+
+    virtual void showEvent(QShowEvent* event) override;
+
+    virtual void resizeEvent(QResizeEvent* event) override;
+
+  protected:
+    void Recenter();
+};
+
+class GenericPopup : public PopupBase
 {
     Q_OBJECT;
 
@@ -34,10 +51,6 @@ class GenericPopup : public QDialog
 
     std::function<void(std::string_view)> MakePrintFn();
 
-    virtual void showEvent(QShowEvent* event) override;
-
-    virtual void resizeEvent(QResizeEvent* event) override;
-
   private:
     void UpdateText(std::string_view text);
 
@@ -45,9 +58,17 @@ class GenericPopup : public QDialog
     void UpdateTextImpl(std::string_view text);
 
   private:
-    void Recenter();
-
     QLabel* TextLabel;
     std::shared_ptr<void> WorkerThread;
     std::function<void(std::string_view)> Refresh;
+};
+
+class AboutPopup : public PopupBase
+{
+    Q_OBJECT;
+
+  public:
+    AboutPopup(QWidget* parent);
+
+    void keyReleaseEvent(QKeyEvent* event) override;
 };

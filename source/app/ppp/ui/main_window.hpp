@@ -18,6 +18,8 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void RefreshWidgets();
     void RefreshPreview();
 
+    void OpenAboutPopup();
+
   private:
     Project& AppProject;
 

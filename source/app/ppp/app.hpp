@@ -28,6 +28,8 @@ class PrintProxyPrepApplication : public QApplication
     const cv::Mat* GetCube(const std::string& cube_name) const;
 
   private:
+    bool notify(QObject*, QEvent*) override;
+
     void Load();
     void Save() const;
 
