@@ -17,10 +17,13 @@ On the top-left you can switch over to the `Preview`, which shows you a preview 
 ## Options
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here.
 
-### Extended Guides
+### Enable Guides
+Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
+
+#### Extended Guides
 Extends the cutting guides for the cards on the edges of the layout to the very edge of the page, will require a tiny bit more ink to print but makes cutting much easier.
 
-### Guides Color A/B:
+#### Guides Color A/B:
 Guides are dashed lines made from these two colors. By default these are black and light gray. Choose colors that fit best for the cards you are printing.
 
 ### Bleed Edge
@@ -33,7 +36,7 @@ The default backside is `__back.png`, if that file is not available a question m
 
 To change the backside for an individual card, click on the backside for that card in the card grid and browse to the image you want.
 
-### Offset
+#### Offset
 In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Offset` field.
 
 ### Enable Oversized Option
@@ -68,7 +71,7 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 - Combinear
 
 ## Actions
-At the top of the options you can see a `Actions` section, which are all buttons do perform various actions.
+At the top of the options you can see an `Actions` section, which are all buttons do perform various actions.
 
 ### Run Cropper
 When adding new images, removing images, changing color cube, changing bleed edge, or changing preview resolution you will have to press this button to update previews, the card grid, and to render the document.
@@ -89,9 +92,9 @@ Lets you choose a folder in which you have your images, this is saved with the p
 Opens the image folder for this project in a file explorer.
 
 
-# SOME NOTES:
-- If you need support for a new feature, please open an Issue.
+# Troubleshooting:
+- If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.
 - The program will automatically save if you close the window. It will not save if it crashes! The data is stored in `proj.json`.
-- `proj.cache` is a file that is made that stores the data for the thumbnails.
+- `proj.cache` is a file that stores data for the thumbnails.
 - If the program crashes on startup first try to delete these two files, if that doesn't do it open an issue.
-- When opening an issue to report a bug, please attach a zip file containing your `images` folder. `proj.json`, and `proj.cache`.
+- When opening an issue to report a bug, please attach a zip file containing your `images` folder. `proj.json`, and `proj.cache`. Also include a screenshot of the F1 window if you can still start the program.
