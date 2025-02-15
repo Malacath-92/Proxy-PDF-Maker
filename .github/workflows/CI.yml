@@ -44,7 +44,7 @@ jobs:
 
       - uses: lukka/get-cmake@latest
 
-      - name: Xcode Select Version
+      - name: Xcode Select Version (MacOS)
         if: ${{ matrix.os == 'MacOS' }}
         uses: maxim-lobanov/setup-xcode@v1
         with:

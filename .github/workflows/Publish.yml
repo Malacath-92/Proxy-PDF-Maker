@@ -23,22 +23,6 @@ jobs:
             build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-windows_amd64.zip
-          # - os: MacOS (ARM64)
-          #   compiler: AppleClang
-          #   c_compiler: cc
-          #   cxx_compiler: c++
-          #   generator: Xcode
-          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
-          #   runs_on: macos-14
-          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_arm64.zip
-          # - os: MacOS (AMD64)
-          #   compiler: AppleClang
-          #   c_compiler: cc
-          #   cxx_compiler: c++
-          #   generator: Xcode
-          #   build_type_variable: CMAKE_CONFIGURATION_TYPES
-          #   runs_on: macos-13
-          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-macos_amd64.zip
           - os: Ubuntu
             compiler: Gcc
             c_compiler: gcc-14
@@ -65,26 +49,13 @@ jobs:
 
       - uses: lukka/get-cmake@latest
 
-      - name: Xcode Select Version
-        if: ${{ startsWith(matrix.os, 'MacOS') }}
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '15.0.1'
-
-      - name: Install Extra Packages
+      - name: Install Extra Packages (Ubuntu)
         if: ${{ matrix.os == 'Ubuntu' }}
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
           sudo apt-get install -y libx11-dev libx11-xcb-dev libfontenc-dev libice-dev libsm-dev libxau-dev libxaw7-dev libxcomposite-dev libxcursor-dev libxdamage-dev libxdmcp-dev libxext-dev libxfixes-dev libxi-dev libxinerama-dev libxkbfile-dev libxmu-dev libxmuu-dev libxpm-dev libxrandr-dev libxrender-dev libxres-dev libxss-dev libxt-dev libxtst-dev libxv-dev libxxf86vm-dev libxcb-glx0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-xkb-dev libxcb-icccm4-dev libxcb-image0-dev libxcb-keysyms1-dev libxcb-randr0-dev libxcb-shape0-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-xinerama0-dev libxcb-dri3-dev uuid-dev libxcb-cursor-dev libxcb-dri2-0-dev libxcb-dri3-dev libxcb-present-dev libxcb-composite0-dev libxcb-ewmh-dev libxcb-res0-dev libxcb-util-dev libxcb-util0-dev
           sudo apt-get install gcc-14 g++-14
-
-      - name: Install Conan
-        run: |
-            python -m pip install --upgrade pip
-            pip install conan
-            conan --version
-            conan profile detect --force
 
       - name: Cache Conan
         uses: actions/cache@v4.2.0
@@ -93,11 +64,26 @@ jobs:
             ./.conan_home
           key: ${{ matrix.os }}-Release-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
-      - name: Configure
+      - name: Install Conan
+        run: |
+            python -m pip install --upgrade pip
+            pip install conan
+            conan --version
+            conan profile detect --force
+
+      - name: Configure (Ubuntu)
+        if: ${{ matrix.os == 'Ubuntu' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_FORMAT_TARGETS=OFF -G"${{matrix.generator}}" -D${{matrix.build_type_variable}}=Release -DCMAKE_C_COMPILER=${{matrix.c_compiler}} -DCMAKE_CXX_COMPILER=${{matrix.cxx_compiler}}
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=OFF -DPPP_FORMAT_TARGETS=OFF -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+
+      - name: Configure (Windows)
+        if: ${{ matrix.os == 'Windows' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=OFF -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Build
         run: |
