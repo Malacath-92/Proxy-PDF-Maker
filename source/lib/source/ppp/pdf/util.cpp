@@ -87,7 +87,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     }
 
     // push all unfinished pages into final list
-    pages.insert(pages.begin(),
+    pages.insert(pages.end(),
                  std::make_move_iterator(unfinished_pages.begin()),
                  std::make_move_iterator(unfinished_pages.end()));
 
