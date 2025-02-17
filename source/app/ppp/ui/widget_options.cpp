@@ -389,35 +389,46 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         auto pick_color{
-            [&project](const ColorRGB8& color)
+            [&project](const ColorRGB8& color) -> std::optional<ColorRGB8>
             {
                 const QColor initial_color{ color.r, color.g, color.b };
-                const std::string new_color{ QColorDialog::getColor(initial_color).name().toStdString() };
-                uint32_t color_uint{};
-                std::from_chars(new_color.c_str() + 1, new_color.c_str() + new_color.size(), color_uint, 16);
-                return ColorRGB8{
-                    static_cast<uint8_t>((color_uint >> 16) & 0xff),
-                    static_cast<uint8_t>((color_uint >> 8) & 0xff),
-                    static_cast<uint8_t>(color_uint & 0xff),
-                };
+                const QColor picked_color{ QColorDialog::getColor(initial_color) };
+                if (picked_color.isValid())
+                {
+                    const std::string new_color{ picked_color.name().toStdString() };
+                    uint32_t color_uint{};
+                    std::from_chars(new_color.c_str() + 1, new_color.c_str() + new_color.size(), color_uint, 16);
+                    return ColorRGB8{
+                        static_cast<uint8_t>((color_uint >> 16) & 0xff),
+                        static_cast<uint8_t>((color_uint >> 8) & 0xff),
+                        static_cast<uint8_t>(color_uint & 0xff),
+                    };
+                }
+                return std::nullopt;
             }
         };
 
         auto pick_color_a{
             [=, this, &project]()
             {
-                project.GuidesColorA = pick_color(project.GuidesColorA);
-                guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
-                main_window()->RefreshPreview();
+                if (const auto picked_color{ pick_color(project.GuidesColorA) })
+                {
+                    project.GuidesColorA = picked_color.value();
+                    guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
+                    main_window()->RefreshPreview();
+                }
             }
         };
 
         auto pick_color_b{
             [=, &project]()
             {
-                project.GuidesColorB = pick_color(project.GuidesColorB);
-                guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
-                main_window()->RefreshPreview();
+                if (const auto picked_color{ pick_color(project.GuidesColorB) })
+                {
+                    project.GuidesColorB = picked_color.value();
+                    guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
+                    main_window()->RefreshPreview();
+                }
             }
         };
 
