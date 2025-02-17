@@ -203,7 +203,10 @@ std::function<void(std::string_view)> GenericPopup::MakePrintFn()
 {
     return [this](std::string_view text)
     {
-        fmt::print("{}", text);
+#ifndef NDEBUG
+        fmt::print("{}\n", text);
+        fflush(stdout);
+#endif
         UpdateText(text);
     };
 }
