@@ -98,7 +98,7 @@ bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 
 void PrintProxyPrepApplication::Load()
 {
-    QSettings settings{ "Proxy", "PDF Proxy Printer" };
+    QSettings settings{ "Proxy", "Proxy PDF Maker" };
     if (settings.contains("version"))
     {
         WindowGeometry.emplace() = settings.value("geometry").toByteArray();
@@ -109,7 +109,7 @@ void PrintProxyPrepApplication::Load()
 }
 void PrintProxyPrepApplication::Save() const
 {
-    QSettings settings{ "Proxy", "PDF Proxy Printer" };
+    QSettings settings{ "Proxy", "Proxy PDF Maker" };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", MainWindow->saveGeometry());
     settings.setValue("state", MainWindow->saveState());
