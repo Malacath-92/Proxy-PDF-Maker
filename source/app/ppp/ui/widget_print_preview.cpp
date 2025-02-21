@@ -206,7 +206,7 @@ class GuidesOverlay : public QWidget
 
         PenOne.setDashPattern({ 2.0f, 4.0f });
         PenOne.setWidth(1);
-        PenOne.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorA.g, project.GuidesColorA.b });
+        PenOne.setColor(QColor{ project.GuidesColorA.r, project.GuidesColorA.g, project.GuidesColorA.b });
 
         PenTwo.setDashPattern({ 2.0f, 4.0f });
         PenTwo.setDashOffset(2.0f);
