@@ -71,8 +71,7 @@ void CardImage::Refresh(const Image& image, Params params)
     setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
 
-    static constexpr Pixel card_size_minimum_width_pixels{ 130_pix };
-    setMinimumWidth(card_size_minimum_width_pixels.value);
+    setMinimumWidth(params.MinimumWidth.value);
 
     BleedEdge = params.BleedEdge;
     Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
@@ -98,20 +97,28 @@ int CardImage::heightForWidth(int width) const
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
+    : BacksideImage{ backside_name, CardImage::Params{}.MinimumWidth, project }
+{
+}
+BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project)
     : CardImage{
         project.GetPreview(backside_name).CroppedImage,
-        CardImage::Params{}
+        CardImage::Params{ .MinimumWidth{ minimum_width } }
     }
 {
 }
 
 void BacksideImage::Refresh(const fs::path& backside_name, const Project& project)
 {
+    Refresh(backside_name, CardImage::Params{}.MinimumWidth, project);
+}
+void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
+{
     CardImage::Refresh(
         project.Previews.contains(backside_name)
             ? project.Previews.at(backside_name).CroppedImage
             : project.Previews.at("fallback.png"_p).CroppedImage,
-        CardImage::Params{});
+        CardImage::Params{ .MinimumWidth{ minimum_width } });
 }
 
 StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backside)

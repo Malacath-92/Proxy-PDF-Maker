@@ -16,6 +16,7 @@ class CardImage : public QLabel
         bool RoundedCorners{ true };
         Image::Rotation Rotation{ Image::Rotation::None };
         Length BleedEdge{ 0_mm };
+        Pixel MinimumWidth{ 130_pix };
     };
 
     CardImage(const Image& image, Params params);
@@ -37,8 +38,10 @@ class BacksideImage : public CardImage
 {
   public:
     BacksideImage(const fs::path& backside_name, const Project& project);
+    BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project);
 
     void Refresh(const fs::path& backside_name, const Project& project);
+    void Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project);
 };
 
 class StackedCardBacksideView : public QStackedWidget

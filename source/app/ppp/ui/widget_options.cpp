@@ -499,11 +499,11 @@ class DefaultBacksidePreview : public QWidget
     DefaultBacksidePreview(const Project& project)
     {
         const fs::path& backside_name{ project.BacksideDefault };
-        auto* backside_default_image{ new BacksideImage{ backside_name, project } };
 
-        static constexpr auto backside_width{ 130 };
-        const auto backside_height{ backside_default_image->heightForWidth(backside_width) };
-        backside_default_image->setFixedWidth(backside_width);
+        auto* backside_default_image{ new BacksideImage{ backside_name, MinimumWidth, project } };
+
+        const auto backside_height{ backside_default_image->heightForWidth(MinimumWidth.value) };
+        backside_default_image->setFixedWidth(MinimumWidth.value);
         backside_default_image->setFixedHeight(backside_height);
 
         auto* backside_default_label{ new QLabel{ ToQString(backside_name.c_str()) } };
@@ -526,11 +526,13 @@ class DefaultBacksidePreview : public QWidget
     void Refresh(const Project& project)
     {
         const fs::path& backside_name{ project.BacksideDefault };
-        DefaultImage->Refresh(backside_name, project);
+        DefaultImage->Refresh(backside_name, MinimumWidth, project);
         DefaultLabel->setText(ToQString(backside_name.c_str()));
     }
 
   private:
+    inline static constexpr auto MinimumWidth{ 60_pix };
+
     BacksideImage* DefaultImage;
     QLabel* DefaultLabel;
 };
