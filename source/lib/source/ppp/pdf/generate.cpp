@@ -228,20 +228,21 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                         }
 
                         const Length bleed{ card->Oversized ? 2 * project.BleedEdge : project.BleedEdge };
+                        const Length offset{ project.CornerWeight * bleed };
                         if (card->Oversized)
                         {
                             draw_cross_at_grid(front_page,
                                                x + 2,
                                                y + 0,
                                                CrossSegment::TopRight,
-                                               -bleed,
-                                               -bleed);
+                                               -offset,
+                                               -offset);
                             draw_cross_at_grid(front_page,
                                                x + 2,
                                                y + 1,
                                                CrossSegment::BottomRight,
-                                               -bleed,
-                                               +bleed);
+                                               -offset,
+                                               +offset);
                         }
                         else
                         {
@@ -249,28 +250,28 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                                                x + 1,
                                                y + 0,
                                                CrossSegment::TopRight,
-                                               -bleed,
-                                               -bleed);
+                                               -offset,
+                                               -offset);
                             draw_cross_at_grid(front_page,
                                                x + 1,
                                                y + 1,
                                                CrossSegment::BottomRight,
-                                               -bleed,
-                                               +bleed);
+                                               -offset,
+                                               +offset);
                         }
 
                         draw_cross_at_grid(front_page,
                                            x,
                                            y + 0,
                                            CrossSegment::TopLeft,
-                                           +bleed,
-                                           -bleed);
+                                           +offset,
+                                           -offset);
                         draw_cross_at_grid(front_page,
                                            x,
                                            y + 1,
                                            CrossSegment::BottomLeft,
-                                           +bleed,
-                                           +bleed);
+                                           +offset,
+                                           +offset);
                     }
                 }
             }

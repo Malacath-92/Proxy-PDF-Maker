@@ -10,6 +10,7 @@
 #include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QPushButton>
+#include <QSlider>
 #include <QToolTip>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -549,6 +550,12 @@ class CardOptionsWidget : public QGroupBox
         bleed_edge_spin->setValue(project.BleedEdge / 1_mm);
         auto* bleed_edge{ new WidgetWithLabel{ "&Bleed Edge", bleed_edge_spin } };
 
+        auto* corner_weight_slider{ new QSlider{ Qt::Horizontal } };
+        corner_weight_slider->setTickPosition(QSlider::NoTicks);
+        corner_weight_slider->setRange(0, 1000);
+        corner_weight_slider->setValue(static_cast<int>(project.CornerWeight * 1000.0f));
+        auto* corner_weight{ new WidgetWithLabel{ "&Corner Weight", corner_weight_slider } };
+
         auto* bleed_back_divider{ new QFrame };
         bleed_back_divider->setFrameShape(QFrame::Shape::HLine);
         bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
@@ -580,6 +587,7 @@ class CardOptionsWidget : public QGroupBox
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(bleed_edge);
+        layout->addWidget(corner_weight);
         layout->addWidget(bleed_back_divider);
         layout->addWidget(backside_checkbox);
         layout->addWidget(backside_default_button);
@@ -605,6 +613,14 @@ class CardOptionsWidget : public QGroupBox
             }
         };
 
+        auto change_corner_weight{
+            [=, &project](int v)
+            {
+                project.CornerWeight = static_cast<float>(v) / 1000.0f;
+                main_window()->RefreshPreview();
+            }
+        };
+
         auto switch_backside_enabled{
             [=, &project](Qt::CheckState s)
             {
@@ -613,6 +629,7 @@ class CardOptionsWidget : public QGroupBox
                 backside_default_preview->setEnabled(project.BacksideEnabled);
                 backside_offset->setEnabled(project.BacksideEnabled);
                 main_window()->Refresh();
+                main_window()->RefreshPreview();
             }
         };
 
@@ -647,6 +664,10 @@ class CardOptionsWidget : public QGroupBox
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_bleed_edge);
+        QObject::connect(corner_weight_slider,
+                         &QSlider::valueChanged,
+                         this,
+                         change_corner_weight);
         QObject::connect(backside_checkbox,
                          &QCheckBox::checkStateChanged,
                          this,

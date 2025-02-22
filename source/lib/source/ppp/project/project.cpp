@@ -35,6 +35,7 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
         }
 
         BleedEdge.value = json["bleed_edge"];
+        CornerWeight = std::clamp(json["corner_weight"].get<float>(), 0.0f, 1.0f);
 
         BacksideEnabled = json["backside_enabled"];
         BacksideDefault = json["backside_default"].get<std::string>();
@@ -88,6 +89,7 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["cards"] = cards;
 
         json["bleed_edge"] = BleedEdge.value;
+        json["corner_weight"] = CornerWeight;
 
         json["backside_enabled"] = BacksideEnabled;
         json["backside_default"] = BacksideDefault.string();

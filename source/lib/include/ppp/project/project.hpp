@@ -54,6 +54,7 @@ struct Project
 
     // Bleed edge options
     Length BleedEdge{ 0_mm };
+    float CornerWeight{ 1.0f };
 
     // Backside options
     bool BacksideEnabled{ false };

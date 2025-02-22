@@ -15,5 +15,5 @@ constexpr uint64_t ImageCacheFormatVersion()
 
 constexpr std::string_view JsonFormatVersion()
 {
-    return "PPP00001";
+    return "PPP00002";
 }

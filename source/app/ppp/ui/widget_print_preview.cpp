@@ -192,6 +192,7 @@ class GuidesOverlay : public QWidget
             }
         }
         BleedEdge = project.BleedEdge;
+        CornerWeight = project.CornerWeight;
 
         const auto& [page_width, page_height]{ params.PageSize.pod() };
         PageSize = params.PageSize;
@@ -241,25 +242,28 @@ class GuidesOverlay : public QWidget
 
         const auto line_length{ pixel_ratio * 12.0_pts };
 
+        const auto offset{ CornerWeight * BleedEdge };
+        const auto guides_rect_size{ CardSizeWithBleedEdge - 2.0f * offset };
+
         Lines.clear();
         for (const auto& idx : Cards)
         {
-            const auto top_left_pos{ FirstCardCorner + idx * CardSizeWithBleedEdge + BleedEdge };
+            const auto top_left_pos{ FirstCardCorner + idx * CardSizeWithBleedEdge + offset };
             const auto top_left_pos_pixels{ pixel_ratio * top_left_pos };
             Lines.push_back(QLineF{ top_left_pos_pixels.x, top_left_pos_pixels.y, top_left_pos_pixels.x + line_length.x, top_left_pos_pixels.y });
             Lines.push_back(QLineF{ top_left_pos_pixels.x, top_left_pos_pixels.y, top_left_pos_pixels.x, top_left_pos_pixels.y + line_length.y });
 
-            const auto top_right_pos{ top_left_pos + dla::vec2(1.0f, 0.0f) * CardSizeWithoutBleed };
+            const auto top_right_pos{ top_left_pos + dla::vec2(1.0f, 0.0f) * guides_rect_size };
             const auto top_right_pos_pixels{ pixel_ratio * top_right_pos };
             Lines.push_back(QLineF{ top_right_pos_pixels.x, top_right_pos_pixels.y, top_right_pos_pixels.x - line_length.x, top_right_pos_pixels.y });
             Lines.push_back(QLineF{ top_right_pos_pixels.x, top_right_pos_pixels.y, top_right_pos_pixels.x, top_right_pos_pixels.y + line_length.y });
 
-            const auto bottom_right_pos{ top_left_pos + dla::vec2(1.0f, 1.0f) * CardSizeWithoutBleed };
+            const auto bottom_right_pos{ top_left_pos + dla::vec2(1.0f, 1.0f) * guides_rect_size };
             const auto bottom_right_pos_pixels{ pixel_ratio * bottom_right_pos };
             Lines.push_back(QLineF{ bottom_right_pos_pixels.x, bottom_right_pos_pixels.y, bottom_right_pos_pixels.x - line_length.x, bottom_right_pos_pixels.y });
             Lines.push_back(QLineF{ bottom_right_pos_pixels.x, bottom_right_pos_pixels.y, bottom_right_pos_pixels.x, bottom_right_pos_pixels.y - line_length.y });
 
-            const auto bottom_left_pos{ top_left_pos + dla::vec2(0.0f, 1.0f) * CardSizeWithoutBleed };
+            const auto bottom_left_pos{ top_left_pos + dla::vec2(0.0f, 1.0f) * guides_rect_size };
             const auto bottom_left_pos_pixels{ pixel_ratio * bottom_left_pos };
             Lines.push_back(QLineF{ bottom_left_pos_pixels.x, bottom_left_pos_pixels.y, bottom_left_pos_pixels.x + line_length.x, bottom_left_pos_pixels.y });
             Lines.push_back(QLineF{ bottom_left_pos_pixels.x, bottom_left_pos_pixels.y, bottom_left_pos_pixels.x, bottom_left_pos_pixels.y - line_length.y });
@@ -270,6 +274,7 @@ class GuidesOverlay : public QWidget
     std::vector<dla::uvec2> Cards;
 
     Length BleedEdge;
+    float CornerWeight;
     Size PageSize;
     Size CardSizeWithBleedEdge;
     Size FirstCardCorner;
