@@ -29,6 +29,9 @@ Guides are dashed lines made from these two colors. By default these are black a
 ### Bleed Edge
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
+### Corner Weight
+This option determines where the cutting guides will be when the bleed edge is bigger than zero. If the slider is all the way to the right the cutting guides will be exactly at the card corners, if it is all the way on the right it is in the corner of printed image of each card. Open the preview while changing this setting to get a good idea of it.
+
 ### Enable Backside
 Adds a backside to each image, which means when printing each other page will automatically be filled with the corresponding backsides for each image. This allows for double-sided cards, different card backs, etc.
 
