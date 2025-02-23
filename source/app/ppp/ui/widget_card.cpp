@@ -88,11 +88,11 @@ int CardImage::heightForWidth(int width) const
 
     if (Rotated)
     {
-        return int(width * card_ratio);
+        return int(std::round(width * card_ratio));
     }
     else
     {
-        return int(width / card_ratio);
+        return int(std::round(width / card_ratio));
     }
 }
 
