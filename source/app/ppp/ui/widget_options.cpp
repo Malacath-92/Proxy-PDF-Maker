@@ -567,9 +567,10 @@ class CardOptionsWidget : public QGroupBox
 
         auto* backside_default_button{ new QPushButton{ "Choose Default" } };
         backside_default_button->setEnabled(project.BacksideEnabled);
+        backside_default_button->setVisible(project.BacksideEnabled);
 
         auto* backside_default_preview{ new DefaultBacksidePreview{ project } };
-        backside_default_preview->setEnabled(project.BacksideEnabled);
+        backside_default_preview->setVisible(project.BacksideEnabled);
 
         auto* backside_offset_spin{ new QDoubleSpinBox };
         backside_offset_spin->setDecimals(2);
@@ -579,6 +580,7 @@ class CardOptionsWidget : public QGroupBox
         backside_offset_spin->setValue(project.BacksideOffset / 1_mm);
         auto* backside_offset{ new WidgetWithLabel{ "Off&set", backside_offset_spin } };
         backside_offset->setEnabled(project.BacksideEnabled);
+        backside_offset->setVisible(project.BacksideEnabled);
 
         auto* back_over_divider{ new QFrame };
         back_over_divider->setFrameShape(QFrame::Shape::HLine);
@@ -628,8 +630,10 @@ class CardOptionsWidget : public QGroupBox
             {
                 project.BacksideEnabled = s == Qt::CheckState::Checked;
                 backside_default_button->setEnabled(project.BacksideEnabled);
-                backside_default_preview->setEnabled(project.BacksideEnabled);
+                backside_default_button->setVisible(project.BacksideEnabled);
+                backside_default_preview->setVisible(project.BacksideEnabled);
                 backside_offset->setEnabled(project.BacksideEnabled);
+                backside_offset->setVisible(project.BacksideEnabled);
                 main_window()->Refresh();
                 main_window()->RefreshPreview();
             }
