@@ -173,9 +173,12 @@ class GuidesOverlay : public QWidget
         {
             for (uint32_t y = 0; y < rows; y++)
             {
-                if (card_grid[y][x].has_value())
+                if (const auto card{ card_grid[y][x] })
                 {
-                    Cards.push_back({ x, y });
+                    Cards.push_back({
+                        { x, y },
+                        card.value().Oversized,
+                    });
                 }
             }
         }
@@ -233,30 +236,36 @@ class GuidesOverlay : public QWidget
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
-        for (const auto& idx : Cards)
+        for (const auto& [idx, oversized]: Cards)
         {
             const auto top_left_corner{ first_card_corner + idx * card_size };
+            const auto oversized_factor{ oversized ? 2.0f : 1.0f };
 
-            const auto top_left_pos{ top_left_corner + offset };
+            const auto top_left_pos{ top_left_corner + oversized_factor * offset };
             Lines.push_back(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x + line_length.x, top_left_pos.y });
             Lines.push_back(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x, top_left_pos.y + line_length.y });
 
-            const auto top_right_pos{ top_left_corner + dla::vec2(1.0f, 0.0f) * card_size + dla::vec2(-1.0f, 1.0f) * offset };
+            const auto top_right_pos{ top_left_corner + dla::vec2(oversized_factor, 0.0f) * card_size + dla::vec2(-1.0f, 1.0f) * oversized_factor * offset };
             Lines.push_back(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x - line_length.x, top_right_pos.y });
             Lines.push_back(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x, top_right_pos.y + line_length.y });
 
-            const auto bottom_right_pos{ top_left_corner + dla::vec2(1.0f, 1.0f) * card_size + dla::vec2(-1.0f, -1.0f) * offset };
+            const auto bottom_right_pos{ top_left_corner + dla::vec2(oversized_factor, 1.0f) * card_size + dla::vec2(-1.0f, -1.0f) * oversized_factor * offset };
             Lines.push_back(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x - line_length.x, bottom_right_pos.y });
             Lines.push_back(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x, bottom_right_pos.y - line_length.y });
 
-            const auto bottom_left_pos{ top_left_corner + dla::vec2(0.0f, 1.0f) * card_size + dla::vec2(1.0f, -1.0f) * offset };
+            const auto bottom_left_pos{ top_left_corner + dla::vec2(0.0f, 1.0f) * card_size + dla::vec2(1.0f, -1.0f) * oversized_factor * offset };
             Lines.push_back(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x + line_length.x, bottom_left_pos.y });
             Lines.push_back(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, bottom_left_pos.y - line_length.y });
         }
     }
 
   private:
-    std::vector<dla::uvec2> Cards;
+    struct Card
+    {
+        dla::uvec2 Index;
+        bool Oversized;
+    };
+    std::vector<Card> Cards;
 
     Length BleedEdge;
     float CornerWeight;
