@@ -6,7 +6,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2025-??-01
+## [0.1.0] - 2025-23-02
+
+### Added
+- Corner weight option that allows for moving the cutting guides.
+- Support for oversized cards in the preview.
+
+### Changed
+- Reduced size of default backside image.
+- Hide all backside options when backsides are disabled.
+- Improved cutting guides accuracy in preview.
+
+### Fixed
+- Cancelling color picker will not set color to black.
+- Rendering lots of pages will not cause a crash anymore.
+- Non-filled pages will be at the end of the document now instead of the start.
+- The App is now correctly named "Proxy PDF Maker" so settings won't clash with the old Python app.
+- Guides colors in the preview will display correctly now.
+
+## [0.0.0] - 2025-16-02
 
 ### Added
 - Initial release, with same features as [print-proxy-prep](https://github.com/preshtildeath/print-proxy-prep).
