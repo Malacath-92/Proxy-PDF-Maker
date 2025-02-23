@@ -305,60 +305,71 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
 ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
-    if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
+    try
     {
-        const auto read = [&in_file]<class T>(TagT<T>) -> T
+        if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
         {
-            T val;
-            in_file.read(reinterpret_cast<char*>(&val), sizeof(val));
-            return val;
-        };
-        const auto read_arr = [&in_file, &read]<class T>(TagT<T>) -> std::vector<T>
-        {
-            const size_t size{ read(Tag<size_t>) };
-            std::vector<T> buffer(size, T{});
+            const auto read = [&in_file]<class T>(TagT<T>) -> T
+            {
+                T val;
+                in_file.read(reinterpret_cast<char*>(&val), sizeof(val));
+                return val;
+            };
+            const auto read_arr = [&in_file, &read]<class T>(TagT<T>) -> std::vector<T>
+            {
+                const size_t size{ read(Tag<size_t>) };
+                std::vector<T> buffer(size, T{});
 
-            const size_t data_size{ size * sizeof(T) };
-            in_file.read(reinterpret_cast<char*>(buffer.data()), data_size);
-            return buffer;
-        };
+                const size_t data_size{ size * sizeof(T) };
+                in_file.read(reinterpret_cast<char*>(buffer.data()), data_size);
+                return buffer;
+            };
 
-        const size_t version_uint64_read{ read(Tag<size_t>) };
-        if (version_uint64_read != ImageCacheFormatVersion())
+            const size_t version_uint64_read{ read(Tag<size_t>) };
+            if (version_uint64_read != ImageCacheFormatVersion())
+            {
+                in_file.close();
+                fs::remove(img_cache_file);
+                return {};
+            }
+
+            const size_t num_images{ read(Tag<size_t>) };
+
+            ImgDict img_dict{};
+            for (size_t i = 0; i < num_images; ++i)
+            {
+                const std::vector img_name_buf{ read_arr(Tag<char>) };
+                const std::string_view img_name{ img_name_buf.data(), img_name_buf.size() };
+
+                ImagePreview img{};
+
+                {
+                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                    img.CroppedImage = Image::Decode(img_buf);
+                }
+
+                {
+                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                    img.UncroppedImage = Image::Decode(img_buf);
+                }
+
+                {
+                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
+                    img.CroppedThumbImage = Image::Decode(img_buf);
+                }
+
+                img_dict[img_name] = std::move(img);
+            }
+            return img_dict;
+        }
+    }
+    catch (std::exception& e)
+    {
+        fmt::print("Failed loading previews: {}", e.what());
+        if (fs::exists(img_cache_file))
         {
-            in_file.close();
             fs::remove(img_cache_file);
-            return {};
         }
-
-        const size_t num_images{ read(Tag<size_t>) };
-
-        ImgDict img_dict{};
-        for (size_t i = 0; i < num_images; ++i)
-        {
-            const std::vector img_name_buf{ read_arr(Tag<char>) };
-            const std::string_view img_name{ img_name_buf.data(), img_name_buf.size() };
-
-            ImagePreview img{};
-
-            {
-                const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                img.CroppedImage = Image::Decode(img_buf);
-            }
-
-            {
-                const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                img.UncroppedImage = Image::Decode(img_buf);
-            }
-
-            {
-                const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                img.CroppedThumbImage = Image::Decode(img_buf);
-            }
-
-            img_dict[img_name] = std::move(img);
-        }
-        return img_dict;
     }
     return {};
 }
