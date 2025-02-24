@@ -9,7 +9,7 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-#include <ppp/pdf/haru_backend.hpp>
+#include <ppp/pdf/backend.hpp>
 #include <ppp/pdf/util.hpp>
 
 std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
@@ -49,7 +49,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    PdfDocument* pdf{ new HaruPdfDocument{ print_fn } };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project.FileName, print_fn) };
 
     for (auto [p, page_images] : images | std::views::enumerate)
     {
@@ -178,6 +178,8 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                     }
                 }
             }
+
+            front_page->Finish();
         }
 
         if (project.BacksideEnabled)
@@ -204,6 +206,8 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                     }
                 }
             }
+
+            back_page->Finish();
         }
     }
 

@@ -6,6 +6,12 @@
 
 #include <ppp/util.hpp>
 
+enum class PdfBackend
+{
+    LibHaru,
+    Hummus,
+};
+
 struct Config
 {
     bool EnableUncrop{ false };
@@ -14,6 +20,7 @@ struct Config
     uint32_t DisplayColumns{ 5 };
     std::string DefaultPageSize{ "Letter" };
     std::string ColorCube{ "None" };
+    PdfBackend Backend{ PdfBackend::LibHaru };
 
     struct PageSizeInfo
     {

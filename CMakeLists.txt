@@ -64,6 +64,7 @@ find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(libharu REQUIRED)
+find_package(PDFHummus REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 # --------------------------------------------------
@@ -110,6 +111,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Widgets
 	opencv::opencv
 	libharu::libharu
+	PDFHummus::PDFWriter
 	nlohmann_json::nlohmann_json)
 
 if(WIN32)

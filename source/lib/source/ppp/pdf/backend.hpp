@@ -1,13 +1,19 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <ranges>
 
 #include <ppp/color.hpp>
+#include <ppp/config.hpp>
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
 #include <ppp/pdf/util.hpp>
+
+class PdfDocument;
+
+std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, fs::path path, PrintFn print_fn);
 
 class PdfPage
 {
@@ -26,6 +32,8 @@ class PdfPage
     virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) = 0;
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) = 0;
+
+    virtual void Finish() = 0;
 
   protected:
     inline static constexpr std::array CrossSegmentOffsets{

@@ -33,6 +33,18 @@ Config LoadConfig()
             config.DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
             config.ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
+            {
+                auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString() };
+                if (pdf_backend == "Hummus")
+                {
+                    config.Backend = PdfBackend::Hummus;
+                }
+                else
+                {
+                    config.Backend = PdfBackend::LibHaru;
+                }
+            }
+
             settings.endGroup();
         }
 
@@ -153,6 +165,21 @@ void SaveConfig(Config config)
             settings.setValue("Display.Columns", config.DisplayColumns);
             settings.setValue("Page.Size", ToQString(config.DefaultPageSize));
             settings.setValue("Color.Cube", ToQString(config.ColorCube));
+
+            const char* pdf_backend{
+                [](PdfBackend backend)
+                {
+                    switch (backend)
+                    {
+                    case PdfBackend::Hummus:
+                        return "Hummus";
+                    case PdfBackend::LibHaru:
+                    default:
+                        return "LibHaru";
+                    }
+                }(config.Backend),
+            };
+            settings.setValue("PDF.Backend", ToQString(pdf_backend));
 
             settings.endGroup();
         }

@@ -10,6 +10,7 @@ class ProxyPDF(ConanFile):
         self.requires("qt/6.7.3")
         self.requires("opencv/4.10.0")
         self.requires("libharu/2.4.4")
+        self.requires("pdf-writer/4.6.7")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
 
@@ -40,3 +41,5 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pfm = False
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
+
+        self.options["pdf-writer"].shared = False
