@@ -1,5 +1,3 @@
-#pragma once
-
 #include <ppp/pdf/haru_backend.hpp>
 #include <ppp/pdf/hummus_backend.hpp>
 
