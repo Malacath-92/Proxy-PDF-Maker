@@ -1,6 +1,6 @@
 #include <ppp/pdf/haru_backend.hpp>
 
-HPDF_REAL ToReal(Length l)
+inline HPDF_REAL ToReal(Length l)
 {
     return static_cast<HPDF_REAL>(l / 1_pts);
 }

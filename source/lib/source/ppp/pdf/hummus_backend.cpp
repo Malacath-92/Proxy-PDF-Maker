@@ -5,7 +5,7 @@
 #include <PDFWriter/PNGImageHandler.h>
 #include <PDFWriter/PageContentContext.h>
 
-double ToReal(Length l)
+inline double ToReal(Length l)
 {
     return static_cast<double>(l / 1_pts);
 }
