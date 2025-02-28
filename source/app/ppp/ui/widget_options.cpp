@@ -716,7 +716,7 @@ class CardOptionsWidget : public QGroupBox
 
     void Refresh(const Project& project)
     {
-        BleedEdgeSpin->setValue(project.BleedEdge.value);
+        BleedEdgeSpin->setValue(project.BleedEdge / 1_mm);
         BacksideCheckbox->setChecked(project.BacksideEnabled);
         BacksideOffsetSpin->setValue(project.BacksideOffset.value);
         OversizedCheckbox->setChecked(project.OversizedEnabled);
