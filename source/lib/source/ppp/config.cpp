@@ -26,7 +26,8 @@ Config LoadConfig()
         {
             settings.beginGroup("DEFAULT");
 
-            config.EnableUncrop = settings.value("Enable.Uncrop", true).toBool();
+            config.EnableUncrop = settings.value("Enable.Uncrop", false).toBool();
+            config.EnableStartupCrop = settings.value("Enable.Startup.Crop", true).toBool();
             config.BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             config.MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
             config.DisplayColumns = settings.value("Display.Columns", 5).toInt();
@@ -160,6 +161,7 @@ void SaveConfig(Config config)
             settings.beginGroup("DEFAULT");
 
             settings.setValue("Enable.Uncrop", config.EnableUncrop);
+            settings.setValue("Enable.Startup.Crop", config.EnableStartupCrop);
             settings.setValue("Base.Preview.Width", config.BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.MaxDPI / 1_dpi);
             settings.setValue("Display.Columns", config.DisplayColumns);

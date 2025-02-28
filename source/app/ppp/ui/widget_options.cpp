@@ -69,23 +69,39 @@ class ActionsWidget : public QGroupBox
         setLayout(layout);
 
         const auto render{
-            [=, this, &project]()
+            [=, this, &application, &project]()
             {
-                const Length bleed_edge{ project.BleedEdge };
-                const fs::path& image_dir{ project.ImageDir };
-                const fs::path& crop_dir{ project.CropDir };
-                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube))
-                {
-                    QToolTip::showText(QCursor::pos(), "Cropper needs to be run first");
-                    return;
-                }
-
                 GenericPopup render_window{ window(), "Rendering PDF..." };
 
                 const auto render_work{
-                    [=, &project, &render_window]()
+                    [=, &project, &application, &render_window]()
                     {
-                        if (auto file_path{ GeneratePdf(project, render_window.MakePrintFn()) })
+                        const auto print_fn{ render_window.MakePrintFn() };
+
+                        {
+                            std::vector<fs::path> used_cards{};
+                            for (const auto& [img, info] : project.Cards)
+                            {
+                                if (info.Num > 0)
+                                {
+                                    used_cards.push_back(img);
+                                    if (project.BacksideEnabled && !std::ranges::contains(used_cards, info.Backside))
+                                    {
+                                        used_cards.push_back(info.Backside.empty() ? project.BacksideDefault : info.Backside);
+                                    }
+                                }
+                            }
+
+                            const Length bleed_edge{ project.BleedEdge };
+                            const fs::path& image_dir{ project.ImageDir };
+                            const fs::path& crop_dir{ project.CropDir };
+                            if (NeedRunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.ColorCube))
+                            {
+                                RunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.MaxDPI, CFG.ColorCube, GetCubeImage(application, CFG.ColorCube), print_fn);
+                            }
+                        }
+
+                        if (auto file_path{ GeneratePdf(project, print_fn) })
                         {
                             OpenFile(file_path.value());
                         }

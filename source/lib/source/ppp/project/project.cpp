@@ -163,7 +163,7 @@ void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
     PPP_LOG("Loading preview cache...");
     Previews = ReadPreviews(ImageCache);
 
-    if (NeedRunCropper(ImageDir, CropDir, BleedEdge, CFG.ColorCube))
+    if (CFG.EnableStartupCrop && NeedRunCropper(ImageDir, CropDir, BleedEdge, CFG.ColorCube))
     {
         PPP_LOG("Cropping images...");
         Previews = RunCropper(
@@ -177,6 +177,10 @@ void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
             color_cube,
             CFG.EnableUncrop,
             print_fn);
+    }
+    else
+    {
+        PPP_LOG("Skipping startup cropping...");
     }
 
     if (NeedCachePreviews(CropDir, Previews))

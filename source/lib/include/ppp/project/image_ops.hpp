@@ -48,6 +48,20 @@ ImgDict RunCropper(const fs::path& image_dir,
                    bool uncrop,
                    PrintFn print_fn);
 
+bool NeedRunMinimalCropper(const fs::path& image_dir,
+                           const fs::path& crop_dir,
+                           std::span<const fs::path> card_list,
+                           Length bleed_edge,
+                           const std::string& color_cube_name);
+void RunMinimalCropper(const fs::path& image_dir,
+                       const fs::path& crop_dir,
+                       std::span<const fs::path> card_list,
+                       Length bleed_edge,
+                       PixelDensity max_density,
+                       const std::string& color_cube_name,
+                       const cv::Mat* color_cube,
+                       PrintFn print_fn);
+
 bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict);
 ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn);
 

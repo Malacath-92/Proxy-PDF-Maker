@@ -351,7 +351,7 @@ class CardScrollArea::CardGrid : public QWidget
         const auto cols{ CFG.DisplayColumns };
         for (auto& [card_name, _] : project.Cards)
         {
-            if (ToQString(card_name).startsWith("__") || !project.Previews.contains(card_name))
+            if (ToQString(card_name).startsWith("__"))
             {
                 continue;
             }

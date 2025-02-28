@@ -236,7 +236,7 @@ class GuidesOverlay : public QWidget
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
-        for (const auto& [idx, oversized]: Cards)
+        for (const auto& [idx, oversized] : Cards)
         {
             const auto top_left_corner{ first_card_corner + idx * card_size };
             const auto oversized_factor{ oversized ? 2.0f : 1.0f };
