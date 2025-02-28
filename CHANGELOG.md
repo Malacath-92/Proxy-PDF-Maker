@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-28-02
+
+### Added
+- Automatic minimal cropping work now happens when rendering the document. For the full functionality of the program you will still need to run the full cropper.
+
+### Fixed
+- Bleed edge spin box will not reset anymore when the side panel refreshes.
+
 ## [0.1.0] - 2025-23-02
 
 ### Added
