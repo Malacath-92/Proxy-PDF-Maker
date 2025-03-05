@@ -76,6 +76,11 @@ else()
 	target_compile_options(proxy_pdf_warnings INTERFACE -Wall -Wextra -pedantic -Werror)
 endif()
 
+add_library(proxy_pdf_options INTERFACE)
+if(MSVC)
+	target_compile_options(proxy_pdf_options INTERFACE /utf-8)
+endif()
+
 add_library(proxy_pdf_definitions INTERFACE)
 if(MSVC)
 	target_compile_definitions(proxy_pdf_definitions INTERFACE
@@ -161,6 +166,7 @@ file(GLOB_RECURSE proxy_pdf_lib_headers CONFIGURE_DEPENDS "source/lib/*.hpp" "so
 add_library(proxy_pdf_lib STATIC ${proxy_pdf_lib_sources} ${proxy_pdf_lib_headers})
 target_link_libraries(proxy_pdf_lib PUBLIC
 	proxy_pdf_warnings
+	proxy_pdf_options
 	proxy_pdf_version
 	proxy_pdf_definitions
 	proxy_pdf_dependencies

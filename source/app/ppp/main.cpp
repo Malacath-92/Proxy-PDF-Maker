@@ -19,6 +19,12 @@
 int main(int argc, char** argv)
 {
 #ifdef WIN32
+    {
+        static constexpr char locale_name[]{ ".utf-8" };
+        std::setlocale(LC_ALL, locale_name);
+        std::locale::global(std::locale(locale_name));
+    }
+
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 #endif
 
