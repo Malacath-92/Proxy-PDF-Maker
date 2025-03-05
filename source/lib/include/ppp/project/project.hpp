@@ -58,6 +58,7 @@ struct Project
 
     // Backside options
     bool BacksideEnabled{ false };
+    bool BacksideEnableGuides{ false };
     fs::path BacksideDefault{ "__back.png" };
     Length BacksideOffset{ 0_mm };
 

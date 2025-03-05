@@ -581,6 +581,11 @@ class CardOptionsWidget : public QGroupBox
         auto* backside_checkbox{ new QCheckBox{ "Enable Backside" } };
         backside_checkbox->setChecked(project.BacksideEnabled);
 
+        auto* backside_guides_checkbox{ new QCheckBox{ "Enable Backside Guides" } };
+        backside_guides_checkbox->setChecked(project.BacksideEnableGuides);
+        backside_guides_checkbox->setEnabled(project.BacksideEnabled);
+        backside_guides_checkbox->setVisible(project.BacksideEnabled);
+
         auto* backside_default_button{ new QPushButton{ "Choose Default" } };
         backside_default_button->setEnabled(project.BacksideEnabled);
         backside_default_button->setVisible(project.BacksideEnabled);
@@ -610,6 +615,7 @@ class CardOptionsWidget : public QGroupBox
         layout->addWidget(corner_weight);
         layout->addWidget(bleed_back_divider);
         layout->addWidget(backside_checkbox);
+        layout->addWidget(backside_guides_checkbox);
         layout->addWidget(backside_default_button);
         layout->addWidget(backside_default_preview);
         layout->addWidget(backside_offset);
@@ -645,12 +651,22 @@ class CardOptionsWidget : public QGroupBox
             [=, &project](Qt::CheckState s)
             {
                 project.BacksideEnabled = s == Qt::CheckState::Checked;
+                backside_guides_checkbox->setEnabled(project.BacksideEnabled);
+                backside_guides_checkbox->setVisible(project.BacksideEnabled);
                 backside_default_button->setEnabled(project.BacksideEnabled);
                 backside_default_button->setVisible(project.BacksideEnabled);
                 backside_default_preview->setVisible(project.BacksideEnabled);
                 backside_offset->setEnabled(project.BacksideEnabled);
                 backside_offset->setVisible(project.BacksideEnabled);
                 main_window()->Refresh();
+                main_window()->RefreshPreview();
+            }
+        };
+
+        auto switch_backside_guides_enabled{
+            [=, &project](Qt::CheckState s)
+            {
+                project.BacksideEnableGuides = s == Qt::CheckState::Checked;
                 main_window()->RefreshPreview();
             }
         };
@@ -694,6 +710,10 @@ class CardOptionsWidget : public QGroupBox
                          &QCheckBox::checkStateChanged,
                          this,
                          switch_backside_enabled);
+        QObject::connect(backside_guides_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         switch_backside_guides_enabled);
         QObject::connect(backside_default_button,
                          &QPushButton::clicked,
                          this,

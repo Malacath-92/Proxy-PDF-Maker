@@ -312,11 +312,7 @@ class PrintPreview::PagePreview : public QWidget
         setLayout(layout);
         setStyleSheet("background-color: white;");
 
-        if (params.GridParams.IsBackside || !project.EnableGuides)
-        {
-            Overlay = nullptr;
-        }
-        else
+        if (project.EnableGuides && (!params.GridParams.IsBackside || project.BacksideEnableGuides))
         {
             Overlay = new GuidesOverlay{ project, card_grid };
             Overlay->setParent(this);
@@ -398,7 +394,7 @@ class PrintPreview::PagePreview : public QWidget
     Length BacksideOffset;
 
     PageGrid* Grid;
-    GuidesOverlay* Overlay;
+    GuidesOverlay* Overlay{ nullptr };
 };
 
 PrintPreview::PrintPreview(const Project& project)
