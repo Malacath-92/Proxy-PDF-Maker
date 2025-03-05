@@ -1,13 +1,13 @@
 #pragma once
 
-#include <QWidget>
+#include <QScrollArea>
 
 class PrintProxyPrepApplication;
 class PrintOptionsWidget;
 class CardOptionsWidget;
 struct Project;
 
-class OptionsWidget : public QWidget
+class OptionsWidget : public QScrollArea
 {
   public:
     OptionsWidget(PrintProxyPrepApplication& application, Project& project);

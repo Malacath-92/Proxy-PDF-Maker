@@ -892,6 +892,8 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     auto* card_options{ new CardOptionsWidget{ project } };
     auto* global_options{ new GlobalOptionsWidget{ application } };
 
+    auto* widget{ new QWidget };
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions_widget);
     layout->addWidget(print_options);
@@ -899,7 +901,11 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     layout->addWidget(global_options);
     layout->addStretch();
 
-    setLayout(layout);
+    widget->setLayout(layout);
+    widget->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::MinimumExpanding);
+
+    setWidget(widget);
+    setMinimumHeight(400);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
 
     PrintOptions = print_options;
@@ -909,6 +915,7 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
 void OptionsWidget::Refresh(const Project& project)
 {
     CardOptions->Refresh(project);
+    widget()->adjustSize();
 }
 
 void OptionsWidget::RefreshWidgets(const Project& project)
