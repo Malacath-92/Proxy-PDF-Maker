@@ -127,13 +127,16 @@ void Project::InitProperties(PrintFn print_fn)
 {
     PPP_LOG("Collecting images...");
 
-    // Get all image files in the crop directory
-    const std::vector crop_list{ ListImageFiles(CropDir) };
+    // Get all image files in the crop directory or the previews
+    const std::vector crop_list{
+        CFG.EnableStartupCrop ? ListImageFiles(CropDir)
+                              : Previews | std::views::keys | std::ranges::to<std::vector>()
+    };
 
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Cards.contains(img))
+        if (!Cards.contains(img) && img != "fallback.png")
         {
             Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))

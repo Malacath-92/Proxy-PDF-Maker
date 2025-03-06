@@ -381,16 +381,19 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
         }
     }
 
-    for (const auto& [img, _] : img_dict)
+    if (!CFG.EnableStartupCrop)
     {
-        if (img == "fallback.png")
+        for (const auto& [img, _] : img_dict)
         {
-            continue;
-        }
+            if (img == "fallback.png")
+            {
+                continue;
+            }
 
-        if (!std::ranges::contains(crop_list, img))
-        {
-            return true;
+            if (!std::ranges::contains(crop_list, img))
+            {
+                return true;
+            }
         }
     }
 
