@@ -1,5 +1,7 @@
 #include <fmt/format.h>
 
+#include <vips/vips.h>
+
 #include <QApplication>
 #include <QPushButton>
 
@@ -27,6 +29,8 @@ int main(int argc, char** argv)
 
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 #endif
+
+    VIPS_INIT(argv[0]);
 
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());

@@ -3,11 +3,14 @@
 #include <filesystem>
 #include <vector>
 
-#include <opencv2/core/mat.hpp>
+#include <vips/basic.h>
 
 #include <ppp/util.hpp>
 
 class QPixmap;
+
+class Image;
+using ColorCube = std::vector<Image>;
 
 class [[nodiscard]] Image
 {
@@ -20,6 +23,8 @@ class [[nodiscard]] Image
 
     Image& operator=(Image&& rhs);
     Image& operator=(const Image& rhs);
+
+    static Image FromMemory(const void* data, int width, int height);
 
     static Image Read(const fs::path& path);
     bool Write(const fs::path& path) const;
@@ -44,9 +49,10 @@ class [[nodiscard]] Image
     Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
-    Image ApplyColorCube(const cv::Mat& color_cube) const;
+    Image ApplyColorCube(const ColorCube& color_cube) const;
 
     Image Resize(PixelSize size) const;
+    Image Thumbnail(Pixel width) const;
 
     Pixel Width() const;
     Pixel Height() const;
@@ -60,5 +66,5 @@ class [[nodiscard]] Image
   private:
     void Release();
 
-    cv::Mat m_Impl{};
+    VipsImage* m_Impl{};
 };

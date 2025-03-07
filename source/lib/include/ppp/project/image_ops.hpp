@@ -11,10 +11,8 @@
 
 #include <ppp/project/project.hpp>
 
-namespace cv
-{
-class Mat;
-}
+class Image;
+using ColorCube = std::vector<Image>;
 
 inline const std::array ValidImageExtensions{
     ".bmp"_p,
@@ -44,7 +42,7 @@ ImgDict RunCropper(const fs::path& image_dir,
                    Length bleed_edge,
                    PixelDensity max_density,
                    const std::string& color_cube_name,
-                   const cv::Mat* color_cube,
+                   const ColorCube* color_cube,
                    bool uncrop,
                    PrintFn print_fn);
 
@@ -59,7 +57,7 @@ void RunMinimalCropper(const fs::path& image_dir,
                        Length bleed_edge,
                        PixelDensity max_density,
                        const std::string& color_cube_name,
-                       const cv::Mat* color_cube,
+                       const ColorCube* color_cube,
                        PrintFn print_fn);
 
 bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict);
@@ -68,4 +66,4 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 ImgDict ReadPreviews(const fs::path& img_cache_file);
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict);
 
-cv::Mat LoadColorCube(const fs::path& file_path);
+ColorCube LoadColorCube(const fs::path& file_path);

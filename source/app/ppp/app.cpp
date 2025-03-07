@@ -62,14 +62,14 @@ const std::string& PrintProxyPrepApplication::GetTheme() const
     return Theme;
 }
 
-void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
+void PrintProxyPrepApplication::SetCube(std::string cube_name, ColorCube cube)
 {
     if (!Cubes.contains(cube_name))
     {
         Cubes[std::move(cube_name)] = std::move(cube);
     }
 }
-const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
+const ColorCube* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
 {
     if (Cubes.contains(cube_name))
     {

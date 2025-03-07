@@ -7,12 +7,11 @@
 #include <dla/scalar_math.h>
 #include <dla/vector_math.h>
 
-#include <opencv2/opencv.hpp>
-
 #include <QFile>
 #include <QString>
 
 #include <ppp/constants.hpp>
+#include <ppp/image.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
@@ -119,7 +118,7 @@ ImgDict RunCropper(const fs::path& image_dir,
                    Length bleed_edge,
                    PixelDensity max_density,
                    const std::string& color_cube_name,
-                   const cv::Mat* color_cube,
+                   const ColorCube* color_cube,
                    bool uncrop,
                    PrintFn print_fn)
 {
@@ -264,7 +263,7 @@ void RunMinimalCropper(const fs::path& image_dir,
                        Length bleed_edge,
                        PixelDensity max_density,
                        const std::string& color_cube_name,
-                       const cv::Mat* color_cube,
+                       const ColorCube* color_cube,
                        PrintFn print_fn)
 {
     const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, color_cube_name) };
@@ -417,8 +416,8 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         out_img_dict[fallback_img] = img_dict.at(fallback_img);
     }
 
-    const PixelSize uncropped_size{ CFG.BasePreviewWidth, dla::math::round(CFG.BasePreviewWidth / CardRatio) };
-    const PixelSize thumb_size{ uncropped_size / 2.0f };
+    const Pixel uncropped_width{ CFG.BasePreviewWidth };
+    const Pixel thumb_width{ uncropped_width / 2.0f };
 
     {
         const bool has_img{ out_img_dict.contains(fallback_img) };
@@ -428,7 +427,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             ImagePreview& image_preview{ out_img_dict[fallback_img] };
             image_preview.UncroppedImage = Image::Read(fallback_img);
             image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Thumbnail(thumb_width);
         }
     }
 
@@ -461,13 +460,13 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             ImagePreview& image_preview{ out_img_dict[img] };
 
             PPP_LOG("Caching uncropped preview for image {}...", img.string());
-            image_preview.UncroppedImage = image.Resize(uncropped_size);
+            image_preview.UncroppedImage = image.Thumbnail(uncropped_width);
 
             PPP_LOG("Caching cropped preview for image {}...", img.string());
             image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, img, 0_mm, 1200_dpi, nullptr);
 
             PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Thumbnail(thumb_width);
         }
         else if (CFG.EnableUncrop && fs::exists(crop_dir / img))
         {
@@ -484,7 +483,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             image_preview.UncroppedImage = UncropImage(image_preview.CroppedImage, img, nullptr);
 
             PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
+            image_preview.CroppedThumbImage = image_preview.CroppedImage.Thumbnail(thumb_width);
         }
         else
         {
@@ -607,7 +606,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
     }
 }
 
-cv::Mat LoadColorCube(const fs::path& file_path)
+ColorCube LoadColorCube(const fs::path& file_path)
 {
     QFile color_cube_file{ ToQString(file_path) };
     color_cube_file.open(QFile::ReadOnly);
@@ -668,14 +667,12 @@ cv::Mat LoadColorCube(const fs::path& file_path)
     };
 
     const int size{ color_cube_size };
-    const int data_size{ size * size * size * 3 };
+    const int data_size{ size * size * 3 };
 
-    cv::Mat color_cube;
-    color_cube.create(std::vector<int>{ size, size, size }, CV_8UC3);
-    color_cube.cols = size;
-    color_cube.rows = size;
-    assert(color_cube.dataend - color_cube.datastart == data_size);
-    memcpy(color_cube.data, color_cube_data.data(), data_size);
-
+    ColorCube color_cube;
+    for (int i = 0; i < size; i++)
+    {
+        color_cube.push_back(Image::FromMemory(color_cube_data.data() + i * data_size, size, size));
+    }
     return color_cube;
 }

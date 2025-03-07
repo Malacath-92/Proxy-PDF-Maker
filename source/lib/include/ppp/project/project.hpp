@@ -30,12 +30,12 @@ struct Project
 {
     Project() = default;
 
-    void Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn);
+    void Load(const fs::path& json_path, const ColorCube* color_cube, PrintFn print_fn);
     void Dump(const fs::path& json_path, PrintFn print_fn) const;
 
-    void Init(const cv::Mat* color_cube, PrintFn print_fn);
+    void Init(const ColorCube* color_cube, PrintFn print_fn);
     void InitProperties(PrintFn print_fn);
-    void InitImages(const cv::Mat* color_cube, PrintFn print_fn);
+    void InitImages(const ColorCube* color_cube, PrintFn print_fn);
 
     const ImagePreview& GetPreview(const fs::path& image_name) const;
     const ImagePreview& GetBacksidePreview(const fs::path& image_name) const;

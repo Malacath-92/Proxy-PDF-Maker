@@ -71,7 +71,7 @@ TEST_CASE("Uncrop image", "[image_uncrop]")
 TEST_CASE("Apply color cube", "[image_color_cube]")
 {
     {
-        const cv::Mat vibrance_cube{ LoadColorCube("res/cubes/Foils Vibrance.CUBE") };
+        const ColorCube vibrance_cube{ LoadColorCube("res/cubes/Foils Vibrance.CUBE") };
         const Image filtered_image{ g_BaseImage.ApplyColorCube(vibrance_cube) };
         REQUIRE(filtered_image.Width() == 248_pix);
         REQUIRE(filtered_image.Height() == 322_pix);
@@ -85,7 +85,7 @@ TEST_CASE("Apply color cube", "[image_color_cube]")
     }
 
     {
-        const cv::Mat madness_cube{ LoadColorCube("tests/madness.CUBE") };
+        const ColorCube madness_cube{ LoadColorCube("tests/madness.CUBE") };
         const Image filtered_image{ g_BaseImage.ApplyColorCube(madness_cube) };
         REQUIRE(filtered_image.Width() == 248_pix);
         REQUIRE(filtered_image.Height() == 322_pix);

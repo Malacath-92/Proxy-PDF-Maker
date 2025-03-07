@@ -55,7 +55,7 @@ void PreloadCube(PrintProxyPrepApplication& application, std::string_view cube_n
     application.SetCube(std::string{ cube_name }, LoadColorCube(cube_path));
 }
 
-const cv::Mat* GetCubeImage(PrintProxyPrepApplication& application, std::string_view cube_name)
+const ColorCube* GetCubeImage(PrintProxyPrepApplication& application, std::string_view cube_name)
 {
     PreloadCube(application, cube_name);
     return application.GetCube(std::string{ cube_name });

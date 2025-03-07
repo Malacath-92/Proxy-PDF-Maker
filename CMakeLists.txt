@@ -62,7 +62,7 @@ string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
 # Find packages
 find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(libvips REQUIRED)
 find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
 find_package(nlohmann_json REQUIRED)
@@ -114,7 +114,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
-	opencv::opencv
+	libvips::vips-cpp
 	libharu::libharu
 	PDFHummus::PDFWriter
 	nlohmann_json::nlohmann_json)

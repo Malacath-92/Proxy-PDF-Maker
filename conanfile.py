@@ -8,7 +8,7 @@ class ProxyPDF(ConanFile):
     def requirements(self):
         self.requires("fmt/9.1.0")
         self.requires("qt/6.7.3")
-        self.requires("opencv/4.10.0")
+        self.requires("libvips/8.14.2")
         self.requires("libharu/2.4.4")
         self.requires("pdf-writer/4.6.7")
         self.requires("nlohmann_json/3.11.3")
@@ -23,23 +23,6 @@ class ProxyPDF(ConanFile):
         self.options["qt"].with_mysql = False
         self.options["qt"].with_sqlite3 = False
 
-        self.options["opencv"].img_hash = True
-
-        self.options["opencv"].shared = False
-        self.options["opencv"].ml = False
-        self.options["opencv"].dnn = False
-        self.options["opencv"].flann = False
-        self.options["opencv"].video = False
-        self.options["opencv"].calib3d = False
-        self.options["opencv"].videoio = False
-        self.options["opencv"].objdetect = False
-        self.options["opencv"].stitching = False
-        self.options["opencv"].with_ffmpeg = False
-        self.options["opencv"].with_openexr = False
-        self.options["opencv"].with_wayland = False
-        self.options["opencv"].with_imgcodec_hdr = False
-        self.options["opencv"].with_imgcodec_pfm = False
-        self.options["opencv"].with_imgcodec_pxm = False
-        self.options["opencv"].with_imgcodec_sunraster = False
+        self.options["libvips"].shared = False
 
         self.options["pdf-writer"].shared = False

@@ -7,7 +7,7 @@
 
 #include <ppp/project/image_ops.hpp>
 
-void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn)
+void Project::Load(const fs::path& json_path, const ColorCube* color_cube, PrintFn print_fn)
 {
     *this = Project();
 
@@ -117,7 +117,7 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     }
 }
 
-void Project::Init(const cv::Mat* color_cube, PrintFn print_fn)
+void Project::Init(const ColorCube* color_cube, PrintFn print_fn)
 {
     InitImages(color_cube, print_fn);
     InitProperties(print_fn);
@@ -161,7 +161,7 @@ void Project::InitProperties(PrintFn print_fn)
     }
 }
 
-void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
+void Project::InitImages(const ColorCube* color_cube, PrintFn print_fn)
 {
     PPP_LOG("Loading preview cache...");
     Previews = ReadPreviews(ImageCache);
