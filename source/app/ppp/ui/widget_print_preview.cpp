@@ -189,12 +189,10 @@ class GuidesOverlay : public QWidget
         const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
         CardSizeWithBleedEdge = Size{ card_width, card_height };
 
-        PenOne.setDashPattern({ 2.0f, 4.0f });
         PenOne.setWidth(2);
         PenOne.setColor(QColor{ project.GuidesColorA.r, project.GuidesColorA.g, project.GuidesColorA.b });
 
         PenTwo.setDashPattern({ 2.0f, 4.0f });
-        PenTwo.setDashOffset(2.0f);
         PenTwo.setWidth(2);
         PenTwo.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorB.g, project.GuidesColorB.b });
 
