@@ -428,7 +428,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
             ImagePreview& image_preview{ out_img_dict[fallback_img] };
             image_preview.UncroppedImage = Image::Read(fallback_img);
             image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
         }
     }
 
@@ -465,9 +464,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
             PPP_LOG("Caching cropped preview for image {}...", img.string());
             image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, img, 0_mm, 1200_dpi, nullptr);
-
-            PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
         }
         else if (CFG.EnableUncrop && fs::exists(crop_dir / img))
         {
@@ -482,9 +478,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
 
             PPP_LOG("Caching uncropped preview for image {}...", img.string());
             image_preview.UncroppedImage = UncropImage(image_preview.CroppedImage, img, nullptr);
-
-            PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedThumbImage = image_preview.CroppedImage.Resize(thumb_size);
         }
         else
         {
@@ -547,11 +540,6 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                     img.UncroppedImage = Image::Decode(img_buf);
                 }
 
-                {
-                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                    img.CroppedThumbImage = Image::Decode(img_buf);
-                }
-
                 img_dict[img_name] = std::move(img);
             }
             return img_dict;
@@ -597,10 +585,6 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             }
             {
                 const std::vector buf{ image.UncroppedImage.Encode() };
-                write_arr(buf.data(), buf.size());
-            }
-            {
-                const std::vector buf{ image.CroppedThumbImage.Encode() };
                 write_arr(buf.data(), buf.size());
             }
         }

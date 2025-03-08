@@ -22,7 +22,6 @@ struct ImagePreview
 {
     Image UncroppedImage;
     Image CroppedImage;
-    Image CroppedThumbImage;
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
