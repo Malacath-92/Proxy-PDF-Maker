@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-08-03
+
+### Added
+- Option for guides on backside.
+
+### Changed
+- Turn options sidebar into a scroll view to allow smaller windows.
+- Use UTF-8 locale on Windows machines.
+- Slightly reduced size of image cache.
+- Improved visuals of cutting guides in preview.
+
+### Fixed
+- Correctly populate card grid when cropper has not run yet.
+- Keep info popup centered even during startup.
+- The card grid will no longer look glitchy when reducing the amount of columns.
+
 ## [0.2.0] - 2025-28-02
 
 ### Added
