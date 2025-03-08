@@ -295,10 +295,6 @@ class CardScrollArea::CardGrid : public QWidget
   public:
     CardGrid(Project& project)
     {
-        auto* this_layout{ new QGridLayout };
-        this_layout->setContentsMargins(9, 9, 9, 9);
-        setLayout(this_layout);
-
         Refresh(project);
     }
 
@@ -338,14 +334,29 @@ class CardScrollArea::CardGrid : public QWidget
 
     void Refresh(Project& project)
     {
-        auto* this_layout{ static_cast<QGridLayout*>(layout()) };
+        delete layout();
 
-        for (auto& [_, card] : Cards)
-        {
-            this_layout->removeWidget(card);
-            delete card;
-        }
-        Cards.clear();
+        auto* this_layout{ new QGridLayout };
+        this_layout->setContentsMargins(9, 9, 9, 9);
+        setLayout(this_layout);
+
+        std::unordered_map<fs::path, CardWidget*> old_cards{
+            std::move(Cards)
+        };
+        auto eat_or_make_card{
+            [&old_cards, &project](const fs::path& card_name) -> CardWidget*
+            {
+                auto it{ old_cards.find(card_name) };
+                if (it == old_cards.end())
+                {
+                    return new CardWidget{ card_name, project };
+                }
+
+                CardWidget* card{ it->second };
+                old_cards.erase(it);
+                return card;
+            }
+        };
 
         size_t i{ 0 };
         const auto cols{ CFG.DisplayColumns };
@@ -356,7 +367,7 @@ class CardScrollArea::CardGrid : public QWidget
                 continue;
             }
 
-            auto* card_widget{ new CardWidget{ card_name, project } };
+            auto* card_widget{ eat_or_make_card(card_name) };
             Cards[card_name] = card_widget;
 
             const auto x{ static_cast<int>(i / cols) };
@@ -368,7 +379,7 @@ class CardScrollArea::CardGrid : public QWidget
         for (size_t j = i; j < cols; j++)
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
-            auto* card_widget{ new DummyCardWidget{ card_name, project } };
+            auto* card_widget{ eat_or_make_card(card_name) };
             Cards[std::move(card_name)] = card_widget;
             this_layout->addWidget(card_widget, 0, static_cast<int>(j));
             ++i;
@@ -377,6 +388,11 @@ class CardScrollArea::CardGrid : public QWidget
         for (int c = 0; c < this_layout->columnCount(); c++)
         {
             this_layout->setColumnStretch(c, 1);
+        }
+
+        for (auto& [card_name, card] : old_cards)
+        {
+            delete card;
         }
 
         FirstItem = Cards.begin()->second;
