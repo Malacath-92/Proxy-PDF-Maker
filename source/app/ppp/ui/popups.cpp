@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QApplication>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QHBoxLayout>
@@ -128,13 +129,13 @@ void PopupBase::resizeEvent(QResizeEvent* event)
 void PopupBase::Recenter()
 {
     const QWidget* parent{ parentWidget() };
-    if (parent != nullptr)
-    {
-        const auto center{ rect().center() };
-        const auto parent_half_size{ parent->rect().size() / 2 };
-        const auto offset{ QPoint(parent_half_size.width(), parent_half_size.height()) - center };
-        move(offset);
-    }
+    const auto parent_rect{ parent != nullptr
+                                ? parent->rect()
+                                : QApplication::primaryScreen()->geometry() };
+    const auto parent_half_size{ parent_rect.size() / 2 };
+    const auto center{ rect().center() };
+    const auto offset{ QPoint(parent_half_size.width(), parent_half_size.height()) - center };
+    move(offset);
 }
 
 class WorkThread : public QThread
