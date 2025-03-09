@@ -170,7 +170,7 @@ class CardWidget : public QFrame
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
             auto backside_reset{
-                [=, &project]()
+                [=, this, &project]()
                 {
                     project.Cards[CardName].Backside.clear();
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
@@ -179,7 +179,7 @@ class CardWidget : public QFrame
             };
 
             auto backside_choose{
-                [=, &project]()
+                [=, this, &project]()
                 {
                     if (const auto backside_choice{ OpenImageDialog(project.ImageDir) })
                     {
