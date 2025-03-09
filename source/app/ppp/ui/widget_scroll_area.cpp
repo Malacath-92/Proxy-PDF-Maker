@@ -560,7 +560,6 @@ void CardScrollArea::Refresh(Project& project)
 {
     Grid->Refresh(project);
     setMinimumWidth(ComputeMinimumWidth());
-    Grid->adjustSize();
 }
 
 int CardScrollArea::ComputeMinimumWidth()
