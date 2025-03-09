@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-09-03
+
+### Fixed
+- Card grid will correctly refresh again when enabling/disabling backside options.
+
 ## [0.3.0] - 2025-08-03
 
 ### Added
