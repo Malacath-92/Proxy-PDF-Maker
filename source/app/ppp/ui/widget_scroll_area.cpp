@@ -24,12 +24,9 @@ class CardWidget : public QFrame
   public:
     CardWidget(const fs::path& card_name, Project& project)
         : CardName{ card_name }
+        , BacksideEnabled{ project.BacksideEnabled }
+        , OversizedEnabled{ project.OversizedEnabled }
     {
-        auto* card_image{ new CardImage{ project.GetPreview(card_name).CroppedImage, CardImage::Params{} } };
-
-        const bool backside_enabled{ project.BacksideEnabled };
-        const bool oversized_enabled{ project.OversizedEnabled };
-
         const uint32_t initial_number{ card_name.empty() ? 1 : project.Cards[card_name].Num };
 
         auto* number_edit{ new QLineEdit };
@@ -55,110 +52,8 @@ class CardWidget : public QFrame
         number_area->setLayout(number_layout);
         number_area->setFixedHeight(20);
 
-        BacksideImage* backside_image{ nullptr };
-        if (backside_enabled)
-        {
-            backside_image = new BacksideImage{ project.GetBacksideImage(card_name), project };
-        }
-
-        QWidget* card_widget{ nullptr };
-        if (backside_image != nullptr)
-        {
-            auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
-            card_widget = stacked_widget;
-
-            auto backside_reset{
-                [=, &project]()
-                {
-                    project.Cards[card_name].Backside.clear();
-                    auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(card_name), project } };
-                    stacked_widget->RefreshBackside(new_backside_image);
-                }
-            };
-
-            auto backside_choose{
-                [=, &project]()
-                {
-                    if (const auto backside_choice{ OpenImageDialog(project.ImageDir) })
-                    {
-                        if (backside_choice.value() != project.Cards[card_name].Backside)
-                        {
-                            project.Cards[card_name].Backside = backside_choice.value();
-                            auto* new_backside_image{ new BacksideImage{ backside_choice.value(), project } };
-                            stacked_widget->RefreshBackside(new_backside_image);
-                        }
-                    }
-                }
-            };
-
-            if (!card_name.empty())
-            {
-                QObject::connect(stacked_widget,
-                                 &StackedCardBacksideView::BacksideReset,
-                                 this,
-                                 backside_reset);
-                QObject::connect(stacked_widget,
-                                 &StackedCardBacksideView::BacksideClicked,
-                                 this,
-                                 backside_choose);
-            }
-        }
-        else
-        {
-            card_widget = card_image;
-        }
-
-        if (backside_enabled || oversized_enabled)
-        {
-            std::vector<QWidget*> extra_options{};
-
-            if (backside_enabled)
-            {
-                const bool is_short_edge{ card_name.empty() ? false : project.Cards[card_name].BacksideShortEdge };
-
-                auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
-                short_edge_checkbox->setChecked(is_short_edge);
-                short_edge_checkbox->setToolTip("Determines whether to flip backside on short edge");
-
-                QObject::connect(short_edge_checkbox,
-                                 &QCheckBox::checkStateChanged,
-                                 this,
-                                 std::bind_front(&CardWidget::SetShortEdge, this, std::ref(project)));
-
-                extra_options.push_back(short_edge_checkbox);
-            }
-
-            if (oversized_enabled)
-            {
-                const bool is_oversized{ card_name.empty() ? false : project.Cards[card_name].Oversized };
-
-                auto* short_edge_checkbox{ new QCheckBox{ "Big" } };
-                short_edge_checkbox->setChecked(is_oversized);
-                short_edge_checkbox->setToolTip("Determines whether this is an oversized card");
-
-                QObject::connect(short_edge_checkbox,
-                                 &QCheckBox::checkStateChanged,
-                                 this,
-                                 std::bind_front(&CardWidget::SetOversized, this, std::ref(project)));
-
-                extra_options.push_back(short_edge_checkbox);
-            }
-
-            auto* extra_options_layout{ new QHBoxLayout };
-            extra_options_layout->addStretch();
-            for (QWidget* option : extra_options)
-            {
-                extra_options_layout->addWidget(option);
-            }
-            extra_options_layout->addStretch();
-            extra_options_layout->setContentsMargins(0, 0, 0, 0);
-
-            auto* extra_options_area{ new QWidget };
-            extra_options_area->setLayout(extra_options_layout);
-            extra_options_area->setFixedHeight(20);
-
-            ExtraOptions = extra_options_area;
-        }
+        QWidget* card_widget{ MakeCardWidget(project) };
+        ExtraOptions = MakeExtraOptions(project);
 
         auto* this_layout{ new QVBoxLayout };
         this_layout->addWidget(card_widget);
@@ -187,7 +82,7 @@ class CardWidget : public QFrame
         NumberArea = number_area;
 
         const auto margins{ layout()->contentsMargins() };
-        const auto minimum_img_width{ card_image->minimumWidth() };
+        const auto minimum_img_width{ card_widget->minimumWidth() };
         const auto minimum_width{ minimum_img_width + margins.left() + margins.right() };
         setMinimumSize(minimum_width, heightForWidth(minimum_width));
 
@@ -224,6 +119,157 @@ class CardWidget : public QFrame
         NumberEdit->setText(QString{}.setNum(project.Cards[CardName].Num));
     }
 
+    virtual void Refresh(Project& project)
+    {
+        const bool backside_changed{ BacksideEnabled != project.BacksideEnabled };
+        const bool oversized_changed{ OversizedEnabled != project.OversizedEnabled };
+
+        BacksideEnabled = project.BacksideEnabled;
+        OversizedEnabled = project.OversizedEnabled;
+
+        if (backside_changed)
+        {
+            auto* card_widget{ MakeCardWidget(project) };
+            layout()->replaceWidget(ImageWidget, card_widget);
+            std::swap(card_widget, ImageWidget);
+            delete card_widget;
+        }
+
+        if (backside_changed || oversized_changed)
+        {
+            auto* extra_options{ MakeExtraOptions(project) };
+            if (ExtraOptions == nullptr)
+            {
+                static_cast<QVBoxLayout*>(layout())->addWidget(extra_options);
+                ExtraOptions = extra_options;
+            }
+            else if (extra_options == nullptr)
+            {
+                layout()->removeWidget(ExtraOptions);
+                delete ExtraOptions;
+                ExtraOptions = nullptr;
+            }
+            else
+            {
+                layout()->replaceWidget(ExtraOptions, extra_options);
+                std::swap(extra_options, ExtraOptions);
+                delete extra_options;
+            }
+        }
+    }
+
+  private:
+    QWidget* MakeCardWidget(Project& project)
+    {
+        auto* card_image{ new CardImage{ project.GetPreview(CardName).CroppedImage, CardImage::Params{} } };
+
+        if (BacksideEnabled)
+        {
+            BacksideImage* backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
+
+            auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
+
+            auto backside_reset{
+                [=, &project]()
+                {
+                    project.Cards[CardName].Backside.clear();
+                    auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
+                    stacked_widget->RefreshBackside(new_backside_image);
+                }
+            };
+
+            auto backside_choose{
+                [=, &project]()
+                {
+                    if (const auto backside_choice{ OpenImageDialog(project.ImageDir) })
+                    {
+                        if (backside_choice.value() != project.Cards[CardName].Backside)
+                        {
+                            project.Cards[CardName].Backside = backside_choice.value();
+                            auto* new_backside_image{ new BacksideImage{ backside_choice.value(), project } };
+                            stacked_widget->RefreshBackside(new_backside_image);
+                        }
+                    }
+                }
+            };
+
+            if (!CardName.empty())
+            {
+                QObject::connect(stacked_widget,
+                                 &StackedCardBacksideView::BacksideReset,
+                                 this,
+                                 backside_reset);
+                QObject::connect(stacked_widget,
+                                 &StackedCardBacksideView::BacksideClicked,
+                                 this,
+                                 backside_choose);
+            }
+
+            return stacked_widget;
+        }
+        else
+        {
+            return card_image;
+        }
+    }
+
+    QWidget* MakeExtraOptions(Project& project)
+    {
+        if (!BacksideEnabled && !OversizedEnabled)
+        {
+            return nullptr;
+        }
+
+        std::vector<QWidget*> extra_options{};
+
+        if (BacksideEnabled)
+        {
+            const bool is_short_edge{ CardName.empty() ? false : project.Cards[CardName].BacksideShortEdge };
+
+            auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
+            short_edge_checkbox->setChecked(is_short_edge);
+            short_edge_checkbox->setToolTip("Determines whether to flip backside on short edge");
+
+            QObject::connect(short_edge_checkbox,
+                             &QCheckBox::checkStateChanged,
+                             this,
+                             std::bind_front(&CardWidget::SetShortEdge, this, std::ref(project)));
+
+            extra_options.push_back(short_edge_checkbox);
+        }
+
+        if (OversizedEnabled)
+        {
+            const bool is_oversized{ CardName.empty() ? false : project.Cards[CardName].Oversized };
+
+            auto* short_edge_checkbox{ new QCheckBox{ "Big" } };
+            short_edge_checkbox->setChecked(is_oversized);
+            short_edge_checkbox->setToolTip("Determines whether this is an oversized card");
+
+            QObject::connect(short_edge_checkbox,
+                             &QCheckBox::checkStateChanged,
+                             this,
+                             std::bind_front(&CardWidget::SetOversized, this, std::ref(project)));
+
+            extra_options.push_back(short_edge_checkbox);
+        }
+
+        auto* extra_options_layout{ new QHBoxLayout };
+        extra_options_layout->addStretch();
+        for (QWidget* option : extra_options)
+        {
+            extra_options_layout->addWidget(option);
+        }
+        extra_options_layout->addStretch();
+        extra_options_layout->setContentsMargins(0, 0, 0, 0);
+
+        auto* extra_options_area{ new QWidget };
+        extra_options_area->setLayout(extra_options_layout);
+        extra_options_area->setFixedHeight(20);
+
+        return extra_options_area;
+    }
+
   public slots:
     virtual void EditNumber(Project& project)
     {
@@ -258,6 +304,9 @@ class CardWidget : public QFrame
     fs::path CardName;
 
   private:
+    bool BacksideEnabled{ false };
+    bool OversizedEnabled{ false };
+
     QWidget* ImageWidget{ nullptr };
     QLineEdit* NumberEdit{ nullptr };
     QWidget* NumberArea{ nullptr };
@@ -279,6 +328,10 @@ class DummyCardWidget : public CardWidget
         setSizePolicy(sp_retain);
         hide();
     }
+
+    // clang-format off
+    virtual void Refresh(Project& /*project*/) override {}
+    // clang-format on
 
   private slots:
     // clang-format off
@@ -354,6 +407,7 @@ class CardScrollArea::CardGrid : public QWidget
 
                 CardWidget* card{ it->second };
                 old_cards.erase(it);
+                card->Refresh(project);
                 return card;
             }
         };
