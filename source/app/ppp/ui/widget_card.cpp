@@ -2,33 +2,84 @@
 
 #include <QCommonStyle>
 #include <QHBoxLayout>
+#include <QMovie>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QStackedLayout>
+#include <QSvgRenderer>
+#include <QSvgWidget>
 
 #include <ppp/constants.hpp>
 
+#include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-CardImage::CardImage(const Image& image, Params params)
+class SpinnerWidget : public QSvgWidget
 {
-    Refresh(image, params);
+  public:
+    SpinnerWidget()
+        : QSvgWidget{ ":/res/spinner.svg" }
+    {
+    }
+
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
+
+    virtual int heightForWidth(int width) const override
+    {
+        return width;
+    }
+};
+
+CardImage::CardImage(const fs::path& image_name, const Project& project, Params params)
+{
+    Refresh(image_name, project, params);
 }
 
-void CardImage::Refresh(const Image& image, Params params)
+void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
-    const QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
-    QPixmap pixmap{ raw_pixmap };
+    const bool has_image{ project.Previews.contains(image_name) };
+    const bool has_bleed_edge{ params.BleedEdge > 0_mm };
+    QPixmap pixmap{
+        [&, this]()
+        {
+            if (has_image)
+            {
+                if (has_bleed_edge)
+                {
+                    const Image& uncropped_image{ project.Previews.at(image_name).UncroppedImage };
+                    Image image{ CropImage(uncropped_image, image_name, project.BleedEdge, 6800_dpi, nullptr) };
+                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    return raw_pixmap;
+                }
+                else
+                {
+                    const Image& image{ project.Previews.at(image_name).CroppedImage };
+                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    return raw_pixmap;
+                }
+            }
+            else
+            {
+                const int width{ static_cast<int>(CFG.BasePreviewWidth.value) };
+                const int height{ static_cast<int>(width / CardRatio) };
+                QPixmap raw_pixmap{ width, height };
+                return raw_pixmap;
+            }
+        }()
+    };
 
     if (params.RoundedCorners)
     {
         const Length card_corner_radius_inch{ 1_in / 8 };
-        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * image.Size().x / CardSizeWithoutBleed.x };
+        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CardSizeWithoutBleed.x };
 
-        QPixmap clipped_pixmap{ int(image.Width().value), int(image.Height().value) };
+        QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
 
         QPainterPath path{};
@@ -73,8 +124,23 @@ void CardImage::Refresh(const Image& image, Params params)
 
     setMinimumWidth(params.MinimumWidth.value);
 
-    BleedEdge = params.BleedEdge;
+    if (has_image)
+    {
+        Spinner = nullptr;
+    }
+    else
+    {
+        auto* spinner{ new SpinnerWidget };
+
+        QBoxLayout* layout = new QBoxLayout(QBoxLayout::LeftToRight);
+        layout->addWidget(spinner, 0, Qt::AlignCenter);
+        setLayout(layout);
+
+        Spinner = spinner;
+    }
+
     Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
+    BleedEdge = params.BleedEdge;
 }
 
 int CardImage::heightForWidth(int width) const
@@ -102,7 +168,8 @@ BacksideImage::BacksideImage(const fs::path& backside_name, const Project& proje
 }
 BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project)
     : CardImage{
-        project.GetPreview(backside_name).CroppedImage,
+        backside_name,
+        project,
         CardImage::Params{ .MinimumWidth{ minimum_width } }
     }
 {
@@ -116,8 +183,9 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
 {
     CardImage::Refresh(
         project.Previews.contains(backside_name)
-            ? project.Previews.at(backside_name).CroppedImage
-            : project.Previews.at("fallback.png"_p).CroppedImage,
+            ? backside_name
+            : CFG.FallbackName,
+        project,
         CardImage::Params{ .MinimumWidth{ minimum_width } });
 }
 

@@ -114,6 +114,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
+	Qt6::SvgWidgets
 	opencv::opencv
 	libharu::libharu
 	PDFHummus::PDFWriter

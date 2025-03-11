@@ -385,7 +385,7 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
     {
         for (const auto& [img, _] : img_dict)
         {
-            if (img == "fallback.png")
+            if (img == CFG.FallbackName)
             {
                 continue;
             }
@@ -397,7 +397,7 @@ bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
         }
     }
 
-    return !img_dict.contains("fallback.png");
+    return !img_dict.contains(CFG.FallbackName);
 }
 
 ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn)
@@ -411,7 +411,7 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
         }
     }
 
-    const fs::path fallback_img{ "fallback.png" };
+    const fs::path fallback_img{ CFG.FallbackName };
     if (img_dict.contains(fallback_img) && img_dict.at(fallback_img).UncroppedImage.Width() == CFG.BasePreviewWidth)
     {
         out_img_dict[fallback_img] = img_dict.at(fallback_img);

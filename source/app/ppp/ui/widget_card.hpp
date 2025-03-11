@@ -19,9 +19,9 @@ class CardImage : public QLabel
         Pixel MinimumWidth{ 130_pix };
     };
 
-    CardImage(const Image& image, Params params);
+    CardImage(const fs::path& image_name, const Project& project, Params params);
 
-    void Refresh(const Image& image, Params params);
+    void Refresh(const fs::path& image_name, const Project& project, Params params);
 
     virtual bool hasHeightForWidth() const override
     {
@@ -32,6 +32,8 @@ class CardImage : public QLabel
   private:
     bool Rotated;
     Length BleedEdge;
+
+    QWidget* Spinner{ nullptr };
 };
 
 class BacksideImage : public CardImage

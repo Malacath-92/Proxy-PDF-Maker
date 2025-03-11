@@ -46,46 +46,11 @@ class PageGrid : public QWidget
                 {
                     const auto& [image_name, oversized, backside_short_edge]{ card.value() };
 
-                    const auto& image{
-                        [&]() -> std::variant<Image, std::reference_wrapper<const Image>>
-                        {
-                            const bool has_preview{ project.Previews.contains(image_name) };
-                            if (!has_preview)
-                            {
-                                HasMissingPreviews = false;
-                            }
-
-                            const bool has_bleed_edge{ project.BleedEdge > 0_mm };
-                            if (has_bleed_edge)
-                            {
-                                const Image& uncropped_image{
-                                    has_preview
-                                        ? project.Previews.at(image_name).UncroppedImage
-                                        : project.FallbackPreview.UncroppedImage
-                                };
-                                return CropImage(uncropped_image, image_name, project.BleedEdge, 6800_dpi, nullptr);
-                            }
-
-                            return std::cref(has_preview
-                                                 ? project.Previews.at(image_name).CroppedImage
-                                                 : project.FallbackPreview.CroppedImage);
-                        }()
-                    };
-
-                    bool show{ false };
-                    if (show)
-                    {
-                        std::visit([](const auto& image)
-                                   { static_cast<const Image&>(image).DebugDisplay(); },
-                                   image);
-                    }
-
                     const Image::Rotation rotation{ GetCardRotation(params.IsBackside, oversized, backside_short_edge) };
                     auto* image_widget{
                         new CardImage{
-                            std::visit([](const auto& image) -> const Image&
-                                       { return image; },
-                                       image),
+                            image_name,
+                            project,
                             CardImage::Params{
                                 .RoundedCorners{ false },
                                 .Rotation{ rotation },
@@ -115,7 +80,8 @@ class PageGrid : public QWidget
                 const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false, false) };
                 auto* image_widget{
                     new CardImage{
-                        project.FallbackPreview.CroppedImage,
+                        CFG.FallbackName,
+                        project,
                         CardImage::Params{
                             .Rotation{ rotation },
                             .BleedEdge{ project.BleedEdge },

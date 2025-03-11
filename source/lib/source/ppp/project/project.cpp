@@ -136,7 +136,7 @@ void Project::InitProperties(PrintFn print_fn)
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Cards.contains(img) && img != "fallback.png")
+        if (!Cards.contains(img) && img != CFG.FallbackName)
         {
             Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
@@ -192,7 +192,7 @@ void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
         Previews = CachePreviews(ImageDir, CropDir, ImageCache, Previews, print_fn);
     }
 
-    FallbackPreview = Previews["fallback.png"_p];
+    FallbackPreview = Previews[CFG.FallbackName];
 }
 
 const ImagePreview& Project::GetPreview(const fs::path& image_name) const

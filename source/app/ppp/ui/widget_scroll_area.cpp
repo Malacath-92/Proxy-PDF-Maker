@@ -161,7 +161,7 @@ class CardWidget : public QFrame
   private:
     QWidget* MakeCardWidget(Project& project)
     {
-        auto* card_image{ new CardImage{ project.GetPreview(CardName).CroppedImage, CardImage::Params{} } };
+        auto* card_image{ new CardImage{ CardName, project, CardImage::Params{} } };
 
         if (BacksideEnabled)
         {

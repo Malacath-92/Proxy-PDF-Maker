@@ -16,6 +16,7 @@ class ProxyPDF(ConanFile):
 
     def configure(self):
         self.options["qt"].shared = False
+        self.options["qt"].qtsvg = True
         self.options["qt"].opengl = "no"
         self.options["qt"].openssl = False
         self.options["qt"].with_md4c = False
