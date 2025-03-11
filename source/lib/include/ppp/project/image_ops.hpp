@@ -26,10 +26,8 @@ inline const std::array ValidImageExtensions{
 
 void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
 
-template<class FunT>
-void ForEachImageFile(const fs::path& path, FunT&& fun);
-
 std::vector<fs::path> ListImageFiles(const fs::path& path);
+std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn = nullptr);
 Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn = nullptr);

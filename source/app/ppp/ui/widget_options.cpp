@@ -124,13 +124,13 @@ class ActionsWidget : public QGroupBox
                 const Length bleed_edge{ project.BleedEdge };
                 const fs::path& image_dir{ project.ImageDir };
                 const fs::path& crop_dir{ project.CropDir };
-                const bool need_cache_previews{ NeedCachePreviews(crop_dir, project.Previews) };
+                const bool need_cache_previews{ NeedCachePreviews(crop_dir, project.GetPreviews()) };
                 if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || need_cache_previews)
                 {
                     std::atomic_bool data_available{ false };
                     bool rebuild_after_cropper{ need_cache_previews };
                     auto cards{ project.Cards };
-                    auto previews{ project.Previews };
+                    auto previews{ project.GetPreviews() };
                     const auto img_cache{ project.ImageCache };
 
                     {
@@ -182,7 +182,7 @@ class ActionsWidget : public QGroupBox
                     }
 
                     std::swap(cards, project.Cards);
-                    std::swap(previews, project.Previews);
+                    project.SetPreviews(std::move(previews));
 
                     auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
                     if (rebuild_after_cropper)
@@ -254,7 +254,7 @@ class ActionsWidget : public QGroupBox
                     const Length bleed_edge{ project.BleedEdge };
                     const fs::path& image_dir{ project.ImageDir };
                     const fs::path& crop_dir{ project.CropDir };
-                    if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || NeedCachePreviews(crop_dir, project.Previews))
+                    if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || NeedCachePreviews(crop_dir, project.GetPreviews()))
                     {
                         GenericPopup reload_window{ window(), "Reloading project..." };
 

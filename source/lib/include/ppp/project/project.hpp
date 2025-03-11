@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <shared_mutex>
 #include <unordered_map>
 
 #include <ppp/color.hpp>
@@ -36,8 +37,14 @@ struct Project
     void InitProperties(PrintFn print_fn);
     void InitImages(const cv::Mat* color_cube, PrintFn print_fn);
 
-    const ImagePreview& GetPreview(const fs::path& image_name) const;
-    const ImagePreview& GetBacksidePreview(const fs::path& image_name) const;
+    bool HasPreview(const fs::path& image_name) const;
+    const Image& GetCroppedPreview(const fs::path& image_name) const;
+    const Image& GetUncroppedPreview(const fs::path& image_name) const;
+    const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;
+    const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
+
+    ImgDict GetPreviews() const;
+    void SetPreviews(ImgDict previews);
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
 
@@ -48,7 +55,6 @@ struct Project
 
     // List of all cards
     CardMap Cards{};
-    ImgDict Previews{};
     ImagePreview FallbackPreview{};
 
     // Bleed edge options
@@ -74,8 +80,16 @@ struct Project
     ColorRGB8 GuidesColorB{ 190, 190, 190 };
 
   private:
-    Project(const Project&) = default;
+    struct PreviewData
+    {
+        // Previews are private to guarantee thread-safe access
+        std::shared_mutex PreviewsMutex;
+        ImgDict Previews{};
+    };
+    std::unique_ptr<PreviewData> Previews{ nullptr };
+
+    Project(const Project&) = delete;
     Project(Project&&) = default;
-    Project& operator=(const Project&) = default;
+    Project& operator=(const Project&) = delete;
     Project& operator=(Project&&) = default;
 };

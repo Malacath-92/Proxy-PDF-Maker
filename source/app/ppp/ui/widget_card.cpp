@@ -43,7 +43,7 @@ CardImage::CardImage(const fs::path& image_name, const Project& project, Params 
 
 void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
-    const bool has_image{ project.Previews.contains(image_name) };
+    const bool has_image{ project.HasPreview(image_name) };
     const bool has_bleed_edge{ params.BleedEdge > 0_mm };
     QPixmap pixmap{
         [&, this]()
@@ -52,14 +52,14 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             {
                 if (has_bleed_edge)
                 {
-                    const Image& uncropped_image{ project.Previews.at(image_name).UncroppedImage };
+                    const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
                     Image image{ CropImage(uncropped_image, image_name, project.BleedEdge, 6800_dpi, nullptr) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
                 else
                 {
-                    const Image& image{ project.Previews.at(image_name).CroppedImage };
+                    const Image& image{ project.GetCroppedPreview(image_name) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -182,9 +182,7 @@ void BacksideImage::Refresh(const fs::path& backside_name, const Project& projec
 void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
 {
     CardImage::Refresh(
-        project.Previews.contains(backside_name)
-            ? backside_name
-            : CFG.FallbackName,
+        backside_name,
         project,
         CardImage::Params{ .MinimumWidth{ minimum_width } });
 }

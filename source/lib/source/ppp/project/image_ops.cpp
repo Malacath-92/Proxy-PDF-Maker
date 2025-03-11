@@ -32,6 +32,22 @@ std::vector<fs::path> ListImageFiles(const fs::path& path)
     return ListFiles(path, ValidImageExtensions);
 }
 
+std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two)
+{
+    std::vector<fs::path> images{ ListImageFiles(path_one) };
+    ForEachFile(
+        path_two,
+        [&images](const fs::path& path)
+        {
+            if (!std::ranges::contains(images, path))
+            {
+                images.push_back(path.filename());
+            }
+        },
+        ValidImageExtensions);
+    return images;
+}
+
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
 {
     const PixelDensity density{ image.Density(CardSizeWithBleed) };

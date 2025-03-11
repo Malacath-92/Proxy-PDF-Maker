@@ -1,5 +1,7 @@
 #include <ppp/project/project.hpp>
 
+#include <ranges>
+
 #include <nlohmann/json.hpp>
 
 #include <ppp/config.hpp>
@@ -10,6 +12,7 @@
 void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn)
 {
     *this = Project();
+    Previews = std::make_unique<PreviewData>();
 
     PPP_LOG("Initializing project...");
 
@@ -109,7 +112,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         file.close();
 
         PPP_LOG("Writing preview cache...");
-        WritePreviews(ImageCache, Previews);
+        std::shared_lock lock{ Previews->PreviewsMutex };
+        WritePreviews(ImageCache, Previews->Previews);
     }
     else
     {
@@ -117,9 +121,9 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     }
 }
 
-void Project::Init(const cv::Mat* color_cube, PrintFn print_fn)
+void Project::Init(const cv::Mat* /*color_cube*/, PrintFn print_fn)
 {
-    InitImages(color_cube, print_fn);
+    // InitImages(color_cube, print_fn);
     InitProperties(print_fn);
 }
 
@@ -130,7 +134,7 @@ void Project::InitProperties(PrintFn print_fn)
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
         CFG.EnableStartupCrop ? ListImageFiles(CropDir)
-                              : Previews | std::views::keys | std::ranges::to<std::vector>()
+                              : ListImageFiles(ImageDir, CropDir)
     };
 
     // Check that we have all our cards accounted for
@@ -163,17 +167,19 @@ void Project::InitProperties(PrintFn print_fn)
 
 void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
 {
+    std::unique_lock lock{ Previews->PreviewsMutex };
+
     PPP_LOG("Loading preview cache...");
-    Previews = ReadPreviews(ImageCache);
+    Previews->Previews = ReadPreviews(ImageCache);
 
     if (CFG.EnableStartupCrop && NeedRunCropper(ImageDir, CropDir, BleedEdge, CFG.ColorCube))
     {
         PPP_LOG("Cropping images...");
-        Previews = RunCropper(
+        Previews->Previews = RunCropper(
             ImageDir,
             CropDir,
             ImageCache,
-            Previews,
+            Previews->Previews,
             BleedEdge,
             CFG.MaxDPI,
             CFG.ColorCube,
@@ -186,27 +192,58 @@ void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
         PPP_LOG("Skipping startup cropping...");
     }
 
-    if (NeedCachePreviews(CropDir, Previews))
+    if (NeedCachePreviews(CropDir, Previews->Previews))
     {
         PPP_LOG("Generating missing previews...");
-        Previews = CachePreviews(ImageDir, CropDir, ImageCache, Previews, print_fn);
+        Previews->Previews = CachePreviews(ImageDir, CropDir, ImageCache, Previews->Previews, print_fn);
     }
 
-    FallbackPreview = Previews[CFG.FallbackName];
+    FallbackPreview = Previews->Previews[CFG.FallbackName];
 }
 
-const ImagePreview& Project::GetPreview(const fs::path& image_name) const
+bool Project::HasPreview(const fs::path& image_name) const
 {
-    if (Previews.contains(image_name))
+    std::shared_lock lock{ Previews->PreviewsMutex };
+    return Previews->Previews.contains(image_name);
+}
+
+const Image& Project::GetCroppedPreview(const fs::path& image_name) const
+{
+    std::shared_lock lock{ Previews->PreviewsMutex };
+    if (Previews->Previews.contains(image_name))
     {
-        return Previews.at(image_name);
+        return Previews->Previews.at(image_name).CroppedImage;
     }
-    return FallbackPreview;
+    return FallbackPreview.CroppedImage;
+}
+const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
+{
+    std::shared_lock lock{ Previews->PreviewsMutex };
+    if (Previews->Previews.contains(image_name))
+    {
+        return Previews->Previews.at(image_name).CroppedImage;
+    }
+    return FallbackPreview.CroppedImage;
 }
 
-const ImagePreview& Project::GetBacksidePreview(const fs::path& image_name) const
+const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
 {
-    return GetPreview(GetBacksideImage(image_name));
+    return GetCroppedPreview(GetBacksideImage(image_name));
+}
+const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) const
+{
+    return GetUncroppedPreview(GetBacksideImage(image_name));
+}
+
+ImgDict Project::GetPreviews() const
+{
+    std::shared_lock lock{ Previews->PreviewsMutex };
+    return Previews->Previews;
+}
+void Project::SetPreviews(ImgDict previews)
+{
+    std::unique_lock lock{ Previews->PreviewsMutex };
+    Previews->Previews = std::move(previews);
 }
 
 const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
