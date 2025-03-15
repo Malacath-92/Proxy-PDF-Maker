@@ -26,8 +26,9 @@ struct ImagePreview
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
-struct Project
+class Project
 {
+  public:
     Project() = default;
 
     void Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn);

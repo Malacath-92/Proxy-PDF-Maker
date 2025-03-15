@@ -6,7 +6,7 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
-struct Project;
+class Project;
 
 class CardImage : public QLabel
 {

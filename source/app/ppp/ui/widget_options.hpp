@@ -5,7 +5,7 @@
 class PrintProxyPrepApplication;
 class PrintOptionsWidget;
 class CardOptionsWidget;
-struct Project;
+class Project;
 
 class OptionsWidget : public QScrollArea
 {

@@ -2,7 +2,7 @@
 
 #include <QScrollArea>
 
-struct Project;
+class Project;
 
 class PrintPreview : public QScrollArea
 {
