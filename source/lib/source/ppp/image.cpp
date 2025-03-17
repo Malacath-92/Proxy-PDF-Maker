@@ -259,8 +259,8 @@ PixelSize Image::Size() const
 
 PixelDensity Image::Density(::Size real_size) const
 {
-    const auto [w, h] = Size().pod();
-    const auto [bw, bh] = (real_size).pod();
+    const auto [w, h]{ Size().pod() };
+    const auto [bw, bh]{ (real_size).pod() };
     return dla::math::min(w / bw, h / bh);
 }
 
