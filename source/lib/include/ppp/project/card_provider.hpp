@@ -13,6 +13,8 @@ class CardProvider : public QObject, public efsw::FileWatchListener
   public:
     CardProvider(const fs::path& image_dir, const fs::path& crop_dir);
 
+    void Start();
+
     void Refresh(const fs::path& image_dir, const fs::path& crop_dir);
 
     virtual void handleFileAction(efsw::WatchID watchid,
