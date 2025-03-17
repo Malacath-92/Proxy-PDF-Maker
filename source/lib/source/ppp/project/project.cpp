@@ -201,6 +201,22 @@ void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
     FallbackPreview = Previews->Previews[CFG.FallbackName];
 }
 
+void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
+{
+    if (Cards.contains(old_card_name))
+    {
+        Cards[new_card_name] = std::move(Cards.at(old_card_name));
+        Cards.erase(old_card_name);
+    }
+
+    std::unique_lock lock{ Previews->PreviewsMutex };
+    if (Previews->Previews.contains(old_card_name))
+    {
+        Previews->Previews[new_card_name] = std::move(Previews->Previews.at(old_card_name));
+        Previews->Previews.erase(old_card_name);
+    }
+}
+
 bool Project::HasPreview(const fs::path& image_name) const
 {
     std::shared_lock lock{ Previews->PreviewsMutex };
@@ -233,6 +249,12 @@ const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) cons
 const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) const
 {
     return GetUncroppedPreview(GetBacksideImage(image_name));
+}
+
+void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
+{
+    std::shared_lock lock{ Previews->PreviewsMutex };
+    Previews->Previews[image_name] = preview;
 }
 
 ImgDict Project::GetPreviews() const

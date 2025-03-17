@@ -38,11 +38,15 @@ class Project
     void InitProperties(PrintFn print_fn);
     void InitImages(const cv::Mat* color_cube, PrintFn print_fn);
 
+    void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
+
     bool HasPreview(const fs::path& image_name) const;
     const Image& GetCroppedPreview(const fs::path& image_name) const;
     const Image& GetUncroppedPreview(const fs::path& image_name) const;
     const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
+
+    void SetPreview(const fs::path& image_name, ImagePreview preview);
 
     ImgDict GetPreviews() const;
     void SetPreviews(ImgDict previews);
