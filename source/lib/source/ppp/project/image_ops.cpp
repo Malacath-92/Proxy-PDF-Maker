@@ -434,7 +434,6 @@ ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const
     }
 
     const PixelSize uncropped_size{ CFG.BasePreviewWidth, dla::math::round(CFG.BasePreviewWidth / CardRatio) };
-    const PixelSize thumb_size{ uncropped_size / 2.0f };
 
     {
         const bool has_img{ out_img_dict.contains(fallback_img) };
