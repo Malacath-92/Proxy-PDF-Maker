@@ -66,6 +66,7 @@ find_package(OpenCV REQUIRED)
 find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(efsw REQUIRED)
 
 # --------------------------------------------------
 # Create interface libs
@@ -118,7 +119,8 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	opencv::opencv
 	libharu::libharu
 	PDFHummus::PDFWriter
-	nlohmann_json::nlohmann_json)
+	nlohmann_json::nlohmann_json
+	efsw::efsw)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE

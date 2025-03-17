@@ -13,6 +13,7 @@ class ProxyPDF(ConanFile):
         self.requires("pdf-writer/4.6.7")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
+        self.requires("efsw/1.4.1")
 
     def configure(self):
         self.options["qt"].shared = False
