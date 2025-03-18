@@ -68,16 +68,28 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
     switch (action)
     {
     case efsw::Action::Add:
-        CardAdded(filename);
+        if (fs::is_directory(filename))
+        {
+            CardAdded(filename);
+        }
         break;
     case efsw::Action::Delete:
-        CardRemoved(filename);
+        if (fs::is_directory(filename))
+        {
+            CardRemoved(filename);
+        }
         break;
     case efsw::Action::Modified:
-        CardModified(filename);
+        if (fs::is_directory(filename))
+        {
+            CardModified(filename);
+        }
         break;
     case efsw::Action::Moved:
-        CardRenamed(old_filename, filename);
+        if (fs::is_directory(filename))
+        {
+            CardRenamed(old_filename, filename);
+        }
         break;
     }
 }
