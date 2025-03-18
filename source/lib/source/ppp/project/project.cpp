@@ -254,7 +254,7 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) co
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
 {
     std::shared_lock lock{ Previews->PreviewsMutex };
-    Previews->Previews[image_name] = preview;
+    Previews->Previews[image_name] = std::move(preview);
 }
 
 ImgDict Project::GetPreviews() const
