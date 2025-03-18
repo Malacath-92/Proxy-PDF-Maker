@@ -37,7 +37,6 @@ class ActionsWidget : public QGroupBox
     {
         setTitle("Actions");
 
-        auto* cropper_button{ new QPushButton{ "Run Cropper" } };
         auto* render_button{ new QPushButton{ "Render Document" } };
         auto* save_button{ new QPushButton{ "Save Project" } };
         auto* load_button{ new QPushButton{ "Load Project" } };
@@ -45,7 +44,6 @@ class ActionsWidget : public QGroupBox
         auto* open_images_button{ new QPushButton{ "Open Images" } };
 
         const QWidget* buttons[]{
-            cropper_button,
             render_button,
             save_button,
             load_button,
@@ -60,8 +58,7 @@ class ActionsWidget : public QGroupBox
         auto* layout{ new QGridLayout };
         layout->setColumnMinimumWidth(0, minimum_width + 10);
         layout->setColumnMinimumWidth(1, minimum_width + 10);
-        layout->addWidget(cropper_button, 0, 0);
-        layout->addWidget(render_button, 0, 1);
+        layout->addWidget(render_button, 0, 0, 1, 2);
         layout->addWidget(save_button, 1, 0);
         layout->addWidget(load_button, 1, 1);
         layout->addWidget(set_images_button, 2, 0);
@@ -115,90 +112,6 @@ class ActionsWidget : public QGroupBox
                 window()->setEnabled(false);
                 render_window.ShowDuringWork(render_work);
                 window()->setEnabled(true);
-            }
-        };
-
-        const auto run_cropper{
-            [=, this, &application, &project]()
-            {
-                const Length bleed_edge{ project.BleedEdge };
-                const fs::path& image_dir{ project.ImageDir };
-                const fs::path& crop_dir{ project.CropDir };
-                const bool need_cache_previews{ NeedCachePreviews(crop_dir, project.GetPreviews()) };
-                if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || need_cache_previews)
-                {
-                    std::atomic_bool data_available{ false };
-                    bool rebuild_after_cropper{ need_cache_previews };
-                    auto cards{ project.Cards };
-                    auto previews{ project.GetPreviews() };
-                    const auto img_cache{ project.ImageCache };
-
-                    {
-                        GenericPopup crop_window{ window(), "Cropping images..." };
-                        const auto cropper_work{
-                            [=, &application, &data_available, &rebuild_after_cropper, &cards, &previews, &img_cache, &crop_window]()
-                            {
-                                const fs::path& image_cache{ img_cache };
-                                const auto print_fn{ crop_window.MakePrintFn() };
-                                previews = RunCropper(image_dir, crop_dir, image_cache, previews, bleed_edge, CFG.MaxDPI, CFG.ColorCube, GetCubeImage(application, CFG.ColorCube), CFG.EnableUncrop, print_fn);
-                                for (const auto& img : ListImageFiles(crop_dir))
-                                {
-                                    if (!cards.contains(img))
-                                    {
-                                        cards[img] = CardInfo{};
-                                        if (img.string().starts_with("__"))
-                                        {
-                                            cards[img].Num = 0;
-                                        }
-                                        rebuild_after_cropper = true;
-                                    }
-                                }
-
-                                for (auto it = cards.begin(); it != cards.end();)
-                                {
-                                    const auto& [img, _]{ *it };
-                                    if (!previews.contains(img))
-                                    {
-                                        it = cards.erase(it);
-                                        rebuild_after_cropper = true;
-                                    }
-                                    else
-                                    {
-                                        ++it;
-                                    }
-                                }
-
-                                data_available.store(true, std::memory_order::release);
-                            }
-                        };
-
-                        window()->setEnabled(false);
-                        crop_window.ShowDuringWork(cropper_work);
-                    }
-
-                    while (!data_available.load(std::memory_order::acquire))
-                    {
-                        /*spin*/
-                    }
-
-                    std::swap(cards, project.Cards);
-                    project.SetPreviews(std::move(previews));
-
-                    auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-                    if (rebuild_after_cropper)
-                    {
-                        main_window->Refresh();
-                    }
-                    else
-                    {
-                        main_window->RefreshPreview();
-                    }
-                    window()->setEnabled(true);
-                }
-                else
-                {
-                    QToolTip::showText(QCursor::pos(), "All images are already cropped");
-                }
             }
         };
 
