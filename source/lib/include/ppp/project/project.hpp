@@ -16,7 +16,7 @@ struct CardInfo
     bool BacksideShortEdge{ false };
     bool Oversized{ false };
 };
-using CardMap = std::unordered_map<fs::path, CardInfo>;
+using CardMap = std::map<fs::path, CardInfo>;
 
 struct ImagePreview
 {
