@@ -202,10 +202,6 @@ class ActionsWidget : public QGroupBox
                          &QPushButton::clicked,
                          this,
                          render);
-        QObject::connect(cropper_button,
-                         &QPushButton::clicked,
-                         this,
-                         run_cropper);
         QObject::connect(save_button,
                          &QPushButton::clicked,
                          this,
