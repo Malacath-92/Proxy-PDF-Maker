@@ -218,7 +218,24 @@ class ActionsWidget : public QGroupBox
                          &QPushButton::clicked,
                          this,
                          open_images_folder);
+
+        RenderButton = render_button;
     }
+
+    void CropperWorking()
+    {
+        RenderButton->setEnabled(false);
+        RenderButton->setToolTip("Cropper is running...");
+    }
+
+    void CropperDone()
+    {
+        RenderButton->setEnabled(true);
+        RenderButton->setToolTip(QString{});
+    }
+
+  private:
+    QWidget* RenderButton;
 };
 
 class PrintOptionsWidget : public QGroupBox
@@ -837,6 +854,7 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     setMinimumHeight(400);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
 
+    Actions = actions_widget;
     PrintOptions = print_options;
     CardOptions = card_options;
 }
@@ -851,4 +869,14 @@ void OptionsWidget::RefreshWidgets(const Project& project)
 {
     PrintOptions->RefreshWidgets(project);
     CardOptions->RefreshWidgets(project);
+}
+
+void OptionsWidget::CropperWorking()
+{
+    Actions->CropperWorking();
+}
+
+void OptionsWidget::CropperDone()
+{
+    Actions->CropperDone();
 }
