@@ -45,6 +45,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
 {
     const bool has_image{ project.HasPreview(image_name) };
     const bool has_bleed_edge{ params.BleedEdge > 0_mm };
+
     QPixmap pixmap{
         [&, this]()
         {
@@ -53,7 +54,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 if (has_bleed_edge)
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, project.BleedEdge, 6800_dpi, nullptr) };
+                    Image image{ CropImage(uncropped_image, image_name, project.Data.BleedEdge, 6800_dpi, nullptr) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -69,56 +70,13 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 const int width{ static_cast<int>(CFG.BasePreviewWidth.value) };
                 const int height{ static_cast<int>(width / CardRatio) };
                 QPixmap raw_pixmap{ width, height };
+                raw_pixmap.fill(QColor::fromRgb(0x808080));
                 return raw_pixmap;
             }
         }()
     };
+    setPixmap(FinalizePixmap(pixmap));
 
-    if (params.RoundedCorners)
-    {
-        const Length card_corner_radius_inch{ 1_in / 8 };
-        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CardSizeWithoutBleed.x };
-
-        QPixmap clipped_pixmap{ pixmap.size() };
-        clipped_pixmap.fill(Qt::GlobalColor::transparent);
-
-        QPainterPath path{};
-        path.addRoundedRect(
-            QRectF(pixmap.rect()),
-            card_corner_radius_pixels.value,
-            card_corner_radius_pixels.value);
-
-        QPainter painter{ &clipped_pixmap };
-        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
-        painter.setRenderHint(QPainter::RenderHint::SmoothPixmapTransform, true);
-        painter.setClipPath(path);
-        painter.drawPixmap(0, 0, pixmap);
-
-        pixmap = clipped_pixmap;
-    }
-
-    if (params.Rotation != Image::Rotation::None)
-    {
-        QTransform transform{};
-
-        switch (params.Rotation)
-        {
-        case Image::Rotation::Degree90:
-            transform.rotate(90);
-            break;
-        case Image::Rotation::Degree270:
-            transform.rotate(-90);
-            break;
-        case Image::Rotation::Degree180:
-            transform.rotate(180);
-            break;
-        default:
-            break;
-        }
-        pixmap = pixmap.transformed(transform);
-    }
-
-    setPixmap(pixmap);
     setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
 
@@ -138,6 +96,11 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
 
         Spinner = spinner;
     }
+
+    QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
+
+    ImageName = image_name;
+    OriginalParams = params;
 
     Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
     BleedEdge = params.BleedEdge;
@@ -160,6 +123,89 @@ int CardImage::heightForWidth(int width) const
     {
         return int(std::round(width / card_ratio));
     }
+}
+
+void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& preview)
+{
+    if (ImageName == image_name)
+    {
+        if (Spinner != nullptr)
+        {
+            delete Spinner;
+            Spinner = nullptr;
+        }
+
+        QPixmap pixmap{
+            [&, this]()
+            {
+                if (BleedEdge > 0_mm)
+                {
+                    const Image& uncropped_image{ preview.UncroppedImage };
+                    Image image{ CropImage(uncropped_image, image_name, BleedEdge, 6800_dpi, nullptr) };
+                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    return raw_pixmap;
+                }
+                else
+                {
+                    const Image& image{ preview.CroppedImage };
+                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    return raw_pixmap;
+                }
+            }()
+        };
+        setPixmap(FinalizePixmap(pixmap));
+    }
+}
+
+QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
+{
+    QPixmap finalized_pixmap{ pixmap };
+
+    if (OriginalParams.RoundedCorners)
+    {
+        const Length card_corner_radius_inch{ 1_in / 8 };
+        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CardSizeWithoutBleed.x };
+
+        QPixmap clipped_pixmap{ pixmap.size() };
+        clipped_pixmap.fill(Qt::GlobalColor::transparent);
+
+        QPainterPath path{};
+        path.addRoundedRect(
+            QRectF(pixmap.rect()),
+            card_corner_radius_pixels.value,
+            card_corner_radius_pixels.value);
+
+        QPainter painter{ &clipped_pixmap };
+        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
+        painter.setRenderHint(QPainter::RenderHint::SmoothPixmapTransform, true);
+        painter.setClipPath(path);
+        painter.drawPixmap(0, 0, pixmap);
+
+        finalized_pixmap = clipped_pixmap;
+    }
+
+    if (OriginalParams.Rotation != Image::Rotation::None)
+    {
+        QTransform transform{};
+
+        switch (OriginalParams.Rotation)
+        {
+        case Image::Rotation::Degree90:
+            transform.rotate(90);
+            break;
+        case Image::Rotation::Degree270:
+            transform.rotate(-90);
+            break;
+        case Image::Rotation::Degree180:
+            transform.rotate(180);
+            break;
+        default:
+            break;
+        }
+        finalized_pixmap = pixmap.transformed(transform);
+    }
+
+    return finalized_pixmap;
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)

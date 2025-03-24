@@ -9,10 +9,9 @@
 
 #include <ppp/project/image_ops.hpp>
 
-void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn)
+void Project::Load(const fs::path& json_path, PrintFn print_fn)
 {
-    *this = Project();
-    Previews = std::make_unique<PreviewData>();
+    Data = ProjectData{};
 
     PPP_LOG("Initializing project...");
 
@@ -24,39 +23,39 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
             throw std::logic_error{ "Project version not compatible with App version..." };
         }
 
-        ImageDir = json["image_dir"].get<std::string>();
-        CropDir = ImageDir / "crop";
-        ImageCache = json["img_cache"].get<std::string>();
+        Data.ImageDir = json["image_dir"].get<std::string>();
+        Data.CropDir = Data.ImageDir / "crop";
+        Data.ImageCache = json["img_cache"].get<std::string>();
 
         for (const nlohmann::json& card_json : json["cards"])
         {
-            CardInfo& card{ Cards[card_json["name"]] };
+            CardInfo& card{ Data.Cards[card_json["name"]] };
             card.Num = card_json["num"];
             card.Backside = card_json["backside"].get<std::string>();
             card.BacksideShortEdge = card_json["backside_short_edge"];
             card.Oversized = card_json["oversized"];
         }
 
-        BleedEdge.value = json["bleed_edge"];
-        CornerWeight = std::clamp(json["corner_weight"].get<float>(), 0.0f, 1.0f);
+        Data.BleedEdge.value = json["bleed_edge"];
+        Data.CornerWeight = std::clamp(json["corner_weight"].get<float>(), 0.0f, 1.0f);
 
-        BacksideEnabled = json["backside_enabled"];
-        BacksideDefault = json["backside_default"].get<std::string>();
-        BacksideOffset.value = json["backside_offset"];
+        Data.BacksideEnabled = json["backside_enabled"];
+        Data.BacksideDefault = json["backside_default"].get<std::string>();
+        Data.BacksideOffset.value = json["backside_offset"];
 
-        OversizedEnabled = json["oversized_enabled"];
+        Data.OversizedEnabled = json["oversized_enabled"];
 
-        PageSize = json["pagesize"];
-        Orientation = json["orientation"];
-        FileName = json["file_name"].get<std::string>();
-        EnableGuides = json["enable_guides"];
-        ExtendedGuides = json["extended_guides"];
-        GuidesColorA.r = json["guides_color_a"][0];
-        GuidesColorA.g = json["guides_color_a"][1];
-        GuidesColorA.b = json["guides_color_a"][2];
-        GuidesColorB.r = json["guides_color_b"][0];
-        GuidesColorB.g = json["guides_color_b"][1];
-        GuidesColorB.b = json["guides_color_b"][2];
+        Data.PageSize = json["pagesize"];
+        Data.Orientation = json["orientation"];
+        Data.FileName = json["file_name"].get<std::string>();
+        Data.EnableGuides = json["enable_guides"];
+        Data.ExtendedGuides = json["extended_guides"];
+        Data.GuidesColorA.r = json["guides_color_a"][0];
+        Data.GuidesColorA.g = json["guides_color_a"][1];
+        Data.GuidesColorA.b = json["guides_color_a"][2];
+        Data.GuidesColorB.r = json["guides_color_b"][0];
+        Data.GuidesColorB.g = json["guides_color_b"][1];
+        Data.GuidesColorB.b = json["guides_color_b"][2];
     }
     catch (const std::exception& e)
     {
@@ -64,7 +63,7 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
         PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());
     }
 
-    Init(color_cube, print_fn);
+    Init(print_fn);
 }
 
 void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
@@ -76,11 +75,11 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         nlohmann::json json{};
         json["version"] = JsonFormatVersion();
 
-        json["image_dir"] = ImageDir.string();
-        json["img_cache"] = ImageCache.string();
+        json["image_dir"] = Data.ImageDir.string();
+        json["img_cache"] = Data.ImageCache.string();
 
         std::vector<nlohmann::json> cards;
-        for (const auto& [name, card] : Cards)
+        for (const auto& [name, card] : Data.Cards)
         {
             nlohmann::json& card_json{ cards.emplace_back() };
             card_json["name"] = name.string();
@@ -91,29 +90,25 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         }
         json["cards"] = cards;
 
-        json["bleed_edge"] = BleedEdge.value;
-        json["corner_weight"] = CornerWeight;
+        json["bleed_edge"] = Data.BleedEdge.value;
+        json["corner_weight"] = Data.CornerWeight;
 
-        json["backside_enabled"] = BacksideEnabled;
-        json["backside_default"] = BacksideDefault.string();
-        json["backside_offset"] = BacksideOffset.value;
+        json["backside_enabled"] = Data.BacksideEnabled;
+        json["backside_default"] = Data.BacksideDefault.string();
+        json["backside_offset"] = Data.BacksideOffset.value;
 
-        json["oversized_enabled"] = OversizedEnabled;
+        json["oversized_enabled"] = Data.OversizedEnabled;
 
-        json["pagesize"] = PageSize;
-        json["orientation"] = Orientation;
-        json["file_name"] = FileName.string();
-        json["enable_guides"] = EnableGuides;
-        json["extended_guides"] = ExtendedGuides;
-        json["guides_color_a"] = std::array{ GuidesColorA.r, GuidesColorA.g, GuidesColorA.b };
-        json["guides_color_b"] = std::array{ GuidesColorB.r, GuidesColorB.g, GuidesColorB.b };
+        json["pagesize"] = Data.PageSize;
+        json["orientation"] = Data.Orientation;
+        json["file_name"] = Data.FileName.string();
+        json["enable_guides"] = Data.EnableGuides;
+        json["extended_guides"] = Data.ExtendedGuides;
+        json["guides_color_a"] = std::array{ Data.GuidesColorA.r, Data.GuidesColorA.g, Data.GuidesColorA.b };
+        json["guides_color_b"] = std::array{ Data.GuidesColorB.r, Data.GuidesColorB.g, Data.GuidesColorB.b };
 
         file << json;
         file.close();
-
-        PPP_LOG("Writing preview cache...");
-        std::shared_lock lock{ Previews->PreviewsMutex };
-        WritePreviews(ImageCache, Previews->Previews);
     }
     else
     {
@@ -121,9 +116,11 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     }
 }
 
-void Project::Init(const cv::Mat* /*color_cube*/, PrintFn print_fn)
+void Project::Init(PrintFn print_fn)
 {
-    // InitImages(color_cube, print_fn);
+    PPP_LOG("Loading preview cache...");
+    Data.Previews = ReadPreviews(Data.ImageCache);
+
     InitProperties(print_fn);
 }
 
@@ -133,26 +130,26 @@ void Project::InitProperties(PrintFn print_fn)
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        CFG.EnableStartupCrop ? ListImageFiles(CropDir)
-                              : ListImageFiles(ImageDir, CropDir)
+        CFG.EnableStartupCrop ? ListImageFiles(Data.CropDir)
+                              : ListImageFiles(Data.ImageDir, Data.CropDir)
     };
 
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Cards.contains(img) && img != CFG.FallbackName)
+        if (!Data.Cards.contains(img) && img != CFG.FallbackName)
         {
-            Cards[img] = CardInfo{};
+            Data.Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
             {
-                Cards[img].Num = 0;
+                Data.Cards[img].Num = 0;
             }
         }
     }
 
     // And also check we don't have stale cards in here
     const auto stale_images{
-        Cards |
+        Data.Cards |
             std::views::transform([](const auto& item)
                                   { return std::ref(item.first); }) |
             std::views::filter([&](const auto& img)
@@ -161,85 +158,45 @@ void Project::InitProperties(PrintFn print_fn)
     };
     for (const fs::path& img : stale_images)
     {
-        Cards.erase(img);
+        Data.Cards.erase(img);
     }
-}
-
-void Project::InitImages(const cv::Mat* color_cube, PrintFn print_fn)
-{
-    std::unique_lock lock{ Previews->PreviewsMutex };
-
-    PPP_LOG("Loading preview cache...");
-    Previews->Previews = ReadPreviews(ImageCache);
-
-    if (CFG.EnableStartupCrop && NeedRunCropper(ImageDir, CropDir, BleedEdge, CFG.ColorCube))
-    {
-        PPP_LOG("Cropping images...");
-        Previews->Previews = RunCropper(
-            ImageDir,
-            CropDir,
-            ImageCache,
-            Previews->Previews,
-            BleedEdge,
-            CFG.MaxDPI,
-            CFG.ColorCube,
-            color_cube,
-            CFG.EnableUncrop,
-            print_fn);
-    }
-    else
-    {
-        PPP_LOG("Skipping startup cropping...");
-    }
-
-    if (NeedCachePreviews(CropDir, Previews->Previews))
-    {
-        PPP_LOG("Generating missing previews...");
-        Previews->Previews = CachePreviews(ImageDir, CropDir, ImageCache, Previews->Previews, print_fn);
-    }
-
-    FallbackPreview = Previews->Previews[CFG.FallbackName];
 }
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
 {
-    if (Cards.contains(old_card_name))
+    if (Data.Cards.contains(old_card_name))
     {
-        Cards[new_card_name] = std::move(Cards.at(old_card_name));
-        Cards.erase(old_card_name);
+        Data.Cards[new_card_name] = std::move(Data.Cards.at(old_card_name));
+        Data.Cards.erase(old_card_name);
     }
 
-    std::unique_lock lock{ Previews->PreviewsMutex };
-    if (Previews->Previews.contains(old_card_name))
+    if (Data.Previews.contains(old_card_name))
     {
-        Previews->Previews[new_card_name] = std::move(Previews->Previews.at(old_card_name));
-        Previews->Previews.erase(old_card_name);
+        Data.Previews[new_card_name] = std::move(Data.Previews.at(old_card_name));
+        Data.Previews.erase(old_card_name);
     }
 }
 
 bool Project::HasPreview(const fs::path& image_name) const
 {
-    std::shared_lock lock{ Previews->PreviewsMutex };
-    return Previews->Previews.contains(image_name);
+    return Data.Previews.contains(image_name);
 }
 
 const Image& Project::GetCroppedPreview(const fs::path& image_name) const
 {
-    std::shared_lock lock{ Previews->PreviewsMutex };
-    if (Previews->Previews.contains(image_name))
+    if (Data.Previews.contains(image_name))
     {
-        return Previews->Previews.at(image_name).CroppedImage;
+        return Data.Previews.at(image_name).CroppedImage;
     }
-    return FallbackPreview.CroppedImage;
+    return Data.FallbackPreview.CroppedImage;
 }
 const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
 {
-    std::shared_lock lock{ Previews->PreviewsMutex };
-    if (Previews->Previews.contains(image_name))
+    if (Data.Previews.contains(image_name))
     {
-        return Previews->Previews.at(image_name).CroppedImage;
+        return Data.Previews.at(image_name).CroppedImage;
     }
-    return FallbackPreview.CroppedImage;
+    return Data.FallbackPreview.CroppedImage;
 }
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
@@ -251,32 +208,35 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) co
     return GetUncroppedPreview(GetBacksideImage(image_name));
 }
 
-void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
-{
-    std::shared_lock lock{ Previews->PreviewsMutex };
-    Previews->Previews[image_name] = std::move(preview);
-}
-
 ImgDict Project::GetPreviews() const
 {
-    std::shared_lock lock{ Previews->PreviewsMutex };
-    return Previews->Previews;
+    return Data.Previews;
 }
 void Project::SetPreviews(ImgDict previews)
 {
-    std::unique_lock lock{ Previews->PreviewsMutex };
-    Previews->Previews = std::move(previews);
+    Data.Previews = std::move(previews);
 }
 
 const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 {
-    if (Cards.contains(image_name))
+    if (Data.Cards.contains(image_name))
     {
-        const CardInfo& card{ Cards.at(image_name) };
+        const CardInfo& card{ Data.Cards.at(image_name) };
         if (!card.Backside.empty())
         {
             return card.Backside;
         }
     }
-    return BacksideDefault;
+    return Data.BacksideDefault;
+}
+
+void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
+{
+    PreviewUpdated(image_name, preview);
+    Data.Previews[image_name] = std::move(preview);
+}
+
+void Project::CropperDone()
+{
+    WritePreviews(Data.ImageCache, Data.Previews);
 }

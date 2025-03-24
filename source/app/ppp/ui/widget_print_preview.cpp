@@ -54,7 +54,7 @@ class PageGrid : public QWidget
                             CardImage::Params{
                                 .RoundedCorners{ false },
                                 .Rotation{ rotation },
-                                .BleedEdge{ project.BleedEdge },
+                                .BleedEdge{ project.Data.BleedEdge },
                             },
                         },
                     };
@@ -84,7 +84,7 @@ class PageGrid : public QWidget
                         project,
                         CardImage::Params{
                             .Rotation{ rotation },
-                            .BleedEdge{ project.BleedEdge },
+                            .BleedEdge{ project.Data.BleedEdge },
                         },
                     },
                 };
@@ -148,19 +148,19 @@ class GuidesOverlay : public QWidget
                 }
             }
         }
-        BleedEdge = project.BleedEdge;
-        CornerWeight = project.CornerWeight;
+        BleedEdge = project.Data.BleedEdge;
+        CornerWeight = project.Data.CornerWeight;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
+        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
         CardSizeWithBleedEdge = Size{ card_width, card_height };
 
         PenOne.setWidth(2);
-        PenOne.setColor(QColor{ project.GuidesColorA.r, project.GuidesColorA.g, project.GuidesColorA.b });
+        PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
 
         PenTwo.setDashPattern({ 2.0f, 4.0f });
         PenTwo.setWidth(2);
-        PenTwo.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorB.g, project.GuidesColorB.b });
+        PenTwo.setColor(QColor{ project.Data.GuidesColorB.r, project.Data.GuidesColorB.g, project.Data.GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -276,7 +276,7 @@ class PrintPreview::PagePreview : public QWidget
         setLayout(layout);
         setStyleSheet("background-color: white;");
 
-        if (project.EnableGuides && (!params.GridParams.IsBackside || project.BacksideEnableGuides))
+        if (project.Data.EnableGuides && (!params.GridParams.IsBackside || project.Data.BacksideEnableGuides))
         {
             Overlay = new GuidesOverlay{ project, card_grid };
             Overlay->setParent(this);
@@ -288,14 +288,14 @@ class PrintPreview::PagePreview : public QWidget
         PageWidth = page_width;
         PageHeight = page_height;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
+        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
         CardWidth = card_width;
         CardHeight = card_height;
 
         PaddingWidth = (page_width - params.Columns * card_width) / 2.0f;
         PaddingHeight = (page_height - params.Rows * card_height) / 2.0f;
-        BacksideOffset = params.GridParams.IsBackside ? project.BacksideOffset : 0_mm;
+        BacksideOffset = params.GridParams.IsBackside ? project.Data.BacksideOffset : 0_mm;
 
         Grid = grid;
     }
@@ -376,14 +376,14 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
-    if (project.Orientation == "Landscape")
+    auto page_size{ CFG.PageSizes[project.Data.PageSize].Dimensions };
+    if (project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
     const auto [page_width, page_height]{ page_size.pod() };
-    const Length card_width{ CardSizeWithoutBleed.x + 2 * project.BleedEdge };
-    const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
+    const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
+    const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
 
     const auto columns{ static_cast<uint32_t>(std::floor(page_width / card_width)) };
     const auto rows{ static_cast<uint32_t>(std::floor(page_height / card_height)) };
@@ -400,7 +400,7 @@ void PrintPreview::Refresh(const Project& project)
                                       { return TempPage{ page, false }; }) |
                 std::ranges::to<std::vector>() };
 
-    if (project.BacksideEnabled)
+    if (project.Data.BacksideEnabled)
     {
         const auto raw_backside_pages{ MakeBacksidePages(project, raw_pages) };
         const auto backside_pages{ raw_backside_pages |

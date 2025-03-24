@@ -24,10 +24,10 @@ class CardWidget : public QFrame
   public:
     CardWidget(const fs::path& card_name, Project& project)
         : CardName{ card_name }
-        , BacksideEnabled{ project.BacksideEnabled }
-        , OversizedEnabled{ project.OversizedEnabled }
+        , BacksideEnabled{ project.Data.BacksideEnabled }
+        , OversizedEnabled{ project.Data.OversizedEnabled }
     {
-        const uint32_t initial_number{ card_name.empty() ? 1 : project.Cards[card_name].Num };
+        const uint32_t initial_number{ card_name.empty() ? 1 : project.Data.Cards[card_name].Num };
 
         auto* number_edit{ new QLineEdit };
         number_edit->setValidator(new QIntValidator{ 0, 100, this });
@@ -115,17 +115,17 @@ class CardWidget : public QFrame
 
     void ApplyNumber(Project& project, int64_t number)
     {
-        project.Cards[CardName].Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
-        NumberEdit->setText(QString{}.setNum(project.Cards[CardName].Num));
+        project.Data.Cards[CardName].Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
+        NumberEdit->setText(QString{}.setNum(project.Data.Cards[CardName].Num));
     }
 
     virtual void Refresh(Project& project)
     {
-        const bool backside_changed{ BacksideEnabled != project.BacksideEnabled };
-        const bool oversized_changed{ OversizedEnabled != project.OversizedEnabled };
+        const bool backside_changed{ BacksideEnabled != project.Data.BacksideEnabled };
+        const bool oversized_changed{ OversizedEnabled != project.Data.OversizedEnabled };
 
-        BacksideEnabled = project.BacksideEnabled;
-        OversizedEnabled = project.OversizedEnabled;
+        BacksideEnabled = project.Data.BacksideEnabled;
+        OversizedEnabled = project.Data.OversizedEnabled;
 
         if (backside_changed)
         {
@@ -172,7 +172,7 @@ class CardWidget : public QFrame
             auto backside_reset{
                 [=, this, &project]()
                 {
-                    project.Cards[CardName].Backside.clear();
+                    project.Data.Cards[CardName].Backside.clear();
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
                 }
@@ -181,11 +181,11 @@ class CardWidget : public QFrame
             auto backside_choose{
                 [=, this, &project]()
                 {
-                    if (const auto backside_choice{ OpenImageDialog(project.ImageDir) })
+                    if (const auto backside_choice{ OpenImageDialog(project.Data.ImageDir) })
                     {
-                        if (backside_choice.value() != project.Cards[CardName].Backside)
+                        if (backside_choice.value() != project.Data.Cards[CardName].Backside)
                         {
-                            project.Cards[CardName].Backside = backside_choice.value();
+                            project.Data.Cards[CardName].Backside = backside_choice.value();
                             auto* new_backside_image{ new BacksideImage{ backside_choice.value(), project } };
                             stacked_widget->RefreshBackside(new_backside_image);
                         }
@@ -224,7 +224,7 @@ class CardWidget : public QFrame
 
         if (BacksideEnabled)
         {
-            const bool is_short_edge{ CardName.empty() ? false : project.Cards[CardName].BacksideShortEdge };
+            const bool is_short_edge{ CardName.empty() ? false : project.Data.Cards[CardName].BacksideShortEdge };
 
             auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
             short_edge_checkbox->setChecked(is_short_edge);
@@ -240,7 +240,7 @@ class CardWidget : public QFrame
 
         if (OversizedEnabled)
         {
-            const bool is_oversized{ CardName.empty() ? false : project.Cards[CardName].Oversized };
+            const bool is_oversized{ CardName.empty() ? false : project.Data.Cards[CardName].Oversized };
 
             auto* short_edge_checkbox{ new QCheckBox{ "Big" } };
             short_edge_checkbox->setChecked(is_oversized);
@@ -278,25 +278,25 @@ class CardWidget : public QFrame
 
     virtual void IncrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.Cards[CardName].Num) + 1 };
+        const auto number{ static_cast<int64_t>(project.Data.Cards[CardName].Num) + 1 };
         ApplyNumber(project, number);
     }
 
     virtual void DecrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.Cards[CardName].Num) - 1 };
+        const auto number{ static_cast<int64_t>(project.Data.Cards[CardName].Num) - 1 };
         ApplyNumber(project, number);
     }
 
     virtual void SetShortEdge(Project& project, Qt::CheckState s)
     {
-        auto& card{ project.Cards[CardName] };
+        auto& card{ project.Data.Cards[CardName] };
         card.BacksideShortEdge = s == Qt::CheckState::Checked;
     }
 
     virtual void SetOversized(Project& project, Qt::CheckState s)
     {
-        auto& card{ project.Cards[CardName] };
+        auto& card{ project.Data.Cards[CardName] };
         card.Oversized = s == Qt::CheckState::Checked;
     }
 
@@ -414,7 +414,7 @@ class CardScrollArea::CardGrid : public QWidget
 
         size_t i{ 0 };
         const auto cols{ CFG.DisplayColumns };
-        for (auto& [card_name, _] : project.Cards)
+        for (auto& [card_name, _] : project.Data.Cards)
         {
             if (ToQString(card_name).startsWith("__"))
             {

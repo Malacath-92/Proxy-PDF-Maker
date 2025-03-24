@@ -7,6 +7,8 @@
 #include <QtPlugin>
 #endif
 
+#include <ppp/project/card_provider.hpp>
+#include <ppp/project/cropper.hpp>
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
@@ -32,16 +34,26 @@ int main(int argc, char** argv)
     SetStyle(app, app.GetTheme());
 
     Project project{};
-    {
-        GenericPopup startup_window{ nullptr, "Rendering PDF..." };
-        const auto render_work{
-            [&]()
-            {
-                project.Load(app.GetProjectPath(), GetCubeImage(app, CFG.ColorCube), startup_window.MakePrintFn());
-            }
-        };
-        startup_window.ShowDuringWork(render_work);
-    }
+    project.Load(app.GetProjectPath(), nullptr);
+
+    CardProvider card_provider{
+        project.Data.ImageDir,
+        project.Data.CropDir,
+    };
+
+    Cropper cropper{ project };
+    QObject::connect(&card_provider, &CardProvider::CardAdded, &cropper, &Cropper::CardAdded);
+    QObject::connect(&card_provider, &CardProvider::CardRemoved, &cropper, &Cropper::CardRemoved);
+    QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
+
+    auto card_renamed{
+        [&project](const fs::path& old_card_name, const fs::path& new_card_name)
+        {
+            project.CardRenamed(old_card_name, new_card_name);
+        }
+    };
+    QObject::connect(&card_provider, &CardProvider::CardRenamed, &app, card_renamed);
+    QObject::connect(&card_provider, &CardProvider::CardRenamed, &cropper, &Cropper::CardRenamed);
 
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
@@ -52,6 +64,19 @@ int main(int argc, char** argv)
     app.SetMainWindow(main_window);
 
     main_window->show();
+
+    // Write preview to project and forward to widgets
+    QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
+
+    // Enable and disable Render button
+    QObject::connect(&cropper, &Cropper::CropWorkStart, options, &OptionsWidget::CropperWorking);
+    QObject::connect(&cropper, &Cropper::CropWorkDone, options, &OptionsWidget::CropperDone);
+
+    // Write preview cache to file
+    QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
+
+    card_provider.Start();
+    cropper.Start();
 
     const int return_code{ app.exec() };
     project.Dump(app.GetProjectPath(), nullptr);

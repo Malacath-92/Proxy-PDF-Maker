@@ -77,21 +77,21 @@ class ActionsWidget : public QGroupBox
 
                         {
                             std::vector<fs::path> used_cards{};
-                            for (const auto& [img, info] : project.Cards)
+                            for (const auto& [img, info] : project.Data.Cards)
                             {
                                 if (info.Num > 0)
                                 {
                                     used_cards.push_back(img);
-                                    if (project.BacksideEnabled && !std::ranges::contains(used_cards, info.Backside))
+                                    if (project.Data.BacksideEnabled && !std::ranges::contains(used_cards, info.Backside))
                                     {
-                                        used_cards.push_back(info.Backside.empty() ? project.BacksideDefault : info.Backside);
+                                        used_cards.push_back(info.Backside.empty() ? project.Data.BacksideDefault : info.Backside);
                                     }
                                 }
                             }
 
-                            const Length bleed_edge{ project.BleedEdge };
-                            const fs::path& image_dir{ project.ImageDir };
-                            const fs::path& crop_dir{ project.CropDir };
+                            const Length bleed_edge{ project.Data.BleedEdge };
+                            const fs::path& image_dir{ project.Data.ImageDir };
+                            const fs::path& crop_dir{ project.Data.CropDir };
                             if (NeedRunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.ColorCube))
                             {
                                 RunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.MaxDPI, CFG.ColorCube, GetCubeImage(application, CFG.ColorCube), print_fn);
@@ -135,9 +135,9 @@ class ActionsWidget : public QGroupBox
                     GenericPopup reload_window{ window(), "Reloading project..." };
 
                     const auto load_project_work{
-                        [=, &project, &application, &reload_window]()
+                        [=, &project, &reload_window]()
                         {
-                            project.Load(new_project_json.value(), GetCubeImage(application, CFG.ColorCube), reload_window.MakePrintFn());
+                            project.Load(new_project_json.value(), reload_window.MakePrintFn());
                         }
                     };
 
@@ -157,36 +157,13 @@ class ActionsWidget : public QGroupBox
             {
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
-                    project.ImageDir = new_image_dir.value();
-                    project.ImageCache = project.ImageDir.filename().replace_extension(".cache");
+                    project.Data.ImageDir = new_image_dir.value();
+                    project.Data.ImageCache = project.Data.ImageDir.filename().replace_extension(".cache");
 
                     project.InitProperties(nullptr);
 
                     auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-
-                    const Length bleed_edge{ project.BleedEdge };
-                    const fs::path& image_dir{ project.ImageDir };
-                    const fs::path& crop_dir{ project.CropDir };
-                    if (NeedRunCropper(image_dir, crop_dir, bleed_edge, CFG.ColorCube) || NeedCachePreviews(crop_dir, project.GetPreviews()))
-                    {
-                        GenericPopup reload_window{ window(), "Reloading project..." };
-
-                        const auto reload_work{
-                            [=, &project, &application, &reload_window]()
-                            {
-                                project.InitImages(GetCubeImage(application, CFG.ColorCube), reload_window.MakePrintFn());
-                            }
-                        };
-
-                        main_window->setEnabled(false);
-                        reload_window.ShowDuringWork(reload_work);
-                        main_window->Refresh();
-                        main_window->setEnabled(true);
-                    }
-                    else
-                    {
-                        main_window->Refresh();
-                    }
+                    main_window->Refresh();
                 }
             }
         };
@@ -194,7 +171,7 @@ class ActionsWidget : public QGroupBox
         const auto open_images_folder{
             [=, &project]()
             {
-                OpenFolder(project.ImageDir);
+                OpenFolder(project.Data.ImageDir);
             }
         };
 
@@ -253,24 +230,24 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         using namespace std::string_view_literals;
-        auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.FileName.string() } };
+        auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.Data.FileName.string() } };
         auto* paper_size{ new ComboBoxWithLabel{
-            "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.PageSize } };
+            "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
         auto* orientation{ new ComboBoxWithLabel{
-            "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Orientation } };
+            "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Data.Orientation } };
         auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
-        enable_guides_checkbox->setChecked(project.EnableGuides);
+        enable_guides_checkbox->setChecked(project.Data.EnableGuides);
         auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
-        extended_guides_checkbox->setChecked(project.ExtendedGuides);
-        extended_guides_checkbox->setEnabled(project.EnableGuides);
+        extended_guides_checkbox->setChecked(project.Data.ExtendedGuides);
+        extended_guides_checkbox->setEnabled(project.Data.EnableGuides);
         auto* guides_color_a_button{ new QPushButton };
-        guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
+        guides_color_a_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorA));
         auto* guides_color_a{ new WidgetWithLabel{ "Guides Color A", guides_color_a_button } };
-        guides_color_a->setEnabled(project.EnableGuides);
+        guides_color_a->setEnabled(project.Data.EnableGuides);
         auto* guides_color_b_button{ new QPushButton };
-        guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
+        guides_color_b_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorB));
         auto* guides_color_b{ new WidgetWithLabel{ "Guides Color B", guides_color_b_button } };
-        guides_color_b->setEnabled(project.EnableGuides);
+        guides_color_b->setEnabled(project.Data.EnableGuides);
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
@@ -290,14 +267,14 @@ class PrintOptionsWidget : public QGroupBox
         auto change_output{
             [=, &project](QString t)
             {
-                project.FileName = t.toStdString();
+                project.Data.FileName = t.toStdString();
             }
         };
 
         auto change_papersize{
             [=, &project](QString t)
             {
-                project.PageSize = t.toStdString();
+                project.Data.PageSize = t.toStdString();
                 main_window()->RefreshPreview();
             }
         };
@@ -305,7 +282,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_orientation{
             [=, &project](QString t)
             {
-                project.Orientation = t.toStdString();
+                project.Data.Orientation = t.toStdString();
                 main_window()->RefreshPreview();
             }
         };
@@ -314,7 +291,7 @@ class PrintOptionsWidget : public QGroupBox
             [=, &project](Qt::CheckState s)
             {
                 const bool enabled{ s == Qt::CheckState::Checked };
-                project.EnableGuides = enabled;
+                project.Data.EnableGuides = enabled;
 
                 extended_guides_checkbox->setEnabled(enabled);
                 guides_color_a->setEnabled(enabled);
@@ -327,7 +304,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_extended_guides{
             [=, &project](Qt::CheckState s)
             {
-                project.ExtendedGuides = s == Qt::CheckState::Checked;
+                project.Data.ExtendedGuides = s == Qt::CheckState::Checked;
             }
         };
 
@@ -354,10 +331,10 @@ class PrintOptionsWidget : public QGroupBox
         auto pick_color_a{
             [=, this, &project]()
             {
-                if (const auto picked_color{ pick_color(project.GuidesColorA) })
+                if (const auto picked_color{ pick_color(project.Data.GuidesColorA) })
                 {
-                    project.GuidesColorA = picked_color.value();
-                    guides_color_a_button->setStyleSheet(color_to_bg_style(project.GuidesColorA));
+                    project.Data.GuidesColorA = picked_color.value();
+                    guides_color_a_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorA));
                     main_window()->RefreshPreview();
                 }
             }
@@ -366,10 +343,10 @@ class PrintOptionsWidget : public QGroupBox
         auto pick_color_b{
             [=, &project]()
             {
-                if (const auto picked_color{ pick_color(project.GuidesColorB) })
+                if (const auto picked_color{ pick_color(project.Data.GuidesColorB) })
                 {
-                    project.GuidesColorB = picked_color.value();
-                    guides_color_b_button->setStyleSheet(color_to_bg_style(project.GuidesColorB));
+                    project.Data.GuidesColorB = picked_color.value();
+                    guides_color_b_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorB));
                     main_window()->RefreshPreview();
                 }
             }
@@ -415,14 +392,14 @@ class PrintOptionsWidget : public QGroupBox
 
     void RefreshWidgets(const Project& project)
     {
-        PrintOutput->setText(ToQString(project.FileName.c_str()));
-        PaperSize->setCurrentText(ToQString(project.PageSize));
-        Orientation->setCurrentText(ToQString(project.Orientation));
-        EnableGuides->setChecked(project.EnableGuides);
+        PrintOutput->setText(ToQString(project.Data.FileName.c_str()));
+        PaperSize->setCurrentText(ToQString(project.Data.PageSize));
+        Orientation->setCurrentText(ToQString(project.Data.Orientation));
+        EnableGuides->setChecked(project.Data.EnableGuides);
 
-        ExtendedGuides->setEnabled(project.EnableGuides);
-        GuidesColorA->setEnabled(project.EnableGuides);
-        GuidesColorB->setEnabled(project.EnableGuides);
+        ExtendedGuides->setEnabled(project.Data.EnableGuides);
+        GuidesColorA->setEnabled(project.Data.EnableGuides);
+        GuidesColorB->setEnabled(project.Data.EnableGuides);
     }
 
   private:
@@ -440,7 +417,7 @@ class DefaultBacksidePreview : public QWidget
   public:
     DefaultBacksidePreview(const Project& project)
     {
-        const fs::path& backside_name{ project.BacksideDefault };
+        const fs::path& backside_name{ project.Data.BacksideDefault };
 
         auto* backside_default_image{ new BacksideImage{ backside_name, MinimumWidth, project } };
 
@@ -467,7 +444,7 @@ class DefaultBacksidePreview : public QWidget
 
     void Refresh(const Project& project)
     {
-        const fs::path& backside_name{ project.BacksideDefault };
+        const fs::path& backside_name{ project.Data.BacksideDefault };
         DefaultImage->Refresh(backside_name, MinimumWidth, project);
         DefaultLabel->setText(ToQString(backside_name.c_str()));
     }
@@ -491,13 +468,13 @@ class CardOptionsWidget : public QGroupBox
         bleed_edge_spin->setRange(0, 0.12_in / 1_mm);
         bleed_edge_spin->setSingleStep(0.1);
         bleed_edge_spin->setSuffix("mm");
-        bleed_edge_spin->setValue(project.BleedEdge / 1_mm);
+        bleed_edge_spin->setValue(project.Data.BleedEdge / 1_mm);
         auto* bleed_edge{ new WidgetWithLabel{ "&Bleed Edge", bleed_edge_spin } };
 
         auto* corner_weight_slider{ new QSlider{ Qt::Horizontal } };
         corner_weight_slider->setTickPosition(QSlider::NoTicks);
         corner_weight_slider->setRange(0, 1000);
-        corner_weight_slider->setValue(static_cast<int>(project.CornerWeight * 1000.0f));
+        corner_weight_slider->setValue(static_cast<int>(project.Data.CornerWeight * 1000.0f));
         auto* corner_weight{ new WidgetWithLabel{ "&Corner Weight", corner_weight_slider } };
 
         auto* bleed_back_divider{ new QFrame };
@@ -505,36 +482,36 @@ class CardOptionsWidget : public QGroupBox
         bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
 
         auto* backside_checkbox{ new QCheckBox{ "Enable Backside" } };
-        backside_checkbox->setChecked(project.BacksideEnabled);
+        backside_checkbox->setChecked(project.Data.BacksideEnabled);
 
         auto* backside_guides_checkbox{ new QCheckBox{ "Enable Backside Guides" } };
-        backside_guides_checkbox->setChecked(project.BacksideEnableGuides);
-        backside_guides_checkbox->setEnabled(project.BacksideEnabled);
-        backside_guides_checkbox->setVisible(project.BacksideEnabled);
+        backside_guides_checkbox->setChecked(project.Data.BacksideEnableGuides);
+        backside_guides_checkbox->setEnabled(project.Data.BacksideEnabled);
+        backside_guides_checkbox->setVisible(project.Data.BacksideEnabled);
 
         auto* backside_default_button{ new QPushButton{ "Choose Default" } };
-        backside_default_button->setEnabled(project.BacksideEnabled);
-        backside_default_button->setVisible(project.BacksideEnabled);
+        backside_default_button->setEnabled(project.Data.BacksideEnabled);
+        backside_default_button->setVisible(project.Data.BacksideEnabled);
 
         auto* backside_default_preview{ new DefaultBacksidePreview{ project } };
-        backside_default_preview->setVisible(project.BacksideEnabled);
+        backside_default_preview->setVisible(project.Data.BacksideEnabled);
 
         auto* backside_offset_spin{ new QDoubleSpinBox };
         backside_offset_spin->setDecimals(2);
         backside_offset_spin->setRange(-0.3_in / 1_mm, 0.3_in / 1_mm);
         backside_offset_spin->setSingleStep(0.1);
         backside_offset_spin->setSuffix("mm");
-        backside_offset_spin->setValue(project.BacksideOffset / 1_mm);
+        backside_offset_spin->setValue(project.Data.BacksideOffset / 1_mm);
         auto* backside_offset{ new WidgetWithLabel{ "Off&set", backside_offset_spin } };
-        backside_offset->setEnabled(project.BacksideEnabled);
-        backside_offset->setVisible(project.BacksideEnabled);
+        backside_offset->setEnabled(project.Data.BacksideEnabled);
+        backside_offset->setVisible(project.Data.BacksideEnabled);
 
         auto* back_over_divider{ new QFrame };
         back_over_divider->setFrameShape(QFrame::Shape::HLine);
         back_over_divider->setFrameShadow(QFrame::Shadow::Sunken);
 
         auto* oversized_checkbox{ new QCheckBox{ "Enable Oversized Option" } };
-        oversized_checkbox->setChecked(project.OversizedEnabled);
+        oversized_checkbox->setChecked(project.Data.OversizedEnabled);
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(bleed_edge);
@@ -560,7 +537,7 @@ class CardOptionsWidget : public QGroupBox
         auto change_bleed_edge{
             [=, &project](double v)
             {
-                project.BleedEdge = 1_mm * static_cast<float>(v);
+                project.Data.BleedEdge = 1_mm * static_cast<float>(v);
                 main_window()->RefreshPreview();
             }
         };
@@ -568,7 +545,7 @@ class CardOptionsWidget : public QGroupBox
         auto change_corner_weight{
             [=, &project](int v)
             {
-                project.CornerWeight = static_cast<float>(v) / 1000.0f;
+                project.Data.CornerWeight = static_cast<float>(v) / 1000.0f;
                 main_window()->RefreshPreview();
             }
         };
@@ -576,14 +553,14 @@ class CardOptionsWidget : public QGroupBox
         auto switch_backside_enabled{
             [=, &project](Qt::CheckState s)
             {
-                project.BacksideEnabled = s == Qt::CheckState::Checked;
-                backside_guides_checkbox->setEnabled(project.BacksideEnabled);
-                backside_guides_checkbox->setVisible(project.BacksideEnabled);
-                backside_default_button->setEnabled(project.BacksideEnabled);
-                backside_default_button->setVisible(project.BacksideEnabled);
-                backside_default_preview->setVisible(project.BacksideEnabled);
-                backside_offset->setEnabled(project.BacksideEnabled);
-                backside_offset->setVisible(project.BacksideEnabled);
+                project.Data.BacksideEnabled = s == Qt::CheckState::Checked;
+                backside_guides_checkbox->setEnabled(project.Data.BacksideEnabled);
+                backside_guides_checkbox->setVisible(project.Data.BacksideEnabled);
+                backside_default_button->setEnabled(project.Data.BacksideEnabled);
+                backside_default_button->setVisible(project.Data.BacksideEnabled);
+                backside_default_preview->setVisible(project.Data.BacksideEnabled);
+                backside_offset->setEnabled(project.Data.BacksideEnabled);
+                backside_offset->setVisible(project.Data.BacksideEnabled);
                 main_window()->Refresh();
                 main_window()->RefreshPreview();
             }
@@ -592,7 +569,7 @@ class CardOptionsWidget : public QGroupBox
         auto switch_backside_guides_enabled{
             [=, &project](Qt::CheckState s)
             {
-                project.BacksideEnableGuides = s == Qt::CheckState::Checked;
+                project.Data.BacksideEnableGuides = s == Qt::CheckState::Checked;
                 main_window()->RefreshPreview();
             }
         };
@@ -600,9 +577,9 @@ class CardOptionsWidget : public QGroupBox
         auto pick_backside{
             [=, &project]()
             {
-                if (const auto default_backside_choice{ OpenImageDialog(project.ImageDir) })
+                if (const auto default_backside_choice{ OpenImageDialog(project.Data.ImageDir) })
                 {
-                    project.BacksideDefault = default_backside_choice.value();
+                    project.Data.BacksideDefault = default_backside_choice.value();
                     main_window()->Refresh();
                 }
             }
@@ -611,7 +588,7 @@ class CardOptionsWidget : public QGroupBox
         auto change_backside_offset{
             [=, &project](double v)
             {
-                project.BacksideOffset = 1_mm * static_cast<float>(v);
+                project.Data.BacksideOffset = 1_mm * static_cast<float>(v);
                 main_window()->RefreshPreview();
             }
         };
@@ -619,7 +596,7 @@ class CardOptionsWidget : public QGroupBox
         auto switch_oversized_enabled{
             [=, &project](Qt::CheckState s)
             {
-                project.OversizedEnabled = s == Qt::CheckState::Checked;
+                project.Data.OversizedEnabled = s == Qt::CheckState::Checked;
                 main_window()->Refresh();
             }
         };
@@ -662,10 +639,10 @@ class CardOptionsWidget : public QGroupBox
 
     void Refresh(const Project& project)
     {
-        BleedEdgeSpin->setValue(project.BleedEdge / 1_mm);
-        BacksideCheckbox->setChecked(project.BacksideEnabled);
-        BacksideOffsetSpin->setValue(project.BacksideOffset.value);
-        OversizedCheckbox->setChecked(project.OversizedEnabled);
+        BleedEdgeSpin->setValue(project.Data.BleedEdge / 1_mm);
+        BacksideCheckbox->setChecked(project.Data.BacksideEnabled);
+        BacksideOffsetSpin->setValue(project.Data.BacksideOffset.value);
+        OversizedCheckbox->setChecked(project.Data.OversizedEnabled);
     }
 
     void RefreshWidgets(const Project& project)

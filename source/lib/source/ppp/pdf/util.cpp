@@ -19,13 +19,13 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
         bool BacksideShortEdge;
     };
     std::vector<TempImageData> images;
-    for (const auto& [img, info] : project.Cards)
+    for (const auto& [img, info] : project.Data.Cards)
     {
         for (uint32_t i = 0; i < info.Num; i++)
         {
             images.push_back({
                 img,
-                info.Oversized && project.OversizedEnabled,
+                info.Oversized && project.Data.OversizedEnabled,
                 info.BacksideShortEdge,
             });
         }

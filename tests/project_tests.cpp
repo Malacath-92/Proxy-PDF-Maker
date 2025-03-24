@@ -22,10 +22,11 @@ TEST_CASE("Setup folders for tests", "[project_setup_fs]")
 TEST_CASE("Empty project", "[project_empty]")
 {
     Project empty_project{};
-    empty_project.ImageDir = "no_images";
-    empty_project.CropDir = "no_images/crop";
-    empty_project.ImageCache = "empty_project.cache";
-    REQUIRE_NOTHROW(empty_project.Init(nullptr, nullptr));
+    empty_project.Data.ImageDir = "no_images";
+    empty_project.Data.CropDir = "no_images/crop";
+    empty_project.Data.ImageCache = "empty_project.cache";
+    REQUIRE_NOTHROW(empty_project.Init(nullptr));
+    empty_project.CropperDone();
     REQUIRE(fs::exists("empty_project.cache"));
 
     std::atexit(
@@ -38,9 +39,9 @@ TEST_CASE("Empty project", "[project_empty]")
 TEST_CASE("Empty project can be saved", "[project_save_empty]")
 {
     Project empty_project{};
-    empty_project.ImageDir = "no_images";
-    empty_project.CropDir = "no_images/crop";
-    empty_project.ImageCache = "empty_project.cache";
+    empty_project.Data.ImageDir = "no_images";
+    empty_project.Data.CropDir = "no_images/crop";
+    empty_project.Data.ImageCache = "empty_project.cache";
     REQUIRE_NOTHROW(empty_project.Dump("empty_project.json", nullptr));
     REQUIRE(fs::exists("empty_project.json"));
     REQUIRE(fs::exists("empty_project.cache"));
@@ -55,16 +56,17 @@ TEST_CASE("Empty project can be saved", "[project_save_empty]")
 TEST_CASE("Empty project can be loaded", "[project_load_empty]")
 {
     Project empty_project{};
-    REQUIRE_NOTHROW(empty_project.Load("empty_project.json", nullptr, nullptr));
+    REQUIRE_NOTHROW(empty_project.Load("empty_project.json", nullptr));
 }
 
 TEST_CASE("Non-empty project", "[project_non_empty]")
 {
     Project project{};
-    project.ImageDir = "some_images";
-    project.CropDir = "some_images/crop";
-    project.ImageCache = "non_empty_project.cache";
-    REQUIRE_NOTHROW(project.Init(nullptr, nullptr));
+    project.Data.ImageDir = "some_images";
+    project.Data.CropDir = "some_images/crop";
+    project.Data.ImageCache = "non_empty_project.cache";
+    REQUIRE_NOTHROW(project.Init(nullptr));
+    project.CropperDone();
 
     std::atexit(
         []()
@@ -76,10 +78,11 @@ TEST_CASE("Non-empty project", "[project_non_empty]")
 TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 {
     Project project{};
-    project.ImageDir = "some_images";
-    project.CropDir = "some_images/crop";
-    project.ImageCache = "non_empty_project.cache";
-    project.Init(nullptr, nullptr);
+    project.Data.ImageDir = "some_images";
+    project.Data.CropDir = "some_images/crop";
+    project.Data.ImageCache = "non_empty_project.cache";
+    project.Init(nullptr);
+    project.CropperDone();
     REQUIRE_NOTHROW(project.Dump("non_empty_project.json", nullptr));
     REQUIRE(fs::exists("non_empty_project.json"));
     REQUIRE(fs::exists("non_empty_project.cache"));
@@ -94,5 +97,5 @@ TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 TEST_CASE("Non-empty project can be loaded", "[project_load_non_empty]")
 {
     Project project{};
-    REQUIRE_NOTHROW(project.Load("non_empty_project.json", nullptr, nullptr));
+    REQUIRE_NOTHROW(project.Load("non_empty_project.json", nullptr));
 }

@@ -16,30 +16,30 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 {
     using CrossSegment = PdfPage::CrossSegment;
 
-    const auto output_dir{ GetOutputDir(project.CropDir, project.BleedEdge, CFG.ColorCube) };
+    const auto output_dir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) };
 
     std::array<ColorRGB32f, 2> guides_colors{
         ColorRGB32f{
-            static_cast<float>(project.GuidesColorA.r) / 255.0f,
-            static_cast<float>(project.GuidesColorA.g) / 255.0f,
-            static_cast<float>(project.GuidesColorA.b) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorA.r) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorA.g) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorA.b) / 255.0f,
         },
         ColorRGB32f{
-            static_cast<float>(project.GuidesColorB.r) / 255.0f,
-            static_cast<float>(project.GuidesColorB.g) / 255.0f,
-            static_cast<float>(project.GuidesColorB.b) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorB.r) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorB.g) / 255.0f,
+            static_cast<float>(project.Data.GuidesColorB.b) / 255.0f,
         },
     };
 
-    auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
-    if (project.Orientation == "Landscape")
+    auto page_size{ CFG.PageSizes[project.Data.PageSize].Dimensions };
+    if (project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
 
     const auto [page_width, page_height]{ page_size.pod() };
-    const Length card_width{ CardSizeWithoutBleed.x + 2.0f * project.BleedEdge };
-    const Length card_height{ CardSizeWithoutBleed.y + 2.0f * project.BleedEdge };
+    const Length card_width{ CardSizeWithoutBleed.x + 2.0f * project.Data.BleedEdge };
+    const Length card_height{ CardSizeWithoutBleed.y + 2.0f * project.Data.BleedEdge };
 
     const auto columns{ static_cast<uint32_t>(std::floor(page_width / card_width)) };
     const auto rows{ static_cast<uint32_t>(std::floor(page_height / card_height)) };
@@ -49,7 +49,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    auto pdf{ CreatePdfDocument(CFG.Backend, project.FileName, print_fn) };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project.Data.FileName, print_fn) };
 
     for (auto [p, page_images] : images | std::views::enumerate)
     {
@@ -86,7 +86,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                         const auto real_y{ start_y - float(y) * card_height + dy };
                         page->DrawDashedCross(guides_colors, real_x, real_y, s);
 
-                        if (project.ExtendedGuides)
+                        if (project.Data.ExtendedGuides)
                         {
                             if (x == 0)
                             {
@@ -108,8 +108,8 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                     }
                 };
 
-                const Length bleed{ card.Oversized ? 2 * project.BleedEdge : project.BleedEdge };
-                const Length offset{ project.CornerWeight * bleed };
+                const Length bleed{ card.Oversized ? 2 * project.Data.BleedEdge : project.Data.BleedEdge };
+                const Length offset{ project.Data.CornerWeight * bleed };
                 if (card.Oversized)
                 {
                     draw_cross_at_grid(page,
@@ -176,7 +176,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
-                        if (project.EnableGuides)
+                        if (project.Data.EnableGuides)
                         {
                             draw_guides(front_page, x, y, card.value());
                         }
@@ -187,7 +187,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
             front_page->Finish();
         }
 
-        if (project.BacksideEnabled)
+        if (project.Data.BacksideEnabled)
         {
             static constexpr const char render_fmt[]{
                 "Rendering backside for page {}...\nImage number {} - {}"
@@ -206,10 +206,10 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 
                         auto backside_card{ card.value() };
                         backside_card.Image = project.GetBacksideImage(card->Image);
-                        draw_image(back_page, backside_card, columns - x - 1, y, project.BacksideOffset, 0_pts, true);
+                        draw_image(back_page, backside_card, columns - x - 1, y, project.Data.BacksideOffset, 0_pts, true);
                         i++;
 
-                        if (project.EnableGuides && project.BacksideEnableGuides)
+                        if (project.Data.EnableGuides && project.Data.BacksideEnableGuides)
                         {
                             draw_guides(back_page, x, y, card.value());
                         }
@@ -221,5 +221,5 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
         }
     }
 
-    return pdf->Write(project.FileName);
+    return pdf->Write(project.Data.FileName);
 }
