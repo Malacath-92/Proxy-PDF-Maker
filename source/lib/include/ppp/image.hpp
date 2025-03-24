@@ -55,6 +55,8 @@ class [[nodiscard]] Image
 
     uint64_t Hash() const;
 
+    const cv::Mat& GetUnderlying() const;
+
     void DebugDisplay() const;
 
   private:

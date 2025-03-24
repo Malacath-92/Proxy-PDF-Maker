@@ -40,6 +40,10 @@ Config LoadConfig()
                 {
                     config.Backend = PdfBackend::Hummus;
                 }
+                else if (pdf_backend == "Png")
+                {
+                    config.Backend = PdfBackend::Png;
+                }
                 else
                 {
                     config.Backend = PdfBackend::LibHaru;
@@ -175,6 +179,8 @@ void SaveConfig(Config config)
                     {
                     case PdfBackend::Hummus:
                         return "Hummus";
+                    case PdfBackend::Png:
+                        return "Png";
                     case PdfBackend::LibHaru:
                     default:
                         return "LibHaru";

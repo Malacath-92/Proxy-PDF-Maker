@@ -10,6 +10,7 @@ enum class PdfBackend
 {
     LibHaru,
     Hummus,
+    Png,
 };
 
 struct Config
