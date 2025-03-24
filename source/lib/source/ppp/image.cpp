@@ -271,6 +271,11 @@ uint64_t Image::Hash() const
     return *reinterpret_cast<uint64_t*>(hash.data);
 }
 
+const cv::Mat& Image::GetUnderlying() const
+{
+    return m_Impl;
+}
+
 void Image::DebugDisplay() const
 {
     cv::imshow("Debug Display", m_Impl);
