@@ -14,6 +14,9 @@ class ProxyPDF(ConanFile):
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
 
+        # Conflict Resolution
+        self.requires("zstd/1.5.7", override=True)
+
     def configure(self):
         self.options["qt"].shared = False
         self.options["qt"].opengl = "no"
