@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.0] - 2025-24-03
+## [0.4.0] - 2025-25-03
 
 ### Added
 - Hidden png output option, to use set `PDF.Backend=Png` in config.ini
