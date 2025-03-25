@@ -6,41 +6,39 @@
 
 #include <ppp/project/project.hpp>
 
-inline int ToPixels(Length l)
+inline int32_t ToPixels(Length l)
 {
-    return static_cast<int>(std::ceil(l * CFG.MaxDPI / 1_pix));
+    return static_cast<int32_t>(std::ceil(l * CFG.MaxDPI / 1_pix));
 }
 
 void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty)
 {
-    (void)colors;
-    (void)fx;
-    (void)fy;
-    (void)tx;
-    (void)ty;
+    const auto real_fx{ ToPixels(fx) };
+    const auto real_fy{ ToPixels(fy) };
+    const auto real_tx{ ToPixels(tx) };
+    const auto real_ty{ ToPixels(ty) };
+    const auto real_w{ (ToPixels(0.2_mm) / 2) * 2 };
 
-    // const auto real_fx{ ToPixels(fx) };
-    // const auto real_fy{ ToPixels(fy) };
-    // const auto real_tx{ ToPixels(tx) };
-    // const auto real_ty{ ToPixels(ty) };
+    const cv::Point line_from{ real_fx, real_fy };
+    const cv::Point line_to{ real_tx, real_ty };
+    const cv::Point delta{ line_to - line_from };
 
-    // HPDF_Page_SetLineWidth(Page, 1.0);
+    const cv::Point perp{ delta.x == 0 ? cv::Point{ real_w / 2, 0 } : cv::Point{ 0, real_w / 2 } };
+    const cv::Point from{ line_from - perp };
+    const cv::Point to{ line_to + perp };
 
-    // const HPDF_REAL dash_ptn[]{ 1.0f };
+    const cv::Scalar color_a{ colors[0].b * 255, colors[0].g * 255, colors[0].r * 255, 255.0f };
+    const cv::Scalar color_b{ colors[1].b * 255, colors[1].g * 255, colors[1].r * 255, 255.0f };
 
-    //// First layer
-    // HPDF_Page_SetDash(Page, dash_ptn, 1, 0);
-    // HPDF_Page_SetRGBStroke(Page, colors[0].r, colors[0].g, colors[0].b);
-    // HPDF_Page_MoveTo(Page, real_fx, real_fy);
-    // HPDF_Page_LineTo(Page, real_tx, real_ty);
-    // HPDF_Page_Stroke(Page);
+    cv::rectangle(Page, from, to, color_a, cv::FILLED);
 
-    //// Second layer with phase offset
-    // HPDF_Page_SetDash(Page, dash_ptn, 1, 1);
-    // HPDF_Page_SetRGBStroke(Page, colors[1].r, colors[1].g, colors[1].b);
-    // HPDF_Page_MoveTo(Page, real_fx, real_fy);
-    // HPDF_Page_LineTo(Page, real_tx, real_ty);
-    // HPDF_Page_Stroke(Page);
+    constexpr float dash_freq{ 0.25f };
+    for (float alpha = 0; alpha < 1.0f; alpha += dash_freq)
+    {
+        const cv::Point sub_from{ from + alpha * delta };
+        const cv::Point sub_to{ from + 2 * perp + (alpha + dash_freq / 2.0f) * delta };
+        cv::rectangle(Page, sub_from, sub_to, color_b, cv::FILLED);
+    }
 }
 
 void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
