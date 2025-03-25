@@ -210,6 +210,11 @@ void SaveConfig(Config config)
 
             for (const auto& [name, info] : config.PageSizes)
             {
+                if (name != "Fit")
+                {
+                    continue;
+                }
+
                 const auto& [size, base, decimals]{ info };
                 const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
                 const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };

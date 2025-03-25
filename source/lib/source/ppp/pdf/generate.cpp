@@ -31,8 +31,14 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
-    if (project.Orientation == "Landscape")
+    const bool fit_size{ project.PageSize == "Fit" };
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.BleedEdge };
+    auto page_size{
+        fit_size
+            ? card_size_with_bleed * project.CustomCardLayout
+            : CFG.PageSizes[project.PageSize].Dimensions,
+    };
+    if (!fit_size && project.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
