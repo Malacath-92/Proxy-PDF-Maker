@@ -414,7 +414,7 @@ void PrintPreview::Refresh(const Project& project)
     const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.BleedEdge };
     auto page_size{
         fit_size
-            ? card_size_with_bleed * project.CustomCardLayout
+            ? card_size_with_bleed * dla::vec2{ project.CustomCardLayout }
             : CFG.PageSizes[project.PageSize].Dimensions,
     };
     if (!fit_size && project.Orientation == "Landscape")

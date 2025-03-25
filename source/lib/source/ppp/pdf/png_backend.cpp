@@ -124,7 +124,7 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
 
     if (TheProject.PageSize == "Fit")
     {
-        const auto page_size_pixels{ card_size_pixels * static_cast<dla::ivec2>(TheProject.CustomCardLayout) };
+        const auto page_size_pixels{ card_size_pixels * TheProject.CustomCardLayout };
         PrecomputedPageSize = PixelSize{
             static_cast<float>(page_size_pixels.x) * 1_pix,
             static_cast<float>(page_size_pixels.y) * 1_pix,

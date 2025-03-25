@@ -336,12 +336,12 @@ class PrintOptionsWidget : public QGroupBox
         cards_width->setDecimals(0);
         cards_width->setRange(1, 10);
         cards_width->setSingleStep(1);
-        cards_width->setValue(static_cast<int>(project.CustomCardLayout.x));
+        cards_width->setValue(project.CustomCardLayout.x);
         auto* cards_height{ new QDoubleSpinBox };
         cards_height->setDecimals(0);
         cards_height->setRange(1, 10);
         cards_height->setSingleStep(1);
-        cards_height->setValue(static_cast<int>(project.CustomCardLayout.y));
+        cards_height->setValue(project.CustomCardLayout.y);
         auto* cards_layout_layout{ new QHBoxLayout };
         cards_layout_layout->addWidget(cards_width);
         cards_layout_layout->addWidget(cards_height);
@@ -409,7 +409,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_cards_width{
             [=, &project](double v)
             {
-                project.CustomCardLayout.x = static_cast<float>(v);
+                project.CustomCardLayout.x = static_cast<uint32_t>(v);
                 main_window()->RefreshPreview();
             }
         };
@@ -417,7 +417,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_cards_height{
             [=, &project](double v)
             {
-                project.CustomCardLayout.y = static_cast<float>(v);
+                project.CustomCardLayout.y = static_cast<uint32_t>(v);
                 main_window()->RefreshPreview();
             }
         };

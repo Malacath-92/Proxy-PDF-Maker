@@ -66,7 +66,7 @@ struct Project
 
     // PDF generation options
     std::string PageSize{ CFG.DefaultPageSize };
-    dla::ivec2 CustomCardLayout{ 3, 3 };
+    dla::uvec2 CustomCardLayout{ 3, 3 };
     std::string Orientation{ "Portrait" };
     fs::path FileName{ "_printme" };
     bool EnableGuides{ true };
