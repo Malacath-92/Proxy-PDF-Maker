@@ -4,7 +4,7 @@
 
 inline int ToPixels(Length l)
 {
-    return static_cast<int>(l * CFG.MaxDPI / 1_pix);
+    return static_cast<int>(std::ceil(l * CFG.MaxDPI / 1_pix));
 }
 
 void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty)

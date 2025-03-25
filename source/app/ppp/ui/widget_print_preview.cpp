@@ -425,8 +425,8 @@ void PrintPreview::Refresh(const Project& project)
     const Length card_width{ card_size_with_bleed.x };
     const Length card_height{ card_size_with_bleed.y };
 
-    const auto columns{ static_cast<uint32_t>(std::floor(page_width / card_width)) };
-    const auto rows{ static_cast<uint32_t>(std::floor(page_height / card_height)) };
+    const auto columns{ static_cast<uint32_t>(fit_size ? project.CustomCardLayout.x : std::floor(page_width / card_width)) };
+    const auto rows{ static_cast<uint32_t>(fit_size ? project.CustomCardLayout.y : std::floor(page_height / card_height)) };
 
     struct TempPage
     {
