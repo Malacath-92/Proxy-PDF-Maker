@@ -2,6 +2,8 @@
 
 #include <opencv2/imgproc.hpp>
 
+#include <ppp/project/project.hpp>
+
 inline int ToPixels(Length l)
 {
     return static_cast<int>(std::ceil(l * CFG.MaxDPI / 1_pix));
@@ -51,11 +53,24 @@ void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Lengt
 
 void PngPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation)
 {
-    const auto real_x{ ToPixels(x) };
-    const auto real_y{ ToPixels(y) };
-    const auto real_w{ ToPixels(w) };
-    const auto real_h{ ToPixels(h) };
-    ImageCache->GetImage(image_path, w, h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+    if (PerfectFit)
+    {
+        const auto card_idx_x{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(x)) / CardSize.x))) };
+        const auto card_idx_y{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(y)) / CardSize.y))) };
+        const auto real_x{ card_idx_x * static_cast<int32_t>(CardSize.x / 1_pix) };
+        const auto real_y{ card_idx_y * static_cast<int32_t>(CardSize.y / 1_pix) };
+        const auto real_w{ static_cast<int32_t>(CardSize.x / 1_pix) };
+        const auto real_h{ static_cast<int32_t>(CardSize.y / 1_pix) };
+        ImageCache->GetImage(image_path, w, h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+    }
+    else
+    {
+        const auto real_x{ ToPixels(x) };
+        const auto real_y{ ToPixels(y) };
+        const auto real_w{ ToPixels(w) };
+        const auto real_h{ ToPixels(h) };
+        ImageCache->GetImage(image_path, w, h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+    }
 }
 
 const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, Image::Rotation rotation)
@@ -91,19 +106,52 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, 
     return image_cache.back().PngImage;
 }
 
-PngDocument::PngDocument(PrintFn print_fn)
-    : PrintFunction{ std::move(print_fn) }
+PngDocument::PngDocument(const Project& project, PrintFn print_fn)
+    : TheProject{ project }
+    , PrintFunction{ std::move(print_fn) }
 {
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * TheProject.BleedEdge };
+    const dla::ivec2 card_size_pixels{
+        static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
+        static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),
+    };
+    PrecomputedCardSize = PixelSize{
+        static_cast<float>(card_size_pixels.x) * 1_pix,
+        static_cast<float>(card_size_pixels.y) * 1_pix,
+    };
+
+    if (TheProject.PageSize == "Fit")
+    {
+        const auto page_size_pixels{ card_size_pixels * static_cast<dla::ivec2>(TheProject.CustomCardLayout) };
+        PrecomputedPageSize = PixelSize{
+            static_cast<float>(page_size_pixels.x) * 1_pix,
+            static_cast<float>(page_size_pixels.y) * 1_pix,
+        };
+    }
+    else
+    {
+        const auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
+        const cv::Size page_size_pixels{ ToPixels(page_size.x), ToPixels(page_size.y) };
+        PrecomputedPageSize = PixelSize{
+            static_cast<float>(page_size_pixels.width) * 1_pix,
+            static_cast<float>(page_size_pixels.height) * 1_pix,
+        };
+    }
+
     ImageCache = std::make_unique<PngImageCache>();
 }
 PngDocument::~PngDocument()
 {
 }
 
-PngPage* PngDocument::NextPage(Size page_size)
+PngPage* PngDocument::NextPage(Size /*page_size*/)
 {
     auto& new_page{ Pages.emplace_back() };
-    new_page.Page = cv::Mat::zeros(cv::Size{ ToPixels(page_size.x), ToPixels(page_size.y) }, CV_8UC4);
+    new_page.TheProject = &TheProject;
+    new_page.PerfectFit = TheProject.PageSize == "Fit";
+    new_page.CardSize = PrecomputedCardSize;
+    new_page.PageSize = PrecomputedPageSize;
+    new_page.Page = cv::Mat::zeros(cv::Size{ static_cast<int32_t>(PrecomputedPageSize.x / 1_pix), static_cast<int32_t>(PrecomputedPageSize.y / 1_pix) }, CV_8UC4);
     new_page.ImageCache = ImageCache.get();
     return &new_page;
 }

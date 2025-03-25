@@ -25,7 +25,11 @@ class PngPage final : public PdfPage
     virtual void Finish() override{};
 
   private:
+    const Project* TheProject;
     cv::Mat Page{};
+    bool PerfectFit{};
+    PixelSize CardSize{};
+    PixelSize PageSize{};
     PngImageCache* ImageCache;
 };
 
@@ -49,7 +53,7 @@ class PngImageCache
 class PngDocument final : public PdfDocument
 {
   public:
-    PngDocument(PrintFn print_fn);
+    PngDocument(const Project& project, PrintFn print_fn);
     virtual ~PngDocument() override;
 
     virtual PngPage* NextPage(Size page_size) override;
@@ -57,6 +61,11 @@ class PngDocument final : public PdfDocument
     virtual std::optional<fs::path> Write(fs::path path) override;
 
   private:
+    const Project& TheProject;
+
+    PixelSize PrecomputedCardSize;
+    PixelSize PrecomputedPageSize;
+
     std::vector<PngPage> Pages;
 
     std::unique_ptr<PngImageCache> ImageCache;

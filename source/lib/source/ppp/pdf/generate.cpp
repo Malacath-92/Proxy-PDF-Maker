@@ -55,7 +55,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    auto pdf{ CreatePdfDocument(CFG.Backend, project.FileName, print_fn) };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
 
     for (auto [p, page_images] : images | std::views::enumerate)
     {
