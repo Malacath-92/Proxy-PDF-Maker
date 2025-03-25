@@ -227,7 +227,6 @@ std::optional<fs::path> PngDocument::Write(fs::path path)
                     uint32_t dots_per_meter_x;
                     uint32_t dots_per_meter_y;
                     uint8_t unit;
-                    uint8_t pad[3];
                 } const pHYs_chunk{
                     reverse_endianness(9),
                     { 'p', 'H', 'Y', 's' },
