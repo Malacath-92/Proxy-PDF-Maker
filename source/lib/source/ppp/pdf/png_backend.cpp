@@ -123,7 +123,7 @@ std::optional<fs::path> PngDocument::Write(fs::path path)
 
     std::vector<int> png_params{
         cv::IMWRITE_PNG_COMPRESSION,
-        5,
+        CFG.PngCompression.value_or(5),
         cv::IMWRITE_PNG_STRATEGY,
         cv::IMWRITE_PNG_STRATEGY_DEFAULT,
     };

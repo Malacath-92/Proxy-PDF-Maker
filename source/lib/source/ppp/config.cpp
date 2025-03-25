@@ -50,6 +50,14 @@ Config LoadConfig()
                 }
             }
 
+            {
+                auto png_compression{ settings.value("PDF.Backend.Png.Compression") };
+                if (png_compression.isValid())
+                {
+                    config.PngCompression = std::clamp(png_compression.toInt(), 0, 9);
+                }
+            }
+
             settings.endGroup();
         }
 
@@ -188,6 +196,11 @@ void SaveConfig(Config config)
                 }(config.Backend),
             };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
+
+            if (config.PngCompression.has_value())
+            {
+                settings.setValue("PDF.Backend.Png.Compression", config.PngCompression.value());
+            }
 
             settings.endGroup();
         }

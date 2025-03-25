@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 
 #include <ppp/util.hpp>
@@ -23,6 +24,7 @@ struct Config
     std::string DefaultPageSize{ "Letter" };
     std::string ColorCube{ "None" };
     PdfBackend Backend{ PdfBackend::LibHaru };
+    std::optional<int> PngCompression{ std::nullopt };
 
     struct PageSizeInfo
     {

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Hidden png output option, to use set `PDF.Backend=Png` in config.ini
+    - Use `PDF.Backend.Png.Compression=N` to control compression level, where `N` is a whole number between `0` and `9`. Higher numbers are significantly slower.
 
 ### Changed
 - Sort cards in alphanumeric order as good as possible. This only fails when rendering with oversized cards.
