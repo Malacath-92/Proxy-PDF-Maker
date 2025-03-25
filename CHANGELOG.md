@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A `Fit` option for paper size, to allow for generating perfect sized output.
+- Include `pHYs` chunk in generated pngs, which contains DPI information.
 
 ## [0.4.0] - 2025-25-03
 
