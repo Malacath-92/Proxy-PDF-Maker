@@ -44,6 +44,11 @@ void Project::Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn
         OversizedEnabled = json["oversized_enabled"];
 
         PageSize = json["pagesize"];
+        if (json.contains("custom_layout_width") && json.contains("custom_layout_height"))
+        {
+            CustomCardLayout.x = json["custom_layout_width"];
+            CustomCardLayout.y = json["custom_layout_height"];
+        }
         Orientation = json["orientation"];
         FileName = json["file_name"].get<std::string>();
         EnableGuides = json["enable_guides"];
@@ -98,6 +103,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["oversized_enabled"] = OversizedEnabled;
 
         json["pagesize"] = PageSize;
+        json["custom_layout_width"] = CustomCardLayout.x;
+        json["custom_layout_height"] = CustomCardLayout.y;
         json["orientation"] = Orientation;
         json["file_name"] = FileName.string();
         json["enable_guides"] = EnableGuides;
