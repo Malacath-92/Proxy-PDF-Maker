@@ -3,7 +3,7 @@ Proxy PDF Maker is an app for creating PDF files for at-home printing of TCG Pro
 
 # Installation
 
-TODO...
+Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) page and grab the latest version for your platform. Unzip this into any folder of your choice and you should be good to go.
 
 # Running the Program
 First, throw some images with bleed edge in the `images` folder. Note that images starting with `__` will not be visible in the program. Then, when you open the program or hit the `Run Cropper` button from the GUI, it will go through all the images and crop them. From there you can start to setup your page.
@@ -16,6 +16,9 @@ On the top-left you can switch over to the `Preview`, which shows you a preview 
 
 ## Options
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here.
+
+### Paper Size: Fit
+The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
 ### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
@@ -94,6 +97,16 @@ Lets you choose a folder in which you have your images, this is saved with the p
 ### Open Images
 Opens the image folder for this project in a file explorer.
 
+## Png Generation
+An advanced feature that is still experimental is png generation. This may be useful for some software that assembles printouts in some other way, for example some cutting machines layout software. To enable this option open `config.ini` and set the following option:
+```ini
+PDF.Backend=Png
+```
+You may also optionally add the following option, with `N` being a value between `0` and `9`, where higher values result in slower rendering and smaller files:
+```ini
+PDF.Backend.Png.Compression=N
+```
+The files will now be output one page at a time into a folder specified by the `PDF Filename` option. These files contain information about the DPI, which is forced to the `Max DPI` option.
 
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.
