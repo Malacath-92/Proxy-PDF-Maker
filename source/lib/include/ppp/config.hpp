@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <string>
 
 #include <ppp/util.hpp>
@@ -24,6 +25,7 @@ struct Config
     std::string ColorCube{ "None" };
     fs::path FallbackName{ "fallback.png"_p };
     PdfBackend Backend{ PdfBackend::LibHaru };
+    std::optional<int> PngCompression{ std::nullopt };
 
     struct PageSizeInfo
     {
@@ -37,6 +39,7 @@ struct Config
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
+        { "Fit", {} },
     };
 };
 

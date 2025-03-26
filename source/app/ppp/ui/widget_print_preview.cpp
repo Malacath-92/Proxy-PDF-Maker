@@ -72,9 +72,9 @@ class PageGrid : public QWidget
         }
 
         // pad with dummy images
-        for (uint32_t i = 0; i < columns; i++)
+        for (uint32_t i = 0; i < rows; i++)
         {
-            const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(columns), params.IsBackside).pod() };
+            const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(rows), params.IsBackside).pod() };
             if (grid->itemAtPosition(x, y) == nullptr)
             {
                 const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false, false) };
@@ -376,17 +376,23 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    auto page_size{ CFG.PageSizes[project.Data.PageSize].Dimensions };
-    if (project.Data.Orientation == "Landscape")
+    const bool fit_size{ project.Data.PageSize == "Fit" };
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+    auto page_size{
+        fit_size
+            ? card_size_with_bleed * dla::vec2{ project.Data.CustomCardLayout }
+            : CFG.PageSizes[project.Data.PageSize].Dimensions,
+    };
+    if (!fit_size && project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
     const auto [page_width, page_height]{ page_size.pod() };
-    const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
-    const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
+    const Length card_width{ card_size_with_bleed.x };
+    const Length card_height{ card_size_with_bleed.y };
 
-    const auto columns{ static_cast<uint32_t>(std::floor(page_width / card_width)) };
-    const auto rows{ static_cast<uint32_t>(std::floor(page_height / card_height)) };
+    const auto columns{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.x : std::floor(page_width / card_width)) };
+    const auto rows{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.y : std::floor(page_height / card_height)) };
 
     struct TempPage
     {

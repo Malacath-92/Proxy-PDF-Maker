@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-26-03
+
+### Added
+- A `Fit` option for paper size, to allow for generating perfect sized output.
+- Include `pHYs` chunk in generated pngs, which contains DPI information.
+
+### Fixed
+- Implemented cutting guides for png backenmd
+
+## [0.4.0] - 2025-25-03
+
+### Added
+- Hidden png output option, to use set `PDF.Backend=Png` in config.ini
+    - Use `PDF.Backend.Png.Compression=N` to control compression level, where `N` is a whole number between `0` and `9`. Higher numbers are significantly slower.
+
+### Changed
+- Sort cards in alphanumeric order as good as possible. This only fails when rendering with oversized cards.
+
 ## [0.3.1] - 2025-09-03
 
 ### Fixed

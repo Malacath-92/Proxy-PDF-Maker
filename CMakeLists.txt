@@ -67,6 +67,7 @@ find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
+find_package(Crc32c REQUIRED)
 
 # --------------------------------------------------
 # Create interface libs
@@ -120,7 +121,8 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	libharu::libharu
 	PDFHummus::PDFWriter
 	nlohmann_json::nlohmann_json
-	efsw::efsw)
+	efsw::efsw
+	Crc32c::crc32c)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE

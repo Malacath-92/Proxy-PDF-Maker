@@ -14,6 +14,10 @@ class ProxyPDF(ConanFile):
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
         self.requires("efsw/1.4.1")
+        self.requires("crc32c/1.1.2")
+
+        # Conflict Resolution
+        self.requires("zstd/1.5.7", override=True)
 
     def configure(self):
         self.options["qt"].shared = False
@@ -45,3 +49,5 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_sunraster = False
 
         self.options["pdf-writer"].shared = False
+
+        self.options["crc32c"].shared = False

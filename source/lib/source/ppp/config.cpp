@@ -50,6 +50,14 @@ Config LoadConfig()
                 }
             }
 
+            {
+                auto png_compression{ settings.value("PDF.Backend.Png.Compression") };
+                if (png_compression.isValid())
+                {
+                    config.PngCompression = std::clamp(png_compression.toInt(), 0, 9);
+                }
+            }
+
             settings.endGroup();
         }
 
@@ -189,6 +197,11 @@ void SaveConfig(Config config)
             };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
 
+            if (config.PngCompression.has_value())
+            {
+                settings.setValue("PDF.Backend.Png.Compression", config.PngCompression.value());
+            }
+
             settings.endGroup();
         }
 
@@ -197,6 +210,11 @@ void SaveConfig(Config config)
 
             for (const auto& [name, info] : config.PageSizes)
             {
+                if (name != "Fit")
+                {
+                    continue;
+                }
+
                 const auto& [size, base, decimals]{ info };
                 const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
                 const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };

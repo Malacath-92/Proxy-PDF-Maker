@@ -31,8 +31,14 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    auto page_size{ CFG.PageSizes[project.Data.PageSize].Dimensions };
-    if (project.Data.Orientation == "Landscape")
+    const bool fit_size{ project.Data.PageSize == "Fit" };
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+    auto page_size{
+        fit_size
+            ? card_size_with_bleed * dla::vec2{ project.Data.CustomCardLayout }
+            : CFG.PageSizes[project.Data.PageSize].Dimensions,
+    };
+    if (!fit_size && project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
@@ -49,7 +55,7 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    auto pdf{ CreatePdfDocument(CFG.Backend, project.Data.FileName, print_fn) };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
 
     for (auto [p, page_images] : images | std::views::enumerate)
     {

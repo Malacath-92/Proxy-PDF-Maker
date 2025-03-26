@@ -229,12 +229,34 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
+        const bool fit_size{ project.Data.PageSize == "Fit" };
+
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.Data.FileName.string() } };
         auto* paper_size{ new ComboBoxWithLabel{
             "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
+        auto* cards_width{ new QDoubleSpinBox };
+        cards_width->setDecimals(0);
+        cards_width->setRange(1, 10);
+        cards_width->setSingleStep(1);
+        cards_width->setValue(project.Data.CustomCardLayout.x);
+        auto* cards_height{ new QDoubleSpinBox };
+        cards_height->setDecimals(0);
+        cards_height->setRange(1, 10);
+        cards_height->setSingleStep(1);
+        cards_height->setValue(project.Data.CustomCardLayout.y);
+        auto* cards_layout_layout{ new QHBoxLayout };
+        cards_layout_layout->addWidget(cards_width);
+        cards_layout_layout->addWidget(cards_height);
+        auto* cards_layout_container{ new QWidget };
+        cards_layout_container->setLayout(cards_layout_layout);
+        auto* cards_layout{ new WidgetWithLabel("Layout", cards_layout_container) };
+        cards_layout->setEnabled(fit_size);
+        cards_layout->setVisible(fit_size);
         auto* orientation{ new ComboBoxWithLabel{
             "&Orientation", std::array{ "Landscape"sv, "Portrait"sv }, project.Data.Orientation } };
+        orientation->setEnabled(!fit_size);
+        orientation->setVisible(!fit_size);
         auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
         enable_guides_checkbox->setChecked(project.Data.EnableGuides);
         auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
@@ -252,6 +274,7 @@ class PrintOptionsWidget : public QGroupBox
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
         layout->addWidget(paper_size);
+        layout->addWidget(cards_layout);
         layout->addWidget(orientation);
         layout->addWidget(enable_guides_checkbox);
         layout->addWidget(extended_guides_checkbox);
@@ -275,6 +298,29 @@ class PrintOptionsWidget : public QGroupBox
             [=, &project](QString t)
             {
                 project.Data.PageSize = t.toStdString();
+
+                const bool fit_size{ project.Data.PageSize == "Fit" };
+                cards_layout->setEnabled(fit_size);
+                cards_layout->setVisible(fit_size);
+                orientation->setEnabled(!fit_size);
+                orientation->setVisible(!fit_size);
+
+                main_window()->RefreshPreview();
+            }
+        };
+
+        auto change_cards_width{
+            [=, &project](double v)
+            {
+                project.Data.CustomCardLayout.x = static_cast<uint32_t>(v);
+                main_window()->RefreshPreview();
+            }
+        };
+
+        auto change_cards_height{
+            [=, &project](double v)
+            {
+                project.Data.CustomCardLayout.y = static_cast<uint32_t>(v);
                 main_window()->RefreshPreview();
             }
         };
@@ -360,6 +406,14 @@ class PrintOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_papersize);
+        QObject::connect(cards_width,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_cards_width);
+        QObject::connect(cards_height,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_cards_height);
         QObject::connect(orientation->GetWidget(),
                          &QComboBox::currentTextChanged,
                          this,
