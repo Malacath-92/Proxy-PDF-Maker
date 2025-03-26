@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.0] - 2025-25-03
+## [0.5.0] - 2025-26-03
 
 ### Added
 - A `Fit` option for paper size, to allow for generating perfect sized output.
