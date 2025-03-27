@@ -24,6 +24,9 @@ Cropper::~Cropper()
     CropThread->quit();
     PreviewThread->quit();
 
+    CropThread->wait();
+    PreviewThread->wait();
+
     delete CropTimer;
     delete PreviewTimer;
 
