@@ -43,6 +43,9 @@ CardImage::CardImage(const fs::path& image_name, const Project& project, Params 
 
 void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
+    ImageName = image_name;
+    OriginalParams = params;
+
     const bool has_image{ project.HasPreview(image_name) };
     const bool has_bleed_edge{ params.BleedEdge > 0_mm };
 
@@ -98,9 +101,6 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     }
 
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
-
-    ImageName = image_name;
-    OriginalParams = params;
 
     Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
     BleedEdge = params.BleedEdge;
