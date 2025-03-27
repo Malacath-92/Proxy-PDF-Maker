@@ -201,9 +201,9 @@ const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
 {
     if (Data.Previews.contains(image_name))
     {
-        return Data.Previews.at(image_name).CroppedImage;
+        return Data.Previews.at(image_name).UncroppedImage;
     }
-    return Data.FallbackPreview.CroppedImage;
+    return Data.FallbackPreview.UncroppedImage;
 }
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
