@@ -187,7 +187,6 @@ void Cropper::CropWork()
             this->CropWorkStart();
             CropDone.store(false, std::memory_order_relaxed);
         }
-
     }
     else
     {
