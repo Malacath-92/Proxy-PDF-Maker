@@ -443,6 +443,10 @@ class CardScrollArea::CardGrid : public QWidget
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
             auto* card_widget{ eat_or_make_card(card_name) };
+            QSizePolicy sp_retain = card_widget->sizePolicy();
+            sp_retain.setRetainSizeWhenHidden(true);
+            card_widget->setSizePolicy(sp_retain);
+            card_widget->setVisible(false);
             Cards[std::move(card_name)] = card_widget;
             this_layout->addWidget(card_widget, 0, static_cast<int>(j));
             ++i;
