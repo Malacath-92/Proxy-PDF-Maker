@@ -6,11 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2025-28-03
+
+### Fixed
+- Only work with pngs, will resave any images that don't fit this
+- Correctly hide dummy widgets
+
 ## [0.5.2] - 2025-28-03
 
 ### Fixed
 - All images written by the program now contain DPI information
-- The printout notifying of excessive DPI has been fixed to not mix up file name and DPI 
+- The printout notifying of excessive DPI has been fixed to not mix up file name and DPI
 
 ## [0.5.1] - 2025-28-03
 
