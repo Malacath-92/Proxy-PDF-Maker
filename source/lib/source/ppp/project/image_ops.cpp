@@ -261,7 +261,7 @@ bool NeedRunMinimalCropper(const fs::path& image_dir,
     std::vector output_files{ ListImageFiles(output_dir) };
 
     // We want only pngs
-    if (std::ranges::any_of(input_files, is_not_png))
+    if (std::ranges::any_of(output_files, is_not_png))
     {
         return true;
     }
