@@ -66,6 +66,8 @@ class PngDocument final : public PdfDocument
     PixelSize PrecomputedCardSize;
     PixelSize PrecomputedPageSize;
 
+    Size PageSize;
+
     std::vector<PngPage> Pages;
 
     std::unique_ptr<PngImageCache> ImageCache;
