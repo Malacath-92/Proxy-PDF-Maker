@@ -4,6 +4,7 @@ Proxy PDF Maker is an app for creating PDF files for at-home printing of TCG Pro
 # Installation
 
 Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) page and grab the latest version for your platform. Unzip this into any folder of your choice and you should be good to go.
+Additionally you will have to install Visual Studio Redistributable: 	https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 # Running the Program
 First, throw some images with bleed edge in the `images` folder. Note that images starting with `__` will not be visible in the program. Then, when you open the program or hit the `Run Cropper` button from the GUI, it will go through all the images and crop them. From there you can start to setup your page.
