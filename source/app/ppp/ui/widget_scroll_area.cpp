@@ -387,15 +387,24 @@ class CardScrollArea::CardGrid : public QWidget
 
     void Refresh(Project& project)
     {
-        delete layout();
+        std::unordered_map<fs::path, CardWidget*> old_cards{
+            std::move(Cards)
+        };
+
+        if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
+        {
+            for (auto& [card_name, card] : old_cards)
+            {
+                old_layout->removeWidget(card);
+            }
+            delete old_layout;
+            setLayout(nullptr);
+        }
 
         auto* this_layout{ new QGridLayout };
         this_layout->setContentsMargins(9, 9, 9, 9);
         setLayout(this_layout);
 
-        std::unordered_map<fs::path, CardWidget*> old_cards{
-            std::move(Cards)
-        };
         auto eat_or_make_card{
             [&old_cards, &project](const fs::path& card_name) -> CardWidget*
             {
@@ -454,11 +463,11 @@ class CardScrollArea::CardGrid : public QWidget
         Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / Columns));
 
         setMinimumWidth(TotalWidthFromItemWidth(FirstItem->minimumWidth()));
-        setMinimumHeight(FirstItem->heightForWidth(FirstItem->minimumWidth()));
+        setMinimumHeight(heightForWidth(minimumWidth()));
+        adjustSize();
     }
 
-    std::unordered_map<fs::path, CardWidget*>&
-    GetCards()
+    std::unordered_map<fs::path, CardWidget*>& GetCards()
     {
         return Cards;
     }
