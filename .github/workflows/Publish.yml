@@ -107,7 +107,7 @@ jobs:
       - name: Upload Binaries
         uses: svenstaro/upload-release-action@2.9.0
         with:
-          release_name: Release ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
