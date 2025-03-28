@@ -76,7 +76,7 @@ Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edg
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        PPP_LOG("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", max_dpi.value, image_name.string(), new_size);
+        PPP_LOG("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", image_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
@@ -160,6 +160,8 @@ ImgDict RunCropper(const fs::path& image_dir,
         fs::create_directories(output_dir);
     }
 
+    const auto image_size{ CardSizeWithoutBleed + 2 * bleed_edge };
+
     const std::vector input_files{ ListImageFiles(image_dir) };
     for (const auto& img_file : input_files)
     {
@@ -173,11 +175,11 @@ ImgDict RunCropper(const fs::path& image_dir,
         if (do_vibrance_bump)
         {
             const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-            vibrant_image.Write(output_dir / img_file);
+            vibrant_image.Write(output_dir / img_file, 3, image_size);
         }
         else
         {
-            cropped_image.Write(output_dir / img_file);
+            cropped_image.Write(output_dir / img_file, 3, image_size);
         }
     }
 
@@ -198,7 +200,7 @@ ImgDict RunCropper(const fs::path& image_dir,
         {
             const Image image{ Image::Read(output_dir / extra_img) };
             const Image uncropped_image{ UncropImage(image, extra_img, print_fn) };
-            uncropped_image.Write(image_dir / extra_img);
+            uncropped_image.Write(image_dir / extra_img, 3, image_size);
         }
     }
     else

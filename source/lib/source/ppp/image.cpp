@@ -4,6 +4,8 @@
 
 #include <dla/scalar_math.h>
 
+#include <crc32c/crc32c.h>
+
 #include <opencv2/img_hash.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
@@ -11,6 +13,11 @@
 #include <QPixmap>
 
 #include <ppp/color.hpp>
+
+Image::Image(cv::Mat impl)
+    : m_Impl{ std::move(impl) }
+{
+}
 
 Image::~Image()
 {
@@ -44,9 +51,112 @@ Image Image::Read(const fs::path& path)
     return img;
 }
 
-bool Image::Write(const fs::path& path) const
+bool Image::Write(const fs::path& path, std::optional<int32_t> compression) const
 {
-    cv::imwrite(path.string().c_str(), m_Impl);
+    std::vector<int> png_params;
+    if (compression.has_value())
+    {
+        png_params = {
+            cv::IMWRITE_PNG_COMPRESSION,
+            compression.value(),
+            cv::IMWRITE_PNG_STRATEGY,
+            cv::IMWRITE_PNG_STRATEGY_DEFAULT,
+        };
+    }
+
+    return cv::imwrite(path.string().c_str(), m_Impl, png_params);
+}
+
+bool Image::Write(const fs::path& path, std::optional<int32_t> compression, ::Size dimensions) const
+{
+    std::vector<int> png_params;
+    if (compression.has_value())
+    {
+        png_params = {
+            cv::IMWRITE_PNG_COMPRESSION,
+            compression.value(),
+            cv::IMWRITE_PNG_STRATEGY,
+            cv::IMWRITE_PNG_STRATEGY_DEFAULT,
+        };
+    }
+
+    const PixelDensity density{ Density(dimensions) };
+
+    std::vector<uchar> buf;
+    if (cv::imencode(".png", m_Impl, buf, png_params))
+    {
+        // Squeeze in a pHYs chunk that contains dpi
+        {
+            // Find first IDAT section ...
+            size_t idat_idx{};
+            for (size_t j = 0; j < buf.size() - 4; j++)
+            {
+                if (std::string_view{ reinterpret_cast<std::string_view::value_type*>(&buf[j]), 4 } == "IDAT")
+                {
+                    idat_idx = j - 4;
+                    break;
+                }
+            }
+
+            auto reverse_endianness{
+                [](uint32_t val) -> uint32_t
+                {
+                    union
+                    {
+                        uint32_t v;
+                        unsigned char u8[sizeof(uint32_t)];
+                    } util;
+                    util.v = val;
+                    std::swap(util.u8[0], util.u8[3]);
+                    std::swap(util.u8[1], util.u8[2]);
+                    return util.v;
+                }
+            };
+
+            // Create pHYs chunk...
+            struct
+            {
+                uint32_t size;
+                std::array<char, 4> name;
+                uint32_t dots_per_meter_x;
+                uint32_t dots_per_meter_y;
+                uint8_t unit;
+            } const pHYs_chunk{
+                reverse_endianness(9),
+                { 'p', 'H', 'Y', 's' },
+                reverse_endianness(static_cast<uint32_t>(density.value)),
+                reverse_endianness(static_cast<uint32_t>(density.value)),
+                1, // this just means meter
+            };
+
+            // size + name + data + padding
+            static constexpr uint32_t pHYs_chunk_size{ 4 + 4 + 9 };
+            // chunk + padding
+            static_assert(sizeof(pHYs_chunk) == pHYs_chunk_size + 3);
+            // verify padding is at the end ...
+            static_assert(offsetof(decltype(pHYs_chunk), unit) == pHYs_chunk_size - 1);
+
+            // only the name and data
+            const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
+            const auto crc_data_size{ pHYs_chunk_size - 4 };
+            const uint32_t crc{ reverse_endianness(crc32c::Crc32c(crc_data, crc_data_size)) };
+
+            // chunk + crc
+            std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
+            std::memcpy(pHYs_buf.data(), &pHYs_chunk, pHYs_chunk_size);
+            std::memcpy(pHYs_buf.data() + pHYs_chunk_size, &crc, 4);
+            buf.insert(buf.begin() + idat_idx, pHYs_buf.begin(), pHYs_buf.end());
+        }
+
+        if (FILE * file{ fopen(path.string().c_str(), "wb") })
+        {
+            fwrite(buf.data(), 1, buf.size(), file);
+            fclose(file);
+        }
+
+        return false;
+    }
+
     return true;
 }
 

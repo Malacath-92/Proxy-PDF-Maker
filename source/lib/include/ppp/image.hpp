@@ -13,6 +13,7 @@ class [[nodiscard]] Image
 {
   public:
     Image() = default;
+    Image(cv::Mat impl);
     ~Image();
 
     Image(Image&& rhs);
@@ -22,7 +23,8 @@ class [[nodiscard]] Image
     Image& operator=(const Image& rhs);
 
     static Image Read(const fs::path& path);
-    bool Write(const fs::path& path) const;
+    bool Write(const fs::path& path, std::optional<int32_t> compression = std::nullopt) const;
+    bool Write(const fs::path& path, std::optional<int32_t> compression, Size dimensions) const;
 
     static Image Decode(const std::vector<std::byte>& buffer);
     std::vector<std::byte> Encode() const;
