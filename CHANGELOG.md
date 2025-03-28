@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-28-03
+
+### Fixed
+- Cards now display correctly after changing column count of card are
+
 ## [0.5.0] - 2025-26-03
 
 ### Added
@@ -13,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Include `pHYs` chunk in generated pngs, which contains DPI information.
 
 ### Fixed
-- Implemented cutting guides for png backenmd
+- Implemented cutting guides for png backend
 
 ## [0.4.0] - 2025-25-03
 
