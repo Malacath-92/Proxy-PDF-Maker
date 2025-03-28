@@ -42,7 +42,7 @@ jobs:
         with:
           python-version: 3.11
 
-      - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@v3.31.6
 
       - name: Xcode Select Version (MacOS)
         if: ${{ matrix.os == 'MacOS' }}
