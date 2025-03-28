@@ -105,9 +105,22 @@ bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length 
         return true;
     }
 
+    const auto is_not_png{
+        [](const fs::path& image)
+        { return image.extension() != ".png"; }
+    };
+
     std::vector input_files{ ListImageFiles(image_dir) };
+    if (std::ranges::any_of(input_files, is_not_png))
+    {
+        return true;
+    }
     std::ranges::sort(input_files);
     std::vector output_files{ ListImageFiles(output_dir) };
+    if (std::ranges::any_of(output_files, is_not_png))
+    {
+        return true;
+    }
     std::ranges::sort(output_files);
     return input_files != output_files;
 }
@@ -144,7 +157,32 @@ ImgDict RunCropper(const fs::path& image_dir,
         fs::create_directories(output_dir);
     }
 
+    // First resave all source images as pngs
+    {
+        const std::vector input_files{ ListImageFiles(image_dir) };
+        for (const auto& img_file : input_files)
+        {
+            if (img_file.extension() != ".png")
+            {
+                Image::Read(image_dir / img_file).Write(image_dir / fs::path{ img_file }.replace_extension(".png"), 2, CardSizeWithBleed);
+                fs::remove(image_dir / img_file);
+            }
+        }
+    }
+
+    // Then resave all crop images as pngs
     const auto image_size{ CardSizeWithoutBleed + 2 * bleed_edge };
+    {
+        const std::vector crop_files{ ListImageFiles(crop_dir) };
+        for (const auto& img_file : crop_files)
+        {
+            if (img_file.extension() != ".png")
+            {
+                Image::Read(crop_dir / img_file).Write(crop_dir / fs::path{ img_file }.replace_extension(".png"), 2, image_size);
+                fs::remove(crop_dir / img_file);
+            }
+        }
+    }
 
     const std::vector input_files{ ListImageFiles(image_dir) };
     for (const auto& img_file : input_files)
@@ -215,7 +253,18 @@ bool NeedRunMinimalCropper(const fs::path& image_dir,
         return true;
     }
 
+    const auto is_not_png{
+        [](const fs::path& image)
+        { return image.extension() != ".png"; }
+    };
+
     std::vector output_files{ ListImageFiles(output_dir) };
+
+    // We want only pngs
+    if (std::ranges::any_of(input_files, is_not_png))
+    {
+        return true;
+    }
 
     {
         // Do we need to run any input -> output operation?
