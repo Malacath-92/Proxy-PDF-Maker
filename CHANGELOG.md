@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2025-29-03
+
+### Fixed
+- Dummy cards will no longer accidentally show up in prints, potentially causing a crash
+- Paper size "Fit" will now reliably print the right card layout
+
 ## [0.5.5] - 2025-29-03
 
 ### Fixed
