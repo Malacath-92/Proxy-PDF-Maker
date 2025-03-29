@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2025-29-03
+
+### Fixed
+- Ignore the png restriction for the minimal cropper, otherwise it'd be broken right now
+
 ## [0.5.3] - 2025-28-03
 
 ### Fixed
