@@ -406,12 +406,12 @@ class CardScrollArea::CardGrid : public QWidget
         setLayout(this_layout);
 
         auto eat_or_make_card{
-            [&old_cards, &project](const fs::path& card_name) -> CardWidget*
+            [&old_cards, &project](const fs::path& card_name, auto ctor) -> CardWidget*
             {
                 auto it{ old_cards.find(card_name) };
                 if (it == old_cards.end())
                 {
-                    return new CardWidget{ card_name, project };
+                    return ctor(card_name, project);
                 }
 
                 CardWidget* card{ it->second };
@@ -419,6 +419,14 @@ class CardScrollArea::CardGrid : public QWidget
                 card->Refresh(project);
                 return card;
             }
+        };
+        auto eat_or_make_real_card{
+            std::bind_back(eat_or_make_card, [](auto&&... args)
+                           { return new CardWidget{ std::forward<decltype(args)>(args)... }; })
+        };
+        auto eat_or_make_dummy_card{
+            std::bind_back(eat_or_make_card, [](auto&&... args)
+                           { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; })
         };
 
         size_t i{ 0 };
@@ -430,7 +438,7 @@ class CardScrollArea::CardGrid : public QWidget
                 continue;
             }
 
-            auto* card_widget{ eat_or_make_card(card_name) };
+            auto* card_widget{ eat_or_make_real_card(card_name) };
             Cards[card_name] = card_widget;
 
             const auto x{ static_cast<int>(i / cols) };
@@ -442,11 +450,7 @@ class CardScrollArea::CardGrid : public QWidget
         for (size_t j = i; j < cols; j++)
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
-            auto* card_widget{ eat_or_make_card(card_name) };
-            QSizePolicy sp_retain = card_widget->sizePolicy();
-            sp_retain.setRetainSizeWhenHidden(true);
-            card_widget->setSizePolicy(sp_retain);
-            card_widget->setVisible(false);
+            auto* card_widget{ eat_or_make_dummy_card(card_name) };
             Cards[std::move(card_name)] = card_widget;
             this_layout->addWidget(card_widget, 0, static_cast<int>(j));
             ++i;
