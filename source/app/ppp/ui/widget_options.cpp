@@ -345,6 +345,8 @@ class PrintOptionsWidget : public QGroupBox
         auto* cards_layout_layout{ new QHBoxLayout };
         cards_layout_layout->addWidget(cards_width);
         cards_layout_layout->addWidget(cards_height);
+        cards_layout_layout->setContentsMargins(0, 0, 0, 0);
+        cards_layout_layout->setSpacing(0);
         auto* cards_layout_container{ new QWidget };
         cards_layout_container->setLayout(cards_layout_layout);
         auto* cards_layout{ new WidgetWithLabel("Layout", cards_layout_container) };

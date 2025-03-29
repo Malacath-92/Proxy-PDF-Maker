@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.5.3] - 2025-29-03
+## [0.5.5] - 2025-29-03
+
+### Fixed
+- The card layout widget, shown when paper size is set to "Fit", should now stay visible
+
+## [0.5.4] - 2025-29-03
 
 ### Fixed
 - Ignore the png restriction for the minimal cropper, otherwise it'd be broken right now
