@@ -41,6 +41,8 @@ class Project : public QObject
     void Init(PrintFn print_fn);
     void InitProperties(PrintFn print_fn);
 
+    void CardAdded(const fs::path& card_name);
+    void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
 
     bool HasPreview(const fs::path& image_name) const;
@@ -65,7 +67,6 @@ class Project : public QObject
   public:
     struct ProjectData
     {
-
         // Project options
         fs::path ImageDir{ "images" };
         fs::path CropDir{ "images/crop" };

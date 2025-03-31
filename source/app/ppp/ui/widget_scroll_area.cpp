@@ -398,7 +398,6 @@ class CardScrollArea::CardGrid : public QWidget
                 old_layout->removeWidget(card);
             }
             delete old_layout;
-            setLayout(nullptr);
         }
 
         auto* this_layout{ new QGridLayout };

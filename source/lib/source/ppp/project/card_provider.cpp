@@ -1,61 +1,154 @@
 #include <ppp/project/card_provider.hpp>
 
+#include <ppp/config.hpp>
+
 #include <ppp/project/image_ops.hpp>
+#include <ppp/project/project.hpp>
 
-CardProvider::CardProvider(const fs::path& image_dir, const fs::path& crop_dir)
+CardProvider::CardProvider(const Project& project)
+    : ImageDir{ project.Data.ImageDir }
+    , CropDir{ CFG.EnableUncrop ? project.Data.CropDir : "" }
+    , OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) }
 {
-    Refresh(image_dir, crop_dir);
+    Watcher.addWatch(ImageDir.string(), this, false);
+    if (!CropDir.empty())
+    {
+        Watcher.addWatch(CropDir.string(), this, false);
+    }
 }
 
-void CardProvider::Start()
+void CardProvider::Start(const Project& project)
 {
-    const auto images{
-        CFG.EnableUncrop
-            ? ListImageFiles(ImageDir, CropDir)
-            : ListImageFiles(ImageDir)
-    };
-    for (const fs::path& image : images)
+    for (const fs::path& image : ListFiles())
     {
-        CardAdded(image);
+        const bool missing_outputs{ IsMissingOutputs(image) };
+        const bool missing_preview{ !project.Data.Previews.contains(image) };
+        if (missing_outputs || missing_preview)
+        {
+            CardAdded(image, missing_outputs, missing_preview);
+        }
     }
 
-    Watcher.watch();
+    if (!Started)
+    {
+        Watcher.watch();
+        Started = true;
+    }
 }
 
-void CardProvider::Refresh(const fs::path& image_dir, const fs::path& crop_dir)
+void CardProvider::NewProjectOpened(const Project& project)
 {
-    if (!ImageDir.empty())
+    ImageDirChanged(project);
+}
+void CardProvider::ImageDirChanged(const Project& project)
+{
+    // Image folder, and thus crop folder has changed, we have to
+    // remove all old files ...
+    for (const fs::path& image : ListFiles())
     {
-        Watcher.removeWatch((ImageDir / "").string());
+        CardRemoved(image);
     }
+
+    Watcher.removeWatch((ImageDir / "").string());
     if (!CropDir.empty())
     {
         Watcher.removeWatch((CropDir / "").string());
     }
 
+    ImageDir = project.Data.ImageDir;
+    CropDir = project.Data.CropDir;
+    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+
+    // ... and add all new files ...
+    Start(project);
+}
+void CardProvider::BleedChanged(const Project& project)
+{
+    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+
+    // Generate new crops only ...
+    for (const fs::path& image : ListFiles())
     {
-        const auto images{
-            CFG.EnableUncrop
-                ? ListImageFiles(ImageDir, CropDir)
-                : ListImageFiles(ImageDir)
-        };
-        for (const fs::path& image : images)
+        if (IsMissingOutputs(image))
         {
-            CardRemoved(image);
+            CardAdded(image, true, false);
         }
     }
+}
+void CardProvider::EnableUncropChanged(const Project& project)
+{
+    // CFG.EnableUncrop option has changed, so we need to add/remove cards
+    // that are in the crop folder but not the images folder ...
 
-    ImageDir = image_dir;
-    CropDir = crop_dir;
-
-    if (CFG.EnableUncrop)
+    const auto images{
+        ListImageFiles(ImageDir)
+    };
+    if (!CropDir.empty())
     {
-        Watcher.addWatch(ImageDir.string(), this, false);
-        Watcher.addWatch(CropDir.string(), this, false);
+        // CFG.EnableUncrop was enabled, is not anymore, so we remove the
+        // difference ...
+        const auto crop_images{
+            ListImageFiles(CropDir)
+        };
+        for (const fs::path& image : crop_images)
+        {
+            if (!std::ranges::contains(images, image))
+            {
+                CardRemoved(image);
+            }
+        }
+
+        // ... and remove the old watch ...
+        CropDir.clear();
+        Watcher.removeWatch((CropDir / "").string());
     }
     else
     {
-        Watcher.addWatch(ImageDir.string(), this, false);
+        // CFG.EnableUncrop was not enabled, now it is, so we add the
+        // difference ... ...
+        const auto crop_images{
+            ListImageFiles(project.Data.CropDir)
+        };
+        for (const fs::path& image : crop_images)
+        {
+            if (!std::ranges::contains(images, image))
+            {
+                CardAdded(image, true, true);
+            }
+        }
+
+        // ... and add a new watch ...
+        CropDir = project.Data.CropDir;
+        Watcher.addWatch(CropDir.string(), this, false);
+    }
+}
+void CardProvider::ColorCubeChanged(const Project& project)
+{
+    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+
+    // Generate new crops only ...
+    for (const fs::path& image : ListFiles())
+    {
+        if (IsMissingOutputs(image))
+        {
+            CardAdded(image, true, false);
+        }
+    }
+}
+void CardProvider::BasePreviewWidthChanged(const Project& /*project*/)
+{
+    // Generate new previews only ...
+    for (const fs::path& image : ListFiles())
+    {
+        CardAdded(image, false, true);
+    }
+}
+void CardProvider::MaxDPIChanged(const Project& /*project*/)
+{
+    // Generate new crops only ...
+    for (const fs::path& image : ListFiles())
+    {
+        CardAdded(image, true, false);
     }
 }
 
@@ -65,31 +158,62 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
                                     efsw::Action action,
                                     std::string old_filename)
 {
+    const fs::path filepath{ filename };
     switch (action)
     {
     case efsw::Action::Add:
-        if (fs::is_directory(filename))
+        if (filepath.has_extension())
         {
-            CardAdded(filename);
+            CardAdded(filepath, true, true);
         }
         break;
     case efsw::Action::Delete:
-        if (fs::is_directory(filename))
+        if (filepath.has_extension())
         {
-            CardRemoved(filename);
+            CardRemoved(filepath);
         }
         break;
     case efsw::Action::Modified:
-        if (fs::is_directory(filename))
+        if (filepath.has_extension())
         {
-            CardModified(filename);
+            CardModified(filepath);
         }
         break;
     case efsw::Action::Moved:
-        if (fs::is_directory(filename))
+        if (filepath.has_extension())
         {
-            CardRenamed(old_filename, filename);
+            CardRenamed(old_filename, filepath);
         }
         break;
     }
+}
+
+std::vector<fs::path> CardProvider::ListFiles()
+{
+    return !CropDir.empty()
+               ? ListImageFiles(ImageDir, CropDir)
+               : ListImageFiles(ImageDir);
+}
+
+bool CardProvider::IsMissingOutputs(const fs::path& image) const
+{
+    // If we can uncrop we have to check if "source" image exists
+    if (CFG.EnableUncrop && !fs::exists(ImageDir / image))
+    {
+        return true;
+    }
+
+    // Intermediary file should exist
+    if (!fs::exists(CropDir / image))
+    {
+        return true;
+    }
+
+    // Output file should exist
+    if (!fs::exists(OutputDir / image))
+    {
+        return true;
+    }
+
+    return false;
 }

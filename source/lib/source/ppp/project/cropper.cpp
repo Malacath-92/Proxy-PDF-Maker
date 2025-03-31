@@ -12,7 +12,8 @@
 #include <ppp/project/image_ops.hpp>
 
 Cropper::Cropper(const Project& project)
-    : TheProject{ project }
+    : Data{ project.Data }
+    , Cfg{ CFG }
 {
 }
 Cropper::~Cropper()
@@ -38,12 +39,6 @@ Cropper::~Cropper()
 
 void Cropper::Start()
 {
-    {
-        std::unique_lock lock{ PropertyMutex };
-        ImageDir = TheProject.Data.ImageDir;
-        CropDir = TheProject.Data.CropDir;
-    }
-
     Router = new CropperSignalRouter;
     Router->SetWork(std::bind_front(&Cropper::PreviewWork, this));
     QObject::connect(Router, &CropperSignalRouter::CropWorkStart, this, &Cropper::CropWorkStart);
@@ -78,25 +73,50 @@ void Cropper::Start()
     PreviewThread->start();
 }
 
-void Cropper::CardAdded(const fs::path& card_name)
+void Cropper::ClearCropWork()
 {
-    PushWork(card_name);
+    std::lock_guard work_lock{ PendingCropWorkMutex };
+    PendingCropWork.clear();
+}
+
+void Cropper::ClearPreviewWork()
+{
+    std::lock_guard work_lock{ PendingPreviewWorkMutex };
+    PendingPreviewWork.clear();
+}
+
+void Cropper::ProjectUpdated(const Project& project)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Data = project.Data;
+}
+
+void Cropper::CFGUpdated()
+{
+    std::unique_lock lock{ PropertyMutex };
+    Cfg = CFG;
+}
+
+void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview)
+{
+    PushWork(card_name, needs_crop, needs_preview);
 }
 
 void Cropper::CardRemoved(const fs::path& card_name)
 {
     RemoveWork(card_name);
 
-    if (CFG.EnableUncrop && fs::exists(ImageDir / card_name))
+    std::shared_lock lock{ PropertyMutex };
+    if (CFG.EnableUncrop && fs::exists(Data.ImageDir / card_name))
     {
         CardModified(card_name);
     }
-    else if (fs::exists(CropDir / card_name))
+    else if (fs::exists(Data.CropDir / card_name))
     {
-        fs::remove(CropDir / card_name);
+        fs::remove(Data.CropDir / card_name);
 
         using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-        for (const auto& entry : fs::recursive_directory_iterator(CropDir))
+        for (const auto& entry : fs::recursive_directory_iterator(Data.CropDir))
         {
             if (entry.is_directory() && fs::exists(entry.path() / card_name))
             {
@@ -110,17 +130,18 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
 {
     RemoveWork(old_card_name);
 
-    if (CFG.EnableUncrop && fs::exists(ImageDir / old_card_name))
+    std::shared_lock lock{ PropertyMutex };
+    if (CFG.EnableUncrop && fs::exists(Data.ImageDir / old_card_name))
     {
-        fs::rename(ImageDir / old_card_name, ImageDir / new_card_name);
+        fs::rename(Data.ImageDir / old_card_name, Data.ImageDir / new_card_name);
     }
-    else if (fs::exists(CropDir / old_card_name))
+    else if (fs::exists(Data.CropDir / old_card_name))
     {
-        fs::rename(CropDir / old_card_name, CropDir / new_card_name);
+        fs::rename(Data.CropDir / old_card_name, Data.CropDir / new_card_name);
     }
 
     using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
-    for (const auto& entry : fs::recursive_directory_iterator(CropDir))
+    for (const auto& entry : fs::recursive_directory_iterator(Data.CropDir))
     {
         if (entry.is_directory() && fs::exists(entry.path() / old_card_name))
         {
@@ -131,11 +152,25 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
 
 void Cropper::CardModified(const fs::path& card_name)
 {
-    PushWork(card_name);
+    PushWork(card_name, true, true);
 }
 
-void Cropper::PushWork(const fs::path& card_name)
+void Cropper::PauseWork()
 {
+    Pause.store(true, std::memory_order_relaxed);
+    while (ThreadsPaused != 2)
+        /* spin */;
+}
+
+void Cropper::RestartWork()
+{
+    Pause.store(false, std::memory_order_relaxed);
+    ThreadsPaused.store(0, std::memory_order_relaxed);
+}
+
+void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview)
+{
+    if (needs_crop)
     {
         std::lock_guard lock{ PendingCropWorkMutex };
         if (!std::ranges::contains(PendingCropWork, card_name))
@@ -143,6 +178,7 @@ void Cropper::PushWork(const fs::path& card_name)
             PendingCropWork.push_back(card_name);
         }
     }
+    if (needs_preview)
     {
         std::lock_guard lock{ PendingPreviewWorkMutex };
         if (!std::ranges::contains(PendingPreviewWork, card_name))
@@ -174,6 +210,12 @@ void Cropper::RemoveWork(const fs::path& card_name)
 
 void Cropper::CropWork()
 {
+    if (Pause.load(std::memory_order_relaxed))
+    {
+        ThreadsPaused++;
+        return;
+    }
+
     if (Quit.load(std::memory_order_relaxed))
     {
         ThreadsDone++;
@@ -198,12 +240,10 @@ void Cropper::CropWork()
 
         // Steal work from preview thread, only if that thread is already working on it
         // so we don't miss the done signal
-        if (!PreviewDone.load(std::memory_order_relaxed) && !DoPreviewWork(this))
+        if (!PreviewDone.load(std::memory_order_relaxed))
         {
-            QThread::yieldCurrentThread();
+            DoPreviewWork(this);
         }
-
-        QThread::yieldCurrentThread();
     }
 
     CropTimer->start();
@@ -211,6 +251,12 @@ void Cropper::CropWork()
 
 void Cropper::PreviewWork()
 {
+    if (Pause.load(std::memory_order_relaxed))
+    {
+        ThreadsPaused++;
+        return;
+    }
+
     if (Quit.load(std::memory_order_relaxed))
     {
         ThreadsDone++;
@@ -235,9 +281,9 @@ void Cropper::PreviewWork()
 
         // Steal work from crop thread, only if that thread is already working on it
         // so we don't miss the done signal
-        if (!CropDone.load(std::memory_order_relaxed) && !DoCropWork(Router))
+        if (!CropDone.load(std::memory_order_relaxed))
         {
-            QThread::yieldCurrentThread();
+            DoCropWork(Router);
         }
     }
 
@@ -314,12 +360,13 @@ bool Cropper::DoPreviewWork(T* signaller)
 
         try
         {
-            const PixelSize uncropped_size{ CFG.BasePreviewWidth, dla::math::round(CFG.BasePreviewWidth / CardRatio) };
+            std::shared_lock lock{ PropertyMutex };
+            const PixelSize uncropped_size{ Cfg.BasePreviewWidth, dla::math::round(Cfg.BasePreviewWidth / CardRatio) };
 
             // Generate Preview ...
-            if (fs::exists(ImageDir / card_name))
+            if (fs::exists(Data.ImageDir / card_name))
             {
-                const Image image{ Image::Read(ImageDir / card_name).Resize(uncropped_size) };
+                const Image image{ Image::Read(Data.ImageDir / card_name).Resize(uncropped_size) };
 
                 ImagePreview image_preview{};
                 image_preview.UncroppedImage = image;
@@ -327,7 +374,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 signaller->PreviewUpdated(card_name, image_preview);
             }
-            else if (CFG.EnableUncrop && fs::exists(CropDir / card_name))
+            else if (Cfg.EnableUncrop && fs::exists(Data.CropDir / card_name))
             {
                 const PixelSize cropped_size{
                     [&]() -> PixelSize
@@ -340,7 +387,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                     }()
                 };
 
-                const Image image{ Image::Read(CropDir / card_name).Resize(cropped_size) };
+                const Image image{ Image::Read(Data.CropDir / card_name).Resize(cropped_size) };
 
                 ImagePreview image_preview{};
                 image_preview.CroppedImage = image;

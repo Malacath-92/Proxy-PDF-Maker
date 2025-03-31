@@ -169,6 +169,20 @@ void Project::InitProperties(PrintFn print_fn)
     }
 }
 
+void Project::CardAdded(const fs::path& card_name)
+{
+    if (!card_name.string().starts_with("__"))
+    {
+        Data.Cards[card_name] = CardInfo{ 1 };
+    }
+}
+
+void Project::CardRemoved(const fs::path& card_name)
+{
+    Data.Cards.erase(card_name);
+    Data.Previews.erase(card_name);
+}
+
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
 {
     if (Data.Cards.contains(old_card_name))

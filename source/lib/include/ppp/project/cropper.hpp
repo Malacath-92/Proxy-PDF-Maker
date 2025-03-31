@@ -21,6 +21,12 @@ class Cropper : public QObject
 
     void Start();
 
+    void ClearCropWork();
+    void ClearPreviewWork();
+
+    void ProjectUpdated(const Project& project);
+    void CFGUpdated();
+
   signals:
     void CropWorkStart();
     void CropWorkDone();
@@ -31,17 +37,20 @@ class Cropper : public QObject
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
   public slots:
-    void CardAdded(const fs::path& card_name);
+    void CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview);
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
     void CardModified(const fs::path& card_name);
+
+    void PauseWork();
+    void RestartWork();
 
   private:
     void CropWork();
     void PreviewWork();
 
   private:
-    void PushWork(const fs::path& card_name);
+    void PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview);
     void RemoveWork(const fs::path& card_name);
 
     // These do the actual work, return false when no work to do
@@ -57,8 +66,8 @@ class Cropper : public QObject
     std::vector<fs::path> PendingPreviewWork;
 
     std::shared_mutex PropertyMutex;
-    fs::path ImageDir;
-    fs::path CropDir;
+    Project::ProjectData Data;
+    Config Cfg;
 
     class CropperSignalRouter* Router;
 
@@ -68,12 +77,12 @@ class Cropper : public QObject
     QThread* PreviewThread;
     std::atomic_bool PreviewDone{ true };
 
-    std::atomic_bool Quit{ false };
+    std::atomic_bool Pause{ false };
+    std::atomic_uint32_t ThreadsPaused{ 0 };
 
+    std::atomic_bool Quit{ false };
     std::atomic_uint32_t ThreadsDone{ 0 };
 
     QTimer* CropTimer;
     QTimer* PreviewTimer;
-
-    const Project& TheProject;
 };

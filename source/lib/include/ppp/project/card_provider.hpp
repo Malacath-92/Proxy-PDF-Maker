@@ -6,16 +6,24 @@
 
 #include <ppp/util.hpp>
 
+class Project;
+
 class CardProvider : public QObject, public efsw::FileWatchListener
 {
     Q_OBJECT;
 
   public:
-    CardProvider(const fs::path& image_dir, const fs::path& crop_dir);
+    CardProvider(const Project& project);
 
-    void Start();
+    void Start(const Project& project);
 
-    void Refresh(const fs::path& image_dir, const fs::path& crop_dir);
+    void NewProjectOpened(const Project& project);
+    void ImageDirChanged(const Project& project);
+    void BleedChanged(const Project& project);
+    void EnableUncropChanged(const Project& project);
+    void ColorCubeChanged(const Project& project);
+    void BasePreviewWidthChanged(const Project& project);
+    void MaxDPIChanged(const Project& project);
 
     virtual void handleFileAction(efsw::WatchID watchid,
                                   const std::string& dir,
@@ -23,8 +31,13 @@ class CardProvider : public QObject, public efsw::FileWatchListener
                                   efsw::Action action,
                                   std::string old_filename) override;
 
+  private:
+    std::vector<fs::path> ListFiles();
+
+    bool IsMissingOutputs(const fs::path& image) const;
+
   signals:
-    void CardAdded(const fs::path& card_name);
+    void CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview);
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
     void CardModified(const fs::path& card_name);
@@ -32,6 +45,9 @@ class CardProvider : public QObject, public efsw::FileWatchListener
   private:
     fs::path ImageDir;
     fs::path CropDir;
+    fs::path OutputDir;
 
     efsw::FileWatcher Watcher;
+
+    bool Started{ false };
 };
