@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-31-03
+
+### Added
+- Option to output pdf files with jpg images embedded, use `PDF.Backend.Image.Format=Jpg` in config.ini
+    - Determine quality with `PDF.Backend.Jpg.Quality=N`, where `N` is a whole number between `1` and `100`
+
 ## [0.5.6] - 2025-29-03
 
 ### Fixed

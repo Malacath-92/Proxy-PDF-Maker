@@ -66,12 +66,24 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
         return it->HaruImage;
     }
 
+    const auto use_jpg{ CFG.PdfImageFormat == ImageFormat::Jpg };
+    const std::function<std::vector<std::byte>(const Image&)> encoder{
+        use_jpg
+            ? std::bind_back(&Image::EncodeJpg, CFG.JpgQuality)
+            : std::bind_back(&Image::Encode, std::optional{ 0 })
+    };
+    const auto loader{
+        use_jpg
+            ? &HPDF_LoadJpegImageFromMem
+            : &HPDF_LoadPngImageFromMem
+    };
+
     const Image loaded_image{ Image::Read(image_path).Rotate(rotation) };
-    const auto encoded_image{ loaded_image.Encode() };
+    const auto encoded_image{ encoder(loaded_image) };
     const auto libharu_image{
-        HPDF_LoadPngImageFromMem(Document,
-                                 reinterpret_cast<const HPDF_BYTE*>(encoded_image.data()),
-                                 static_cast<HPDF_UINT>(encoded_image.size())),
+        loader(Document,
+               reinterpret_cast<const HPDF_BYTE*>(encoded_image.data()),
+               static_cast<HPDF_UINT>(encoded_image.size())),
     };
     image_cache.push_back({
         std::move(image_path),

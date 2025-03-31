@@ -168,10 +168,47 @@ Image Image::Decode(const std::vector<std::byte>& buffer)
     return img;
 }
 
-std::vector<std::byte> Image::Encode() const
+std::vector<std::byte> Image::Encode(std::optional<int32_t> compression) const
 {
+    return EncodePng(compression);
+}
+
+std::vector<std::byte> Image::EncodePng(std::optional<int32_t> compression) const
+{
+    std::vector<int> png_params;
+    if (compression.has_value())
+    {
+        png_params = {
+            cv::IMWRITE_PNG_COMPRESSION,
+            compression.value(),
+            cv::IMWRITE_PNG_STRATEGY,
+            cv::IMWRITE_PNG_STRATEGY_DEFAULT,
+        };
+    }
+
     std::vector<uchar> cv_buffer;
-    if (cv::imencode(".png", m_Impl, cv_buffer))
+    if (cv::imencode(".png", m_Impl, cv_buffer, png_params))
+    {
+        std::vector<std::byte> out_buffer(cv_buffer.size(), std::byte{});
+        std::memcpy(out_buffer.data(), cv_buffer.data(), cv_buffer.size());
+        return out_buffer;
+    }
+    return {};
+}
+
+std::vector<std::byte> Image::EncodeJpg(std::optional<int32_t> quality) const
+{
+    std::vector<int> jpg_params;
+    if (quality.has_value())
+    {
+        jpg_params = {
+            cv::IMWRITE_JPEG_QUALITY,
+            quality.value(),
+        };
+    }
+
+    std::vector<uchar> cv_buffer;
+    if (cv::imencode(".jpg", m_Impl, cv_buffer, jpg_params))
     {
         std::vector<std::byte> out_buffer(cv_buffer.size(), std::byte{});
         std::memcpy(out_buffer.data(), cv_buffer.data(), cv_buffer.size());

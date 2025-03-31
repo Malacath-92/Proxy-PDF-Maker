@@ -14,6 +14,12 @@ enum class PdfBackend
     Png,
 };
 
+enum class ImageFormat
+{
+    Png,
+    Jpg
+};
+
 struct Config
 {
     bool EnableUncrop{ false };
@@ -25,7 +31,9 @@ struct Config
     std::string ColorCube{ "None" };
     fs::path FallbackName{ "fallback.png"_p };
     PdfBackend Backend{ PdfBackend::LibHaru };
+    ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };
+    std::optional<int> JpgQuality{ std::nullopt };
 
     struct PageSizeInfo
     {
