@@ -109,6 +109,14 @@ PDF.Backend.Png.Compression=N
 ```
 The files will now be output one page at a time into a folder specified by the `PDF Filename` option. These files contain information about the DPI, which is forced to the `Max DPI` option.
 
+## Reducing PDF Size
+With a lot of images a pdf file generated from this app can easily reach hundreds of MB in size, even a GB for a full commander deck. You can reduce this by embedding jpg images instead of png images in the pdf. Currently this is only available from `config.ini`. Add these two lines to get it working:
+```
+PDF.Backend.Image.Format=Jpg
+PDF.Backend.Jpg.Quality=95
+```
+Here the quality value is a whole number between `1` and `100`, defaulting to `95`. Lower numbers will reduce file size at the cost of image artifacts appearing.
+
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.
 - The program will automatically save if you close the window. It will not save if it crashes! The data is stored in `proj.json`.
