@@ -18,23 +18,6 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, OptionsWidget
     setCentralWidget(window_area);
 }
 
-//void PrintProxyPrepMainWindow::Refresh()
-//{
-//    Scroll->Refresh(AppProject);
-//    Options->Refresh(AppProject);
-//    RefreshWidgets();
-//}
-//
-//void PrintProxyPrepMainWindow::RefreshWidgets()
-//{
-//    Options->RefreshWidgets(AppProject);
-//}
-//
-//void PrintProxyPrepMainWindow::RefreshPreview()
-//{
-//    Preview->Refresh(AppProject);
-//}
-
 void PrintProxyPrepMainWindow::OpenAboutPopup()
 {
     if (!isEnabled())
