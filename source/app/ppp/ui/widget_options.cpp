@@ -147,6 +147,7 @@ class ActionsWidget : public QGroupBox
 
                         main_window->setEnabled(false);
                         reload_window.ShowDuringWork(load_project_work);
+                        main_window->NewProjectOpenedDiff(project.Data);
                         main_window->NewProjectOpened(project);
                         main_window->setEnabled(true);
                     }
@@ -168,6 +169,7 @@ class ActionsWidget : public QGroupBox
                         project.InitProperties(nullptr);
 
                         auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                        main_window->ImageDirChangedDiff(project.Data.ImageDir, project.Data.CropDir);
                         main_window->ImageDirChanged(project);
                     }
                 }
@@ -600,6 +602,7 @@ class CardOptionsWidget : public QGroupBox
             [=, &project](double v)
             {
                 project.Data.BleedEdge = 1_mm * static_cast<float>(v);
+                main_window()->BleedChangedDiff(project.Data.BleedEdge);
                 main_window()->BleedChanged(project);
             }
         };
@@ -794,6 +797,7 @@ class GlobalOptionsWidget : public QGroupBox
             {
                 CFG.EnableUncrop = s == Qt::CheckState::Checked;
                 SaveConfig(CFG);
+                main_window()->EnableUncropChangedDiff(CFG.EnableUncrop);
                 main_window()->EnableUncropChanged(project);
             }
         };
@@ -803,6 +807,7 @@ class GlobalOptionsWidget : public QGroupBox
             {
                 CFG.ColorCube = t.toStdString();
                 PreloadCube(application, CFG.ColorCube);
+                main_window()->ColorCubeChangedDiff(CFG.ColorCube);
                 main_window()->ColorCubeChanged(project);
             }
         };
@@ -812,6 +817,7 @@ class GlobalOptionsWidget : public QGroupBox
             {
                 CFG.BasePreviewWidth = static_cast<float>(v) * 1_pix;
                 SaveConfig(CFG);
+                main_window()->BasePreviewWidthChangedDiff(CFG.BasePreviewWidth);
                 main_window()->BasePreviewWidthChanged(project);
             }
         };
@@ -821,6 +827,7 @@ class GlobalOptionsWidget : public QGroupBox
             {
                 CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
                 SaveConfig(CFG);
+                main_window()->MaxDPIChangedDiff(CFG.MaxDPI);
                 main_window()->MaxDPIChanged(project);
             }
         };

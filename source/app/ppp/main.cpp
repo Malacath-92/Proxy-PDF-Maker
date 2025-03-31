@@ -32,8 +32,6 @@ int main(int argc, char** argv)
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 #endif
 
-    qRegisterMetaType<Project>("Project&");
-
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
 
@@ -65,20 +63,20 @@ int main(int argc, char** argv)
     QObject::connect(&card_provider, &CardProvider::CardRenamed, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &cropper, &Cropper::ClearCropWork);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &cropper, &Cropper::ClearCropWork);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &cropper, &Cropper::ClearCropWork);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpenedDiff, &cropper, &Cropper::ClearCropWork);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChangedDiff, &cropper, &Cropper::ClearCropWork);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChangedDiff, &cropper, &Cropper::ClearCropWork);
 
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChanged, &cropper, &Cropper::ClearPreviewWork);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChangedDiff, &cropper, &Cropper::ClearPreviewWork);
 
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &cropper, &Cropper::ProjectUpdated);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &cropper, &Cropper::ProjectUpdated);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &cropper, &Cropper::ProjectUpdated);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpenedDiff, &cropper, &Cropper::NewProjectOpenedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChangedDiff, &cropper, &Cropper::ImageDirChangedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChangedDiff, &cropper, &Cropper::BleedChangedDiff);
 
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChanged, &cropper, &Cropper::CFGUpdated);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &cropper, &Cropper::CFGUpdated);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChanged, &cropper, &Cropper::CFGUpdated);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::MaxDPIChanged, &cropper, &Cropper::CFGUpdated);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChangedDiff, &cropper, &Cropper::EnableUncropChangedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChangedDiff, &cropper, &Cropper::ColorCubeChangedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChangedDiff, &cropper, &Cropper::BasePreviewWidthChangedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::MaxDPIChangedDiff, &cropper, &Cropper::MaxDPIChangedDiff);
     }
 
     {

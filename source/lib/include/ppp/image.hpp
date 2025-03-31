@@ -23,8 +23,8 @@ class [[nodiscard]] Image
     Image& operator=(const Image& rhs);
 
     static Image Read(const fs::path& path);
-    bool Write(const fs::path& path, std::optional<int32_t> compression = std::nullopt) const;
-    bool Write(const fs::path& path, std::optional<int32_t> compression, Size dimensions) const;
+    bool Write(const fs::path& path, std::optional<int32_t> png_compression = std::nullopt) const;
+    bool Write(const fs::path& path, std::optional<int32_t> png_compression, Size dimensions) const;
 
     static Image Decode(const std::vector<std::byte>& buffer);
     std::vector<std::byte> Encode(std::optional<int32_t> compression = std::nullopt) const;

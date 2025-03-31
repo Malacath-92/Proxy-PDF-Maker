@@ -85,16 +85,47 @@ void Cropper::ClearPreviewWork()
     PendingPreviewWork.clear();
 }
 
-void Cropper::ProjectUpdated(const Project& project)
+void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
 {
     std::unique_lock lock{ PropertyMutex };
-    Data = project.Data;
+    Data = data;
 }
 
-void Cropper::CFGUpdated()
+void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir)
 {
     std::unique_lock lock{ PropertyMutex };
-    Cfg = CFG;
+    Data.ImageDir = image_dir;
+    Data.CropDir = crop_dir;
+}
+
+void Cropper::BleedChangedDiff(Length bleed)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Data.BleedEdge = bleed;
+}
+
+void Cropper::EnableUncropChangedDiff(bool enable_uncrop)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Cfg.EnableUncrop = enable_uncrop;
+}
+
+void Cropper::ColorCubeChangedDiff(const std::string& cube_name)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Cfg.ColorCube = cube_name;
+}
+
+void Cropper::BasePreviewWidthChangedDiff(Pixel base_preview_width)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Cfg.BasePreviewWidth = base_preview_width;
+}
+
+void Cropper::MaxDPIChangedDiff(PixelDensity dpi)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Cfg.MaxDPI = dpi;
 }
 
 void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview)
@@ -222,25 +253,25 @@ void Cropper::CropWork()
         return;
     }
 
-    if (DoCropWork(this))
+    if (DoCropWork())
     {
-        if (CropDone.load(std::memory_order_relaxed))
+        if (CropDone.load(std::memory_order_relaxed) == 0)
         {
             this->CropWorkStart();
-            CropDone.store(false, std::memory_order_relaxed);
+            CropDone.store(FramesBeforeDoneTrigger, std::memory_order_relaxed);
         }
     }
     else
     {
-        if (!CropDone.load(std::memory_order_relaxed))
+        if (CropDone.load(std::memory_order_relaxed) != 0)
         {
             this->CropWorkDone();
-            CropDone.store(true, std::memory_order_relaxed);
+            CropDone.fetch_sub(1, std::memory_order_relaxed);
         }
 
         // Steal work from preview thread, only if that thread is already working on it
         // so we don't miss the done signal
-        if (!PreviewDone.load(std::memory_order_relaxed))
+        if (PreviewDone.load(std::memory_order_relaxed) != 0)
         {
             DoPreviewWork(this);
         }
@@ -265,33 +296,32 @@ void Cropper::PreviewWork()
 
     if (DoPreviewWork(Router))
     {
-        if (PreviewDone.load(std::memory_order_relaxed))
+        if (PreviewDone.load(std::memory_order_relaxed) == 0)
         {
             Router->PreviewWorkStart();
-            PreviewDone.store(false, std::memory_order_relaxed);
+            PreviewDone.store(FramesBeforeDoneTrigger, std::memory_order_relaxed);
         }
     }
     else
     {
-        if (!PreviewDone.load(std::memory_order_relaxed))
+        if (!PreviewDone.load(std::memory_order_relaxed) != 0)
         {
             Router->PreviewWorkDone();
-            PreviewDone.store(true, std::memory_order_relaxed);
+            PreviewDone.fetch_sub(1, std::memory_order_relaxed);
         }
 
         // Steal work from crop thread, only if that thread is already working on it
         // so we don't miss the done signal
-        if (!CropDone.load(std::memory_order_relaxed))
+        if (CropDone.load(std::memory_order_relaxed) != 0)
         {
-            DoCropWork(Router);
+            DoCropWork();
         }
     }
 
     PreviewTimer->start();
 }
 
-template<class T>
-bool Cropper::DoCropWork(T* /*signaller*/)
+bool Cropper::DoCropWork()
 {
     auto pop_work{
         [this]() -> std::optional<fs::path>
@@ -314,7 +344,57 @@ bool Cropper::DoCropWork(T* /*signaller*/)
 
         try
         {
-            // TODO: DO THE CROPPING!!!
+            std::shared_lock lock{ PropertyMutex };
+            const Length bleed_edge{ Data.BleedEdge };
+            const PixelDensity max_density{ Cfg.MaxDPI };
+
+            const auto image_size{ CardSizeWithoutBleed + 2 * bleed_edge };
+
+            const bool uncrop{ Cfg.EnableUncrop };
+
+            const bool do_vibrance_bump{ false };
+            const cv::Mat* color_cube{ nullptr }; // TODO
+
+            const fs::path output_dir{ GetOutputDir(Data.CropDir, Data.BleedEdge, Cfg.ColorCube) };
+
+            const fs::path input_file{ Data.ImageDir / card_name };
+            const fs::path crop_file{ Data.CropDir / card_name };
+            const fs::path output_file{ output_dir / card_name };
+            lock.unlock();
+
+            {
+                std::lock_guard dir_lock{ DirMutex };
+                if (!fs::exists(output_dir))
+                {
+                    fs::create_directories(output_dir);
+                }
+            }
+
+            if (uncrop && !fs::exists(input_file))
+            {
+                const Image image{ Image::Read(crop_file) };
+                const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
+                uncropped_image.Write(input_file, 3, CardSizeWithBleed);
+            }
+
+            // TODO: Need a force here...
+            if (fs::exists(output_file))
+            {
+                return true;
+            }
+
+            const Image image{ Image::Read(input_file) };
+            const Image cropped_image{ CropImage(image, card_name, bleed_edge, max_density, nullptr) };
+            if (do_vibrance_bump)
+            {
+                const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
+                vibrant_image.Write(output_file, 3, image_size);
+            }
+            else
+            {
+                cropped_image.Write(output_file, 3, image_size);
+            }
+
             return true;
         }
         catch (...)
