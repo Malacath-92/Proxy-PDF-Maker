@@ -6,11 +6,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.6] - 2025-29-03
+
+### Fixed
+- Dummy cards will no longer accidentally show up in prints, potentially causing a crash
+- Paper size "Fit" will now reliably print the right card layout
+
+## [0.5.5] - 2025-29-03
+
+### Fixed
+- The card layout widget, shown when paper size is set to "Fit", should now stay visible
+
+## [0.5.4] - 2025-29-03
+
+### Fixed
+- Ignore the png restriction for the minimal cropper, otherwise it'd be broken right now
+
+## [0.5.3] - 2025-28-03
+
+### Fixed
+- Only work with pngs, will resave any images that don't fit this
+- Correctly hide dummy widgets
+
 ## [0.5.2] - 2025-28-03
 
 ### Fixed
 - All images written by the program now contain DPI information
-- The printout notifying of excessive DPI has been fixed to not mix up file name and DPI 
+- The printout notifying of excessive DPI has been fixed to not mix up file name and DPI
 
 ## [0.5.1] - 2025-28-03
 
