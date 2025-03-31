@@ -51,10 +51,30 @@ Config LoadConfig()
             }
 
             {
+                auto pdf_image_format{ settings.value("PDF.Backend.Image.Format", "Png").toString() };
+                if (pdf_image_format == "Jpg")
+                {
+                    config.PdfImageFormat = ImageFormat::Jpg;
+                }
+                else
+                {
+                    config.PdfImageFormat = ImageFormat::Png;
+                }
+            }
+
+            {
                 auto png_compression{ settings.value("PDF.Backend.Png.Compression") };
                 if (png_compression.isValid())
                 {
                     config.PngCompression = std::clamp(png_compression.toInt(), 0, 9);
+                }
+            }
+
+            {
+                auto jpg_quality{ settings.value("PDF.Backend.Jpg.Quality") };
+                if (jpg_quality.isValid())
+                {
+                    config.JpgQuality = std::clamp(jpg_quality.toInt(), 0, 100);
                 }
             }
 
@@ -197,9 +217,29 @@ void SaveConfig(Config config)
             };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
 
+            const char* pdf_image_format{
+                [](ImageFormat image_format)
+                {
+                    switch (image_format)
+                    {
+                    case ImageFormat::Jpg:
+                        return "Jpg";
+                    case ImageFormat::Png:
+                    default:
+                        return "Png";
+                    }
+                }(config.PdfImageFormat),
+            };
+            settings.setValue("PDF.Backend.Image.Format", ToQString(pdf_image_format));
+
             if (config.PngCompression.has_value())
             {
                 settings.setValue("PDF.Backend.Png.Compression", config.PngCompression.value());
+            }
+
+            if (config.JpgQuality.has_value())
+            {
+                settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
             }
 
             settings.endGroup();

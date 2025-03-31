@@ -14,6 +14,12 @@ enum class PdfBackend
     Png,
 };
 
+enum class ImageFormat
+{
+    Png,
+    Jpg
+};
+
 struct Config
 {
     bool EnableUncrop{ false };
@@ -24,7 +30,9 @@ struct Config
     std::string DefaultPageSize{ "Letter" };
     std::string ColorCube{ "None" };
     PdfBackend Backend{ PdfBackend::LibHaru };
+    ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };
+    std::optional<int> JpgQuality{ std::nullopt };
 
     struct PageSizeInfo
     {
