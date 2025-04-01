@@ -34,6 +34,7 @@ class Project : public QObject
 
   public:
     Project() = default;
+    ~Project();
 
     void Load(const fs::path& json_path, PrintFn print_fn);
     void Dump(const fs::path& json_path, PrintFn print_fn) const;

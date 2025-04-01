@@ -9,6 +9,12 @@
 
 #include <ppp/project/image_ops.hpp>
 
+Project::~Project()
+{
+    // Save preview cache, in case we didn't finish generating previews we want some partial work saved
+    WritePreviews(Data.ImageCache, Data.Previews);
+}
+
 void Project::Load(const fs::path& json_path, PrintFn print_fn)
 {
     Data = ProjectData{};
