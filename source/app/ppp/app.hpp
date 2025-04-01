@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include <QApplication>
 
 #include <opencv2/core/mat.hpp>
@@ -38,6 +40,7 @@ class PrintProxyPrepApplication : public QApplication
     fs::path ProjectPath{ cwd() / "proj.json" };
     std::string Theme{ "Default" };
 
+    mutable std::mutex CubesMutex;
     std::unordered_map<std::string, cv::Mat> Cubes;
 
     std::optional<QByteArray> WindowGeometry{};

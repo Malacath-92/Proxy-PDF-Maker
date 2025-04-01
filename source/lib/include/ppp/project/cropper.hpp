@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <functional>
 
 #include <QObject>
 #include <QTimer>
@@ -16,7 +17,7 @@ class Cropper : public QObject
     Q_OBJECT;
 
   public:
-    Cropper(const Project& project);
+    Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project);
     ~Cropper();
 
     void Start();
@@ -67,6 +68,8 @@ class Cropper : public QObject
                       Length bleed_edge,
                       const std::string& color_cube_name,
                       const cv::Mat* color_cube);
+
+    std::function<const cv::Mat*(std::string_view)> GetColorCube;
 
     std::mutex PendingCropWorkMutex;
     std::vector<fs::path> PendingCropWork;

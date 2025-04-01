@@ -38,7 +38,11 @@ int main(int argc, char** argv)
     Project project{};
     project.Load(app.GetProjectPath(), nullptr);
 
-    Cropper cropper{ project };
+    Cropper cropper{ [&app](std::string_view cube_name)
+                     {
+                         return GetCubeImage(app, cube_name);
+                     },
+                     project };
     CardProvider card_provider{ project };
 
     QObject::connect(&card_provider, &CardProvider::CardAdded, &cropper, &Cropper::CardAdded);

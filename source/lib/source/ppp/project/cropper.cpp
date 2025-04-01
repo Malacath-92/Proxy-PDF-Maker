@@ -11,8 +11,9 @@
 #include <ppp/project/cropper_signal_router.hpp>
 #include <ppp/project/image_ops.hpp>
 
-Cropper::Cropper(const Project& project)
-    : Data{ project.Data }
+Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
+    : GetColorCube{ std::move(get_color_cube) }
+    , Data{ project.Data }
     , Cfg{ CFG }
 {
 }
@@ -352,8 +353,7 @@ bool Cropper::DoCropWork()
 
             const bool uncrop{ Cfg.EnableUncrop };
 
-            const bool do_vibrance_bump{ false };
-            const cv::Mat* color_cube{ nullptr }; // TODO
+            const std::string color_cube_name{ Cfg.ColorCube };
 
             const fs::path output_dir{ GetOutputDir(Data.CropDir, Data.BleedEdge, Cfg.ColorCube) };
 
@@ -361,6 +361,9 @@ bool Cropper::DoCropWork()
             const fs::path crop_file{ Data.CropDir / card_name };
             const fs::path output_file{ output_dir / card_name };
             lock.unlock();
+
+            const bool do_color_correction{ color_cube_name != "None" };
+            const cv::Mat* color_cube{ GetColorCube(color_cube_name) };
 
             {
                 std::lock_guard dir_lock{ DirMutex };
@@ -385,7 +388,7 @@ bool Cropper::DoCropWork()
 
             const Image image{ Image::Read(input_file) };
             const Image cropped_image{ CropImage(image, card_name, bleed_edge, max_density, nullptr) };
-            if (do_vibrance_bump)
+            if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
                 vibrant_image.Write(output_file, 3, image_size);
