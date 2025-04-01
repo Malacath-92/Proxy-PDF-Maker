@@ -169,7 +169,7 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
 
         return false;
     }
-    else if (ext == ".jpg")
+    else if (ext == ".jpg" || ext == ".jpeg" || ext == ".jpe")
     {
         std::vector<int> jpg_params;
         if (jpg_quality.has_value())
