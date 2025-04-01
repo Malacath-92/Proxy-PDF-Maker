@@ -85,7 +85,9 @@ class Cropper : public QObject
 
     class CropperSignalRouter* Router;
 
-    static inline constexpr uint32_t FramesBeforeDoneTrigger{ 6 };
+    // We give the cropper a few updates before triggering done
+    // so we don't ping-pong start<->done when we work fast
+    static inline constexpr uint32_t UpdatesBeforeDoneTrigger{ 6 };
 
     QThread* CropThread;
     std::atomic_uint32_t CropDone{ 0 };

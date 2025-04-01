@@ -259,15 +259,17 @@ void Cropper::CropWork()
         if (CropDone.load(std::memory_order_relaxed) == 0)
         {
             this->CropWorkStart();
-            CropDone.store(FramesBeforeDoneTrigger, std::memory_order_relaxed);
+            CropDone.store(UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
         }
     }
     else
     {
         if (CropDone.load(std::memory_order_relaxed) != 0)
         {
-            this->CropWorkDone();
-            CropDone.fetch_sub(1, std::memory_order_relaxed);
+            if (CropDone.fetch_sub(1, std::memory_order_relaxed) == 1)
+            {
+                this->CropWorkDone();
+            }
         }
 
         // Steal work from preview thread, only if that thread is already working on it
@@ -300,15 +302,17 @@ void Cropper::PreviewWork()
         if (PreviewDone.load(std::memory_order_relaxed) == 0)
         {
             Router->PreviewWorkStart();
-            PreviewDone.store(FramesBeforeDoneTrigger, std::memory_order_relaxed);
+            PreviewDone.store(UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
         }
     }
     else
     {
-        if (!PreviewDone.load(std::memory_order_relaxed) != 0)
+        if (PreviewDone.load(std::memory_order_relaxed) != 0)
         {
-            Router->PreviewWorkDone();
-            PreviewDone.fetch_sub(1, std::memory_order_relaxed);
+            if (PreviewDone.fetch_sub(1, std::memory_order_relaxed) == 1)
+            {
+                this->PreviewWorkDone();
+            }
         }
 
         // Steal work from crop thread, only if that thread is already working on it
