@@ -742,7 +742,7 @@ class GlobalOptionsWidget : public QGroupBox
         precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
 
         auto* color_cube{ new ComboBoxWithLabel{
-            "Color C&ube", GetCubeNames(), "None" } };
+            "Color C&ube", GetCubeNames(), CFG.ColorCube } };
         color_cube->GetWidget()->setToolTip("Requires rerunning cropper");
 
         auto* preview_width_spin_box{ new QDoubleSpinBox };
@@ -806,6 +806,7 @@ class GlobalOptionsWidget : public QGroupBox
             [=, &application, &project](const QString& t)
             {
                 CFG.ColorCube = t.toStdString();
+                SaveConfig(CFG);
                 PreloadCube(application, CFG.ColorCube);
                 main_window()->ColorCubeChangedDiff(CFG.ColorCube);
                 main_window()->ColorCubeChanged(project);
