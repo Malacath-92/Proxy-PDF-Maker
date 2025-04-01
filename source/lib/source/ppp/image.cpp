@@ -1,5 +1,6 @@
 #include <ppp/image.hpp>
 
+#include <bit>
 #include <ranges>
 
 #include <dla/scalar_math.h>
@@ -122,21 +123,6 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                     }
                 }
 
-                auto reverse_endianness{
-                    [](uint32_t val) -> uint32_t
-                    {
-                        union
-                        {
-                            uint32_t v;
-                            unsigned char u8[sizeof(uint32_t)];
-                        } util;
-                        util.v = val;
-                        std::swap(util.u8[0], util.u8[3]);
-                        std::swap(util.u8[1], util.u8[2]);
-                        return util.v;
-                    }
-                };
-
                 // Create pHYs chunk...
                 struct
                 {
@@ -146,10 +132,10 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                     uint32_t dots_per_meter_y;
                     uint8_t unit;
                 } const pHYs_chunk{
-                    reverse_endianness(9),
+                    std::byteswap(9u),
                     { 'p', 'H', 'Y', 's' },
-                    reverse_endianness(static_cast<uint32_t>(density.value)),
-                    reverse_endianness(static_cast<uint32_t>(density.value)),
+                    std::byteswap(static_cast<uint32_t>(density.value)),
+                    std::byteswap(static_cast<uint32_t>(density.value)),
                     1, // this just means meter
                 };
 
@@ -163,7 +149,7 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 // only the name and data
                 const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
                 const auto crc_data_size{ pHYs_chunk_size - 4 };
-                const uint32_t crc{ reverse_endianness(crc32c::Crc32c(crc_data, crc_data_size)) };
+                const uint32_t crc{ std::byteswap(crc32c::Crc32c(crc_data, crc_data_size)) };
 
                 // chunk + crc
                 std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
@@ -211,22 +197,8 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 uint16_t* x_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1) };
                 uint16_t* y_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1 + 2) };
 
-                auto reverse_endianness{
-                    [](uint16_t val) -> uint16_t
-                    {
-                        union
-                        {
-                            uint16_t v;
-                            unsigned char u8[sizeof(uint16_t)];
-                        } util;
-                        util.v = val;
-                        std::swap(util.u8[0], util.u8[1]);
-                        return util.v;
-                    }
-                };
-
                 *units = 1; // 0: pixel ratio only, 1: DPI, 2: dots per cm
-                *x_density = reverse_endianness(static_cast<uint16_t>(dpi.value));
+                *x_density = std::byteswap(static_cast<uint16_t>(dpi.value));
                 *y_density = *x_density;
             }
 
