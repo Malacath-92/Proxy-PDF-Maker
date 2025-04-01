@@ -381,7 +381,7 @@ bool Cropper::DoCropWork()
             {
                 const Image image{ Image::Read(crop_file) };
                 const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
-                uncropped_image.Write(input_file, 3, CardSizeWithBleed);
+                uncropped_image.Write(input_file, 3, 95, CardSizeWithBleed);
             }
 
             // TODO: Need a force here...
@@ -395,11 +395,11 @@ bool Cropper::DoCropWork()
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-                vibrant_image.Write(output_file, 3, image_size);
+                vibrant_image.Write(output_file, 3, 95, image_size);
             }
             else
             {
-                cropped_image.Write(output_file, 3, image_size);
+                cropped_image.Write(output_file, 3, 95, image_size);
             }
 
             return true;

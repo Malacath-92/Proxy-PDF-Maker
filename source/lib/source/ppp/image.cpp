@@ -51,9 +51,10 @@ Image Image::Read(const fs::path& path)
     return img;
 }
 
-bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression) const
+bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality) const
 {
-    if (path.extension() == ".png")
+    const fs::path ext{ path.extension() };
+    if (ext == ".png")
     {
         std::vector<int> png_params;
         if (png_compression.has_value())
@@ -68,15 +69,29 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression) 
 
         return cv::imwrite(path.string().c_str(), m_Impl, png_params);
     }
+    else if (ext == ".jpg")
+    {
+        std::vector<int> jpg_params;
+        if (jpg_quality.has_value())
+        {
+            jpg_params = {
+                cv::IMWRITE_JPEG_QUALITY,
+                jpg_quality.value(),
+            };
+        }
+
+        return cv::imwrite(path.string().c_str(), m_Impl, jpg_params);
+    }
     else
     {
         return cv::imwrite(path.string().c_str(), m_Impl);
     }
 }
 
-bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, ::Size dimensions) const
+bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality, ::Size dimensions) const
 {
-    if (path.extension() == ".png")
+    const fs::path ext{ path.extension() };
+    if (ext == ".png")
     {
         std::vector<int> png_params;
         if (png_compression.has_value())
@@ -155,6 +170,64 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 std::memcpy(pHYs_buf.data(), &pHYs_chunk, pHYs_chunk_size);
                 std::memcpy(pHYs_buf.data() + pHYs_chunk_size, &crc, 4);
                 buf.insert(buf.begin() + idat_idx, pHYs_buf.begin(), pHYs_buf.end());
+            }
+
+            if (FILE * file{ fopen(path.string().c_str(), "wb") })
+            {
+                fwrite(buf.data(), 1, buf.size(), file);
+                fclose(file);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+    else if (ext == ".jpg")
+    {
+        std::vector<int> jpg_params;
+        if (jpg_quality.has_value())
+        {
+            jpg_params = {
+                cv::IMWRITE_JPEG_QUALITY,
+                jpg_quality.value(),
+            };
+        }
+
+        const PixelDensity dpi{ Density(dimensions) * 1_in / 1_m };
+
+        std::vector<uchar> buf;
+        if (cv::imencode(".jpg", m_Impl, buf, jpg_params))
+        {
+            {
+                // Write the pixel density into the APP0 chunk that OpenCV wrote...
+                assert(buf[0] == 0xff);
+                assert(buf[1] == 0xd8);
+                assert(buf[2] == 0xff);
+                assert(buf[3] == 0xe0);
+
+                // Not declaring a struct here because I can't be arsed to pack it tightly
+                uint8_t* units{ reinterpret_cast<uint8_t*>(buf.data() + 4 + 9) };
+                uint16_t* x_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1) };
+                uint16_t* y_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1 + 2) };
+
+                auto reverse_endianness{
+                    [](uint16_t val) -> uint16_t
+                    {
+                        union
+                        {
+                            uint16_t v;
+                            unsigned char u8[sizeof(uint16_t)];
+                        } util;
+                        util.v = val;
+                        std::swap(util.u8[0], util.u8[1]);
+                        return util.v;
+                    }
+                };
+
+                *units = 1; // 0: pixel ratio only, 1: DPI, 2: dots per cm
+                *x_density = reverse_endianness(static_cast<uint16_t>(dpi.value));
+                *y_density = *x_density;
             }
 
             if (FILE * file{ fopen(path.string().c_str(), "wb") })

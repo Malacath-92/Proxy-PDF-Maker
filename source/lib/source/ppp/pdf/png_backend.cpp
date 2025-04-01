@@ -179,7 +179,7 @@ std::optional<fs::path> PngDocument::Write(fs::path path)
             fs::remove(png_path);
         }
 
-        Image{ std::move(page.Page) }.Write(png_path, CFG.PngCompression.value_or(5), PageSize);
+        Image{ std::move(page.Page) }.Write(png_path, CFG.PngCompression.value_or(5), std::nullopt, PageSize);
     }
 
     return png_folder;
