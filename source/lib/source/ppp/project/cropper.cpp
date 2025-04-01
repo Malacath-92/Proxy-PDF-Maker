@@ -46,6 +46,7 @@ void Cropper::Start()
     QObject::connect(Router, &CropperSignalRouter::CropWorkDone, this, &Cropper::CropWorkDone);
     QObject::connect(Router, &CropperSignalRouter::PreviewWorkStart, this, &Cropper::PreviewWorkStart);
     QObject::connect(Router, &CropperSignalRouter::PreviewWorkDone, this, &Cropper::PreviewWorkDone);
+    QObject::connect(Router, &CropperSignalRouter::CropProgress, this, &Cropper::CropProgress);
     QObject::connect(Router, &CropperSignalRouter::PreviewUpdated, this, &Cropper::PreviewUpdated);
 
     CropThread = new QThread{};
@@ -254,11 +255,12 @@ void Cropper::CropWork()
         return;
     }
 
-    if (DoCropWork())
+    if (DoCropWork(this))
     {
         if (CropDone.load(std::memory_order_relaxed) == 0)
         {
             this->CropWorkStart();
+            TotalWorkDone.store(0, std::memory_order_relaxed);
             CropDone.store(UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
         }
     }
@@ -311,7 +313,7 @@ void Cropper::PreviewWork()
         {
             if (PreviewDone.fetch_sub(1, std::memory_order_relaxed) == 1)
             {
-                this->PreviewWorkDone();
+                Router->PreviewWorkDone();
             }
         }
 
@@ -319,33 +321,49 @@ void Cropper::PreviewWork()
         // so we don't miss the done signal
         if (CropDone.load(std::memory_order_relaxed) != 0)
         {
-            DoCropWork();
+            DoCropWork(Router);
         }
     }
 
     PreviewTimer->start();
 }
 
-bool Cropper::DoCropWork()
+template<class T>
+bool Cropper::DoCropWork(T* signaller)
 {
+    struct Work
+    {
+        fs::path CardName;
+        float Progress;
+    };
     auto pop_work{
-        [this]() -> std::optional<fs::path>
+        [this]() -> std::optional<Work>
         {
-            std::lock_guard lock{ PendingCropWorkMutex };
-            if (PendingCropWork.empty())
+            fs::path first_work_to_do;
+            float work_left;
             {
-                return std::nullopt;
+                std::lock_guard lock{ PendingCropWorkMutex };
+                if (PendingCropWork.empty())
+                {
+                    return std::nullopt;
+                }
+
+                first_work_to_do = std::move(PendingCropWork.front());
+                PendingCropWork.erase(PendingCropWork.begin());
+                work_left = static_cast<float>(PendingCropWork.size());
             }
 
-            fs::path first_work_to_do{ std::move(PendingCropWork.front()) };
-            PendingCropWork.erase(PendingCropWork.begin());
-            return first_work_to_do;
+            const float work_done{ static_cast<float>(TotalWorkDone.fetch_add(1, std::memory_order_relaxed)) };
+            return Work{
+                std::move(first_work_to_do),
+                work_done / (work_done + work_left),
+            };
         },
     };
 
     if (auto crop_work_to_do{ pop_work() })
     {
-        fs::path card_name{ std::move(crop_work_to_do).value() };
+        auto [card_name, progress]{ std::move(crop_work_to_do).value() };
 
         try
         {
@@ -387,6 +405,7 @@ bool Cropper::DoCropWork()
             // TODO: Need a force here...
             if (fs::exists(output_file))
             {
+                signaller->CropProgress(progress);
                 return true;
             }
 
@@ -402,6 +421,7 @@ bool Cropper::DoCropWork()
                 cropped_image.Write(output_file, 3, 95, image_size);
             }
 
+            signaller->CropProgress(progress);
             return true;
         }
         catch (...)

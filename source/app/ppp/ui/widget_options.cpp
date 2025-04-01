@@ -14,6 +14,7 @@
 #include <QToolTip>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QProgressBar>
 
 #include <ppp/app.hpp>
 #include <ppp/cubes.hpp>
@@ -37,6 +38,11 @@ class ActionsWidget : public QGroupBox
     {
         setTitle("Actions");
 
+        auto* cropper_progress_bar{ new QProgressBar };
+        cropper_progress_bar->setToolTip("Cropper Progress");
+        cropper_progress_bar->setTextVisible(false);
+        cropper_progress_bar->setVisible(false);
+        cropper_progress_bar->setRange(0, ProgressBarResolution);
         auto* render_button{ new QPushButton{ "Render Document" } };
         auto* save_button{ new QPushButton{ "Save Project" } };
         auto* load_button{ new QPushButton{ "Load Project" } };
@@ -44,6 +50,7 @@ class ActionsWidget : public QGroupBox
         auto* open_images_button{ new QPushButton{ "Open Images" } };
 
         const QWidget* buttons[]{
+            cropper_progress_bar,
             render_button,
             save_button,
             load_button,
@@ -58,11 +65,12 @@ class ActionsWidget : public QGroupBox
         auto* layout{ new QGridLayout };
         layout->setColumnMinimumWidth(0, minimum_width + 10);
         layout->setColumnMinimumWidth(1, minimum_width + 10);
-        layout->addWidget(render_button, 0, 0, 1, 2);
-        layout->addWidget(save_button, 1, 0);
-        layout->addWidget(load_button, 1, 1);
-        layout->addWidget(set_images_button, 2, 0);
-        layout->addWidget(open_images_button, 2, 1);
+        layout->addWidget(cropper_progress_bar, 0, 0, 1, 2);
+        layout->addWidget(render_button, 1, 0, 1, 2);
+        layout->addWidget(save_button, 2, 0);
+        layout->addWidget(load_button, 2, 1);
+        layout->addWidget(set_images_button, 3, 0);
+        layout->addWidget(open_images_button, 3, 1);
         setLayout(layout);
 
         const auto render{
@@ -204,22 +212,33 @@ class ActionsWidget : public QGroupBox
                          this,
                          open_images_folder);
 
+        CropperProgressBar = cropper_progress_bar;
         RenderButton = render_button;
     }
 
     void CropperWorking()
     {
-        RenderButton->setEnabled(false);
-        RenderButton->setToolTip("Cropper is running...");
+        CropperProgressBar->setVisible(true);
+        CropperProgressBar->setValue(0);
+        RenderButton->setVisible(false);
     }
 
     void CropperDone()
     {
-        RenderButton->setEnabled(true);
-        RenderButton->setToolTip(QString{});
+        CropperProgressBar->setVisible(false);
+        RenderButton->setVisible(true);
     }
 
+    void CropperProgress(float progress)
+    {
+        const int progress_whole{ static_cast<int>(progress * ProgressBarResolution) };
+        CropperProgressBar->setValue(progress_whole);
+    }
+
+
   private:
+    static inline constexpr int ProgressBarResolution{ 250 };
+    QProgressBar* CropperProgressBar;
     QWidget* RenderButton;
 };
 
@@ -928,4 +947,9 @@ void OptionsWidget::CropperWorking()
 void OptionsWidget::CropperDone()
 {
     Actions->CropperDone();
+}
+
+void OptionsWidget::CropperProgress(float progress)
+{
+    Actions->CropperProgress(progress);
 }

@@ -26,6 +26,7 @@ class CropperSignalRouter : public QObject
     void PreviewWorkStart();
     void PreviewWorkDone();
 
+    void CropProgress(float progress);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
   public slots:

@@ -32,6 +32,7 @@ class Cropper : public QObject
     void PreviewWorkStart();
     void PreviewWorkDone();
 
+    void CropProgress(float progress);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
   public slots:
@@ -60,19 +61,16 @@ class Cropper : public QObject
     void RemoveWork(const fs::path& card_name);
 
     // These do the actual work, return false when no work to do
-    bool DoCropWork();
+    template<class T>
+    bool DoCropWork(T* signaller);
     template<class T>
     bool DoPreviewWork(T* signaller);
-
-    void DoSingleCrop(const fs::path& input_file,
-                      Length bleed_edge,
-                      const std::string& color_cube_name,
-                      const cv::Mat* color_cube);
 
     std::function<const cv::Mat*(std::string_view)> GetColorCube;
 
     std::mutex PendingCropWorkMutex;
     std::vector<fs::path> PendingCropWork;
+    std::atomic_uint32_t TotalWorkDone{};
 
     std::mutex PendingPreviewWorkMutex;
     std::vector<fs::path> PendingPreviewWork;

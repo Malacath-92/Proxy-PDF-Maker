@@ -19,6 +19,7 @@ class OptionsWidget : public QScrollArea
   public slots:
     void CropperWorking();
     void CropperDone();
+    void CropperProgress(float progress);
 
   private:
     ActionsWidget* Actions{ nullptr };

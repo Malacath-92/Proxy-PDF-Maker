@@ -146,6 +146,7 @@ int main(int argc, char** argv)
     // Enable and disable Render button
     QObject::connect(&cropper, &Cropper::CropWorkStart, options, &OptionsWidget::CropperWorking);
     QObject::connect(&cropper, &Cropper::CropWorkDone, options, &OptionsWidget::CropperDone);
+    QObject::connect(&cropper, &Cropper::CropProgress, options, &OptionsWidget::CropperProgress);
 
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
