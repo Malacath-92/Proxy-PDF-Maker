@@ -286,6 +286,12 @@ void Cropper::CropWork()
             if (CropDone.fetch_sub(1, std::memory_order_relaxed) == 1)
             {
                 this->CropWorkDone();
+
+                {
+                    std::shared_lock image_db_lock{ ImageDBMutex };
+                    std::shared_lock property_lock{ PropertyMutex };
+                    ImageDB.Write(Data.CropDir / ".image.db");
+                }
             }
         }
 
@@ -329,6 +335,12 @@ void Cropper::PreviewWork()
             if (PreviewDone.fetch_sub(1, std::memory_order_relaxed) == 1)
             {
                 Router->PreviewWorkDone();
+
+                {
+                    std::shared_lock image_db_lock{ ImageDBMutex };
+                    std::shared_lock property_lock{ PropertyMutex };
+                    ImageDB.Write(Data.CropDir / ".image.db");
+                }
             }
         }
 
@@ -492,7 +504,6 @@ bool Cropper::DoCropWork(T* signaller)
 template<class T>
 bool Cropper::DoPreviewWork(T* signaller)
 {
-
     auto pop_work{
         [this]() -> std::optional<fs::path>
         {
@@ -515,21 +526,67 @@ bool Cropper::DoPreviewWork(T* signaller)
         try
         {
             std::shared_lock lock{ PropertyMutex };
-            const PixelSize uncropped_size{ Cfg.BasePreviewWidth, dla::math::round(Cfg.BasePreviewWidth / CardRatio) };
+            const Pixel preview_width{ Cfg.BasePreviewWidth };
+            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / CardRatio) };
+            const bool enable_uncrop{ Cfg.EnableUncrop };
+
+            const fs::path input_file{ Data.ImageDir / card_name };
+            const fs::path crop_file{ Data.CropDir / card_name };
+            lock.unlock();
+
+            const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
+
+            // Fake image parameters
+            ImageParameters image_params{
+                .Width{ preview_width },
+            };
 
             // Generate Preview ...
-            if (fs::exists(Data.ImageDir / card_name))
+            if (fs::exists(input_file))
             {
-                const Image image{ Image::Read(Data.ImageDir / card_name).Resize(uncropped_size) };
+                QByteArray input_file_hash{
+                    [&, this]()
+                    {
+                        std::shared_lock image_db_lock{ ImageDBMutex };
+                        return ImageDB.TestEntry(output_file, input_file, image_params);
+                    }()
+                };
+
+                // empty hash indicates that the source has not changed
+                if (input_file_hash.isEmpty())
+                {
+                    return true;
+                }
+
+                const Image image{ Image::Read(input_file).Resize(uncropped_size) };
 
                 ImagePreview image_preview{};
                 image_preview.UncroppedImage = image;
                 image_preview.CroppedImage = CropImage(image, card_name, 0_mm, 1200_dpi, nullptr);
 
+                {
+                    std::unique_lock image_db_lock{ ImageDBMutex };
+                    ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
+                }
+
                 signaller->PreviewUpdated(card_name, image_preview);
             }
-            else if (Cfg.EnableUncrop && fs::exists(Data.CropDir / card_name))
+            else if (enable_uncrop && fs::exists(crop_file))
             {
+                QByteArray crop_file_hash{
+                    [&, this]()
+                    {
+                        std::shared_lock image_db_lock{ ImageDBMutex };
+                        return ImageDB.TestEntry(output_file, crop_file, image_params);
+                    }()
+                };
+
+                // empty hash indicates that the source has not changed
+                if (crop_file_hash.isEmpty())
+                {
+                    return true;
+                }
+
                 const PixelSize cropped_size{
                     [&]() -> PixelSize
                     {
@@ -541,7 +598,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                     }()
                 };
 
-                const Image image{ Image::Read(Data.CropDir / card_name).Resize(cropped_size) };
+                const Image image{ Image::Read(crop_file).Resize(cropped_size) };
 
                 ImagePreview image_preview{};
                 image_preview.CroppedImage = image;

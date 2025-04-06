@@ -15,7 +15,7 @@ class CardProvider : public QObject, public efsw::FileWatchListener
   public:
     CardProvider(const Project& project);
 
-    void Start(const Project& project);
+    void Start();
 
     void NewProjectOpened(const Project& project);
     void ImageDirChanged(const Project& project);

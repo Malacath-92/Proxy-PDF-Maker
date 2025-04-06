@@ -9,9 +9,10 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
-bool operator==(const ImageParameters& lhs, const ImageParameters& rhs)
+bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
 {
-    return static_cast<int32_t>(std::floor(lhs.DPI.value)) == static_cast<int32_t>(std::floor(rhs.DPI.value));
+    return static_cast<int32_t>(std::floor(lhs.DPI.value)) != static_cast<int32_t>(std::floor(rhs.DPI.value)) ||
+           static_cast<int32_t>(std::floor(lhs.Width.value)) != static_cast<int32_t>(std::floor(rhs.Width.value));
 }
 
 void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
@@ -25,6 +26,7 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
         static_cast<qsizetype>(hash.size()),
     };
     entry.Params.DPI.value = json["dpi"].get<int32_t>();
+    entry.Params.Width.value = json["width"].get<int32_t>();
 }
 
 void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
@@ -42,6 +44,10 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
         {
             "dpi",
             static_cast<int32_t>(entry.Params.DPI.value),
+        },
+        {
+            "width",
+            static_cast<int32_t>(entry.Params.Width.value),
         },
     };
 }

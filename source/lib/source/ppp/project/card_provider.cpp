@@ -17,12 +17,11 @@ CardProvider::CardProvider(const Project& project)
     }
 }
 
-void CardProvider::Start(const Project& project)
+void CardProvider::Start()
 {
     for (const fs::path& image : ListFiles())
     {
-        const bool missing_preview{ !project.Data.Previews.contains(image) };
-        CardAdded(image, true, missing_preview);
+        CardAdded(image, true, true);
     }
 
     if (!Started)
@@ -56,7 +55,7 @@ void CardProvider::ImageDirChanged(const Project& project)
     OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
 
     // ... and add all new files ...
-    Start(project);
+    Start();
 }
 void CardProvider::BleedChanged(const Project& project)
 {

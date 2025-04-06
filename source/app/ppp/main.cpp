@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
 
     cropper.Start();
-    card_provider.Start(project);
+    card_provider.Start();
 
     const int return_code{ app.exec() };
     project.Dump(app.GetProjectPath(), nullptr);
