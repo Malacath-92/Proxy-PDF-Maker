@@ -553,7 +553,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 };
 
                 // empty hash indicates that the source has not changed
-                if (input_file_hash.isEmpty())
+                if (input_file_hash.isEmpty() && Data.Previews.contains(card_name))
                 {
                     return true;
                 }
@@ -570,6 +570,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 }
 
                 signaller->PreviewUpdated(card_name, image_preview);
+                Data.Previews[card_name] = ImagePreview{}; // Just put this here to remember we have a preview
             }
             else if (enable_uncrop && fs::exists(crop_file))
             {
@@ -582,7 +583,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 };
 
                 // empty hash indicates that the source has not changed
-                if (crop_file_hash.isEmpty())
+                if (crop_file_hash.isEmpty() && Data.Previews.contains(card_name))
                 {
                     return true;
                 }
@@ -605,6 +606,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 image_preview.UncroppedImage = UncropImage(image, card_name, nullptr);
 
                 signaller->PreviewUpdated(card_name, image_preview);
+                Data.Previews[card_name] = ImagePreview{}; // Just put this here to remember we have a preview
             }
 
             return true;
