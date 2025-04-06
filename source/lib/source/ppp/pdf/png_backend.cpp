@@ -93,7 +93,7 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, 
     const cv::Mat& three_channel_image{ loaded_image.GetUnderlying() };
     cv::Mat four_channel_image{};
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
-    const auto encoded_image{ loaded_image.Encode() };
+    const auto encoded_image{ loaded_image.EncodePng() };
     image_cache.push_back({
         std::move(image_path),
         w,

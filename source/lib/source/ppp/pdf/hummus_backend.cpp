@@ -103,7 +103,7 @@ HummusPdfImageCache::CachedImage HummusPdfImageCache::GetImage(fs::path image_pa
     }
 
     const auto image{ Image::Read(image_path).Rotate(rotation) };
-    auto encoded_image{ image.Encode() };
+    auto encoded_image{ image.EncodePng() };
     InputByteArrayStream image_stream{
         reinterpret_cast<Byte*>(encoded_image.data()),
         static_cast<LongFilePositionType>(encoded_image.size()),

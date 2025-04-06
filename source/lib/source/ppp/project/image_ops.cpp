@@ -491,11 +491,11 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             write_arr(name_str.data(), name_str.size());
 
             {
-                const std::vector buf{ image.CroppedImage.Encode() };
+                const auto buf{ image.CroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
             {
-                const std::vector buf{ image.UncroppedImage.Encode() };
+                const auto buf{ image.UncroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
         }

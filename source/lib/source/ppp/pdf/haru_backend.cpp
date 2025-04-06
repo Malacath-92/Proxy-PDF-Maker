@@ -70,7 +70,7 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
             ? std::bind_back(&Image::EncodeJpg, CFG.JpgQuality)
-            : std::bind_back(&Image::Encode, std::optional{ 0 })
+            : std::bind_back(&Image::EncodePng, std::optional{ 0 })
     };
     const auto loader{
         use_jpg
