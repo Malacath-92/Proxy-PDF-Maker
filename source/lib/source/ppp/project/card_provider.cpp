@@ -21,12 +21,8 @@ void CardProvider::Start(const Project& project)
 {
     for (const fs::path& image : ListFiles())
     {
-        const bool missing_outputs{ IsMissingOutputs(image) };
         const bool missing_preview{ !project.Data.Previews.contains(image) };
-        if (missing_outputs || missing_preview)
-        {
-            CardAdded(image, missing_outputs, missing_preview);
-        }
+        CardAdded(image, true, missing_preview);
     }
 
     if (!Started)
@@ -69,10 +65,7 @@ void CardProvider::BleedChanged(const Project& project)
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
     {
-        if (IsMissingOutputs(image))
-        {
-            CardAdded(image, true, false);
-        }
+        CardAdded(image, true, false);
     }
 }
 void CardProvider::EnableUncropChanged(const Project& project)
@@ -129,10 +122,7 @@ void CardProvider::ColorCubeChanged(const Project& project)
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
     {
-        if (IsMissingOutputs(image))
-        {
-            CardAdded(image, true, false);
-        }
+        CardAdded(image, true, false);
     }
 }
 void CardProvider::BasePreviewWidthChanged(const Project& /*project*/)
@@ -193,27 +183,4 @@ std::vector<fs::path> CardProvider::ListFiles()
     return !CropDir.empty()
                ? ListImageFiles(ImageDir, CropDir)
                : ListImageFiles(ImageDir);
-}
-
-bool CardProvider::IsMissingOutputs(const fs::path& image) const
-{
-    // If we can uncrop we have to check if "source" image exists
-    if (CFG.EnableUncrop && !fs::exists(ImageDir / image))
-    {
-        return true;
-    }
-
-    // Intermediary file should exist
-    if (!fs::exists(CropDir / image))
-    {
-        return true;
-    }
-
-    // Output file should exist
-    if (!fs::exists(OutputDir / image))
-    {
-        return true;
-    }
-
-    return false;
 }

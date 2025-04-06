@@ -13,6 +13,7 @@
 
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
     : GetColorCube{ std::move(get_color_cube) }
+    , ImageDB{ ImageDataBase::Read(project.Data.CropDir / ".image.db") }
     , Data{ project.Data }
     , Cfg{ CFG }
 {
@@ -36,6 +37,8 @@ Cropper::~Cropper()
     delete PreviewThread;
 
     delete Router;
+
+    ImageDB.Write(Data.CropDir / ".image.db");
 }
 
 void Cropper::Start()
@@ -89,12 +92,24 @@ void Cropper::ClearPreviewWork()
 
 void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
 {
+    {
+        std::unique_lock lock{ ImageDBMutex };
+        ImageDB.Write(Data.CropDir / ".image.db");
+        ImageDB = ImageDataBase::Read(data.CropDir / ".image.db");
+    }
+
     std::unique_lock lock{ PropertyMutex };
     Data = data;
 }
 
 void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir)
 {
+    {
+        std::unique_lock lock{ ImageDBMutex };
+        ImageDB.Write(Data.CropDir / ".image.db");
+        ImageDB = ImageDataBase::Read(crop_dir / ".image.db");
+    }
+
     std::unique_lock lock{ PropertyMutex };
     Data.ImageDir = image_dir;
     Data.CropDir = crop_dir;
@@ -387,6 +402,10 @@ bool Cropper::DoCropWork(T* signaller)
             const bool do_color_correction{ color_cube_name != "None" };
             const cv::Mat* color_cube{ GetColorCube(color_cube_name) };
 
+            ImageParameters image_params{
+                .DPI{ max_density },
+            };
+
             {
                 std::lock_guard dir_lock{ DirMutex };
                 if (!fs::exists(output_dir))
@@ -395,15 +414,38 @@ bool Cropper::DoCropWork(T* signaller)
                 }
             }
 
-            if (uncrop && !fs::exists(input_file))
+            if (uncrop && !fs::exists(input_file) && fs::exists(crop_file))
             {
-                const Image image{ Image::Read(crop_file) };
-                const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
-                uncropped_image.Write(input_file, 3, 95, CardSizeWithBleed);
+                QByteArray crop_file_hash{
+                    [&, this]()
+                    {
+                        std::shared_lock image_db_lock{ ImageDBMutex };
+                        return ImageDB.TestEntry(input_file, crop_file, image_params);
+                    }()
+                };
+
+                // non-empty hash indicates that the source has changed
+                if (!crop_file_hash.isEmpty())
+                {
+                    const Image image{ Image::Read(crop_file) };
+                    const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
+                    uncropped_image.Write(input_file, 3, 95, CardSizeWithBleed);
+
+                    std::unique_lock image_db_lock{ ImageDBMutex };
+                    ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                }
             }
 
-            // TODO: Need a force here...
-            if (fs::exists(output_file))
+            QByteArray input_file_hash{
+                [&, this]()
+                {
+                    std::shared_lock image_db_lock{ ImageDBMutex };
+                    return ImageDB.TestEntry(output_file, input_file, image_params);
+                }()
+            };
+
+            // empty hash indicates that the source has not changed
+            if (input_file_hash.isEmpty())
             {
                 signaller->CropProgress(progress);
                 return true;
@@ -419,6 +461,11 @@ bool Cropper::DoCropWork(T* signaller)
             else
             {
                 cropped_image.Write(output_file, 3, 95, image_size);
+            }
+
+            {
+                std::unique_lock image_db_lock{ ImageDBMutex };
+                ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
             }
 
             signaller->CropProgress(progress);

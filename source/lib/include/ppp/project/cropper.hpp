@@ -9,6 +9,7 @@
 #include <ppp/util.hpp>
 
 #include <ppp/project/project.hpp>
+#include <ppp/project/image_database.hpp>
 
 class QThread;
 
@@ -67,6 +68,9 @@ class Cropper : public QObject
     bool DoPreviewWork(T* signaller);
 
     std::function<const cv::Mat*(std::string_view)> GetColorCube;
+
+    std::shared_mutex ImageDBMutex;
+    ImageDataBase ImageDB;
 
     std::mutex PendingCropWorkMutex;
     std::vector<fs::path> PendingCropWork;

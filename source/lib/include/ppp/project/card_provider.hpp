@@ -34,8 +34,6 @@ class CardProvider : public QObject, public efsw::FileWatchListener
   private:
     std::vector<fs::path> ListFiles();
 
-    bool IsMissingOutputs(const fs::path& image) const;
-
   signals:
     void CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview);
     void CardRemoved(const fs::path& card_name);
