@@ -43,6 +43,8 @@ CardImage::CardImage(const fs::path& image_name, const Project& project, Params 
 
 void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
+    delete layout();
+
     ImageName = image_name;
     OriginalParams = params;
 

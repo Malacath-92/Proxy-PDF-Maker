@@ -113,6 +113,7 @@ void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& cro
     std::unique_lock lock{ PropertyMutex };
     Data.ImageDir = image_dir;
     Data.CropDir = crop_dir;
+    Data.Previews.clear();
 }
 
 void Cropper::BleedChangedDiff(Length bleed)
