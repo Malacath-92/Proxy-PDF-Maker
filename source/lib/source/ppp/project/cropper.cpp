@@ -16,6 +16,7 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
     , ImageDB{ ImageDataBase::Read(project.Data.CropDir / ".image.db") }
     , Data{ project.Data }
     , Cfg{ CFG }
+    , LoadedPreviews{ project.Data.Previews | std::views::keys | std::ranges::to<std::vector>() }
 {
 }
 Cropper::~Cropper()
@@ -100,9 +101,10 @@ void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
 
     std::unique_lock lock{ PropertyMutex };
     Data = data;
+    LoadedPreviews = Data.Previews | std::views::keys | std::ranges::to<std::vector>();
 }
 
-void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir)
+void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews)
 {
     {
         std::unique_lock lock{ ImageDBMutex };
@@ -113,7 +115,7 @@ void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& cro
     std::unique_lock lock{ PropertyMutex };
     Data.ImageDir = image_dir;
     Data.CropDir = crop_dir;
-    Data.Previews.clear();
+    LoadedPreviews = loaded_previews;
 }
 
 void Cropper::BleedChangedDiff(Length bleed)
@@ -533,6 +535,8 @@ bool Cropper::DoPreviewWork(T* signaller)
 
             const fs::path input_file{ Data.ImageDir / card_name };
             const fs::path crop_file{ Data.CropDir / card_name };
+
+            const bool has_preview{ std::ranges::contains(LoadedPreviews, card_name) };
             lock.unlock();
 
             const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
@@ -554,7 +558,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 };
 
                 // empty hash indicates that the source has not changed
-                if (input_file_hash.isEmpty() && Data.Previews.contains(card_name))
+                if (input_file_hash.isEmpty() && has_preview)
                 {
                     return true;
                 }
@@ -571,7 +575,6 @@ bool Cropper::DoPreviewWork(T* signaller)
                 }
 
                 signaller->PreviewUpdated(card_name, image_preview);
-                Data.Previews[card_name] = ImagePreview{}; // Just put this here to remember we have a preview
             }
             else if (enable_uncrop && fs::exists(crop_file))
             {
@@ -584,7 +587,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 };
 
                 // empty hash indicates that the source has not changed
-                if (crop_file_hash.isEmpty() && Data.Previews.contains(card_name))
+                if (crop_file_hash.isEmpty() && has_preview)
                 {
                     return true;
                 }
@@ -607,9 +610,12 @@ bool Cropper::DoPreviewWork(T* signaller)
                 image_preview.UncroppedImage = UncropImage(image, card_name, nullptr);
 
                 signaller->PreviewUpdated(card_name, image_preview);
-                Data.Previews[card_name] = ImagePreview{}; // Just put this here to remember we have a preview
             }
 
+            if (!has_preview)
+            {
+                LoadedPreviews.push_back(card_name);
+            }
             return true;
         }
         catch (...)

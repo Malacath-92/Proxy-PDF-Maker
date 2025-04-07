@@ -71,7 +71,7 @@ class Project : public QObject
         // Project options
         fs::path ImageDir{ "images" };
         fs::path CropDir{ "images/crop" };
-        fs::path ImageCache{ "proj.cache" };
+        fs::path ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards
         CardMap Cards{};

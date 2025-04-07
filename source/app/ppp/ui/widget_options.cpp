@@ -9,12 +9,12 @@
 #include <QCursor>
 #include <QDoubleSpinBox>
 #include <QGroupBox>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QSlider>
 #include <QToolTip>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QProgressBar>
 
 #include <ppp/app.hpp>
 #include <ppp/cubes.hpp>
@@ -172,12 +172,14 @@ class ActionsWidget : public QGroupBox
                     {
                         project.Data.ImageDir = new_image_dir.value();
                         project.Data.CropDir = project.Data.ImageDir / "crop";
-                        project.Data.ImageCache = project.Data.ImageDir.filename().replace_extension(".cache");
+                        project.Data.ImageCache = project.Data.CropDir / "preview.cache";
 
-                        project.InitProperties(nullptr);
+                        project.Init(nullptr);
 
                         auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-                        main_window->ImageDirChangedDiff(project.Data.ImageDir, project.Data.CropDir);
+                        main_window->ImageDirChangedDiff(project.Data.ImageDir,
+                                                         project.Data.CropDir,
+                                                         project.Data.Previews | std::views::keys | std::ranges::to<std::vector>());
                         main_window->ImageDirChanged(project);
                     }
                 }
@@ -234,7 +236,6 @@ class ActionsWidget : public QGroupBox
         const int progress_whole{ static_cast<int>(progress * ProgressBarResolution) };
         CropperProgressBar->setValue(progress_whole);
     }
-
 
   private:
     static inline constexpr int ProgressBarResolution{ 250 };

@@ -38,7 +38,7 @@ class Cropper : public QObject
 
   public slots:
     void NewProjectOpenedDiff(const Project::ProjectData& data);
-    void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir);
+    void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
     void BleedChangedDiff(Length bleed);
     void EnableUncropChangedDiff(bool enable_uncrop);
     void ColorCubeChangedDiff(const std::string& cube_name);
@@ -84,6 +84,7 @@ class Cropper : public QObject
     std::shared_mutex PropertyMutex;
     Project::ProjectData Data;
     Config Cfg;
+    std::vector<fs::path> LoadedPreviews;
 
     class CropperSignalRouter* Router;
 

@@ -31,7 +31,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
 
         Data.ImageDir = json["image_dir"].get<std::string>();
         Data.CropDir = Data.ImageDir / "crop";
-        Data.ImageCache = json["img_cache"].get<std::string>();
+        Data.ImageCache = Data.CropDir / "preview.cache";
 
         for (const nlohmann::json& card_json : json["cards"])
         {
