@@ -235,15 +235,6 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) co
     return GetUncroppedPreview(GetBacksideImage(image_name));
 }
 
-ImgDict Project::GetPreviews() const
-{
-    return Data.Previews;
-}
-void Project::SetPreviews(ImgDict previews)
-{
-    Data.Previews = std::move(previews);
-}
-
 const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 {
     if (Data.Cards.contains(image_name))

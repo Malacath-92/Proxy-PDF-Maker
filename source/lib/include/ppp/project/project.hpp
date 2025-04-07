@@ -52,9 +52,6 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
 
-    ImgDict GetPreviews() const;
-    void SetPreviews(ImgDict previews);
-
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
 
   public slots:

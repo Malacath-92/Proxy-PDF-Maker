@@ -24,8 +24,6 @@ inline const std::array ValidImageExtensions{
     ".png"_p,
 };
 
-void InitFolders(const fs::path& image_dir, const fs::path& crop_dir);
-
 std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 
@@ -47,9 +45,6 @@ void RunMinimalCropper(const fs::path& image_dir,
                        const std::string& color_cube_name,
                        const cv::Mat* color_cube,
                        PrintFn print_fn);
-
-bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict);
-ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn);
 
 ImgDict ReadPreviews(const fs::path& img_cache_file);
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict);
