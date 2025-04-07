@@ -5,7 +5,7 @@
 #include <PDFWriter/PNGImageHandler.h>
 #include <PDFWriter/PageContentContext.h>
 
-inline double ToReal(Length l)
+inline double ToHummusPoints(Length l)
 {
     return static_cast<double>(l / 1_pts);
 }
@@ -15,7 +15,7 @@ HummusPdfPage::HummusPdfPage(PDFWriter* writer, Size page_size, HummusPdfImageCa
     , ImageCache{ image_cache }
 {
     Page = new PDFPage;
-    Page->SetMediaBox({ 0, 0, ToReal(page_size.x), ToReal(page_size.y) });
+    Page->SetMediaBox({ 0, 0, ToHummusPoints(page_size.x), ToHummusPoints(page_size.y) });
     PageContext = Writer->StartPageContentContext(Page);
 }
 
@@ -27,10 +27,10 @@ void HummusPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx,
     (void)tx;
     (void)ty;
 
-    // const auto real_fx{ ToReal(fx) };
-    // const auto real_fy{ ToReal(fy) };
-    // const auto real_tx{ ToReal(tx) };
-    // const auto real_ty{ ToReal(ty) };
+    // const auto real_fx{ ToHummusPoints(fx) };
+    // const auto real_fy{ ToHummusPoints(fy) };
+    // const auto real_tx{ ToHummusPoints(tx) };
+    // const auto real_ty{ ToHummusPoints(ty) };
 
     // HPDF_Page_SetLineWidth(Page, 1.0);
 
@@ -63,13 +63,13 @@ void HummusPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x,
 
 void HummusPdfPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation)
 {
-    const auto real_x{ ToReal(x) };
-    const auto real_y{ ToReal(y) };
+    const auto real_x{ ToHummusPoints(x) };
+    const auto real_y{ ToHummusPoints(y) };
 
     auto [image, size]{ ImageCache->GetImage(image_path, rotation) };
 
-    const auto real_w{ ToReal(w) / size.x.value };
-    const auto real_h{ ToReal(h) / size.y.value };
+    const auto real_w{ ToHummusPoints(w) / size.x.value };
+    const auto real_h{ ToHummusPoints(h) / size.y.value };
 
     PageContext->q();
     PageContext->cm(real_w, 0, 0, real_h, real_x, real_y);
@@ -103,7 +103,7 @@ HummusPdfImageCache::CachedImage HummusPdfImageCache::GetImage(fs::path image_pa
     }
 
     const auto image{ Image::Read(image_path).Rotate(rotation) };
-    auto encoded_image{ image.Encode() };
+    auto encoded_image{ image.EncodePng() };
     InputByteArrayStream image_stream{
         reinterpret_cast<Byte*>(encoded_image.data()),
         static_cast<LongFilePositionType>(encoded_image.size()),

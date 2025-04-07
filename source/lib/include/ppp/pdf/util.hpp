@@ -7,7 +7,7 @@
 
 #include <ppp/image.hpp>
 
-struct Project;
+class Project;
 
 struct PageImage
 {

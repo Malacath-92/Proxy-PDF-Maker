@@ -66,6 +66,7 @@ find_package(OpenCV REQUIRED)
 find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(efsw REQUIRED)
 find_package(Crc32c REQUIRED)
 
 # --------------------------------------------------
@@ -115,10 +116,12 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
+	Qt6::SvgWidgets
 	opencv::opencv
 	libharu::libharu
 	PDFHummus::PDFWriter
 	nlohmann_json::nlohmann_json
+	efsw::efsw
 	Crc32c::crc32c)
 
 if(WIN32)

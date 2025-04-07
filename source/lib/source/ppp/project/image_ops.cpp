@@ -16,20 +16,25 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
-void InitFolders(const fs::path& image_dir, const fs::path& crop_dir)
-{
-    for (const auto& folder : { image_dir, crop_dir })
-    {
-        if (!std::filesystem::exists(folder))
-        {
-            std::filesystem::create_directories(folder);
-        }
-    }
-}
-
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
     return ListFiles(path, ValidImageExtensions);
+}
+
+std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two)
+{
+    std::vector<fs::path> images{ ListImageFiles(path_one) };
+    ForEachFile(
+        path_two,
+        [&images](const fs::path& path)
+        {
+            if (!std::ranges::contains(images, path))
+            {
+                images.push_back(path.filename());
+            }
+        },
+        ValidImageExtensions);
+    return images;
 }
 
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
@@ -97,150 +102,6 @@ fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::st
     return crop_dir;
 }
 
-bool NeedRunCropper(const fs::path& image_dir, const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name)
-{
-    const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, color_cube_name) };
-    if (!fs::exists(output_dir))
-    {
-        return true;
-    }
-
-    const auto is_not_png{
-        [](const fs::path& image)
-        { return image.extension() != ".png"; }
-    };
-
-    std::vector input_files{ ListImageFiles(image_dir) };
-    if (std::ranges::any_of(input_files, is_not_png))
-    {
-        return true;
-    }
-    std::ranges::sort(input_files);
-    std::vector output_files{ ListImageFiles(output_dir) };
-    if (std::ranges::any_of(output_files, is_not_png))
-    {
-        return true;
-    }
-    std::ranges::sort(output_files);
-    return input_files != output_files;
-}
-
-ImgDict RunCropper(const fs::path& image_dir,
-                   const fs::path& crop_dir,
-                   const fs::path& img_cache_file,
-                   const ImgDict& img_dict,
-                   Length bleed_edge,
-                   PixelDensity max_density,
-                   const std::string& color_cube_name,
-                   const cv::Mat* color_cube,
-                   bool uncrop,
-                   PrintFn print_fn)
-{
-    ImgDict out_img_dict{ img_dict };
-
-    const bool has_bleed_edge{ bleed_edge > 0_mm };
-    const bool do_vibrance_bump{ color_cube != nullptr };
-    if (has_bleed_edge)
-    {
-        // Do base cropping, always needed
-        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, color_cube_name, color_cube, uncrop, print_fn);
-    }
-    else if (do_vibrance_bump)
-    {
-        // Do base cropping without vibrance for previews
-        out_img_dict = RunCropper(image_dir, crop_dir, img_cache_file, out_img_dict, 0_mm, max_density, "None", nullptr, uncrop, print_fn);
-    }
-
-    const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, color_cube_name) };
-    if (!fs::exists(output_dir))
-    {
-        fs::create_directories(output_dir);
-    }
-
-    // First resave all source images as pngs
-    {
-        const std::vector input_files{ ListImageFiles(image_dir) };
-        for (const auto& img_file : input_files)
-        {
-            if (img_file.extension() != ".png")
-            {
-                Image::Read(image_dir / img_file).Write(image_dir / fs::path{ img_file }.replace_extension(".png"), 2, CardSizeWithBleed);
-                fs::remove(image_dir / img_file);
-            }
-        }
-    }
-
-    // Then resave all crop images as pngs
-    const auto image_size{ CardSizeWithoutBleed + 2 * bleed_edge };
-    {
-        const std::vector crop_files{ ListImageFiles(crop_dir) };
-        for (const auto& img_file : crop_files)
-        {
-            if (img_file.extension() != ".png")
-            {
-                Image::Read(crop_dir / img_file).Write(crop_dir / fs::path{ img_file }.replace_extension(".png"), 2, image_size);
-                fs::remove(crop_dir / img_file);
-            }
-        }
-    }
-
-    const std::vector input_files{ ListImageFiles(image_dir) };
-    for (const auto& img_file : input_files)
-    {
-        if (fs::exists(output_dir / img_file))
-        {
-            continue;
-        }
-
-        const Image image{ Image::Read(image_dir / img_file) };
-        const Image cropped_image{ CropImage(image, img_file, bleed_edge, max_density, print_fn) };
-        if (do_vibrance_bump)
-        {
-            const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-            vibrant_image.Write(output_dir / img_file, 3, image_size);
-        }
-        else
-        {
-            cropped_image.Write(output_dir / img_file, 3, image_size);
-        }
-    }
-
-    std::vector<fs::path> extra_files{};
-
-    const std::vector output_files{ ListImageFiles(output_dir) };
-    for (const auto& img_file : output_files)
-    {
-        if (!fs::exists(image_dir / img_file))
-        {
-            extra_files.push_back(img_file);
-        }
-    }
-
-    if (uncrop && !has_bleed_edge)
-    {
-        for (const auto& extra_img : extra_files)
-        {
-            const Image image{ Image::Read(output_dir / extra_img) };
-            const Image uncropped_image{ UncropImage(image, extra_img, print_fn) };
-            uncropped_image.Write(image_dir / extra_img, 3, image_size);
-        }
-    }
-    else
-    {
-        for (const auto& extra_img : extra_files)
-        {
-            fs::remove(output_dir / extra_img);
-        }
-    }
-
-    if (NeedCachePreviews(crop_dir, out_img_dict))
-    {
-        out_img_dict = CachePreviews(image_dir, crop_dir, img_cache_file, img_dict, print_fn);
-    }
-
-    return out_img_dict;
-}
-
 bool NeedRunMinimalCropper(const fs::path& image_dir,
                            const fs::path& crop_dir,
                            std::span<const fs::path> card_list,
@@ -252,11 +113,6 @@ bool NeedRunMinimalCropper(const fs::path& image_dir,
     {
         return true;
     }
-
-    const auto is_not_png{
-        [](const fs::path& image)
-        { return image.extension() != ".png"; }
-    };
 
     std::vector output_files{ ListImageFiles(output_dir) };
 
@@ -405,136 +261,6 @@ void RunMinimalCropper(const fs::path& image_dir,
     }
 }
 
-bool NeedCachePreviews(const fs::path& crop_dir, const ImgDict& img_dict)
-{
-    const std::vector crop_list{ ListImageFiles(crop_dir) };
-
-    for (const auto& img : crop_list)
-    {
-        // Image not in previews
-        if (!img_dict.contains(img))
-        {
-            return true;
-        }
-
-        const auto& preview{ img_dict.at(img) };
-
-        // Image in previews has wrong size
-        if (preview.UncroppedImage.Width() != CFG.BasePreviewWidth)
-        {
-            return true;
-        }
-    }
-
-    if (!CFG.EnableStartupCrop)
-    {
-        for (const auto& [img, _] : img_dict)
-        {
-            if (img == "fallback.png")
-            {
-                continue;
-            }
-
-            if (!std::ranges::contains(crop_list, img))
-            {
-                return true;
-            }
-        }
-    }
-
-    return !img_dict.contains("fallback.png");
-}
-
-ImgDict CachePreviews(const fs::path& image_dir, const fs::path& crop_dir, const fs::path& img_cache_file, const ImgDict& img_dict, PrintFn print_fn)
-{
-    ImgDict out_img_dict{};
-    for (const auto& [img, _] : img_dict)
-    {
-        if (fs::exists(crop_dir / img) && img_dict.contains(img) && img_dict.at(img).UncroppedImage.Width() == CFG.BasePreviewWidth)
-        {
-            out_img_dict[img] = img_dict.at(img);
-        }
-    }
-
-    const fs::path fallback_img{ "fallback.png" };
-    if (img_dict.contains(fallback_img) && img_dict.at(fallback_img).UncroppedImage.Width() == CFG.BasePreviewWidth)
-    {
-        out_img_dict[fallback_img] = img_dict.at(fallback_img);
-    }
-
-    const PixelSize uncropped_size{ CFG.BasePreviewWidth, dla::math::round(CFG.BasePreviewWidth / CardRatio) };
-    const PixelSize thumb_size{ uncropped_size / 2.0f };
-
-    {
-        const bool has_img{ out_img_dict.contains(fallback_img) };
-        if (!has_img)
-        {
-            PPP_LOG("Caching fallback image {}...", fallback_img.string());
-            ImagePreview& image_preview{ out_img_dict[fallback_img] };
-            image_preview.UncroppedImage = Image::Read(fallback_img);
-            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, fallback_img, 0_mm, 1200_dpi, nullptr);
-        }
-    }
-
-    const PixelSize cropped_size{ out_img_dict[fallback_img].CroppedImage.Size() };
-
-    std::vector input_files{ ListImageFiles(image_dir) };
-    if (CFG.EnableUncrop)
-    {
-        for (const auto& cropped_img : ListImageFiles(crop_dir))
-        {
-            if (!std::ranges::contains(input_files, cropped_img))
-            {
-                input_files.push_back(cropped_img);
-            }
-        }
-    }
-
-    for (const auto& img : input_files)
-    {
-        const bool has_img{ out_img_dict.contains(img) };
-        if (has_img)
-        {
-            continue;
-        }
-
-        if (fs::exists(image_dir / img))
-        {
-            const Image image{ Image::Read(image_dir / img) };
-
-            ImagePreview& image_preview{ out_img_dict[img] };
-
-            PPP_LOG("Caching uncropped preview for image {}...", img.string());
-            image_preview.UncroppedImage = image.Resize(uncropped_size);
-
-            PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedImage = CropImage(image_preview.UncroppedImage, img, 0_mm, 1200_dpi, nullptr);
-        }
-        else if (CFG.EnableUncrop && fs::exists(crop_dir / img))
-        {
-            PPP_LOG("Only approximate preview available for image {}...", img.string());
-
-            const Image image{ Image::Read(crop_dir / img) };
-
-            ImagePreview& image_preview{ out_img_dict[img] };
-
-            PPP_LOG("Caching cropped preview for image {}...", img.string());
-            image_preview.CroppedImage = image.Resize(cropped_size);
-
-            PPP_LOG("Caching uncropped preview for image {}...", img.string());
-            image_preview.UncroppedImage = UncropImage(image_preview.CroppedImage, img, nullptr);
-        }
-        else
-        {
-            PPP_LOG("Failed caching uncropped preview for image {}...", img.string());
-        }
-    }
-
-    WritePreviews(img_cache_file, out_img_dict);
-
-    return out_img_dict;
-}
-
 ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
     try
@@ -625,11 +351,11 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             write_arr(name_str.data(), name_str.size());
 
             {
-                const std::vector buf{ image.CroppedImage.Encode() };
+                const auto buf{ image.CroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
             {
-                const std::vector buf{ image.UncroppedImage.Encode() };
+                const auto buf{ image.UncroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
         }

@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <shared_mutex>
 #include <unordered_map>
+
+#include <QObject>
 
 #include <ppp/color.hpp>
 #include <ppp/config.hpp>
@@ -25,54 +28,77 @@ struct ImagePreview
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
-struct Project
+class Project : public QObject
 {
-    Project() = default;
+    Q_OBJECT;
 
-    void Load(const fs::path& json_path, const cv::Mat* color_cube, PrintFn print_fn);
+  public:
+    Project() = default;
+    ~Project();
+
+    void Load(const fs::path& json_path, PrintFn print_fn);
     void Dump(const fs::path& json_path, PrintFn print_fn) const;
 
-    void Init(const cv::Mat* color_cube, PrintFn print_fn);
+    void Init(PrintFn print_fn);
     void InitProperties(PrintFn print_fn);
-    void InitImages(const cv::Mat* color_cube, PrintFn print_fn);
 
-    const ImagePreview& GetPreview(const fs::path& image_name) const;
-    const ImagePreview& GetBacksidePreview(const fs::path& image_name) const;
+    void CardAdded(const fs::path& card_name);
+    void CardRemoved(const fs::path& card_name);
+    void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
+
+    bool HasPreview(const fs::path& image_name) const;
+    const Image& GetCroppedPreview(const fs::path& image_name) const;
+    const Image& GetUncroppedPreview(const fs::path& image_name) const;
+    const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;
+    const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
 
-    // Project options
-    fs::path ImageDir{ "images" };
-    fs::path CropDir{ "images/crop" };
-    fs::path ImageCache{ "proj.cache" };
+  public slots:
+    void SetPreview(const fs::path& image_name, ImagePreview preview);
 
-    // List of all cards
-    CardMap Cards{};
-    ImgDict Previews{};
-    ImagePreview FallbackPreview{};
+    void CropperDone();
 
-    // Bleed edge options
-    Length BleedEdge{ 0_mm };
-    float CornerWeight{ 1.0f };
+  signals:
+    void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
 
-    // Backside options
-    bool BacksideEnabled{ false };
-    bool BacksideEnableGuides{ false };
-    fs::path BacksideDefault{ "__back.png" };
-    Length BacksideOffset{ 0_mm };
+  public:
+    struct ProjectData
+    {
+        // Project options
+        fs::path ImageDir{ "images" };
+        fs::path CropDir{ "images/crop" };
+        fs::path ImageCache{ "images/crop/preview.cache" };
 
-    // Oversized options
-    bool OversizedEnabled{ false };
+        // List of all cards
+        CardMap Cards{};
+        ImgDict Previews{};
+        ImagePreview FallbackPreview{};
 
-    // PDF generation options
-    std::string PageSize{ CFG.DefaultPageSize };
-    dla::uvec2 CustomCardLayout{ 3, 3 };
-    std::string Orientation{ "Portrait" };
-    fs::path FileName{ "_printme" };
-    bool EnableGuides{ true };
-    bool ExtendedGuides{ false };
-    ColorRGB8 GuidesColorA{ 0, 0, 0 };
-    ColorRGB8 GuidesColorB{ 190, 190, 190 };
+        // Bleed edge options
+        Length BleedEdge{ 0_mm };
+        float CornerWeight{ 1.0f };
+
+        // Backside options
+        bool BacksideEnabled{ false };
+        bool BacksideEnableGuides{ false };
+        fs::path BacksideDefault{ "__back.png" };
+        Length BacksideOffset{ 0_mm };
+
+        // Oversized options
+        bool OversizedEnabled{ false };
+
+        // PDF generation options
+        std::string PageSize{ CFG.DefaultPageSize };
+        dla::uvec2 CustomCardLayout{ 3, 3 };
+        std::string Orientation{ "Portrait" };
+        fs::path FileName{ "_printme" };
+        bool EnableGuides{ true };
+        bool ExtendedGuides{ false };
+        ColorRGB8 GuidesColorA{ 0, 0, 0 };
+        ColorRGB8 GuidesColorB{ 190, 190, 190 };
+    };
+    ProjectData Data;
 
   private:
     Project(const Project&) = default;

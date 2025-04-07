@@ -34,7 +34,7 @@ Guides are dashed lines made from these two colors. By default these are black a
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
 ### Corner Weight
-This option determines where the cutting guides will be when the bleed edge is bigger than zero. If the slider is all the way to the right the cutting guides will be exactly at the card corners, if it is all the way on the right it is in the corner of printed image of each card. Open the preview while changing this setting to get a good idea of it.
+This option determines where the cutting guides will be when the bleed edge is bigger than zero. If the slider is all the way to the right the cutting guides will be exactly at the card corners, if it is all the way on the left it is in the corner of the printed image of each card. Open the preview while changing this setting to get a good idea of it.
 
 ### Enable Backside
 Adds a backside to each image, which means when printing each other page will automatically be filled with the corresponding backsides for each image. This allows for double-sided cards, different card backs, etc.
@@ -120,6 +120,6 @@ Here the quality value is a whole number between `1` and `100`, defaulting to `9
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.
 - The program will automatically save if you close the window. It will not save if it crashes! The data is stored in `proj.json`.
-- `proj.cache` is a file that stores data for the thumbnails.
+- `images/crop/preview.cache` is a file that stores data for the thumbnails.
 - If the program crashes on startup first try to delete these two files, if that doesn't do it open an issue.
-- When opening an issue to report a bug, please attach a zip file containing your `images` folder. `proj.json`, and `proj.cache`. Also include a screenshot of the F1 window if you can still start the program.
+- When opening an issue to report a bug, please attach a zip file containing your `images` folder and `proj.json`. Also include a screenshot of the F1 window if you can still start the program.

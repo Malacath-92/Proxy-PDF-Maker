@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-07-04
+
+### Changed
+- Improved reliability of cropper
+- Crop work now happens asynchronously, blocking of UI happens only when rendering now
+- Moved preview cache to crop folder
+- Jpg files written to the output folder now contain DPI data
+
+### Fixed
+- Color cube option will now save and load correctly
+
 ## [0.6.0] - 2025-31-03
 
 ### Added

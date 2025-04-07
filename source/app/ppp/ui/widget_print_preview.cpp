@@ -46,50 +46,15 @@ class PageGrid : public QWidget
                 {
                     const auto& [image_name, oversized, backside_short_edge]{ card.value() };
 
-                    const auto& image{
-                        [&]() -> std::variant<Image, std::reference_wrapper<const Image>>
-                        {
-                            const bool has_preview{ project.Previews.contains(image_name) };
-                            if (!has_preview)
-                            {
-                                HasMissingPreviews = false;
-                            }
-
-                            const bool has_bleed_edge{ project.BleedEdge > 0_mm };
-                            if (has_bleed_edge)
-                            {
-                                const Image& uncropped_image{
-                                    has_preview
-                                        ? project.Previews.at(image_name).UncroppedImage
-                                        : project.FallbackPreview.UncroppedImage
-                                };
-                                return CropImage(uncropped_image, image_name, project.BleedEdge, 6800_dpi, nullptr);
-                            }
-
-                            return std::cref(has_preview
-                                                 ? project.Previews.at(image_name).CroppedImage
-                                                 : project.FallbackPreview.CroppedImage);
-                        }()
-                    };
-
-                    bool show{ false };
-                    if (show)
-                    {
-                        std::visit([](const auto& image)
-                                   { static_cast<const Image&>(image).DebugDisplay(); },
-                                   image);
-                    }
-
                     const Image::Rotation rotation{ GetCardRotation(params.IsBackside, oversized, backside_short_edge) };
                     auto* image_widget{
                         new CardImage{
-                            std::visit([](const auto& image) -> const Image&
-                                       { return image; },
-                                       image),
+                            image_name,
+                            project,
                             CardImage::Params{
                                 .RoundedCorners{ false },
                                 .Rotation{ rotation },
-                                .BleedEdge{ project.BleedEdge },
+                                .BleedEdge{ project.Data.BleedEdge },
                             },
                         },
                     };
@@ -115,10 +80,11 @@ class PageGrid : public QWidget
                 const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false, false) };
                 auto* image_widget{
                     new CardImage{
-                        project.FallbackPreview.CroppedImage,
+                        CFG.FallbackName,
+                        project,
                         CardImage::Params{
                             .Rotation{ rotation },
-                            .BleedEdge{ project.BleedEdge },
+                            .BleedEdge{ project.Data.BleedEdge },
                         },
                     },
                 };
@@ -182,19 +148,19 @@ class GuidesOverlay : public QWidget
                 }
             }
         }
-        BleedEdge = project.BleedEdge;
-        CornerWeight = project.CornerWeight;
+        BleedEdge = project.Data.BleedEdge;
+        CornerWeight = project.Data.CornerWeight;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
+        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
         CardSizeWithBleedEdge = Size{ card_width, card_height };
 
         PenOne.setWidth(2);
-        PenOne.setColor(QColor{ project.GuidesColorA.r, project.GuidesColorA.g, project.GuidesColorA.b });
+        PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
 
         PenTwo.setDashPattern({ 2.0f, 4.0f });
         PenTwo.setWidth(2);
-        PenTwo.setColor(QColor{ project.GuidesColorB.r, project.GuidesColorB.g, project.GuidesColorB.b });
+        PenTwo.setColor(QColor{ project.Data.GuidesColorB.r, project.Data.GuidesColorB.g, project.Data.GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -310,7 +276,7 @@ class PrintPreview::PagePreview : public QWidget
         setLayout(layout);
         setStyleSheet("background-color: white;");
 
-        if (project.EnableGuides && (!params.GridParams.IsBackside || project.BacksideEnableGuides))
+        if (project.Data.EnableGuides && (!params.GridParams.IsBackside || project.Data.BacksideEnableGuides))
         {
             Overlay = new GuidesOverlay{ project, card_grid };
             Overlay->setParent(this);
@@ -322,14 +288,14 @@ class PrintPreview::PagePreview : public QWidget
         PageWidth = page_width;
         PageHeight = page_height;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.BleedEdge };
+        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
         CardWidth = card_width;
         CardHeight = card_height;
 
         PaddingWidth = (page_width - params.Columns * card_width) / 2.0f;
         PaddingHeight = (page_height - params.Rows * card_height) / 2.0f;
-        BacksideOffset = params.GridParams.IsBackside ? project.BacksideOffset : 0_mm;
+        BacksideOffset = params.GridParams.IsBackside ? project.Data.BacksideOffset : 0_mm;
 
         Grid = grid;
     }
@@ -410,14 +376,14 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    const bool fit_size{ project.PageSize == "Fit" };
-    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.BleedEdge };
+    const bool fit_size{ project.Data.PageSize == "Fit" };
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
     auto page_size{
         fit_size
-            ? card_size_with_bleed * dla::vec2{ project.CustomCardLayout }
-            : CFG.PageSizes[project.PageSize].Dimensions,
+            ? card_size_with_bleed * dla::vec2{ project.Data.CustomCardLayout }
+            : CFG.PageSizes[project.Data.PageSize].Dimensions,
     };
-    if (!fit_size && project.Orientation == "Landscape")
+    if (!fit_size && project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }
@@ -425,8 +391,8 @@ void PrintPreview::Refresh(const Project& project)
     const Length card_width{ card_size_with_bleed.x };
     const Length card_height{ card_size_with_bleed.y };
 
-    const auto columns{ static_cast<uint32_t>(fit_size ? project.CustomCardLayout.x : std::floor(page_width / card_width)) };
-    const auto rows{ static_cast<uint32_t>(fit_size ? project.CustomCardLayout.y : std::floor(page_height / card_height)) };
+    const auto columns{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.x : std::floor(page_width / card_width)) };
+    const auto rows{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.y : std::floor(page_height / card_height)) };
 
     struct TempPage
     {
@@ -440,7 +406,7 @@ void PrintPreview::Refresh(const Project& project)
                                       { return TempPage{ page, false }; }) |
                 std::ranges::to<std::vector>() };
 
-    if (project.BacksideEnabled)
+    if (project.Data.BacksideEnabled)
     {
         const auto raw_backside_pages{ MakeBacksidePages(project, raw_pages) };
         const auto backside_pages{ raw_backside_pages |

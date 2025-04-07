@@ -1,5 +1,6 @@
 #include <ppp/image.hpp>
 
+#include <bit>
 #include <ranges>
 
 #include <dla/scalar_math.h>
@@ -51,116 +52,174 @@ Image Image::Read(const fs::path& path)
     return img;
 }
 
-bool Image::Write(const fs::path& path, std::optional<int32_t> compression) const
+bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality) const
 {
-    std::vector<int> png_params;
-    if (compression.has_value())
+    const fs::path ext{ path.extension() };
+    if (ext == ".png")
     {
-        png_params = {
-            cv::IMWRITE_PNG_COMPRESSION,
-            compression.value(),
-            cv::IMWRITE_PNG_STRATEGY,
-            cv::IMWRITE_PNG_STRATEGY_DEFAULT,
-        };
-    }
-
-    return cv::imwrite(path.string().c_str(), m_Impl, png_params);
-}
-
-bool Image::Write(const fs::path& path, std::optional<int32_t> compression, ::Size dimensions) const
-{
-    std::vector<int> png_params;
-    if (compression.has_value())
-    {
-        png_params = {
-            cv::IMWRITE_PNG_COMPRESSION,
-            compression.value(),
-            cv::IMWRITE_PNG_STRATEGY,
-            cv::IMWRITE_PNG_STRATEGY_DEFAULT,
-        };
-    }
-
-    const PixelDensity density{ Density(dimensions) };
-
-    std::vector<uchar> buf;
-    if (cv::imencode(".png", m_Impl, buf, png_params))
-    {
-        // Squeeze in a pHYs chunk that contains dpi
+        std::vector<int> png_params;
+        if (png_compression.has_value())
         {
-            // Find first IDAT section ...
-            size_t idat_idx{};
-            for (size_t j = 0; j < buf.size() - 4; j++)
-            {
-                if (std::string_view{ reinterpret_cast<std::string_view::value_type*>(&buf[j]), 4 } == "IDAT")
-                {
-                    idat_idx = j - 4;
-                    break;
-                }
-            }
-
-            auto reverse_endianness{
-                [](uint32_t val) -> uint32_t
-                {
-                    union
-                    {
-                        uint32_t v;
-                        unsigned char u8[sizeof(uint32_t)];
-                    } util;
-                    util.v = val;
-                    std::swap(util.u8[0], util.u8[3]);
-                    std::swap(util.u8[1], util.u8[2]);
-                    return util.v;
-                }
+            png_params = {
+                cv::IMWRITE_PNG_COMPRESSION,
+                png_compression.value(),
+                cv::IMWRITE_PNG_STRATEGY,
+                cv::IMWRITE_PNG_STRATEGY_DEFAULT,
             };
-
-            // Create pHYs chunk...
-            struct
-            {
-                uint32_t size;
-                std::array<char, 4> name;
-                uint32_t dots_per_meter_x;
-                uint32_t dots_per_meter_y;
-                uint8_t unit;
-            } const pHYs_chunk{
-                reverse_endianness(9),
-                { 'p', 'H', 'Y', 's' },
-                reverse_endianness(static_cast<uint32_t>(density.value)),
-                reverse_endianness(static_cast<uint32_t>(density.value)),
-                1, // this just means meter
-            };
-
-            // size + name + data + padding
-            static constexpr uint32_t pHYs_chunk_size{ 4 + 4 + 9 };
-            // chunk + padding
-            static_assert(sizeof(pHYs_chunk) == pHYs_chunk_size + 3);
-            // verify padding is at the end ...
-            static_assert(offsetof(decltype(pHYs_chunk), unit) == pHYs_chunk_size - 1);
-
-            // only the name and data
-            const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
-            const auto crc_data_size{ pHYs_chunk_size - 4 };
-            const uint32_t crc{ reverse_endianness(crc32c::Crc32c(crc_data, crc_data_size)) };
-
-            // chunk + crc
-            std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
-            std::memcpy(pHYs_buf.data(), &pHYs_chunk, pHYs_chunk_size);
-            std::memcpy(pHYs_buf.data() + pHYs_chunk_size, &crc, 4);
-            buf.insert(buf.begin() + idat_idx, pHYs_buf.begin(), pHYs_buf.end());
         }
 
-        if (FILE * file{ fopen(path.string().c_str(), "wb") })
+        return cv::imwrite(path.string().c_str(), m_Impl, png_params);
+    }
+    else if (ext == ".jpg")
+    {
+        std::vector<int> jpg_params;
+        if (jpg_quality.has_value())
         {
-            fwrite(buf.data(), 1, buf.size(), file);
-            fclose(file);
+            jpg_params = {
+                cv::IMWRITE_JPEG_QUALITY,
+                jpg_quality.value(),
+            };
+        }
+
+        return cv::imwrite(path.string().c_str(), m_Impl, jpg_params);
+    }
+    else
+    {
+        return cv::imwrite(path.string().c_str(), m_Impl);
+    }
+}
+
+bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality, ::Size dimensions) const
+{
+    const fs::path ext{ path.extension() };
+    if (ext == ".png")
+    {
+        std::vector<int> png_params;
+        if (png_compression.has_value())
+        {
+            png_params = {
+                cv::IMWRITE_PNG_COMPRESSION,
+                png_compression.value(),
+                cv::IMWRITE_PNG_STRATEGY,
+                cv::IMWRITE_PNG_STRATEGY_DEFAULT,
+            };
+        }
+
+        const PixelDensity density{ Density(dimensions) };
+
+        std::vector<uchar> buf;
+        if (cv::imencode(".png", m_Impl, buf, png_params))
+        {
+            // Squeeze in a pHYs chunk that contains dpi
+            {
+                // Find first IDAT section ...
+                size_t idat_idx{};
+                for (size_t j = 0; j < buf.size() - 4; j++)
+                {
+                    if (std::string_view{ reinterpret_cast<std::string_view::value_type*>(&buf[j]), 4 } == "IDAT")
+                    {
+                        idat_idx = j - 4;
+                        break;
+                    }
+                }
+
+                // Create pHYs chunk...
+                struct
+                {
+                    uint32_t size;
+                    std::array<char, 4> name;
+                    uint32_t dots_per_meter_x;
+                    uint32_t dots_per_meter_y;
+                    uint8_t unit;
+                } const pHYs_chunk{
+                    std::byteswap(9u),
+                    { 'p', 'H', 'Y', 's' },
+                    std::byteswap(static_cast<uint32_t>(density.value)),
+                    std::byteswap(static_cast<uint32_t>(density.value)),
+                    1, // this just means meter
+                };
+
+                // size + name + data + padding
+                static constexpr uint32_t pHYs_chunk_size{ 4 + 4 + 9 };
+                // chunk + padding
+                static_assert(sizeof(pHYs_chunk) == pHYs_chunk_size + 3);
+                // verify padding is at the end ...
+                static_assert(offsetof(decltype(pHYs_chunk), unit) == pHYs_chunk_size - 1);
+
+                // only the name and data
+                const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
+                const auto crc_data_size{ pHYs_chunk_size - 4 };
+                const uint32_t crc{ std::byteswap(crc32c::Crc32c(crc_data, crc_data_size)) };
+
+                // chunk + crc
+                std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
+                std::memcpy(pHYs_buf.data(), &pHYs_chunk, pHYs_chunk_size);
+                std::memcpy(pHYs_buf.data() + pHYs_chunk_size, &crc, 4);
+                buf.insert(buf.begin() + idat_idx, pHYs_buf.begin(), pHYs_buf.end());
+            }
+
+            if (FILE * file{ fopen(path.string().c_str(), "wb") })
+            {
+                fwrite(buf.data(), 1, buf.size(), file);
+                fclose(file);
+            }
+
+            return true;
         }
 
         return false;
     }
+    else if (ext == ".jpg" || ext == ".jpeg" || ext == ".jpe")
+    {
+        std::vector<int> jpg_params;
+        if (jpg_quality.has_value())
+        {
+            jpg_params = {
+                cv::IMWRITE_JPEG_QUALITY,
+                jpg_quality.value(),
+            };
+        }
 
-    return true;
+        const PixelDensity dpi{ Density(dimensions) * 1_in / 1_m };
+
+        std::vector<uchar> buf;
+        if (cv::imencode(".jpg", m_Impl, buf, jpg_params))
+        {
+            {
+                // Write the pixel density into the APP0 chunk that OpenCV wrote...
+                assert(buf[0] == 0xff);
+                assert(buf[1] == 0xd8);
+                assert(buf[2] == 0xff);
+                assert(buf[3] == 0xe0);
+
+                // Not declaring a struct here because I can't be arsed to pack it tightly
+                uint8_t* units{ reinterpret_cast<uint8_t*>(buf.data() + 4 + 9) };
+                uint16_t* x_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1) };
+                uint16_t* y_density{ reinterpret_cast<uint16_t*>(buf.data() + 4 + 9 + 1 + 2) };
+
+                *units = 1; // 0: pixel ratio only, 1: DPI, 2: dots per cm
+                *x_density = std::byteswap(static_cast<uint16_t>(dpi.value));
+                *y_density = *x_density;
+            }
+
+            if (FILE * file{ fopen(path.string().c_str(), "wb") })
+            {
+                fwrite(buf.data(), 1, buf.size(), file);
+                fclose(file);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+    else
+    {
+        return cv::imwrite(path.string(), m_Impl);
+    }
 }
 
-Image Image::Decode(const std::vector<std::byte>& buffer)
+Image Image::Decode(const EncodedImage& buffer)
 {
     Image img{};
     const cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()), static_cast<int>(buffer.size()) };
@@ -168,12 +227,7 @@ Image Image::Decode(const std::vector<std::byte>& buffer)
     return img;
 }
 
-std::vector<std::byte> Image::Encode(std::optional<int32_t> compression) const
-{
-    return EncodePng(compression);
-}
-
-std::vector<std::byte> Image::EncodePng(std::optional<int32_t> compression) const
+EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 {
     std::vector<int> png_params;
     if (compression.has_value())
@@ -189,14 +243,14 @@ std::vector<std::byte> Image::EncodePng(std::optional<int32_t> compression) cons
     std::vector<uchar> cv_buffer;
     if (cv::imencode(".png", m_Impl, cv_buffer, png_params))
     {
-        std::vector<std::byte> out_buffer(cv_buffer.size(), std::byte{});
+        EncodedImage out_buffer(cv_buffer.size(), std::byte{});
         std::memcpy(out_buffer.data(), cv_buffer.data(), cv_buffer.size());
         return out_buffer;
     }
     return {};
 }
 
-std::vector<std::byte> Image::EncodeJpg(std::optional<int32_t> quality) const
+EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
 {
     std::vector<int> jpg_params;
     if (quality.has_value())
@@ -210,7 +264,7 @@ std::vector<std::byte> Image::EncodeJpg(std::optional<int32_t> quality) const
     std::vector<uchar> cv_buffer;
     if (cv::imencode(".jpg", m_Impl, cv_buffer, jpg_params))
     {
-        std::vector<std::byte> out_buffer(cv_buffer.size(), std::byte{});
+        EncodedImage out_buffer(cv_buffer.size(), std::byte{});
         std::memcpy(out_buffer.data(), cv_buffer.data(), cv_buffer.size());
         return out_buffer;
     }
@@ -406,8 +460,8 @@ PixelSize Image::Size() const
 
 PixelDensity Image::Density(::Size real_size) const
 {
-    const auto [w, h] = Size().pod();
-    const auto [bw, bh] = (real_size).pod();
+    const auto [w, h]{ Size().pod() };
+    const auto [bw, bh]{ (real_size).pod() };
     return dla::math::min(w / bw, h / bh);
 }
 

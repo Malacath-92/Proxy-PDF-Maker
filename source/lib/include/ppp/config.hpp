@@ -29,6 +29,7 @@ struct Config
     uint32_t DisplayColumns{ 5 };
     std::string DefaultPageSize{ "Letter" };
     std::string ColorCube{ "None" };
+    fs::path FallbackName{ "fallback.png"_p };
     PdfBackend Backend{ PdfBackend::LibHaru };
     ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };

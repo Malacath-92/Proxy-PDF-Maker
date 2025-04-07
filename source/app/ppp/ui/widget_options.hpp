@@ -3,9 +3,10 @@
 #include <QScrollArea>
 
 class PrintProxyPrepApplication;
+class ActionsWidget;
 class PrintOptionsWidget;
 class CardOptionsWidget;
-struct Project;
+class Project;
 
 class OptionsWidget : public QScrollArea
 {
@@ -15,7 +16,13 @@ class OptionsWidget : public QScrollArea
     void Refresh(const Project& project);
     void RefreshWidgets(const Project& project);
 
+  public slots:
+    void CropperWorking();
+    void CropperDone();
+    void CropperProgress(float progress);
+
   private:
+    ActionsWidget* Actions{ nullptr };
     PrintOptionsWidget* PrintOptions{ nullptr };
     CardOptionsWidget* CardOptions{ nullptr };
 };

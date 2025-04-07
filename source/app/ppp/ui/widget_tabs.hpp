@@ -2,7 +2,7 @@
 
 #include <QTabWidget>
 
-struct Project;
+class Project;
 
 class CardScrollArea;
 class PrintPreview;

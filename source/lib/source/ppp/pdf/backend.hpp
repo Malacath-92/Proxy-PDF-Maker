@@ -11,7 +11,7 @@
 
 #include <ppp/pdf/util.hpp>
 
-struct Project;
+class Project;
 class PdfDocument;
 
 std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project, PrintFn print_fn);

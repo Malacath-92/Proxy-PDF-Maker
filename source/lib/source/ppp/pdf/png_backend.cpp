@@ -93,7 +93,7 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, 
     const cv::Mat& three_channel_image{ loaded_image.GetUnderlying() };
     cv::Mat four_channel_image{};
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
-    const auto encoded_image{ loaded_image.Encode() };
+    const auto encoded_image{ loaded_image.EncodePng() };
     image_cache.push_back({
         std::move(image_path),
         w,
@@ -108,7 +108,7 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
     : TheProject{ project }
     , PrintFunction{ std::move(print_fn) }
 {
-    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * TheProject.BleedEdge };
+    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * TheProject.Data.BleedEdge };
     const dla::ivec2 card_size_pixels{
         static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
         static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),
@@ -118,9 +118,9 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
         static_cast<float>(card_size_pixels.y) * 1_pix,
     };
 
-    if (TheProject.PageSize == "Fit")
+    if (TheProject.Data.PageSize == "Fit")
     {
-        const auto page_size_pixels{ card_size_pixels * TheProject.CustomCardLayout };
+        const auto page_size_pixels{ card_size_pixels * TheProject.Data.CustomCardLayout };
         PrecomputedPageSize = PixelSize{
             static_cast<float>(page_size_pixels.x) * 1_pix,
             static_cast<float>(page_size_pixels.y) * 1_pix,
@@ -128,7 +128,7 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
     }
     else
     {
-        const auto page_size{ CFG.PageSizes[project.PageSize].Dimensions };
+        const auto page_size{ CFG.PageSizes[TheProject.Data.PageSize].Dimensions };
         const cv::Size page_size_pixels{ ToPixels(page_size.x), ToPixels(page_size.y) };
         PrecomputedPageSize = PixelSize{
             static_cast<float>(page_size_pixels.width) * 1_pix,
@@ -146,7 +146,7 @@ PngPage* PngDocument::NextPage(Size /*page_size*/)
 {
     auto& new_page{ Pages.emplace_back() };
     new_page.TheProject = &TheProject;
-    new_page.PerfectFit = TheProject.PageSize == "Fit";
+    new_page.PerfectFit = TheProject.Data.PageSize == "Fit";
     new_page.CardSize = PrecomputedCardSize;
     new_page.PageSize = PrecomputedPageSize;
     new_page.Page = cv::Mat::zeros(cv::Size{ static_cast<int32_t>(PrecomputedPageSize.x / 1_pix), static_cast<int32_t>(PrecomputedPageSize.y / 1_pix) }, CV_8UC4);
@@ -179,7 +179,7 @@ std::optional<fs::path> PngDocument::Write(fs::path path)
             fs::remove(png_path);
         }
 
-        Image{ std::move(page.Page) }.Write(png_path, CFG.PngCompression.value_or(5), PageSize);
+        Image{ std::move(page.Page) }.Write(png_path, CFG.PngCompression.value_or(5), std::nullopt, PageSize);
     }
 
     return png_folder;

@@ -1,16 +1,16 @@
 #include <ppp/pdf/haru_backend.hpp>
 
-inline HPDF_REAL ToReal(Length l)
+inline HPDF_REAL ToHaruReal(Length l)
 {
     return static_cast<HPDF_REAL>(l / 1_pts);
 }
 
 void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty)
 {
-    const auto real_fx{ ToReal(fx) };
-    const auto real_fy{ ToReal(fy) };
-    const auto real_tx{ ToReal(tx) };
-    const auto real_ty{ ToReal(ty) };
+    const auto real_fx{ ToHaruReal(fx) };
+    const auto real_fy{ ToHaruReal(fy) };
+    const auto real_tx{ ToHaruReal(tx) };
+    const auto real_ty{ ToHaruReal(ty) };
 
     HPDF_Page_SetLineWidth(Page, 1.0);
 
@@ -43,10 +43,10 @@ void HaruPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, L
 
 void HaruPdfPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation)
 {
-    const auto real_x{ ToReal(x) };
-    const auto real_y{ ToReal(y) };
-    const auto real_w{ ToReal(w) };
-    const auto real_h{ ToReal(h) };
+    const auto real_x{ ToHaruReal(x) };
+    const auto real_y{ ToHaruReal(y) };
+    const auto real_w{ ToHaruReal(w) };
+    const auto real_h{ ToHaruReal(h) };
     HPDF_Page_DrawImage(Page, ImageCache->GetImage(image_path, rotation), real_x, real_y, real_w, real_h);
 }
 
@@ -70,7 +70,7 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
             ? std::bind_back(&Image::EncodeJpg, CFG.JpgQuality)
-            : std::bind_back(&Image::Encode, std::optional{ 0 })
+            : std::bind_back(&Image::EncodePng, std::optional{ 0 })
     };
     const auto loader{
         use_jpg
@@ -120,8 +120,8 @@ HaruPdfPage* HaruPdfDocument::NextPage(Size page_size)
 {
     auto& new_page{ Pages.emplace_back() };
     new_page.Page = HPDF_AddPage(Document);
-    HPDF_Page_SetWidth(new_page.Page, ToReal(page_size.x));
-    HPDF_Page_SetHeight(new_page.Page, ToReal(page_size.y));
+    HPDF_Page_SetWidth(new_page.Page, ToHaruReal(page_size.x));
+    HPDF_Page_SetHeight(new_page.Page, ToHaruReal(page_size.y));
     new_page.ImageCache = ImageCache.get();
     return &new_page;
 }

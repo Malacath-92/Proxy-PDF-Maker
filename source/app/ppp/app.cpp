@@ -64,6 +64,7 @@ const std::string& PrintProxyPrepApplication::GetTheme() const
 
 void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 {
+    std::lock_guard lock{ CubesMutex };
     if (!Cubes.contains(cube_name))
     {
         Cubes[std::move(cube_name)] = std::move(cube);
@@ -71,6 +72,7 @@ void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 }
 const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
 {
+    std::lock_guard lock{ CubesMutex };
     if (Cubes.contains(cube_name))
     {
         return &Cubes.at(cube_name);

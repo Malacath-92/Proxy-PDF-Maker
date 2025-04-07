@@ -4,11 +4,7 @@
 
 #include <ppp/ui/popups.hpp>
 
-PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(Project& project, MainTabs* tabs, CardScrollArea* scroll, PrintPreview* preview, OptionsWidget* options)
-    : AppProject{ project }
-    , Scroll{ scroll }
-    , Preview{ preview }
-    , Options{ options }
+PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, OptionsWidget* options)
 {
     setWindowTitle("PDF Proxy Printer");
 
@@ -20,23 +16,6 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(Project& project, MainTabs* t
     window_area->setLayout(window_layout);
 
     setCentralWidget(window_area);
-}
-
-void PrintProxyPrepMainWindow::Refresh()
-{
-    Scroll->Refresh(AppProject);
-    Options->Refresh(AppProject);
-    RefreshWidgets();
-}
-
-void PrintProxyPrepMainWindow::RefreshWidgets()
-{
-    Options->RefreshWidgets(AppProject);
-}
-
-void PrintProxyPrepMainWindow::RefreshPreview()
-{
-    Preview->Refresh(AppProject);
 }
 
 void PrintProxyPrepMainWindow::OpenAboutPopup()

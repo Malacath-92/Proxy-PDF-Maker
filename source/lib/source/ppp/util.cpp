@@ -8,48 +8,6 @@
 #include <QString>
 #include <QUrl>
 
-template<class FunT>
-void ForEachFile(const fs::path& path, FunT&& fun, const std::span<const fs::path> extensions)
-{
-    if (!std::filesystem::is_directory(path))
-    {
-        return;
-    }
-
-    std::vector<fs::path> files;
-    for (auto& child : std::filesystem::directory_iterator(path))
-    {
-        if (!child.is_directory())
-        {
-            const bool is_matching_extension{
-                extensions.empty() || std::ranges::contains(extensions, child.path().extension())
-            };
-            if (is_matching_extension)
-            {
-                fun(child.path());
-            }
-        }
-    }
-}
-
-template<class FunT>
-void ForEachFolder(const fs::path& path, FunT&& fun)
-{
-    if (!std::filesystem::is_directory(path))
-    {
-        return;
-    }
-
-    std::vector<fs::path> files;
-    for (auto& child : std::filesystem::directory_iterator(path))
-    {
-        if (child.is_directory())
-        {
-            fun(child.path());
-        }
-    }
-}
-
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions)
 {
     std::vector<fs::path> files;

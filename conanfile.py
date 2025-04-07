@@ -13,6 +13,7 @@ class ProxyPDF(ConanFile):
         self.requires("pdf-writer/4.6.7")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
+        self.requires("efsw/1.4.1")
         self.requires("crc32c/1.1.2")
 
         # Conflict Resolution
@@ -20,6 +21,7 @@ class ProxyPDF(ConanFile):
 
     def configure(self):
         self.options["qt"].shared = False
+        self.options["qt"].qtsvg = True
         self.options["qt"].opengl = "no"
         self.options["qt"].openssl = False
         self.options["qt"].with_md4c = False
