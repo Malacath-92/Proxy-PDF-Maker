@@ -166,7 +166,6 @@ void Cropper::CardRemoved(const fs::path& card_name)
     {
         fs::remove(Data.CropDir / card_name);
 
-        using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
         for (const auto& entry : fs::recursive_directory_iterator(Data.CropDir))
         {
             if (entry.is_directory() && fs::exists(entry.path() / card_name))
@@ -191,7 +190,6 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
         fs::rename(Data.CropDir / old_card_name, Data.CropDir / new_card_name);
     }
 
-    using recursive_directory_iterator = std::filesystem::recursive_directory_iterator;
     for (const auto& entry : fs::recursive_directory_iterator(Data.CropDir))
     {
         if (entry.is_directory() && fs::exists(entry.path() / old_card_name))
