@@ -4,7 +4,8 @@
 
 #include <ppp/util.hpp>
 
-struct ImageParameters{
+struct ImageParameters
+{
     PixelDensity DPI{ 0_dpi };
     Pixel Width{ 0_pix };
 };

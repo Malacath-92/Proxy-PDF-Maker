@@ -8,8 +8,8 @@
 
 #include <ppp/util.hpp>
 
-#include <ppp/project/project.hpp>
 #include <ppp/project/image_database.hpp>
+#include <ppp/project/project.hpp>
 
 class QThread;
 
