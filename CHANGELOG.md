@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-08-04
+
+### Fixed
+- Png files written by the app now have the correct CRC in the pHYs chunk, some programs didn't like the error, most didn't care, so this may not affect you
+
 ## [0.7.0] - 2025-07-04
 
 ### Changed
