@@ -5,8 +5,6 @@
 
 #include <dla/scalar_math.h>
 
-#include <crc32c/crc32c.h>
-
 #include <opencv2/img_hash.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
@@ -14,6 +12,48 @@
 #include <QPixmap>
 
 #include <ppp/color.hpp>
+
+namespace pngcrc
+{
+uint32_t crc(const uchar* buf, int len)
+{
+    static constexpr auto crc_table{
+        []()
+        {
+            std::array<uint32_t, 256> crc_table_bld;
+            for (int32_t n = 0; n < 256; n++)
+            {
+                uint32_t c{ static_cast<uint32_t>(n) };
+                for (int32_t k = 0; k < 8; k++)
+                {
+                    if (c & 1)
+                    {
+                        c = 0xedb88320L ^ (c >> 1);
+                    }
+                    else
+                    {
+                        c = c >> 1;
+                    }
+                }
+                crc_table_bld[n] = c;
+            }
+            return crc_table_bld;
+        }()
+    };
+    static constexpr auto crc_impl{
+        [](uint32_t crc, const uchar* buf, int len)
+        {
+            uint32_t c{ crc };
+            for (int32_t n = 0; n < len; n++)
+            {
+                c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+            }
+            return c;
+        }
+    };
+    return crc_impl(0xffffffffL, buf, len) ^ 0xffffffffL;
+}
+} // namespace pngcrc
 
 Image::Image(cv::Mat impl)
     : m_Impl{ std::move(impl) }
@@ -149,7 +189,7 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 // only the name and data
                 const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
                 const auto crc_data_size{ pHYs_chunk_size - 4 };
-                const uint32_t crc{ std::byteswap(crc32c::Crc32c(crc_data, crc_data_size)) };
+                const uint32_t crc{ std::byteswap(pngcrc::crc(crc_data, crc_data_size)) };
 
                 // chunk + crc
                 std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
@@ -163,6 +203,8 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 fwrite(buf.data(), 1, buf.size(), file);
                 fclose(file);
             }
+
+            cv::imdecode(buf, cv::IMREAD_COLOR);
 
             return true;
         }
