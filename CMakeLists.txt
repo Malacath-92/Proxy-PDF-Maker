@@ -18,10 +18,14 @@ option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
 include(cmake/conan.cmake)
+set(CONAN_INSTALL_ARGS --build=missing)
+if (UNIX)
+	set(CONAN_INSTALL_ARGS ${CONAN_INSTALL_ARGS} --settings:all pdfium/*:compiler.version=11)
+endif()
 run_conan(
     HOST_PROFILE default auto-cmake
     BUILD_PROFILE default
-    INSTALL_ARGS --build=missing -s icu:compiler.cppstd=17 -s pdfium:compiler.cppstd=17
+    INSTALL_ARGS ${CONAN_INSTALL_ARGS}
 )
 
 # --------------------------------------------------
