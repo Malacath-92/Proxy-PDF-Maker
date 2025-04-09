@@ -65,6 +65,7 @@ find_package(Qt6 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
+find_package(pdfium REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 
@@ -119,6 +120,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	opencv::opencv
 	libharu::libharu
 	PDFHummus::PDFWriter
+	pdfium::pdfium
 	nlohmann_json::nlohmann_json
 	efsw::efsw)
 

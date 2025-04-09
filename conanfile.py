@@ -11,12 +11,14 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.10.0")
         self.requires("libharu/2.4.4")
         self.requires("pdf-writer/4.6.7")
+        self.requires("pdfium/95.0.4629")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
         self.requires("efsw/1.4.1")
 
         # Conflict Resolution
         self.requires("zstd/1.5.7", override=True)
+        self.requires("openjpeg/2.5.2", override=True)
 
     def configure(self):
         self.options["qt"].shared = False
