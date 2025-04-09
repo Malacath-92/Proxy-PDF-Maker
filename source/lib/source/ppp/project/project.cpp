@@ -54,8 +54,13 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Data.PageSize = json["pagesize"];
         if (json.contains("custom_layout_width") && json.contains("custom_layout_height"))
         {
-            Data.CustomCardLayout.x = json["custom_layout_width"];
-            Data.CustomCardLayout.y = json["custom_layout_height"];
+            Data.CardLayout.x = json["custom_layout_width"];
+            Data.CardLayout.y = json["custom_layout_height"];
+        }
+        else if (json.contains("layout_width") && json.contains("layout_height"))
+        {
+            Data.CardLayout.x = json["layout_width"];
+            Data.CardLayout.y = json["layout_height"];
         }
         Data.Orientation = json["orientation"];
         Data.FileName = json["file_name"].get<std::string>();
@@ -111,8 +116,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["oversized_enabled"] = Data.OversizedEnabled;
 
         json["pagesize"] = Data.PageSize;
-        json["custom_layout_width"] = Data.CustomCardLayout.x;
-        json["custom_layout_height"] = Data.CustomCardLayout.y;
+        json["layout_width"] = Data.CardLayout.x;
+        json["layout_height"] = Data.CardLayout.y;
         json["orientation"] = Data.Orientation;
         json["file_name"] = Data.FileName.string();
         json["enable_guides"] = Data.EnableGuides;

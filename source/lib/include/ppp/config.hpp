@@ -35,6 +35,8 @@ struct Config
     std::optional<int> PngCompression{ std::nullopt };
     std::optional<int> JpgQuality{ std::nullopt };
 
+    static inline constexpr std::string_view FitSize{ "Fit" };
+
     struct PageSizeInfo
     {
         Size Dimensions;
@@ -47,7 +49,7 @@ struct Config
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
-        { "Fit", {} },
+        { std::string{ FitSize }, {} },
     };
 };
 

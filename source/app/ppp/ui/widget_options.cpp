@@ -16,6 +16,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <dla/vector_math.h>
+
 #include <ppp/app.hpp>
 #include <ppp/cubes.hpp>
 #include <ppp/qt_util.hpp>
@@ -257,7 +259,7 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
-        const bool fit_size{ project.Data.PageSize == "Fit" };
+        const bool fit_size{ project.Data.PageSize == Config::FitSize };
 
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.Data.FileName.string() } };
@@ -267,12 +269,12 @@ class PrintOptionsWidget : public QGroupBox
         cards_width->setDecimals(0);
         cards_width->setRange(1, 10);
         cards_width->setSingleStep(1);
-        cards_width->setValue(project.Data.CustomCardLayout.x);
+        cards_width->setValue(project.Data.CardLayout.x);
         auto* cards_height{ new QDoubleSpinBox };
         cards_height->setDecimals(0);
         cards_height->setRange(1, 10);
         cards_height->setSingleStep(1);
-        cards_height->setValue(project.Data.CustomCardLayout.y);
+        cards_height->setValue(project.Data.CardLayout.y);
         auto* cards_layout_layout{ new QHBoxLayout };
         cards_layout_layout->addWidget(cards_width);
         cards_layout_layout->addWidget(cards_height);
@@ -329,7 +331,14 @@ class PrintOptionsWidget : public QGroupBox
             {
                 project.Data.PageSize = t.toStdString();
 
-                const bool fit_size{ project.Data.PageSize == "Fit" };
+                const bool fit_size{ project.Data.PageSize == Config::FitSize };
+                if (!fit_size)
+                {
+                    const Size page_size{ CFG.PageSizes[project.Data.PageSize].Dimensions };
+                    const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+                    project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+                }
+
                 cards_layout->setEnabled(fit_size);
                 cards_layout->setVisible(fit_size);
                 orientation->setEnabled(!fit_size);
@@ -342,7 +351,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_cards_width{
             [=, &project](double v)
             {
-                project.Data.CustomCardLayout.x = static_cast<uint32_t>(v);
+                project.Data.CardLayout.x = static_cast<uint32_t>(v);
                 main_window()->CardLayoutChanged(project);
             }
         };
@@ -350,7 +359,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_cards_height{
             [=, &project](double v)
             {
-                project.Data.CustomCardLayout.y = static_cast<uint32_t>(v);
+                project.Data.CardLayout.y = static_cast<uint32_t>(v);
                 main_window()->CardLayoutChanged(project);
             }
         };

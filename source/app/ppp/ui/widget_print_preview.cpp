@@ -376,11 +376,11 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    const bool fit_size{ project.Data.PageSize == "Fit" };
+    const bool fit_size{ project.Data.PageSize == Config::FitSize };
     const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
     auto page_size{
         fit_size
-            ? card_size_with_bleed * dla::vec2{ project.Data.CustomCardLayout }
+            ? card_size_with_bleed * dla::vec2{ project.Data.CardLayout }
             : CFG.PageSizes[project.Data.PageSize].Dimensions,
     };
     if (!fit_size && project.Data.Orientation == "Landscape")
@@ -388,11 +388,8 @@ void PrintPreview::Refresh(const Project& project)
         std::swap(page_size.x, page_size.y);
     }
     const auto [page_width, page_height]{ page_size.pod() };
-    const Length card_width{ card_size_with_bleed.x };
-    const Length card_height{ card_size_with_bleed.y };
-
-    const auto columns{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.x : std::floor(page_width / card_width)) };
-    const auto rows{ static_cast<uint32_t>(fit_size ? project.Data.CustomCardLayout.y : std::floor(page_height / card_height)) };
+    const auto [card_width, card_height]{ card_size_with_bleed.pod() };
+    const auto [columns, rows]{ project.Data.CardLayout.pod() };
 
     struct TempPage
     {
