@@ -377,13 +377,10 @@ void PrintPreview::Refresh(const Project& project)
     }
 
     const bool fit_size{ project.Data.PageSize == Config::FitSize };
+    const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
     const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
-    auto page_size{
-        fit_size
-            ? card_size_with_bleed * dla::vec2{ project.Data.CardLayout }
-            : CFG.PageSizes[project.Data.PageSize].Dimensions,
-    };
-    if (!fit_size && project.Data.Orientation == "Landscape")
+    auto page_size{ project.Data.PageSizePhysical };
+    if (!fit_size && !infer_size && project.Data.Orientation == "Landscape")
     {
         std::swap(page_size.x, page_size.y);
     }

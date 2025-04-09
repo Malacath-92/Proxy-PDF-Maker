@@ -67,3 +67,23 @@ QLineEdit* LineEditWithLabel::GetWidget() const
 {
     return static_cast<QLineEdit*>(WidgetWithLabel::GetWidget());
 }
+
+LabelWithLabel::LabelWithLabel(std::string_view label_text, std::string_view other_text)
+    : WidgetWithLabel(label_text, new QLabel{ ToQString(other_text) })
+{
+}
+
+QLabel* LabelWithLabel::GetWidget() const
+{
+    return static_cast<QLabel*>(WidgetWithLabel::GetWidget());
+}
+
+DoubleSpinBoxWithLabel::DoubleSpinBoxWithLabel(std::string_view label_text)
+    : WidgetWithLabel(label_text, new QDoubleSpinBox)
+{
+}
+
+QDoubleSpinBox* DoubleSpinBoxWithLabel::GetWidget() const
+{
+    return static_cast<QDoubleSpinBox*>(WidgetWithLabel::GetWidget());
+}

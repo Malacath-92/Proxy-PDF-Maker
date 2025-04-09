@@ -4,6 +4,8 @@
 #include <string_view>
 
 #include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QLabel>
 #include <QLineEdit>
 #include <QWidget>
 
@@ -40,4 +42,20 @@ class LineEditWithLabel : public WidgetWithLabel
     LineEditWithLabel(std::string_view label_text, std::string_view default_text);
 
     virtual QLineEdit* GetWidget() const override;
+};
+
+class LabelWithLabel : public WidgetWithLabel
+{
+  public:
+    LabelWithLabel(std::string_view label_text, std::string_view other_text);
+
+    virtual QLabel* GetWidget() const override;
+};
+
+class DoubleSpinBoxWithLabel : public WidgetWithLabel
+{
+  public:
+    DoubleSpinBoxWithLabel(std::string_view label_text);
+
+    virtual QDoubleSpinBox* GetWidget() const override;
 };

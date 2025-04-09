@@ -15,9 +15,9 @@ std::vector<std::string> GetCubeNames()
     std::vector<std::string> cubes_names{ "None" };
 
     Q_INIT_RESOURCE(resources);
-    for (const auto style_dir : { ":/res/cubes", "./res/cubes" })
+    for (const auto cubes_dir : { ":/res/cubes", "./res/cubes" })
     {
-        QDirIterator it(style_dir);
+        QDirIterator it(cubes_dir);
         while (it.hasNext())
         {
             const QFileInfo next{ it.nextFileInfo() };

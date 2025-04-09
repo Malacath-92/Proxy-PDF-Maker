@@ -90,6 +90,9 @@ class Project : public QObject
 
         // PDF generation options
         std::string PageSize{ CFG.DefaultPageSize };
+        std::string BasePdf{ "None" };
+        Size CustomMargins{};
+        Size PageSizePhysical{ CFG.PageSizes[CFG.DefaultPageSize].Dimensions };
         dla::uvec2 CardLayout{ 3, 3 };
         std::string Orientation{ "Portrait" };
         fs::path FileName{ "_printme" };

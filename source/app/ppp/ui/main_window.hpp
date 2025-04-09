@@ -20,6 +20,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void NewProjectOpened(Project& project);
     void ImageDirChanged(Project& project);
     void PageSizeChanged(Project& project);
+    void CustomMarginsChanged(Project& project);
     void CardLayoutChanged(Project& project);
     void OrientationChanged(Project& project);
     void GuidesEnabledChanged(Project& project);

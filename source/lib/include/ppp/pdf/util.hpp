@@ -28,6 +28,8 @@ struct GridImage
 };
 using Grid = std::vector<std::vector<std::optional<GridImage>>>;
 
+std::optional<Size> LoadPdfSize(const fs::path& pdf_path);
+
 std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows);
 
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);

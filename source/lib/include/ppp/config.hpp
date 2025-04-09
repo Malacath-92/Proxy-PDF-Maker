@@ -36,6 +36,7 @@ struct Config
     std::optional<int> JpgQuality{ std::nullopt };
 
     static inline constexpr std::string_view FitSize{ "Fit" };
+    static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
 
     struct PageSizeInfo
     {
@@ -50,6 +51,7 @@ struct Config
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
         { std::string{ FitSize }, {} },
+        { std::string{ BasePDFSize }, {} },
     };
 };
 

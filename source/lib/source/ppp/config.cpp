@@ -250,7 +250,7 @@ void SaveConfig(Config config)
 
             for (const auto& [name, info] : config.PageSizes)
             {
-                if (name == Config::FitSize)
+                if (name == Config::FitSize || name == Config::BasePDFSize)
                 {
                     continue;
                 }

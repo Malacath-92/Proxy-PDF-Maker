@@ -52,16 +52,13 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Data.OversizedEnabled = json["oversized_enabled"];
 
         Data.PageSize = json["pagesize"];
-        if (json.contains("custom_layout_width") && json.contains("custom_layout_height"))
-        {
-            Data.CardLayout.x = json["custom_layout_width"];
-            Data.CardLayout.y = json["custom_layout_height"];
-        }
-        else if (json.contains("layout_width") && json.contains("layout_height"))
-        {
-            Data.CardLayout.x = json["layout_width"];
-            Data.CardLayout.y = json["layout_height"];
-        }
+        Data.BasePdf = json["base_pdf"];
+        Data.CustomMargins.x.value = json["custom_margins"]["width"];
+        Data.CustomMargins.y.value = json["custom_margins"]["height"];
+        Data.PageSizePhysical.x.value = json["pagesize_physical"]["width"];
+        Data.PageSizePhysical.y.value = json["pagesize_physical"]["height"];
+        Data.CardLayout.x = json["card_layout"]["width"];
+        Data.CardLayout.y = json["card_layout"]["height"];
         Data.Orientation = json["orientation"];
         Data.FileName = json["file_name"].get<std::string>();
         Data.EnableGuides = json["enable_guides"];
@@ -116,8 +113,19 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         json["oversized_enabled"] = Data.OversizedEnabled;
 
         json["pagesize"] = Data.PageSize;
-        json["layout_width"] = Data.CardLayout.x;
-        json["layout_height"] = Data.CardLayout.y;
+        json["base_pdf"] = Data.BasePdf;
+        json["custom_margins"] = nlohmann::json{
+            { "width", Data.CustomMargins.x.value },
+            { "height", Data.CustomMargins.y.value },
+        };
+        json["pagesize_physical"] = nlohmann::json{
+            { "width", Data.PageSizePhysical.x.value },
+            { "height", Data.PageSizePhysical.y.value },
+        };
+        json["card_layout"] = nlohmann::json{
+            { "width", Data.CardLayout.x },
+            { "height", Data.CardLayout.y },
+        };
         json["orientation"] = Data.Orientation;
         json["file_name"] = Data.FileName.string();
         json["enable_guides"] = Data.EnableGuides;

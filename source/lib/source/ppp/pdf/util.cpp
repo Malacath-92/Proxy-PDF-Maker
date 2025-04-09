@@ -6,6 +6,40 @@
 #include <ppp/project/project.hpp>
 #include <ppp/util.hpp>
 
+#include <fpdfview.h>
+
+template<class FunT>
+struct AtScopeExit
+{
+    ~AtScopeExit()
+    {
+        Dtor();
+    }
+    FunT Dtor;
+};
+
+std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
+{
+    const fs::path full_path{ "./res/base_pdfs" / pdf_path };
+    if (fs::exists(full_path))
+    {
+        if (FPDF_DOCUMENT doc{ FPDF_LoadDocument(full_path.string().c_str(), NULL) })
+        {
+            AtScopeExit close_doc{ [doc]
+                                   { FPDF_CloseDocument(doc); } };
+            if (FPDF_GetPageCount(doc) >= 1)
+            {
+                FPDF_PAGE page{ FPDF_LoadPage(doc, 0) };
+                static constexpr auto one_point{ 1_pts };
+                const Length width{ FPDF_GetPageWidthF(page) * one_point.value };
+                const Length height{ FPDF_GetPageHeightF(page) * one_point.value };
+                return Size{ width, height };
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows)
 {
     const auto images_per_page{ columns * rows };

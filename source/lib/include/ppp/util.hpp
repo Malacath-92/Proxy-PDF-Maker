@@ -45,8 +45,11 @@ using PixelDensity = decltype(Pixel{} / Length{});
 using namespace dla::literals;
 using namespace dla::int_literals;
 
-constexpr auto operator""_mm(long double v) { return Length{ float(v * 0.0010L) }; }
-constexpr auto operator""_mm(unsigned long long v) { return Length{ float(v * 0.0010L) }; }
+constexpr auto operator""_mm(long double v) { return Length{ float(v * 0.001L) }; }
+constexpr auto operator""_mm(unsigned long long v) { return Length{ float(v * 0.001L) }; }
+
+constexpr auto operator""_cm(long double v) { return Length{ float(v * 0.01L) }; }
+constexpr auto operator""_cm(unsigned long long v) { return Length{ float(v * 0.01L) }; }
 
 constexpr auto operator""_in(long double v) { return Length{ float(v * 0.0254L) }; }
 constexpr auto operator""_in(unsigned long long v) { return Length{ float(v * 0.0254L) }; }
