@@ -21,7 +21,7 @@ include(cmake/conan.cmake)
 run_conan(
     HOST_PROFILE default auto-cmake
     BUILD_PROFILE default
-    INSTALL_ARGS --build=missing
+    INSTALL_ARGS --build=missing -s icu:compiler.cppstd=17 -s pdfium:compiler.cppstd=17
 )
 
 # --------------------------------------------------
