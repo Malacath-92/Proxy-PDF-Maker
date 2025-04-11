@@ -13,81 +13,6 @@ inline double ToPoDoFoPoints(Length l)
     return static_cast<double>(l / 1_pts);
 }
 
-// Some pdf files, most likely written by Cairo, have a transform at the start of the page
-// that is not wrapped with q/Q, since the assumption is that the pdf won't be edited. To
-// be able to put new stuff into the pdf we have to extract the transform, then invert it
-// and then apply the inverse of said transform on each operation
-std::optional<PdfTransform> GetUnprotectedPageTransform(PoDoFo::PdfPage* page)
-{
-    PoDoFo::PdfContentsTokenizer tokenizer{ page };
-
-    PoDoFo::EPdfContentsType type{};
-    const char* token{};
-    PoDoFo::PdfVariant param{};
-
-    std::vector<PoDoFo::PdfVariant> params;
-
-    while (tokenizer.ReadNext(type, token, param))
-    {
-        if (type == PoDoFo::ePdfContentsType_Keyword)
-        {
-            using namespace std::string_view_literals;
-            if (token == "q"sv)
-            {
-                // Trust the written pdf that this is paired with enough Q to give us a blank slate
-                break;
-            }
-            else if (token == "cm"sv)
-            {
-                // cm sets transformation, must be 6 values
-                if (params.size() == 6)
-                {
-                    const double tf_a = params[0].GetReal();
-                    const double tf_b = params[1].GetReal();
-                    const double tf_c = params[2].GetReal();
-                    const double tf_d = params[3].GetReal();
-                    const double tf_e = params[4].GetReal();
-                    const double tf_f = params[5].GetReal();
-                    return PdfTransform{ tf_a, tf_b, tf_c, tf_d, tf_e, tf_f };
-                }
-            }
-            params.clear();
-        }
-        else if (type == PoDoFo::ePdfContentsType_Variant)
-        {
-            params.push_back(param);
-        }
-    }
-
-    return std::nullopt;
-}
-
-PdfTransform InvertTransform(PdfTransform transform)
-{
-    const auto& s{ transform.ScaleRotation };
-    const auto& t{ transform.Translation };
-    const double determinant{ s[0][0] * s[1][1] - s[1][0] * s[0][1] };
-    if (std::abs(determinant) < 1e-10)
-    {
-        return PdfTransform{
-            1, 0, 0, 1, -t[0], -t[1]
-        };
-    }
-    else
-    {
-        const double inverse_det{ 1.0 / determinant };
-        const double id{ inverse_det };
-        return PdfTransform{
-            id * s[1][1],
-            -id * s[1][0],
-            -id * s[0][1],
-            id * s[0][0],
-            id * (t[1] * s[0][1] - s[1][1] * t[0]),
-            id * (-t[1] * s[0][0] + s[1][0] * t[0]),
-        };
-    }
-}
-
 void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty)
 {
     const auto real_fx{ ToPoDoFoPoints(fx) };
@@ -98,13 +23,6 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
     PoDoFo::PdfPainter painter;
     painter.SetPage(Page);
     painter.Save();
-
-    if (BaseTransform.has_value())
-    {
-        const auto& s{ BaseTransform->ScaleRotation };
-        const auto& t{ BaseTransform->Translation };
-        painter.SetTransformationMatrix(s[0][0], s[0][1], s[1][0], s[1][1], t[0], t[1]);
-    }
 
     painter.SetStrokeWidth(1.0);
 
@@ -156,13 +74,6 @@ void PoDoFoPage::DrawImage(const fs::path& image_path, Length x, Length y, Lengt
     PoDoFo::PdfPainter painter;
     painter.SetPage(Page);
     painter.Save();
-
-    if (BaseTransform.has_value())
-    {
-        const auto& s{ BaseTransform->ScaleRotation };
-        const auto& t{ BaseTransform->Translation };
-        painter.SetTransformationMatrix(s[0][0], s[0][1], s[1][0], s[1][1], t[0], t[1]);
-    }
 
     painter.DrawImage(real_x, real_y, image, w_scale, h_scale);
 
@@ -226,10 +137,20 @@ PoDoFoDocument::PoDoFoDocument(const Project& project, PrintFn print_fn)
         const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.Data.BasePdf + ".pdf" } };
         BaseDocument->Load(full_path.c_str());
 
-        if (const auto transform{ GetUnprotectedPageTransform(BaseDocument->GetPage(0)) })
         {
-            const auto inverse_transform{ InvertTransform(transform.value()) };
-            BaseTransform = inverse_transform;
+            // Some pdf files, most likely written by Cairo, have a transform at the start of the page
+            // that is not wrapped with q/Q, since the assumption is that the pdf won't be edited. To
+            // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
+            PoDoFo::PdfPage* page{ BaseDocument->GetPage(0) };
+
+            PoDoFo::PdfObject* q = page->GetObject()->GetOwner()->CreateObject();
+            q->GetStream()->Set("q");
+            PoDoFo::PdfObject* Q = page->GetObject()->GetOwner()->CreateObject();
+            Q->GetStream()->Set("Q");
+
+            auto contents{ page->GetContents() };
+            contents->GetArray().insert(contents->GetArray().begin(), q->Reference());
+            contents->GetArray().push_back(Q->Reference());
         }
     }
 }
@@ -245,7 +166,6 @@ PoDoFoPage* PoDoFoDocument::NextPage(Size page_size)
                                     0,
                                     new_page_idx)
                             .GetPage(new_page_idx);
-        new_page.BaseTransform = BaseTransform;
     }
     else
     {
