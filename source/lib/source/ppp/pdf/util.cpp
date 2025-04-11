@@ -3,10 +3,10 @@
 #include <functional>
 #include <ranges>
 
+#include <podofo/podofo.h>
+
 #include <ppp/project/project.hpp>
 #include <ppp/util.hpp>
-
-#include <fpdfview.h>
 
 template<class FunT>
 struct AtScopeExit
@@ -23,18 +23,16 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
     const fs::path full_path{ "./res/base_pdfs" / pdf_path };
     if (fs::exists(full_path))
     {
-        if (FPDF_DOCUMENT doc{ FPDF_LoadDocument(full_path.string().c_str(), NULL) })
+        PoDoFo::PdfMemDocument document;
+        document.Load(full_path.c_str());
+
+        if (document.GetPageCount() > 0)
         {
-            AtScopeExit close_doc{ [doc]
-                                   { FPDF_CloseDocument(doc); } };
-            if (FPDF_GetPageCount(doc) >= 1)
-            {
-                FPDF_PAGE page{ FPDF_LoadPage(doc, 0) };
-                static constexpr auto one_point{ 1_pts };
-                const Length width{ FPDF_GetPageWidthF(page) * one_point.value };
-                const Length height{ FPDF_GetPageHeightF(page) * one_point.value };
-                return Size{ width, height };
-            }
+            const PoDoFo::PdfPage* page{ document.GetPage(0) };
+            const PoDoFo::PdfRect rect{ page->GetPageSize() };
+            const Length width{ static_cast<float>(rect.GetWidth()) * 1_pts };
+            const Length height{ static_cast<float>(rect.GetHeight()) * 1_pts };
+            return Size{ width, height };
         }
     }
     return std::nullopt;

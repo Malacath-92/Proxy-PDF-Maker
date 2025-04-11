@@ -12,6 +12,7 @@ class ProxyPDF(ConanFile):
         self.requires("libharu/2.4.4")
         self.requires("pdf-writer/4.6.7")
         self.requires("pdfium/95.0.4629")
+        self.requires("podofo/0.9.7")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
         self.requires("efsw/1.4.1")
@@ -42,6 +43,7 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].videoio = False
         self.options["opencv"].objdetect = False
         self.options["opencv"].stitching = False
+        self.options["opencv"].with_tiff = False
         self.options["opencv"].with_ffmpeg = False
         self.options["opencv"].with_openexr = False
         self.options["opencv"].with_wayland = False
@@ -51,5 +53,6 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_sunraster = False
 
         self.options["pdf-writer"].shared = False
+        self.options["pdf-writer"].with_tiff = False
 
         self.options["crc32c"].shared = False

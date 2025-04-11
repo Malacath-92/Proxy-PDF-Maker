@@ -2,6 +2,7 @@
 #include <ppp/pdf/hummus_backend.hpp>
 #include <ppp/pdf/pdfium_backend.hpp>
 #include <ppp/pdf/png_backend.hpp>
+#include <ppp/pdf/podofo_backend.hpp>
 
 #include <ppp/project/project.hpp>
 
@@ -13,6 +14,8 @@ std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project
         return std::make_unique<HaruPdfDocument>(std::move(print_fn));
     case PdfBackend::Pdfium:
         return std::make_unique<PdfiumDocument>(std::move(print_fn));
+    case PdfBackend::PoDoFo:
+        return std::make_unique<PoDoFoDocument>(std::move(print_fn));
     case PdfBackend::Hummus:
         return std::make_unique<HummusPdfDocument>(project.Data.FileName, std::move(print_fn));
     case PdfBackend::Png:

@@ -40,6 +40,10 @@ Config LoadConfig()
                 {
                     config.Backend = PdfBackend::Pdfium;
                 }
+                else if (pdf_backend == "PoDoFo")
+                {
+                    config.Backend = PdfBackend::PoDoFo;
+                }
                 else if (pdf_backend == "Hummus")
                 {
                     config.Backend = PdfBackend::Hummus;
@@ -209,10 +213,12 @@ void SaveConfig(Config config)
                 {
                     switch (backend)
                     {
-                    case PdfBackend::Hummus:
-                        return "Hummus";
                     case PdfBackend::Pdfium:
                         return "Pdfium";
+                    case PdfBackend::PoDoFo:
+                        return "PoDoFo";
+                    case PdfBackend::Hummus:
+                        return "Hummus";
                     case PdfBackend::Png:
                         return "Png";
                     case PdfBackend::LibHaru:

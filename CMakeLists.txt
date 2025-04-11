@@ -70,6 +70,7 @@ find_package(OpenCV REQUIRED)
 find_package(libharu REQUIRED)
 find_package(PDFHummus REQUIRED)
 find_package(pdfium REQUIRED)
+find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 
@@ -125,6 +126,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	libharu::libharu
 	PDFHummus::PDFWriter
 	pdfium::pdfium
+	podofo::podofo
 	nlohmann_json::nlohmann_json
 	efsw::efsw)
 

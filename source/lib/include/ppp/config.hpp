@@ -11,6 +11,7 @@ enum class PdfBackend
 {
     LibHaru,
     Pdfium,
+    PoDoFo,
     Hummus,
     Png,
 };
