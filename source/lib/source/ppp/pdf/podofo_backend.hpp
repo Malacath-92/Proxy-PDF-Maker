@@ -10,6 +10,12 @@
 class PoDoFoDocument;
 class PoDoFoImageCache;
 
+struct PdfTransform
+{
+    double ScaleRotation[2][2];
+    double Translation[2];
+};
+
 class PoDoFoPage final : public PdfPage
 {
     friend class PoDoFoDocument;
@@ -27,6 +33,7 @@ class PoDoFoPage final : public PdfPage
 
   private:
     PoDoFo::PdfPage* Page{ nullptr };
+    std::optional<PdfTransform> BaseTransform;
     PoDoFoImageCache* ImageCache;
 };
 
@@ -61,6 +68,7 @@ class PoDoFoDocument final : public PdfDocument
 
   private:
     std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;
+    std::optional<PdfTransform> BaseTransform;
 
     PoDoFo::PdfMemDocument Document;
     std::vector<PoDoFoPage> Pages;
