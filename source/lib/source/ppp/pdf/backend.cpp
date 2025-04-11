@@ -12,12 +12,8 @@ std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project
     {
     case PdfBackend::LibHaru:
         return std::make_unique<HaruPdfDocument>(std::move(print_fn));
-    case PdfBackend::Pdfium:
-        return std::make_unique<PdfiumDocument>(std::move(print_fn));
     case PdfBackend::PoDoFo:
         return std::make_unique<PoDoFoDocument>(std::move(print_fn));
-    case PdfBackend::Hummus:
-        return std::make_unique<HummusPdfDocument>(project.Data.FileName, std::move(print_fn));
     case PdfBackend::Png:
         return std::make_unique<PngDocument>(project, std::move(print_fn));
     default:

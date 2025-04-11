@@ -36,17 +36,9 @@ Config LoadConfig()
 
             {
                 auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString() };
-                if (pdf_backend == "Pdfium")
-                {
-                    config.Backend = PdfBackend::Pdfium;
-                }
-                else if (pdf_backend == "PoDoFo")
+                if (pdf_backend == "PoDoFo")
                 {
                     config.Backend = PdfBackend::PoDoFo;
-                }
-                else if (pdf_backend == "Hummus")
-                {
-                    config.Backend = PdfBackend::Hummus;
                 }
                 else if (pdf_backend == "Png")
                 {
@@ -213,12 +205,8 @@ void SaveConfig(Config config)
                 {
                     switch (backend)
                     {
-                    case PdfBackend::Pdfium:
-                        return "Pdfium";
                     case PdfBackend::PoDoFo:
                         return "PoDoFo";
-                    case PdfBackend::Hummus:
-                        return "Hummus";
                     case PdfBackend::Png:
                         return "Png";
                     case PdfBackend::LibHaru:

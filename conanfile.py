@@ -10,8 +10,6 @@ class ProxyPDF(ConanFile):
         self.requires("qt/6.7.3")
         self.requires("opencv/4.10.0")
         self.requires("libharu/2.4.4")
-        self.requires("pdf-writer/4.6.7")
-        self.requires("pdfium/95.0.4629")
         self.requires("podofo/0.9.7")
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
