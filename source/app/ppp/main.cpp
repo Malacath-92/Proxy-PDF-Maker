@@ -7,8 +7,6 @@
 #include <QtPlugin>
 #endif
 
-#include <fpdfview.h>
-
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/project.hpp>
@@ -22,30 +20,8 @@
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
 
-[[nodiscard]] auto InitFPDF()
-{
-    FPDF_LIBRARY_CONFIG config;
-    config.version = 2;
-    config.m_pUserFontPaths = NULL;
-    config.m_pIsolate = NULL;
-    config.m_v8EmbedderSlot = 0;
-
-    FPDF_InitLibraryWithConfig(&config);
-
-    struct FPDFDtor
-    {
-        ~FPDFDtor()
-        {
-            FPDF_DestroyLibrary();
-        }
-    };
-    return FPDFDtor{};
-}
-
 int main(int argc, char** argv)
 {
-    auto fpdf{ InitFPDF() };
-
 #ifdef WIN32
     {
         static constexpr char locale_name[]{ ".utf-8" };

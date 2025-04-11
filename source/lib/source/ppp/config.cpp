@@ -48,6 +48,11 @@ Config LoadConfig()
                 {
                     config.Backend = PdfBackend::LibHaru;
                 }
+
+                if (config.Backend != PdfBackend::PoDoFo)
+                {
+                    config.PageSizes.erase(std::string{ Config::BasePDFSize });
+                }
             }
 
             {

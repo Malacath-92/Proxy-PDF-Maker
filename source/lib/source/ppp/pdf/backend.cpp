@@ -1,6 +1,4 @@
 #include <ppp/pdf/haru_backend.hpp>
-#include <ppp/pdf/hummus_backend.hpp>
-#include <ppp/pdf/pdfium_backend.hpp>
 #include <ppp/pdf/png_backend.hpp>
 #include <ppp/pdf/podofo_backend.hpp>
 

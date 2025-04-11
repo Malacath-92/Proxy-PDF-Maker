@@ -52,6 +52,11 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Data.OversizedEnabled = json["oversized_enabled"];
 
         Data.PageSize = json["pagesize"];
+        if (!CFG.PageSizes.contains(Data.PageSize))
+        {
+            Data.PageSize = CFG.DefaultPageSize;
+        }
+
         Data.BasePdf = json["base_pdf"];
         Data.CustomMargins.x.value = json["custom_margins"]["width"];
         Data.CustomMargins.y.value = json["custom_margins"]["height"];

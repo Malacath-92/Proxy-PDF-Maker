@@ -386,7 +386,7 @@ class PrintOptionsWidget : public QGroupBox
                 {
                     if (infer_size)
                     {
-                        project.Data.PageSizePhysical = LoadPdfSize(project.Data.BasePdf)
+                        project.Data.PageSizePhysical = LoadPdfSize(project.Data.BasePdf + ".pdf")
                                                             .value_or(CFG.PageSizes["A4"].Dimensions);
                         base_pdf_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
 
