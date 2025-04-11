@@ -52,7 +52,7 @@ class PoDoFoImageCache
 class PoDoFoDocument final : public PdfDocument
 {
   public:
-    PoDoFoDocument(PrintFn print_fn);
+    PoDoFoDocument(const Project& project, PrintFn print_fn);
     virtual ~PoDoFoDocument() override = default;
 
     virtual PoDoFoPage* NextPage(Size page_size) override;
@@ -60,6 +60,8 @@ class PoDoFoDocument final : public PdfDocument
     virtual std::optional<fs::path> Write(fs::path path) override;
 
   private:
+    std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;
+
     PoDoFo::PdfMemDocument Document;
     std::vector<PoDoFoPage> Pages;
 

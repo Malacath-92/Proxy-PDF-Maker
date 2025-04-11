@@ -4,6 +4,10 @@
 
 #include <podofo/podofo.h>
 
+#include <ppp/pdf/util.hpp>
+
+#include <ppp/project/project.hpp>
+
 inline double ToPoDoFoPoints(Length l)
 {
     return static_cast<double>(l / 1_pts);
@@ -112,22 +116,44 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     return image_cache.back().PoDoFoImage.get();
 }
 
-PoDoFoDocument::PoDoFoDocument(PrintFn print_fn)
-    : PrintFunction{ std::move(print_fn) }
+PoDoFoDocument::PoDoFoDocument(const Project& project, PrintFn print_fn)
+    : BaseDocument{
+        project.Data.PageSize == Config::BasePDFSize && LoadPdfSize(project.Data.BasePdf + ".pdf")
+            ? new PoDoFo::PdfMemDocument
+            : nullptr
+    }
+    , PrintFunction{ std::move(print_fn) }
     , ImageCache{ std::make_unique<PoDoFoImageCache>(&Document) }
 {
+    if (BaseDocument != nullptr)
+    {
+        const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.Data.BasePdf + ".pdf" } };
+        BaseDocument->Load(full_path.c_str());
+    }
 }
 
 PoDoFoPage* PoDoFoDocument::NextPage(Size page_size)
 {
     auto& new_page{ Pages.emplace_back() };
-    new_page.Page = Document.InsertPage(
-        PoDoFo::PdfRect(
-            0.0,
-            0.0,
-            ToPoDoFoPoints(page_size.x),
-            ToPoDoFoPoints(page_size.y)),
-        static_cast<int>(Pages.size() - 1));
+    const int new_page_idx{ static_cast<int>(Pages.size() - 1) };
+    if (BaseDocument != nullptr)
+    {
+        new_page.Page = Document.InsertExistingPageAt(
+                                    *BaseDocument,
+                                    0,
+                                    new_page_idx)
+                            .GetPage(new_page_idx);
+    }
+    else
+    {
+        new_page.Page = Document.InsertPage(
+            PoDoFo::PdfRect(
+                0.0,
+                0.0,
+                ToPoDoFoPoints(page_size.x),
+                ToPoDoFoPoints(page_size.y)),
+            new_page_idx);
+    }
     new_page.ImageCache = ImageCache.get();
     return &new_page;
 }
