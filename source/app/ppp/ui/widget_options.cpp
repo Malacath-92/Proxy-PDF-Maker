@@ -619,7 +619,7 @@ class PrintOptionsWidget : public QGroupBox
             {
                 for (int i = 0; i < PaperSize->count(); i++)
                 {
-                    if (PaperSize->itemData(i).toString().toStdString() == Config::BasePDFSize)
+                    if (PaperSize->itemText(i).toStdString() == Config::BasePDFSize)
                     {
                         return i;
                     }
@@ -628,11 +628,12 @@ class PrintOptionsWidget : public QGroupBox
             }()
         };
         const bool has_base_pdf_option{ base_pdf_size_idx >= 0 };
-        if (!has_base_pdf_option && project.Data.PageSize.contains(Config::BasePDFSize))
+        const bool has_base_pdf_confg{ CFG.PageSizes.contains(std::string{ Config::BasePDFSize }) };
+        if (!has_base_pdf_option && has_base_pdf_confg)
         {
             PaperSize->addItem(ToQString(Config::BasePDFSize));
         }
-        else if (has_base_pdf_option && !project.Data.PageSize.contains(Config::BasePDFSize))
+        else if (has_base_pdf_option && !has_base_pdf_confg)
         {
             PaperSize->removeItem(base_pdf_size_idx);
         }
@@ -683,7 +684,7 @@ class PrintOptionsWidget : public QGroupBox
 
     static std::string PageSizeToString(Size page_size)
     {
-        return fmt::format("{:.2}cm x {:.2}cm", page_size.x / 1_cm, page_size.y / 1_cm);
+        return fmt::format("{:.1f}cm x {:.1f}cm", page_size.x / 1_cm, page_size.y / 1_cm);
     }
 
     QLineEdit* PrintOutput;
