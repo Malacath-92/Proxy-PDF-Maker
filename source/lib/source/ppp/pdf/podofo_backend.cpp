@@ -129,8 +129,8 @@ PoDoFoDocument::PoDoFoDocument(const Project& project, PrintFn print_fn)
             ? new PoDoFo::PdfMemDocument
             : nullptr
     }
-    , PrintFunction{ std::move(print_fn) }
     , ImageCache{ std::make_unique<PoDoFoImageCache>(&Document) }
+    , PrintFunction{ std::move(print_fn) }
 {
     if (BaseDocument != nullptr)
     {
