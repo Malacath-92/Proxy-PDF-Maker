@@ -129,6 +129,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, options, &OptionsWidget::RefreshWidgets);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::Refresh);

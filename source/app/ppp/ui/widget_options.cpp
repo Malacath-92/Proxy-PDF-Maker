@@ -266,10 +266,10 @@ class PrintOptionsWidget : public QGroupBox
         const bool fit_size{ project.Data.PageSize == Config::FitSize };
         const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
+        const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
         const auto max_margins{
             [&]()
             {
-                const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
                 const Size full_size{ card_size_with_bleed * project.Data.CardLayout };
                 return project.Data.PageSizePhysical - full_size;
             }()
@@ -282,31 +282,26 @@ class PrintOptionsWidget : public QGroupBox
 
         auto* base_pdf_choice{ new ComboBoxWithLabel{
             "&Base Pdf", GetBasePdfNames(), project.Data.BasePdf } };
-        auto* base_pdf_info{ new LabelWithLabel{ "Size", PageSizeToString(project.Data.PageSizePhysical) } };
-        auto* base_pdf_top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
-        auto* base_pdf_top_margin_spin{ base_pdf_top_margin->GetWidget() };
-        base_pdf_top_margin_spin->setDecimals(2);
-        base_pdf_top_margin_spin->setSingleStep(0.1);
-        base_pdf_top_margin_spin->setSuffix("mm");
-        base_pdf_top_margin_spin->setRange(0, max_margins.x / 1_mm);
-        base_pdf_top_margin_spin->setValue(project.Data.CustomMargins.x / 1_mm);
-        auto* base_pdf_left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
-        auto* base_pdf_left_margin_spin{ base_pdf_left_margin->GetWidget() };
-        base_pdf_left_margin_spin->setDecimals(2);
-        base_pdf_left_margin_spin->setSingleStep(0.1);
-        base_pdf_left_margin_spin->setSuffix("mm");
-        base_pdf_left_margin_spin->setRange(0, max_margins.y / 1_mm);
-        base_pdf_left_margin_spin->setValue(project.Data.CustomMargins.y / 1_mm);
-        auto* base_pdf_layout{ new QVBoxLayout };
-        base_pdf_layout->addWidget(base_pdf_choice);
-        base_pdf_layout->addWidget(base_pdf_info);
-        base_pdf_layout->addWidget(base_pdf_top_margin);
-        base_pdf_layout->addWidget(base_pdf_left_margin);
-        base_pdf_layout->setContentsMargins(0, 0, 0, 0);
-        auto* base_pdf{ new QWidget };
-        base_pdf->setLayout(base_pdf_layout);
-        base_pdf->setEnabled(infer_size);
-        base_pdf->setVisible(infer_size);
+        base_pdf_choice->setEnabled(infer_size);
+        base_pdf_choice->setVisible(infer_size);
+
+        auto* paper_info{ new LabelWithLabel{ "Paper Size", PageSizeToString(project.Data.PageSizePhysical) } };
+        auto* cards_info{ new LabelWithLabel{ "Cards Size", PageSizeToString(project.Data.CardLayout * card_size_with_bleed) } };
+
+        auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
+        auto* top_margin_spin{ top_margin->GetWidget() };
+        top_margin_spin->setDecimals(2);
+        top_margin_spin->setSingleStep(0.1);
+        top_margin_spin->setSuffix("mm");
+        top_margin_spin->setRange(0, max_margins.x / 1_mm);
+        top_margin_spin->setValue(project.Data.CustomMargins.x / 1_mm);
+        auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
+        auto* left_margin_spin{ left_margin->GetWidget() };
+        left_margin_spin->setDecimals(2);
+        left_margin_spin->setSingleStep(0.1);
+        left_margin_spin->setSuffix("mm");
+        left_margin_spin->setRange(0, max_margins.y / 1_mm);
+        left_margin_spin->setValue(project.Data.CustomMargins.y / 1_mm);
 
         auto* cards_width{ new QDoubleSpinBox };
         cards_width->setDecimals(0);
@@ -350,7 +345,11 @@ class PrintOptionsWidget : public QGroupBox
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
         layout->addWidget(paper_size);
-        layout->addWidget(base_pdf);
+        layout->addWidget(base_pdf_choice);
+        layout->addWidget(paper_info);
+        layout->addWidget(cards_info);
+        layout->addWidget(top_margin);
+        layout->addWidget(left_margin);
         layout->addWidget(cards_layout);
         layout->addWidget(orientation);
         layout->addWidget(enable_guides_checkbox);
@@ -390,13 +389,6 @@ class PrintOptionsWidget : public QGroupBox
                     {
                         project.Data.PageSizePhysical = LoadPdfSize(project.Data.BasePdf + ".pdf")
                                                             .value_or(CFG.PageSizes["A4"].Dimensions);
-                        base_pdf_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
-
-                        const auto max_margins{ project.Data.PageSizePhysical - card_size_with_bleed * project.Data.CardLayout };
-                        base_pdf_top_margin_spin->setRange(0, max_margins.x / 1_mm);
-                        base_pdf_top_margin_spin->setValue(max_margins.x / 2_mm);
-                        base_pdf_left_margin_spin->setRange(0, max_margins.y / 1_mm);
-                        base_pdf_left_margin_spin->setValue(max_margins.y / 2_mm);
                     }
                     else
                     {
@@ -405,8 +397,17 @@ class PrintOptionsWidget : public QGroupBox
                     project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(project.Data.PageSizePhysical / card_size_with_bleed));
                 }
 
-                base_pdf->setEnabled(infer_size);
-                base_pdf->setVisible(infer_size);
+                const auto max_margins{ project.Data.PageSizePhysical - card_size_with_bleed * project.Data.CardLayout };
+                top_margin_spin->setRange(0, max_margins.x / 1_mm);
+                top_margin_spin->setValue(max_margins.x / 2_mm);
+                left_margin_spin->setRange(0, max_margins.y / 1_mm);
+                left_margin_spin->setValue(max_margins.y / 2_mm);
+
+                paper_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
+                cards_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.CardLayout * card_size_with_bleed)));
+
+                base_pdf_choice->setEnabled(infer_size);
+                base_pdf_choice->setVisible(infer_size);
                 cards_layout->setEnabled(fit_size);
                 cards_layout->setVisible(fit_size);
                 orientation->setEnabled(!fit_size && !infer_size);
@@ -421,22 +422,25 @@ class PrintOptionsWidget : public QGroupBox
             {
                 project.Data.BasePdf = t.toStdString();
 
+                const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+
                 const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
                 if (infer_size)
                 {
                     project.Data.PageSizePhysical = LoadPdfSize(project.Data.BasePdf + ".pdf")
                                                         .value_or(CFG.PageSizes["A4"].Dimensions);
-                    base_pdf_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
 
-                    const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
                     project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(project.Data.PageSizePhysical / card_size_with_bleed));
-
-                    const auto max_margins{ project.Data.PageSizePhysical - card_size_with_bleed * project.Data.CardLayout };
-                    base_pdf_top_margin_spin->setRange(0, max_margins.x / 1_mm);
-                    base_pdf_top_margin_spin->setValue(max_margins.x / 2_mm);
-                    base_pdf_left_margin_spin->setRange(0, max_margins.y / 1_mm);
-                    base_pdf_left_margin_spin->setValue(max_margins.y / 2_mm);
                 }
+
+                const auto max_margins{ project.Data.PageSizePhysical - card_size_with_bleed * project.Data.CardLayout };
+                top_margin_spin->setRange(0, max_margins.x / 1_mm);
+                top_margin_spin->setValue(max_margins.x / 2_mm);
+                left_margin_spin->setRange(0, max_margins.y / 1_mm);
+                left_margin_spin->setValue(max_margins.y / 2_mm);
+
+                paper_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
+                cards_info->GetWidget()->setText(ToQString(PageSizeToString(project.Data.CardLayout * card_size_with_bleed)));
 
                 main_window()->PageSizeChanged(project);
             }
@@ -559,11 +563,11 @@ class PrintOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_base_pdf);
-        QObject::connect(base_pdf_top_margin_spin,
+        QObject::connect(top_margin_spin,
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_top_margin);
-        QObject::connect(base_pdf_left_margin_spin,
+        QObject::connect(left_margin_spin,
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_left_margin);
@@ -603,7 +607,9 @@ class PrintOptionsWidget : public QGroupBox
         ExtendedGuides = extended_guides_checkbox;
         GuidesColorA = guides_color_a;
         GuidesColorB = guides_color_b;
-        BasePdf = base_pdf;
+        PaperInfo = paper_info->GetWidget();
+        CardsInfo = cards_info->GetWidget();
+        BasePdf = base_pdf_choice;
     }
 
     void RefreshWidgets(const Project& project)
@@ -639,6 +645,10 @@ class PrintOptionsWidget : public QGroupBox
         ExtendedGuides->setEnabled(project.Data.EnableGuides);
         GuidesColorA->setEnabled(project.Data.EnableGuides);
         GuidesColorB->setEnabled(project.Data.EnableGuides);
+
+        const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+        PaperInfo->setText(ToQString(PageSizeToString(project.Data.PageSizePhysical)));
+        CardsInfo->setText(ToQString(PageSizeToString(project.Data.CardLayout * card_size_with_bleed)));
 
         const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
         BasePdf->setEnabled(infer_size);
@@ -683,6 +693,8 @@ class PrintOptionsWidget : public QGroupBox
     QCheckBox* ExtendedGuides;
     WidgetWithLabel* GuidesColorA;
     WidgetWithLabel* GuidesColorB;
+    QLabel* PaperInfo;
+    QLabel* CardsInfo;
     QWidget* BasePdf;
 };
 
