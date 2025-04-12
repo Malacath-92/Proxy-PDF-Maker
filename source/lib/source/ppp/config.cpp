@@ -5,11 +5,26 @@
 #include <QFile>
 #include <QSettings>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 Config CFG{ LoadConfig() };
+
+void Config::SetPdfBackend(PdfBackend backend)
+{
+    Backend = backend;
+    if (Backend != PdfBackend::PoDoFo)
+    {
+        PageSizes.erase(std::string{ Config::BasePDFSize });
+    }
+    else
+    {
+        PageSizes[std::string{ Config::BasePDFSize }] = {};
+    }
+}
 
 Config LoadConfig()
 {
@@ -35,24 +50,9 @@ Config LoadConfig()
             config.ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
             {
-                auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString() };
-                if (pdf_backend == "PoDoFo")
-                {
-                    config.Backend = PdfBackend::PoDoFo;
-                }
-                else if (pdf_backend == "Png")
-                {
-                    config.Backend = PdfBackend::Png;
-                }
-                else
-                {
-                    config.Backend = PdfBackend::LibHaru;
-                }
-
-                if (config.Backend != PdfBackend::PoDoFo)
-                {
-                    config.PageSizes.erase(std::string{ Config::BasePDFSize });
-                }
+                const auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString().toStdString() };
+                config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
+                                         .value_or(PdfBackend::LibHaru));
             }
 
             {
@@ -205,21 +205,7 @@ void SaveConfig(Config config)
             settings.setValue("Page.Size", ToQString(config.DefaultPageSize));
             settings.setValue("Color.Cube", ToQString(config.ColorCube));
 
-            const char* pdf_backend{
-                [](PdfBackend backend)
-                {
-                    switch (backend)
-                    {
-                    case PdfBackend::PoDoFo:
-                        return "PoDoFo";
-                    case PdfBackend::Png:
-                        return "Png";
-                    case PdfBackend::LibHaru:
-                    default:
-                        return "LibHaru";
-                    }
-                }(config.Backend),
-            };
+            const std::string_view pdf_backend{ magic_enum::enum_name(config.Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
 
             const char* pdf_image_format{

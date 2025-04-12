@@ -135,6 +135,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, options, &OptionsWidget::RefreshWidgets);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, options, &OptionsWidget::RefreshWidgets);
     }
 
     app.SetMainWindow(main_window);

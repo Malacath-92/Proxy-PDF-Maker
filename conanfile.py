@@ -14,6 +14,7 @@ class ProxyPDF(ConanFile):
         self.requires("nlohmann_json/3.11.3")
         self.requires("catch2/3.7.1")
         self.requires("efsw/1.4.1")
+        self.requires("magic_enum/0.9.7")
 
         # Conflict Resolution
         self.requires("zstd/1.5.7", override=True)

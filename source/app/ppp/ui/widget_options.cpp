@@ -17,6 +17,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <dla/vector_math.h>
 
 #include <ppp/app.hpp>
@@ -274,7 +276,7 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         using namespace std::string_view_literals;
-        auto* print_output{ new LineEditWithLabel{ "PDF &Filename", project.Data.FileName.string() } };
+        auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
         auto* paper_size{ new ComboBoxWithLabel{
             "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
 
@@ -601,18 +603,46 @@ class PrintOptionsWidget : public QGroupBox
         ExtendedGuides = extended_guides_checkbox;
         GuidesColorA = guides_color_a;
         GuidesColorB = guides_color_b;
+        BasePdf = base_pdf;
     }
 
     void RefreshWidgets(const Project& project)
     {
-        PrintOutput->setText(ToQString(project.Data.FileName.c_str()));
+        const int base_pdf_size_idx{
+            [&]()
+            {
+                for (int i = 0; i < PaperSize->count(); i++)
+                {
+                    if (PaperSize->itemData(i).toString().toStdString() == Config::BasePDFSize)
+                    {
+                        return i;
+                    }
+                }
+                return -1;
+            }()
+        };
+        const bool has_base_pdf_option{ base_pdf_size_idx >= 0 };
+        if (!has_base_pdf_option && project.Data.PageSize.contains(Config::BasePDFSize))
+        {
+            PaperSize->addItem(ToQString(Config::BasePDFSize));
+        }
+        else if (has_base_pdf_option && !project.Data.PageSize.contains(Config::BasePDFSize))
+        {
+            PaperSize->removeItem(base_pdf_size_idx);
+        }
         PaperSize->setCurrentText(ToQString(project.Data.PageSize));
+
+        PrintOutput->setText(ToQString(project.Data.FileName.c_str()));
         Orientation->setCurrentText(ToQString(project.Data.Orientation));
         EnableGuides->setChecked(project.Data.EnableGuides);
 
         ExtendedGuides->setEnabled(project.Data.EnableGuides);
         GuidesColorA->setEnabled(project.Data.EnableGuides);
         GuidesColorB->setEnabled(project.Data.EnableGuides);
+
+        const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
+        BasePdf->setEnabled(infer_size);
+        BasePdf->setVisible(infer_size);
     }
 
   private:
@@ -653,6 +683,7 @@ class PrintOptionsWidget : public QGroupBox
     QCheckBox* ExtendedGuides;
     WidgetWithLabel* GuidesColorA;
     WidgetWithLabel* GuidesColorB;
+    QWidget* BasePdf;
 };
 
 class DefaultBacksidePreview : public QWidget
@@ -916,6 +947,10 @@ class GlobalOptionsWidget : public QGroupBox
         auto* display_columns{ new WidgetWithLabel{ "Display &Columns", display_columns_spin_box } };
         display_columns->setToolTip("Number columns in card view");
 
+        auto* backend{ new ComboBoxWithLabel{
+            "&Rendering Backend", magic_enum::enum_names<PdfBackend>(), magic_enum::enum_name(CFG.Backend) } };
+        backend->GetWidget()->setToolTip("Determines how the backend used for rendering and the output format.");
+
         auto* precropped_checkbox{ new QCheckBox{ "Allow Precropped" } };
         precropped_checkbox->setChecked(CFG.EnableUncrop);
         precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
@@ -949,6 +984,7 @@ class GlobalOptionsWidget : public QGroupBox
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(display_columns);
+        layout->addWidget(backend);
         layout->addWidget(precropped_checkbox);
         layout->addWidget(color_cube);
         layout->addWidget(preview_width);
@@ -968,6 +1004,21 @@ class GlobalOptionsWidget : public QGroupBox
                 CFG.DisplayColumns = static_cast<int>(v);
                 SaveConfig(CFG);
                 main_window()->DisplayColumnsChanged(project);
+            }
+        };
+
+        auto change_render_backend{
+            [=, &application, &project](const QString& t)
+            {
+                CFG.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
+                                      .value_or(PdfBackend::LibHaru));
+                if (CFG.Backend != PdfBackend::PoDoFo && project.Data.PageSize == Config::BasePDFSize)
+                {
+                    project.Data.PageSize = CFG.DefaultPageSize;
+                    main_window()->PageSizeChanged(project);
+                }
+                SaveConfig(CFG);
+                main_window()->RenderBackendChanged(project);
             }
         };
 
@@ -1032,6 +1083,10 @@ class GlobalOptionsWidget : public QGroupBox
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_display_columns);
+        QObject::connect(backend->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_render_backend);
         QObject::connect(precropped_checkbox,
                          &QCheckBox::checkStateChanged,
                          this,

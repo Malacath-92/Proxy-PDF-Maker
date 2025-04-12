@@ -71,6 +71,7 @@ find_package(libharu REQUIRED)
 find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
+find_package(magic_enum REQUIRED)
 
 # --------------------------------------------------
 # Create interface libs
@@ -124,7 +125,8 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	libharu::libharu
 	podofo::podofo
 	nlohmann_json::nlohmann_json
-	efsw::efsw)
+	efsw::efsw
+	magic_enum::magic_enum)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE

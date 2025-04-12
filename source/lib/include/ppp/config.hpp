@@ -53,6 +53,8 @@ struct Config
         { std::string{ FitSize }, {} },
         { std::string{ BasePDFSize }, {} },
     };
+
+    void SetPdfBackend(PdfBackend backend);
 };
 
 Config LoadConfig();
