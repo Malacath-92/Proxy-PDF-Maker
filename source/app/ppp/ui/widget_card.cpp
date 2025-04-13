@@ -73,7 +73,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             else
             {
                 const int width{ static_cast<int>(CFG.BasePreviewWidth.value) };
-                const int height{ static_cast<int>(width / CardRatio) };
+                const int height{ static_cast<int>(width / CFG.CardRatio) };
                 QPixmap raw_pixmap{ width, height };
                 raw_pixmap.fill(QColor::fromRgb(0x808080));
                 return raw_pixmap;
@@ -110,10 +110,10 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
 
 int CardImage::heightForWidth(int width) const
 {
-    float card_ratio{ CardRatio };
+    float card_ratio{ CFG.CardRatio };
     if (BleedEdge > 0_mm)
     {
-        const auto card_size{ CardSizeWithoutBleed + 2.0f * BleedEdge };
+        const auto card_size{ CFG.CardSizeWithoutBleed.Dimensions + 2.0f * BleedEdge };
         card_ratio = card_size.x / card_size.y;
     }
 
@@ -165,8 +165,8 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 
     if (OriginalParams.RoundedCorners)
     {
-        const Length card_corner_radius_inch{ 1_in / 8 };
-        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CardSizeWithoutBleed.x };
+        const Length card_corner_radius_inch{ CFG.CardCornerRadius.Dimension };
+        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CFG.CardSizeWithoutBleed.Dimensions.x };
 
         QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);

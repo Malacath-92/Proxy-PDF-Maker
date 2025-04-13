@@ -34,8 +34,8 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
 void HaruPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + 3_mm * dx };
-    const auto ty{ y + 3_mm * dy };
+    const auto tx{ x + CFG.CardCornerRadius.Dimension * dx };
+    const auto ty{ y + CFG.CardCornerRadius.Dimension * dy };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);

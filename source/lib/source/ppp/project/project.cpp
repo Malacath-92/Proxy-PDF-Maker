@@ -292,7 +292,7 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeCardsSize() const
 {
-    const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * Data.BleedEdge };
+    const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * Data.BleedEdge };
     return Data.CardLayout * card_size_with_bleed;
 }
 

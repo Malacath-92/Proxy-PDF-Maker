@@ -39,7 +39,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
 
 Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn)
 {
-    const PixelDensity density{ image.Density(CardSizeWithBleed) };
+    const PixelDensity density{ image.Density(CFG.CardSizeWithBleed.Dimensions) };
     Pixel c{ 0.12_in * density };
     {
         const PixelDensity dpi{ (density * 1_in / 1_m) };
@@ -73,7 +73,7 @@ Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edg
 
 Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn)
 {
-    const PixelDensity density{ image.Density(CardSizeWithoutBleed) };
+    const PixelDensity density{ image.Density(CFG.CardSizeWithoutBleed.Dimensions) };
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };

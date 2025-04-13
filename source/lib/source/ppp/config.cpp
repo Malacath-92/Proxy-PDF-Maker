@@ -38,6 +38,128 @@ Config LoadConfig()
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
+        static constexpr auto to_string_views{ std::views::transform(
+            [](auto str)
+            { return std::string_view(str.data(), str.size()); }) };
+        static constexpr auto to_float{
+            [](std::string_view str)
+            {
+                float val;
+                std::from_chars(str.data(), str.data() + str.size(), val);
+                return val;
+            },
+        };
+        static constexpr auto get_decimals{
+            [](std::string_view str) -> uint32_t
+            {
+                auto parts{
+                    str |
+                    std::views::split('.') |
+                    to_string_views |
+                    std::ranges::to<std::vector>()
+                };
+                if (parts.size() != 2)
+                {
+                    return 0;
+                }
+                return static_cast<uint32_t>(parts[1].size());
+            },
+        };
+        static constexpr auto get_base_unit{
+            [](std::string_view base_unit_str) -> std::optional<Length>
+            {
+                if (base_unit_str == "inches")
+                {
+                    return 1_in;
+                }
+                else if (base_unit_str == "cm")
+                {
+                    return 10_mm;
+                }
+                else if (base_unit_str == "mm")
+                {
+                    return 1_mm;
+                }
+                return std::nullopt;
+            }
+        };
+
+        static constexpr auto parse_length{
+            [](std::string str) -> std::optional<Config::LengthInfo>
+            {
+                std::replace(str.begin(), str.end(), ',', '.');
+
+                const auto parts{
+                    str |
+                    std::views::split(' ') |
+                    to_string_views |
+                    std::ranges::to<std::vector>()
+                };
+
+                if (parts.size() != 2)
+                {
+                    return std::nullopt;
+                }
+
+                const auto base_unit_opt{ get_base_unit(parts.back()) };
+                if (!base_unit_opt.has_value())
+                {
+                    return std::nullopt;
+                }
+                const auto base_unit{ base_unit_opt.value() };
+
+                const auto length_str{ parts[0] };
+                const auto length{ to_float(length_str) };
+
+                const auto decimals{ get_decimals(length_str) };
+
+                return Config::LengthInfo{
+                    length * base_unit,
+                    base_unit,
+                    decimals,
+                };
+            },
+        };
+        static constexpr auto parse_size{
+            [](std::string str) -> std::optional<Config::SizeInfo>
+            {
+                std::replace(str.begin(), str.end(), ',', '.');
+
+                const auto parts{
+                    str |
+                    std::views::split(' ') |
+                    to_string_views |
+                    std::ranges::to<std::vector>()
+                };
+
+                if (parts.size() != 4 || parts[1] != "x")
+                {
+                    return std::nullopt;
+                }
+
+                const auto base_unit_opt{ get_base_unit(parts.back()) };
+                if (!base_unit_opt.has_value())
+                {
+                    return std::nullopt;
+                }
+                const auto base_unit{ base_unit_opt.value() };
+
+                const auto width_str{ parts[0] };
+                const auto height_str{ parts[2] };
+
+                const auto width{ to_float(width_str) };
+                const auto height{ to_float(height_str) };
+
+                const auto decimals{ std::max(get_decimals(width_str), get_decimals(height_str)) };
+
+                return Config::SizeInfo{
+                    { width * base_unit, height * base_unit },
+                    base_unit,
+                    decimals,
+                };
+            },
+        };
+
         {
             settings.beginGroup("DEFAULT");
 
@@ -83,6 +205,32 @@ Config LoadConfig()
                 }
             }
 
+            {
+                auto card_size_without_bleed{ settings.value("Card.Size.Without.Bleed") };
+                auto card_size_with_bleed{ settings.value("Card.Size.With.Bleed") };
+                if (card_size_without_bleed.isValid() && card_size_with_bleed.isValid())
+                {
+                    auto without_info{ parse_size(card_size_without_bleed.toString().toStdString()) };
+                    auto with_info{ parse_size(card_size_with_bleed.toString().toStdString()) };
+                    if (without_info.has_value() && with_info.has_value())
+                    {
+                        config.CardSizeWithoutBleed = std::move(without_info).value();
+                        config.CardSizeWithBleed = std::move(with_info).value();
+                    }
+                }
+
+                auto card_corner_radius{ settings.value("Card.Corner.Radius") };
+                if (card_corner_radius.isValid())
+                {
+                    if (auto card_corner_radius_info{ parse_length(card_corner_radius.toString().toStdString()) })
+                    {
+                        config.CardCornerRadius = std::move(card_corner_radius_info).value();
+                    }
+                }
+
+                config.CardRatio = config.CardSizeWithoutBleed.Dimensions.x / config.CardSizeWithoutBleed.Dimensions.y;
+            }
+
             settings.endGroup();
         }
 
@@ -96,87 +244,7 @@ Config LoadConfig()
                     continue;
                 }
 
-                constexpr auto parse_page_size{
-                    [](std::string str) -> std::optional<Config::PageSizeInfo>
-                    {
-                        static constexpr auto to_string_views{ std::views::transform(
-                            [](auto str)
-                            { return std::string_view(str.data(), str.size()); }) };
-                        static constexpr auto to_float{
-                            [](std::string_view str)
-                            {
-                                float val;
-                                std::from_chars(str.data(), str.data() + str.size(), val);
-                                return val;
-                            },
-                        };
-                        constexpr auto get_decimals{
-                            [](std::string_view str) -> uint32_t
-                            {
-                                auto parts{
-                                    str |
-                                    std::views::split('.') |
-                                    to_string_views |
-                                    std::ranges::to<std::vector>()
-                                };
-                                if (parts.size() != 2)
-                                {
-                                    return 0;
-                                }
-                                return static_cast<uint32_t>(parts[1].size());
-                            },
-                        };
-
-                        std::replace(str.begin(), str.end(), ',', '.');
-
-                        const auto parts{
-                            str |
-                            std::views::split(' ') |
-                            to_string_views |
-                            std::ranges::to<std::vector>()
-                        };
-
-                        if (parts.size() != 4 || parts[1] != "x")
-                        {
-                            return std::nullopt;
-                        }
-
-                        Length base_unit{};
-                        const auto& base_unit_str{ parts.back() };
-                        if (base_unit_str == "inches")
-                        {
-                            base_unit = 1_in;
-                        }
-                        else if (base_unit_str == "cm")
-                        {
-                            base_unit = 10_mm;
-                        }
-                        else if (base_unit_str == "mm")
-                        {
-                            base_unit = 1_mm;
-                        }
-                        else
-                        {
-                            return std::nullopt;
-                        }
-
-                        const auto width_str{ parts[0] };
-                        const auto height_str{ parts[2] };
-
-                        const auto width{ to_float(width_str) };
-                        const auto height{ to_float(height_str) };
-
-                        const auto decimals{ std::max(get_decimals(width_str), get_decimals(height_str)) };
-
-                        return Config::PageSizeInfo{
-                            { width * base_unit, height * base_unit },
-                            base_unit,
-                            decimals,
-                        };
-                    },
-                };
-
-                if (auto info{ parse_page_size(settings.value(key).toString().toStdString()) })
+                if (auto info{ parse_size(settings.value(key).toString().toStdString()) })
                 {
                     config.PageSizes[key.toStdString()] = std::move(info).value();
                 }

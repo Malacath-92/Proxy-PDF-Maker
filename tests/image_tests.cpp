@@ -117,6 +117,6 @@ TEST_CASE("Grow image", "[image_resize_grow]")
 
 TEST_CASE("Calculate DPI", "[image_dpi]")
 {
-    const auto dpi{ g_BaseImage.Density(CardSizeWithBleed) * 1_in };
+    const auto dpi{ g_BaseImage.Density(CFG.CardSizeWithBleed.Dimensions) * 1_in };
     REQUIRE(static_cast<int>(dpi.value) == 87);
 }

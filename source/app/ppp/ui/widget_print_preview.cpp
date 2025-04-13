@@ -151,8 +151,8 @@ class GuidesOverlay : public QWidget
         BleedEdge = project.Data.BleedEdge;
         CornerWeight = project.Data.CornerWeight;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
+        const Length card_width{ CFG.CardSizeWithoutBleed.Dimensions.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CFG.CardSizeWithoutBleed.Dimensions.y + 2 * project.Data.BleedEdge };
         CardSizeWithBleedEdge = Size{ card_width, card_height };
 
         PenOne.setWidth(2);
@@ -195,8 +195,8 @@ class GuidesOverlay : public QWidget
             grid_size.x / columns,
             grid_size.y / rows,
         };
-        const auto pixel_ratio{ card_size / CardSizeWithBleed };
-        const auto line_length{ 3.0_mm * pixel_ratio };
+        const auto pixel_ratio{ card_size / CFG.CardSizeWithBleed.Dimensions };
+        const auto line_length{ CFG.CardCornerRadius.Dimension * pixel_ratio };
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
@@ -288,8 +288,8 @@ class PrintPreview::PagePreview : public QWidget
         PageWidth = page_width;
         PageHeight = page_height;
 
-        const Length card_width{ CardSizeWithoutBleed.x + 2 * project.Data.BleedEdge };
-        const Length card_height{ CardSizeWithoutBleed.y + 2 * project.Data.BleedEdge };
+        const Length card_width{ CFG.CardSizeWithoutBleed.Dimensions.x + 2 * project.Data.BleedEdge };
+        const Length card_height{ CFG.CardSizeWithoutBleed.Dimensions.y + 2 * project.Data.BleedEdge };
         CardWidth = card_width;
         CardHeight = card_height;
 
@@ -386,7 +386,7 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+    const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
     const auto page_size{ project.ComputePageSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };

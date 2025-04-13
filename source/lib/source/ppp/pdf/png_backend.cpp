@@ -42,8 +42,8 @@ void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Lengt
 void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + 3_mm * dx };
-    const auto ty{ y + 3_mm * dy };
+    const auto tx{ x + CFG.CardCornerRadius.Dimension * dx };
+    const auto ty{ y + CFG.CardCornerRadius.Dimension * dy };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);
@@ -108,7 +108,7 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
     : TheProject{ project }
     , PrintFunction{ std::move(print_fn) }
 {
-    const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * TheProject.Data.BleedEdge };
+    const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * TheProject.Data.BleedEdge };
     const dla::ivec2 card_size_pixels{
         static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
         static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),

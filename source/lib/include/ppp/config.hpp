@@ -44,13 +44,25 @@ struct Config
     static inline constexpr std::string_view FitSize{ "Fit" };
     static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
 
-    struct PageSizeInfo
+    struct LengthInfo
+    {
+        Length Dimension;
+        Length BaseUnit;
+        uint32_t Decimals;
+    };
+    struct SizeInfo
     {
         Size Dimensions;
         Length BaseUnit;
         uint32_t Decimals;
     };
-    std::map<std::string, PageSizeInfo> PageSizes{
+
+    SizeInfo CardSizeWithoutBleed{ { 2.48_in, 3.46_in }, 1_in, 2u };
+    SizeInfo CardSizeWithBleed{ { 2.72_in, 3.70_in }, 1_in, 2u };
+    LengthInfo CardCornerRadius{ 1_in / 8, 1_in, 3u };
+    float CardRatio{ CardSizeWithoutBleed.Dimensions.x / CardSizeWithoutBleed.Dimensions.y };
+
+    std::map<std::string, SizeInfo> PageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
         { "Legal", { { 14_in, 8.5_in }, 1_in, 1u } },
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },

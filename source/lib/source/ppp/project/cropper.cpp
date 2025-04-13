@@ -399,7 +399,7 @@ bool Cropper::DoCropWork(T* signaller)
             const Length bleed_edge{ Data.BleedEdge };
             const PixelDensity max_density{ Cfg.MaxDPI };
 
-            const auto image_size{ CardSizeWithoutBleed + 2 * bleed_edge };
+            const auto image_size{ CFG.CardSizeWithoutBleed.Dimensions + 2 * bleed_edge };
 
             const bool uncrop{ Cfg.EnableUncrop };
 
@@ -442,7 +442,7 @@ bool Cropper::DoCropWork(T* signaller)
                 {
                     const Image image{ Image::Read(crop_file) };
                     const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
-                    uncropped_image.Write(input_file, 3, 95, CardSizeWithBleed);
+                    uncropped_image.Write(input_file, 3, 95, CFG.CardSizeWithBleed.Dimensions);
 
                     std::unique_lock image_db_lock{ ImageDBMutex };
                     ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
@@ -528,7 +528,7 @@ bool Cropper::DoPreviewWork(T* signaller)
         {
             std::shared_lock lock{ PropertyMutex };
             const Pixel preview_width{ Cfg.BasePreviewWidth };
-            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / CardRatio) };
+            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / CFG.CardRatio) };
             const bool enable_uncrop{ Cfg.EnableUncrop };
 
             const fs::path input_file{ Data.ImageDir / card_name };
@@ -594,7 +594,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                     [&]() -> PixelSize
                     {
                         const auto [w, h]{ uncropped_size.pod() };
-                        const auto [bw, bh]{ CardSizeWithBleed.pod() };
+                        const auto [bw, bh]{ CFG.CardSizeWithBleed.Dimensions.pod() };
                         const auto density{ dla::math::min(w / bw, h / bh) };
                         const auto crop{ dla::math::round(0.12_in * density) };
                         return uncropped_size - 2.0f * crop;

@@ -268,7 +268,7 @@ class PrintOptionsWidget : public QGroupBox
         const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
         const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
-        const Size initial_card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+        const Size initial_card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
         const Size initial_page_size{ project.ComputePageSize() };
         const Size initial_cards_size{ project.ComputeCardsSize() };
         const Size initial_max_margins{ initial_page_size - initial_cards_size };
@@ -379,7 +379,7 @@ class PrintOptionsWidget : public QGroupBox
                 const bool fit_size{ project.Data.PageSize == Config::FitSize };
                 if (!fit_size)
                 {
-                    const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+                    const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
                     project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
                 }
 
@@ -417,7 +417,7 @@ class PrintOptionsWidget : public QGroupBox
                 project.Data.BasePdf = t.toStdString();
 
                 const Size page_size{ project.ComputePageSize() };
-                const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+                const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
                 const Size cards_size{ project.ComputeCardsSize() };
@@ -481,7 +481,7 @@ class PrintOptionsWidget : public QGroupBox
                 }
 
                 const Size page_size{ project.ComputePageSize() };
-                const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+                const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
                 const Size cards_size{ project.ComputeCardsSize() };
