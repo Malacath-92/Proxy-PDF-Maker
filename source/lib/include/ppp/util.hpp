@@ -13,16 +13,16 @@ namespace fs = std::filesystem;
 
 using PrintFn = std::function<void(std::string_view)>;
 
-#define PPP_LOG_WITH(print_fn, fmt_str, ...)                 \
-    do                                                       \
-    {                                                        \
-        if ((print_fn) != nullptr)                           \
-        {                                                    \
-            (print_fn)(fmt::format(fmt_str, ##__VA_ARGS__)); \
-        }                                                    \
+#define PPP_LOG_WITH(print_fn, fmt_str, ...)               \
+    do                                                     \
+    {                                                      \
+        if ((print_fn) != nullptr)                         \
+        {                                                  \
+            (print_fn)(fmt::format(fmt_str, __VA_ARGS__)); \
+        }                                                  \
     } while (false)
 #define PPP_LOG(fmt_str, ...) \
-    PPP_LOG_WITH(print_fn, fmt_str, ##__VA_ARGS__)
+    PPP_LOG_WITH(print_fn, fmt_str, __VA_ARGS__)
 
 using Length = dla::length_unit;
 
