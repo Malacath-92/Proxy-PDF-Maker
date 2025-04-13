@@ -11,20 +11,21 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
     const auto real_fy{ ToHaruReal(fy) };
     const auto real_tx{ ToHaruReal(tx) };
     const auto real_ty{ ToHaruReal(ty) };
+    const auto dash_size{ ToHaruReal(CFG.CardCornerRadius.Dimension) / 5.0f };
 
     HPDF_Page_SetLineWidth(Page, 1.0);
 
-    const HPDF_REAL dash_ptn[]{ 1.0f };
+    const HPDF_REAL dash_ptn[]{ dash_size };
 
     // First layer
-    HPDF_Page_SetDash(Page, dash_ptn, 1, 0);
+    HPDF_Page_SetDash(Page, dash_ptn, 1, 0.0f);
     HPDF_Page_SetRGBStroke(Page, colors[0].r, colors[0].g, colors[0].b);
     HPDF_Page_MoveTo(Page, real_fx, real_fy);
     HPDF_Page_LineTo(Page, real_tx, real_ty);
     HPDF_Page_Stroke(Page);
 
     // Second layer with phase offset
-    HPDF_Page_SetDash(Page, dash_ptn, 1, 1);
+    HPDF_Page_SetDash(Page, dash_ptn, 1, dash_size);
     HPDF_Page_SetRGBStroke(Page, colors[1].r, colors[1].g, colors[1].b);
     HPDF_Page_MoveTo(Page, real_fx, real_fy);
     HPDF_Page_LineTo(Page, real_tx, real_ty);

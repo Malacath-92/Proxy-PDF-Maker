@@ -19,6 +19,7 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
     const auto real_fy{ ToPoDoFoPoints(fy) };
     const auto real_tx{ ToPoDoFoPoints(tx) };
     const auto real_ty{ ToPoDoFoPoints(ty) };
+    const auto dash_size{ ToPoDoFoPoints(CFG.CardCornerRadius.Dimension) / 5.0f };
 
     PoDoFo::PdfPainter painter;
     painter.SetPage(Page);
@@ -28,7 +29,8 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
 
     // First layer
     {
-        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, "[1 1] 0", false, 1.0, false);
+        const std::string dash{ fmt::format("[{0:.2f} {0:.2f}] 0", dash_size) };
+        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, dash.c_str(), false, 1.0, false);
 
         const PoDoFo::PdfColor col{ colors[0].r, colors[0].g, colors[0].b };
         painter.SetStrokingColor(col);
@@ -38,7 +40,8 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
 
     // Second layer with phase offset
     {
-        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, "[1 1] 1", false, 1.0, false);
+        const std::string dash{ fmt::format("[{0:.2f} {0:.2f}] {0:.2f}", dash_size) };
+        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, dash.c_str(), false, 1.0, false);
 
         const PoDoFo::PdfColor col{ colors[1].r, colors[1].g, colors[1].b };
         painter.SetStrokingColor(col);
