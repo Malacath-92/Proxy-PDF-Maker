@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2025-13-04
+
+### Added
+- Another render backend, PoDoFo, which can be used to render on top of an existing pdf
+- Option for changing margins, default values are the same as previous margins
+- Widget for showing some info about physical sizes of the prints
+
+### Changed
+- Bumped OpenCV dependency to version 4.11.0
+
 ## [0.7.1] - 2025-08-04
 
 ### Fixed
