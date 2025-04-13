@@ -14,15 +14,15 @@ jobs:
       fail-fast: True
       max-parallel: 1
       matrix:
-        os: [Ubuntu, Windows]
+        os: [Ubuntu, Windows, MacOS]
         build_type: [Debug, Release]
         include:
           - os: Windows
             compiler: MSVC
             runs_on: windows-2022
-          # - os: MacOS
-          #   compiler: AppleClang
-          #   runs_on: macos-14
+          - os: MacOS
+            compiler: AppleClang
+            runs_on: macos-14
           - os: Ubuntu
             compiler: Gcc
             runs_on: ubuntu-24.04
