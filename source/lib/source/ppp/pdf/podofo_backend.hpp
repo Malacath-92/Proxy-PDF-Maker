@@ -57,7 +57,7 @@ class PoDoFoDocument final : public PdfDocument
 
     virtual PoDoFoPage* NextPage(Size page_size) override;
 
-    virtual std::optional<fs::path> Write(fs::path path) override;
+    virtual fs::path Write(fs::path path) override;
 
   private:
     std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;

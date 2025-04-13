@@ -126,7 +126,7 @@ HaruPdfPage* HaruPdfDocument::NextPage(Size page_size)
     return &new_page;
 }
 
-std::optional<fs::path> HaruPdfDocument::Write(fs::path path)
+fs::path HaruPdfDocument::Write(fs::path path)
 {
     const fs::path pdf_path{ fs::path{ path }.replace_extension(".pdf") };
     const auto pdf_path_string{ pdf_path.string() };

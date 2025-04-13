@@ -6,4 +6,4 @@
 
 class Project;
 
-std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn);
+fs::path GeneratePdf(const Project& project, PrintFn print_fn);

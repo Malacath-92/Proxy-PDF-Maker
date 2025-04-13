@@ -51,6 +51,8 @@ class GenericPopup : public PopupBase
 
     std::function<void(std::string_view)> MakePrintFn();
 
+    void Sleep(dla::time_unit duration);
+
   private:
     void UpdateText(std::string_view text);
 

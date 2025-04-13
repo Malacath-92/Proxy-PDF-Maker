@@ -181,11 +181,20 @@ PoDoFoPage* PoDoFoDocument::NextPage(Size page_size)
     return &new_page;
 }
 
-std::optional<fs::path> PoDoFoDocument::Write(fs::path path)
+fs::path PoDoFoDocument::Write(fs::path path)
 {
-    const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
-    const auto pdf_path_string{ pdf_path.string() };
-    PPP_LOG_WITH(PrintFunction, "Saving to {}...", pdf_path_string);
-    Document.Write(pdf_path.c_str());
-    return pdf_path;
+    try
+    {
+
+        const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
+        const auto pdf_path_string{ pdf_path.string() };
+        PPP_LOG_WITH(PrintFunction, "Saving to {}...", pdf_path_string);
+        Document.Write(pdf_path.c_str());
+        return pdf_path;
+    }
+    catch (const PoDoFo::PdfError& e)
+    {
+        // Rethrow as a std::exception so the agnostic code can catch it
+        throw std::logic_error{ e.what() };
+    }
 }

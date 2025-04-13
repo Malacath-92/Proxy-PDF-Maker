@@ -212,6 +212,19 @@ std::function<void(std::string_view)> GenericPopup::MakePrintFn()
     };
 }
 
+void GenericPopup::Sleep(dla::time_unit duration)
+{
+    const auto thread{ static_pointer_cast<WorkThread>(WorkerThread) };
+    if (thread.get() == QThread::currentThread())
+    {
+        QThread::sleep(static_cast<unsigned long>(duration / 1_s));
+    }
+    else
+    {
+        thread->wait(static_cast<unsigned long>(duration / 0.001_s));
+    }
+}
+
 void GenericPopup::UpdateText(std::string_view text)
 {
     Refresh(text);
@@ -221,6 +234,14 @@ void GenericPopup::UpdateTextImpl(std::string_view text)
 {
     adjustSize();
     TextLabel->setText(ToQString(text));
+    if (text.starts_with("Failure"))
+    {
+        TextLabel->setStyleSheet("border: 3px solid red;");
+    }
+    else
+    {
+        TextLabel->setStyleSheet("border: 0px solid red;");
+    }
     adjustSize();
     Recenter();
 }

@@ -58,7 +58,7 @@ class PngDocument final : public PdfDocument
 
     virtual PngPage* NextPage(Size page_size) override;
 
-    virtual std::optional<fs::path> Write(fs::path path) override;
+    virtual fs::path Write(fs::path path) override;
 
   private:
     const Project& TheProject;

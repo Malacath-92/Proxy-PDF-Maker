@@ -54,7 +54,7 @@ class HaruPdfDocument final : public PdfDocument
 
     virtual HaruPdfPage* NextPage(Size page_size) override;
 
-    virtual std::optional<fs::path> Write(fs::path path) override;
+    virtual fs::path Write(fs::path path) override;
 
   private:
     HPDF_Doc Document;

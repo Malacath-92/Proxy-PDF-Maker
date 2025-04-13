@@ -142,7 +142,7 @@ PngPage* PngDocument::NextPage(Size /*page_size*/)
     return &new_page;
 }
 
-std::optional<fs::path> PngDocument::Write(fs::path path)
+fs::path PngDocument::Write(fs::path path)
 {
     const fs::path png_folder{ fs::path{ path }.replace_extension("") };
     if (!fs::exists(png_folder))

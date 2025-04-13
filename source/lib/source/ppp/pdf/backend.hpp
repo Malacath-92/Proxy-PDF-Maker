@@ -52,5 +52,5 @@ class PdfDocument
 
     virtual PdfPage* NextPage(Size page_size) = 0;
 
-    virtual std::optional<fs::path> Write(fs::path path) = 0;
+    virtual fs::path Write(fs::path path) = 0;
 };

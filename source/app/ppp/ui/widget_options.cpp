@@ -112,13 +112,15 @@ class ActionsWidget : public QGroupBox
                             }
                         }
 
-                        if (auto file_path{ GeneratePdf(project, print_fn) })
+                        try
                         {
-                            OpenFile(file_path.value());
+                            const auto file_path{ GeneratePdf(project, print_fn) };
+                            OpenFile(file_path);
                         }
-                        else
+                        catch (const std::exception& e)
                         {
-                            QToolTip::showText(QCursor::pos(), "Failure while creating pdf...");
+                            PPP_LOG("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
+                            render_window.Sleep(3_s);
                         }
                     }
                 };

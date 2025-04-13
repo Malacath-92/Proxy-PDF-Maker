@@ -12,7 +12,7 @@
 #include <ppp/pdf/backend.hpp>
 #include <ppp/pdf/util.hpp>
 
-std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
+fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 {
     using CrossSegment = PdfPage::CrossSegment;
 
