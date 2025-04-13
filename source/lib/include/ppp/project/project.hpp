@@ -54,6 +54,9 @@ class Project : public QObject
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
 
+    Size ComputePageSize() const;
+    Size ComputeCardsSize() const;
+
   public slots:
     void SetPreview(const fs::path& image_name, ImagePreview preview);
 
@@ -91,10 +94,9 @@ class Project : public QObject
         // PDF generation options
         std::string PageSize{ CFG.DefaultPageSize };
         std::string BasePdf{ "None" };
-        Size CustomMargins{};
-        Size PageSizePhysical{ CFG.PageSizes[CFG.DefaultPageSize].Dimensions };
+        Size Margins{};
         dla::uvec2 CardLayout{ 3, 3 };
-        std::string Orientation{ "Portrait" };
+        PageOrientation Orientation{ PageOrientation::Portrait };
         fs::path FileName{ "_printme" };
         bool EnableGuides{ true };
         bool ExtendedGuides{ false };

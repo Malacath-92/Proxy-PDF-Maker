@@ -31,14 +31,8 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    const bool fit_size{ project.Data.PageSize == Config::FitSize };
-    const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
     const auto card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
-    auto page_size{ project.Data.PageSizePhysical };
-    if (!fit_size && !infer_size && project.Data.Orientation == "Landscape")
-    {
-        std::swap(page_size.x, page_size.y);
-    }
+    const auto page_size{ project.ComputePageSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };

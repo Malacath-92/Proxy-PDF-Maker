@@ -20,6 +20,12 @@ enum class ImageFormat
     Jpg
 };
 
+enum class PageOrientation
+{
+    Portrait,
+    Landscape
+};
+
 struct Config
 {
     bool EnableUncrop{ false };

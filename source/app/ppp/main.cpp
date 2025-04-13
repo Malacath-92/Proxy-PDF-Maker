@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PageSizeChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::CustomMarginsChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::MarginsChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::CardLayoutChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::GuidesColorChanged, print_preview, &PrintPreview::Refresh);

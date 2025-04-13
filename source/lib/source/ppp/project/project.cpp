@@ -4,8 +4,12 @@
 
 #include <nlohmann/json.hpp>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <ppp/config.hpp>
 #include <ppp/version.hpp>
+
+#include <ppp/pdf/util.hpp>
 
 #include <ppp/project/image_ops.hpp>
 
@@ -58,13 +62,12 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         }
 
         Data.BasePdf = json["base_pdf"];
-        Data.CustomMargins.x.value = json["custom_margins"]["width"];
-        Data.CustomMargins.y.value = json["custom_margins"]["height"];
-        Data.PageSizePhysical.x.value = json["pagesize_physical"]["width"];
-        Data.PageSizePhysical.y.value = json["pagesize_physical"]["height"];
+        Data.Margins.x.value = json["margins"]["width"];
+        Data.Margins.y.value = json["margins"]["height"];
         Data.CardLayout.x = json["card_layout"]["width"];
         Data.CardLayout.y = json["card_layout"]["height"];
-        Data.Orientation = json["orientation"];
+        Data.Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
+                               .value_or(PageOrientation::Portrait);
         Data.FileName = json["file_name"].get<std::string>();
         Data.EnableGuides = json["enable_guides"];
         Data.ExtendedGuides = json["extended_guides"];
@@ -119,19 +122,15 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
 
         json["pagesize"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
-        json["custom_margins"] = nlohmann::json{
-            { "width", Data.CustomMargins.x.value },
-            { "height", Data.CustomMargins.y.value },
-        };
-        json["pagesize_physical"] = nlohmann::json{
-            { "width", Data.PageSizePhysical.x.value },
-            { "height", Data.PageSizePhysical.y.value },
+        json["margins"] = nlohmann::json{
+            { "width", Data.Margins.x.value },
+            { "height", Data.Margins.y.value },
         };
         json["card_layout"] = nlohmann::json{
             { "width", Data.CardLayout.x },
             { "height", Data.CardLayout.y },
         };
-        json["orientation"] = Data.Orientation;
+        json["orientation"] = magic_enum::enum_name(Data.Orientation);
         json["file_name"] = Data.FileName.string();
         json["enable_guides"] = Data.EnableGuides;
         json["extended_guides"] = Data.ExtendedGuides;
@@ -264,6 +263,37 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
         }
     }
     return Data.BacksideDefault;
+}
+
+Size Project::ComputePageSize() const
+{
+    const bool fit_size{ Data.PageSize == Config::FitSize };
+    const bool infer_size{ Data.PageSize == Config::BasePDFSize };
+
+    if (fit_size)
+    {
+        return ComputeCardsSize();
+    }
+    else if (infer_size)
+    {
+        return LoadPdfSize(Data.BasePdf + ".pdf")
+            .value_or(CFG.PageSizes["A4"].Dimensions);
+    }
+    else
+    {
+        auto page_size{ CFG.PageSizes[Data.PageSize].Dimensions };
+        if (Data.Orientation == PageOrientation::Landscape)
+        {
+            std::swap(page_size.x, page_size.y);
+        }
+        return page_size;
+    }
+}
+
+Size Project::ComputeCardsSize() const
+{
+    const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * Data.BleedEdge };
+    return Data.CardLayout * card_size_with_bleed;
 }
 
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
