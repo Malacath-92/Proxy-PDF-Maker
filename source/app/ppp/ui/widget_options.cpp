@@ -283,7 +283,7 @@ class PrintOptionsWidget : public QGroupBox
         base_pdf_choice->setEnabled(initial_infer_size);
         base_pdf_choice->setVisible(initial_infer_size);
 
-        auto* paper_info{ new LabelWithLabel{ "Paper Size", SizeToString(initial_page_size) } };
+        auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size) } };
         auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
 
         auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };

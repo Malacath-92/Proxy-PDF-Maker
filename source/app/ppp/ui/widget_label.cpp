@@ -9,7 +9,7 @@ WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
     , Widget{ widget }
 {
-    auto* label{ new QLabel(ToQString(label_text) + ":") };
+    auto* label{ new QLabel(label_text.empty() ? "" : ToQString(label_text) + ":") };
     if (label_text.contains("&"))
     {
         label->setBuddy(widget);
