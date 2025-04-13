@@ -106,8 +106,8 @@ class Project : public QObject
     ProjectData Data;
 
   private:
-    Project(const Project&) = default;
-    Project(Project&&) = default;
-    Project& operator=(const Project&) = default;
-    Project& operator=(Project&&) = default;
+    Project(const Project&) = delete;
+    Project(Project&&) = delete;
+    Project& operator=(const Project&) = delete;
+    Project& operator=(Project&&) = delete;
 };
