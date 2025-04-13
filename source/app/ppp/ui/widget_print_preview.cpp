@@ -295,7 +295,11 @@ class PrintPreview::PagePreview : public QWidget
 
         PaddingWidth = (page_width - params.Columns * card_width) / 2.0f;
         PaddingHeight = (page_height - params.Rows * card_height) / 2.0f;
-        BacksideOffset = params.GridParams.IsBackside ? project.Data.BacksideOffset : 0_mm;
+
+        LeftMargins = PaddingWidth - project.Data.Margins.x;
+        TopMargins = PaddingHeight - project.Data.Margins.y;
+
+        LeftMargins += params.GridParams.IsBackside ? project.Data.BacksideOffset : 0_mm;
 
         Grid = grid;
     }
@@ -333,16 +337,21 @@ class PrintPreview::PagePreview : public QWidget
         const dla::tvec2 page_size{ PageWidth, PageHeight };
         const auto pixel_ratio{ size / page_size };
 
-        const auto padding_width_left{ PaddingWidth + BacksideOffset };
-        const auto padding_width_right{ PaddingWidth - BacksideOffset };
+        const auto padding_width_left{ PaddingWidth - LeftMargins };
+        const auto padding_width_right{ PaddingWidth + LeftMargins };
         const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * pixel_ratio.x) };
         const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * pixel_ratio.x) };
-        const auto padding_height_pixels{ static_cast<int>(PaddingHeight * pixel_ratio.y) };
+
+        const auto padding_height_top{ PaddingHeight - TopMargins };
+        const auto padding_height_bottom{ PaddingHeight + TopMargins };
+        const auto padding_height_top_pixels{ static_cast<int>(padding_height_top * pixel_ratio.y) };
+        const auto padding_height_bottom_pixels{ static_cast<int>(padding_height_bottom * pixel_ratio.y) };
+
         setContentsMargins(
             padding_width_left_pixels,
-            padding_height_pixels,
+            padding_height_top_pixels,
             padding_width_right_pixels,
-            padding_height_pixels);
+            padding_height_bottom_pixels);
     }
 
   private:
@@ -355,7 +364,8 @@ class PrintPreview::PagePreview : public QWidget
 
     Length PaddingWidth;
     Length PaddingHeight;
-    Length BacksideOffset;
+    Length LeftMargins;
+    Length TopMargins;
 
     PageGrid* Grid;
     GuidesOverlay* Overlay{ nullptr };

@@ -284,20 +284,20 @@ class PrintOptionsWidget : public QGroupBox
         auto* paper_info{ new LabelWithLabel{ "Paper Size", SizeToString(page_size) } };
         auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(cards_size) } };
 
-        auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
-        auto* top_margin_spin{ top_margin->GetWidget() };
-        top_margin_spin->setDecimals(2);
-        top_margin_spin->setSingleStep(0.1);
-        top_margin_spin->setSuffix("mm");
-        top_margin_spin->setRange(0, max_margins.x / 1_mm);
-        top_margin_spin->setValue(project.Data.Margins.x / 1_mm);
         auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
         auto* left_margin_spin{ left_margin->GetWidget() };
         left_margin_spin->setDecimals(2);
         left_margin_spin->setSingleStep(0.1);
         left_margin_spin->setSuffix("mm");
-        left_margin_spin->setRange(0, max_margins.y / 1_mm);
-        left_margin_spin->setValue(project.Data.Margins.y / 1_mm);
+        left_margin_spin->setRange(0, max_margins.x / 1_mm);
+        left_margin_spin->setValue(project.Data.Margins.x / 1_mm);
+        auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
+        auto* top_margin_spin{ top_margin->GetWidget() };
+        top_margin_spin->setDecimals(2);
+        top_margin_spin->setSingleStep(0.1);
+        top_margin_spin->setSuffix("mm");
+        top_margin_spin->setRange(0, max_margins.y / 1_mm);
+        top_margin_spin->setValue(project.Data.Margins.y / 1_mm);
 
         auto* cards_width{ new QDoubleSpinBox };
         cards_width->setDecimals(0);
@@ -344,8 +344,8 @@ class PrintOptionsWidget : public QGroupBox
         layout->addWidget(base_pdf_choice);
         layout->addWidget(paper_info);
         layout->addWidget(cards_info);
-        layout->addWidget(top_margin);
         layout->addWidget(left_margin);
+        layout->addWidget(top_margin);
         layout->addWidget(cards_layout);
         layout->addWidget(orientation);
         layout->addWidget(enable_guides_checkbox);
@@ -384,10 +384,10 @@ class PrintOptionsWidget : public QGroupBox
                 const Size cards_size{ project.ComputeCardsSize() };
 
                 const auto max_margins{ page_size - cards_size };
-                top_margin_spin->setRange(0, max_margins.x / 1_mm);
-                top_margin_spin->setValue(max_margins.x / 2_mm);
-                left_margin_spin->setRange(0, max_margins.y / 1_mm);
-                left_margin_spin->setValue(max_margins.y / 2_mm);
+                left_margin_spin->setRange(0, max_margins.x / 1_mm);
+                left_margin_spin->setValue(max_margins.x / 2_mm);
+                top_margin_spin->setRange(0, max_margins.y / 1_mm);
+                top_margin_spin->setValue(max_margins.y / 2_mm);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -421,10 +421,10 @@ class PrintOptionsWidget : public QGroupBox
                 const Size cards_size{ project.ComputeCardsSize() };
                 const Size max_margins{ page_size - cards_size };
 
-                top_margin_spin->setRange(0, max_margins.x / 1_mm);
-                top_margin_spin->setValue(max_margins.x / 2_mm);
-                left_margin_spin->setRange(0, max_margins.y / 1_mm);
-                left_margin_spin->setValue(max_margins.y / 2_mm);
+                left_margin_spin->setRange(0, max_margins.x / 1_mm);
+                left_margin_spin->setValue(max_margins.x / 2_mm);
+                top_margin_spin->setRange(0, max_margins.y / 1_mm);
+                top_margin_spin->setValue(max_margins.y / 2_mm);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -551,14 +551,14 @@ class PrintOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_base_pdf);
-        QObject::connect(top_margin_spin,
-                         &QDoubleSpinBox::valueChanged,
-                         this,
-                         change_top_margin);
         QObject::connect(left_margin_spin,
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_left_margin);
+        QObject::connect(top_margin_spin,
+                         &QDoubleSpinBox::valueChanged,
+                         this,
+                         change_top_margin);
         QObject::connect(cards_width,
                          &QDoubleSpinBox::valueChanged,
                          this,
