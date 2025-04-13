@@ -44,15 +44,15 @@ struct Config
     static inline constexpr std::string_view FitSize{ "Fit" };
     static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
 
-    struct LengthInfo
-    {
-        Length Dimension;
-        Length BaseUnit;
-        uint32_t Decimals;
-    };
     struct SizeInfo
     {
         Size Dimensions;
+        Length BaseUnit;
+        uint32_t Decimals;
+    };
+    struct LengthInfo
+    {
+        Length Dimension;
         Length BaseUnit;
         uint32_t Decimals;
     };

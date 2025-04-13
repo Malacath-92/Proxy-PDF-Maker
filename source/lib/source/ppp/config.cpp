@@ -84,42 +84,6 @@ Config LoadConfig()
             }
         };
 
-        static constexpr auto parse_length{
-            [](std::string str) -> std::optional<Config::LengthInfo>
-            {
-                std::replace(str.begin(), str.end(), ',', '.');
-
-                const auto parts{
-                    str |
-                    std::views::split(' ') |
-                    to_string_views |
-                    std::ranges::to<std::vector>()
-                };
-
-                if (parts.size() != 2)
-                {
-                    return std::nullopt;
-                }
-
-                const auto base_unit_opt{ get_base_unit(parts.back()) };
-                if (!base_unit_opt.has_value())
-                {
-                    return std::nullopt;
-                }
-                const auto base_unit{ base_unit_opt.value() };
-
-                const auto length_str{ parts[0] };
-                const auto length{ to_float(length_str) };
-
-                const auto decimals{ get_decimals(length_str) };
-
-                return Config::LengthInfo{
-                    length * base_unit,
-                    base_unit,
-                    decimals,
-                };
-            },
-        };
         static constexpr auto parse_size{
             [](std::string str) -> std::optional<Config::SizeInfo>
             {
@@ -154,6 +118,42 @@ Config LoadConfig()
 
                 return Config::SizeInfo{
                     { width * base_unit, height * base_unit },
+                    base_unit,
+                    decimals,
+                };
+            },
+        };
+        static constexpr auto parse_length{
+            [](std::string str) -> std::optional<Config::LengthInfo>
+            {
+                std::replace(str.begin(), str.end(), ',', '.');
+
+                const auto parts{
+                    str |
+                    std::views::split(' ') |
+                    to_string_views |
+                    std::ranges::to<std::vector>()
+                };
+
+                if (parts.size() != 2)
+                {
+                    return std::nullopt;
+                }
+
+                const auto base_unit_opt{ get_base_unit(parts.back()) };
+                if (!base_unit_opt.has_value())
+                {
+                    return std::nullopt;
+                }
+                const auto base_unit{ base_unit_opt.value() };
+
+                const auto length_str{ parts[0] };
+                const auto length{ to_float(length_str) };
+
+                const auto decimals{ get_decimals(length_str) };
+
+                return Config::LengthInfo{
+                    length * base_unit,
                     base_unit,
                     decimals,
                 };
@@ -262,6 +262,36 @@ void SaveConfig(Config config)
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
+        static constexpr auto get_unit_name{
+            [](const Length& base)
+            {
+                const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
+                const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
+                // clang-format off
+                return is_inches ? "inches" :
+                           is_cm ? "cm"
+                                 : "mm";
+                // clang-format on
+            }
+        };
+        static constexpr auto set_size{
+            [](QSettings& settings, const std::string& name, const Config::SizeInfo& info)
+            {
+                const auto& [size, base, decimals]{ info };
+                const auto unit{ get_unit_name(base) };
+                const auto [width, height]{ (size / base).pod() };
+                settings.setValue(name, fmt::format("{0:.{2}f} x {1:.{2}f} {3}", width, height, decimals, unit).c_str());
+            }
+        };
+        static constexpr auto set_length{
+            [](QSettings& settings, const std::string& name, const Config::LengthInfo& info)
+            {
+                const auto& [length, base, decimals]{ info };
+                const auto unit{ get_unit_name(base) };
+                settings.setValue(name, fmt::format("{0:.{1}f} {2}", length / base, decimals, unit).c_str());
+            }
+        };
+
         {
             settings.beginGroup("DEFAULT");
 
@@ -299,7 +329,11 @@ void SaveConfig(Config config)
             if (config.JpgQuality.has_value())
             {
                 settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
-            }
+            };
+
+            set_size(settings, "Card.Size.Without.Bleed", config.CardSizeWithoutBleed);
+            set_size(settings, "Card.Size.With.Bleed", config.CardSizeWithBleed);
+            set_length(settings, "Card.Corner.Radius", config.CardCornerRadius);
 
             settings.endGroup();
         }
@@ -314,18 +348,7 @@ void SaveConfig(Config config)
                     continue;
                 }
 
-                const auto& [size, base, decimals]{ info };
-                const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
-                const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
-                // clang-format off
-                const auto unit{
-                    is_inches ? "inches" :
-                        is_cm ? "cm"
-                              : "mm"
-                };
-                // clang-format on
-                const auto [width, height]{ (size / base).pod() };
-                settings.setValue(name, fmt::format("{0:.{2}f} x {1:.{2}f} {3}", width, height, decimals, unit).c_str());
+                set_size(settings, name, info);
             }
 
             settings.endGroup();
