@@ -263,8 +263,8 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
-        const bool fit_size{ project.Data.PageSize == Config::FitSize };
-        const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
+        const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
+        const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
         const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
         const Size page_size{ project.ComputePageSize() };
@@ -278,8 +278,8 @@ class PrintOptionsWidget : public QGroupBox
 
         auto* base_pdf_choice{ new ComboBoxWithLabel{
             "&Base Pdf", GetBasePdfNames(), project.Data.BasePdf } };
-        base_pdf_choice->setEnabled(infer_size);
-        base_pdf_choice->setVisible(infer_size);
+        base_pdf_choice->setEnabled(initial_infer_size);
+        base_pdf_choice->setVisible(initial_infer_size);
 
         auto* paper_info{ new LabelWithLabel{ "Paper Size", SizeToString(page_size) } };
         auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(cards_size) } };
@@ -316,13 +316,13 @@ class PrintOptionsWidget : public QGroupBox
         auto* cards_layout_container{ new QWidget };
         cards_layout_container->setLayout(cards_layout_layout);
         auto* cards_layout{ new WidgetWithLabel("Layout", cards_layout_container) };
-        cards_layout->setEnabled(fit_size);
-        cards_layout->setVisible(fit_size);
+        cards_layout->setEnabled(initial_fit_size);
+        cards_layout->setVisible(initial_fit_size);
 
         auto* orientation{ new ComboBoxWithLabel{
             "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.Data.Orientation) } };
-        orientation->setEnabled(!fit_size && !infer_size);
-        orientation->setVisible(!fit_size && !infer_size);
+        orientation->setEnabled(!initial_fit_size && !initial_infer_size);
+        orientation->setVisible(!initial_fit_size && !initial_infer_size);
 
         auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
         enable_guides_checkbox->setChecked(project.Data.EnableGuides);
@@ -373,6 +373,7 @@ class PrintOptionsWidget : public QGroupBox
 
                 const Size page_size{ project.ComputePageSize() };
 
+                const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
                 const bool fit_size{ project.Data.PageSize == Config::FitSize };
                 if (!fit_size)
                 {
