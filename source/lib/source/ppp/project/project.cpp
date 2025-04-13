@@ -64,10 +64,18 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Data.BasePdf = json["base_pdf"];
         Data.Margins.x.value = json["margins"]["width"];
         Data.Margins.y.value = json["margins"]["height"];
-        Data.CardLayout.x = json["card_layout"]["width"];
-        Data.CardLayout.y = json["card_layout"]["height"];
         Data.Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
                                .value_or(PageOrientation::Portrait);
+        if (Data.PageSize == Config::FitSize)
+        {
+            Data.CardLayout.x = json["card_layout"]["width"];
+            Data.CardLayout.y = json["card_layout"]["height"];
+        }
+        else
+        {
+            const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * Data.BleedEdge };
+            Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
+        }
         Data.FileName = json["file_name"].get<std::string>();
         Data.EnableGuides = json["enable_guides"];
         Data.ExtendedGuides = json["extended_guides"];
