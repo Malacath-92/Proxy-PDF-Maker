@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2025-13-04
+
+### Fixed
+- The app will no longer crash when trying to write a pdf with PoDoFo if that file is already opened in another app
+- Cards will no longer reset all their data during startup
+
 ## [0.8.0] - 2025-13-04
 
 ### Added
