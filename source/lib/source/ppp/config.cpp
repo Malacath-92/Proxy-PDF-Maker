@@ -206,6 +206,8 @@ Config LoadConfig()
             }
 
             {
+                config.CardSizeScale = settings.value("Card.Size.Scale", 1.0f).toFloat();
+
                 auto card_size_without_bleed{ settings.value("Card.Size.Without.Bleed") };
                 auto card_size_with_bleed{ settings.value("Card.Size.With.Bleed") };
                 if (card_size_without_bleed.isValid() && card_size_with_bleed.isValid())
@@ -228,6 +230,9 @@ Config LoadConfig()
                     }
                 }
 
+                config.CardSizeWithoutBleed.Dimensions *= config.CardSizeScale;
+                config.CardSizeWithBleed.Dimensions *= config.CardSizeScale;
+                config.CardCornerRadius.Dimension *= config.CardSizeScale;
                 config.CardRatio = config.CardSizeWithoutBleed.Dimensions.x / config.CardSizeWithoutBleed.Dimensions.y;
             }
 
@@ -275,20 +280,20 @@ void SaveConfig(Config config)
             }
         };
         static constexpr auto set_size{
-            [](QSettings& settings, const std::string& name, const Config::SizeInfo& info)
+            [](QSettings& settings, const std::string& name, const Config::SizeInfo& info, float scale = 1.0f)
             {
                 const auto& [size, base, decimals]{ info };
                 const auto unit{ get_unit_name(base) };
-                const auto [width, height]{ (size / base).pod() };
+                const auto [width, height]{ (size / base / scale).pod() };
                 settings.setValue(name, fmt::format("{0:.{2}f} x {1:.{2}f} {3}", width, height, decimals, unit).c_str());
             }
         };
         static constexpr auto set_length{
-            [](QSettings& settings, const std::string& name, const Config::LengthInfo& info)
+            [](QSettings& settings, const std::string& name, const Config::LengthInfo& info, float scale = 1.0f)
             {
                 const auto& [length, base, decimals]{ info };
                 const auto unit{ get_unit_name(base) };
-                settings.setValue(name, fmt::format("{0:.{1}f} {2}", length / base, decimals, unit).c_str());
+                settings.setValue(name, fmt::format("{0:.{1}f} {2}", length / base / scale, decimals, unit).c_str());
             }
         };
 
@@ -331,9 +336,9 @@ void SaveConfig(Config config)
                 settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
             };
 
-            set_size(settings, "Card.Size.Without.Bleed", config.CardSizeWithoutBleed);
-            set_size(settings, "Card.Size.With.Bleed", config.CardSizeWithBleed);
-            set_length(settings, "Card.Corner.Radius", config.CardCornerRadius);
+            set_size(settings, "Card.Size.Without.Bleed", config.CardSizeWithoutBleed, config.CardSizeScale);
+            set_size(settings, "Card.Size.With.Bleed", config.CardSizeWithBleed, config.CardSizeScale);
+            set_length(settings, "Card.Corner.Radius", config.CardCornerRadius, config.CardSizeScale);
 
             settings.endGroup();
         }

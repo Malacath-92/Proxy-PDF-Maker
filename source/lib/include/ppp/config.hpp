@@ -57,6 +57,7 @@ struct Config
         uint32_t Decimals;
     };
 
+    float CardSizeScale{ 1.0f };
     SizeInfo CardSizeWithoutBleed{ { 2.48_in, 3.46_in }, 1_in, 2u };
     SizeInfo CardSizeWithBleed{ { 2.72_in, 3.70_in }, 1_in, 2u };
     LengthInfo CardCornerRadius{ 1_in / 8, 1_in, 3u };
