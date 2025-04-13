@@ -38,8 +38,8 @@ std::optional<fs::path> GeneratePdf(const Project& project, PrintFn print_fn)
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
 
-    const Length start_x{ (page_width - card_width * float(columns)) / 2.0f };
-    const Length start_y{ (page_height + card_height * float(rows)) / 2.0f };
+    const Length start_x{ project.Data.Margins.x };
+    const Length start_y{ page_height - project.Data.Margins.y };
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
