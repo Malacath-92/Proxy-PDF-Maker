@@ -266,10 +266,10 @@ class PrintOptionsWidget : public QGroupBox
         const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
         const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
-        const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
-        const Size page_size{ project.ComputePageSize() };
-        const Size cards_size{ project.ComputeCardsSize() };
-        const Size max_margins{ page_size - cards_size };
+        const Size initial_card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+        const Size initial_page_size{ project.ComputePageSize() };
+        const Size initial_cards_size{ project.ComputeCardsSize() };
+        const Size initial_max_margins{ initial_page_size - initial_cards_size };
 
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
@@ -281,22 +281,22 @@ class PrintOptionsWidget : public QGroupBox
         base_pdf_choice->setEnabled(initial_infer_size);
         base_pdf_choice->setVisible(initial_infer_size);
 
-        auto* paper_info{ new LabelWithLabel{ "Paper Size", SizeToString(page_size) } };
-        auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(cards_size) } };
+        auto* paper_info{ new LabelWithLabel{ "Paper Size", SizeToString(initial_page_size) } };
+        auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
 
         auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
         auto* left_margin_spin{ left_margin->GetWidget() };
         left_margin_spin->setDecimals(2);
         left_margin_spin->setSingleStep(0.1);
         left_margin_spin->setSuffix("mm");
-        left_margin_spin->setRange(0, max_margins.x / 1_mm);
+        left_margin_spin->setRange(0, initial_max_margins.x / 1_mm);
         left_margin_spin->setValue(project.Data.Margins.x / 1_mm);
         auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
         auto* top_margin_spin{ top_margin->GetWidget() };
         top_margin_spin->setDecimals(2);
         top_margin_spin->setSingleStep(0.1);
         top_margin_spin->setSuffix("mm");
-        top_margin_spin->setRange(0, max_margins.y / 1_mm);
+        top_margin_spin->setRange(0, initial_max_margins.y / 1_mm);
         top_margin_spin->setValue(project.Data.Margins.y / 1_mm);
 
         auto* cards_width{ new QDoubleSpinBox };
@@ -470,6 +470,26 @@ class PrintOptionsWidget : public QGroupBox
             {
                 project.Data.Orientation = magic_enum::enum_cast<PageOrientation>(t.toStdString())
                                                .value_or(PageOrientation::Portrait);
+
+                const bool fit_size{ project.Data.PageSize == Config::FitSize };
+                const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
+                if (fit_size || infer_size)
+                {
+                    return;
+                }
+
+                const Size page_size{ project.ComputePageSize() };
+                const Size card_size_with_bleed{ CardSizeWithoutBleed + 2 * project.Data.BleedEdge };
+                project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+
+                const Size cards_size{ project.ComputeCardsSize() };
+
+                const auto max_margins{ page_size - cards_size };
+                left_margin_spin->setRange(0, max_margins.x / 1_mm);
+                left_margin_spin->setValue(max_margins.x / 2_mm);
+                top_margin_spin->setRange(0, max_margins.y / 1_mm);
+                top_margin_spin->setValue(max_margins.y / 2_mm);
+
                 main_window()->OrientationChanged(project);
             }
         };
