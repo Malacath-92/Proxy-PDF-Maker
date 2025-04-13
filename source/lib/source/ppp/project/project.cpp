@@ -194,7 +194,7 @@ void Project::InitProperties(PrintFn print_fn)
 
 void Project::CardAdded(const fs::path& card_name)
 {
-    if (!card_name.string().starts_with("__"))
+    if (!Data.Cards.contains(card_name) && !card_name.string().starts_with("__"))
     {
         Data.Cards[card_name] = CardInfo{ 1 };
     }
