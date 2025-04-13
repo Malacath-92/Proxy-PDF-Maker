@@ -15,6 +15,15 @@
 PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     : QApplication(argc, argv)
 {
+    // Create folders for user-content
+    for (const auto& folder : { "res/cubes", "res/styles", "res/base_pdfs" })
+    {
+        if (!fs::exists(folder))
+        {
+            fs::create_directories(folder);
+        }
+    }
+
     Load();
 }
 
