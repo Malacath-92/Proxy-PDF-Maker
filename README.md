@@ -21,6 +21,12 @@ The right panel contains all the options for printing. Those that are self-expla
 ### Paper Size: Fit
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
+### Paper Size: Base Pdf
+The `Base Pdf` option is only available with the `PoDoFo` render backend. It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
+
+### Cards Size
+Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
+
 ### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
 
@@ -51,6 +57,9 @@ Enables option to mark cards individually as oversized. Oversized and regular si
 
 ### Display Columns
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
+
+### Rendering Backend
+Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files. `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software.
 
 ### Allow Precropped
 In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/cropped` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
