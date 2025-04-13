@@ -11,7 +11,7 @@ struct ImagePreview;
 
 class CardImage : public QLabel
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     struct Params
@@ -59,7 +59,7 @@ class BacksideImage : public CardImage
 
 class StackedCardBacksideView : public QStackedWidget
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     StackedCardBacksideView(QWidget* image, QWidget* backside);

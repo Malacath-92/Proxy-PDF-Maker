@@ -25,7 +25,7 @@ std::optional<fs::path> OpenProjectDialog(FileDialogType type);
 
 class PopupBase : public QDialog
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     PopupBase(QWidget* parent);
@@ -42,7 +42,7 @@ class PopupBase : public QDialog
 
 class GenericPopup : public PopupBase
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     GenericPopup(QWidget* parent, std::string_view text);
@@ -67,7 +67,7 @@ class GenericPopup : public PopupBase
 
 class AboutPopup : public PopupBase
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     AboutPopup(QWidget* parent);

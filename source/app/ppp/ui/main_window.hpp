@@ -9,7 +9,7 @@
 
 class PrintProxyPrepMainWindow : public QMainWindow
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     PrintProxyPrepMainWindow(MainTabs* tabs, OptionsWidget* options);

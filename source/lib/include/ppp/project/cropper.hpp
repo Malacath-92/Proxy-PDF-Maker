@@ -15,7 +15,7 @@ class QThread;
 
 class Cropper : public QObject
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project);

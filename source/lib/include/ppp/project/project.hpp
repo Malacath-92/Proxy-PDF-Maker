@@ -30,7 +30,7 @@ using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
 class Project : public QObject
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     Project() = default;

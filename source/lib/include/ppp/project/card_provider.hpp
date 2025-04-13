@@ -10,7 +10,7 @@ class Project;
 
 class CardProvider : public QObject, public efsw::FileWatchListener
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     CardProvider(const Project& project);

@@ -19,7 +19,7 @@
 
 class CardWidget : public QFrame
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     CardWidget(const fs::path& card_name, Project& project)
@@ -315,7 +315,7 @@ class CardWidget : public QFrame
 
 class DummyCardWidget : public CardWidget
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     DummyCardWidget(const fs::path& card_name, Project& project)

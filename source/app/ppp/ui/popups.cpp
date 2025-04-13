@@ -140,7 +140,7 @@ void PopupBase::Recenter()
 
 class WorkThread : public QThread
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     WorkThread(std::function<void()> work)
