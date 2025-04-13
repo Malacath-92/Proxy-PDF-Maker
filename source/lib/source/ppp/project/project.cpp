@@ -62,8 +62,6 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         }
 
         Data.BasePdf = json["base_pdf"];
-        Data.Margins.x.value = json["margins"]["width"];
-        Data.Margins.y.value = json["margins"]["height"];
         Data.Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
                                .value_or(PageOrientation::Portrait);
         if (Data.PageSize == Config::FitSize)
@@ -76,6 +74,15 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
             const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * Data.BleedEdge };
             Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
         }
+
+        {
+            const Size page_size{ ComputePageSize() };
+            const Size cards_size{ ComputeCardsSize() };
+            const Size max_margins{ page_size - cards_size };
+            Data.Margins.x = json["margins"]["width"].get<float>() * max_margins.x;
+            Data.Margins.y = json["margins"]["height"].get<float>() * max_margins.y;
+        }
+
         Data.FileName = json["file_name"].get<std::string>();
         Data.EnableGuides = json["enable_guides"];
         Data.ExtendedGuides = json["extended_guides"];
@@ -130,10 +137,15 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
 
         json["pagesize"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
-        json["margins"] = nlohmann::json{
-            { "width", Data.Margins.x.value },
-            { "height", Data.Margins.y.value },
-        };
+        {
+            const Size page_size{ ComputePageSize() };
+            const Size cards_size{ ComputeCardsSize() };
+            const Size max_margins{ page_size - cards_size };
+            json["margins"] = nlohmann::json{
+                { "width", Data.Margins.x / max_margins.x },
+                { "height", Data.Margins.y / max_margins.y },
+            };
+        }
         json["card_layout"] = nlohmann::json{
             { "width", Data.CardLayout.x },
             { "height", Data.CardLayout.y },
