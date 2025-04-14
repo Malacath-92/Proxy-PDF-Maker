@@ -1,6 +1,7 @@
 #include <ppp/project/image_ops.hpp>
 
 #include <array>
+#include <charconv>
 #include <ranges>
 
 #include <dla/fmt_format.h>

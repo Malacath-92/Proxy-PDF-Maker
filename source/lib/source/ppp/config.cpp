@@ -1,5 +1,6 @@
 #include <ppp/config.hpp>
 
+#include <charconv>
 #include <ranges>
 
 #include <QFile>

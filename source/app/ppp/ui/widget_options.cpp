@@ -1,6 +1,7 @@
 #include <ppp/ui/widget_options.hpp>
 
 #include <atomic>
+#include <charconv>
 #include <cstdint>
 #include <ranges>
 
