@@ -1,5 +1,7 @@
 #include <ppp/pdf/podofo_backend.hpp>
 
+#include <functional>
+
 #include <dla/vector_math.h>
 
 #include <podofo/podofo.h>

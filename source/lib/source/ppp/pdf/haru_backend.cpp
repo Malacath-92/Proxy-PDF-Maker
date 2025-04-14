@@ -1,5 +1,7 @@
 #include <ppp/pdf/haru_backend.hpp>
 
+#include <functional>
+
 inline HPDF_REAL ToHaruReal(Length l)
 {
     return static_cast<HPDF_REAL>(l / 1_pts);
