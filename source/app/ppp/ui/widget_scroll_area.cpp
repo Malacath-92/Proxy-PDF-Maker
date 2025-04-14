@@ -1,7 +1,5 @@
 #include <ppp/ui/widget_scroll_area.hpp>
 
-#include <functional>
-
 #include <QCheckBox>
 #include <QFrame>
 #include <QHBoxLayout>

@@ -1,6 +1,5 @@
 #include <ppp/pdf/util.hpp>
 
-#include <functional>
 #include <ranges>
 
 #include <podofo/podofo.h>
@@ -95,7 +94,8 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     for (const auto& [img, oversized, backside_short_edge] : images)
     {
         // get a page that can fit this card
-        auto page_with_space{ std::ranges::find_if(unfinished_pages, std::bind_back(page_has_space, oversized)) };
+        auto page_with_space{ std::ranges::find_if(unfinished_pages, [=](const Page& page)
+                                                   { return page_has_space(page, oversized); }) };
 
         // or start a new page if none is available
         if (page_with_space == unfinished_pages.end())

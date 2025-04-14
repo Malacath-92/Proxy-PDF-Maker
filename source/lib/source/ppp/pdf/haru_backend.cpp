@@ -1,7 +1,5 @@
 #include <ppp/pdf/haru_backend.hpp>
 
-#include <functional>
-
 inline HPDF_REAL ToHaruReal(Length l)
 {
     return static_cast<HPDF_REAL>(l / 1_pts);
@@ -73,8 +71,10 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
     const auto use_jpg{ CFG.PdfImageFormat == ImageFormat::Jpg };
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
-            ? std::bind_back(&Image::EncodeJpg, CFG.JpgQuality)
-            : std::bind_back(&Image::EncodePng, std::optional{ 0 })
+            ? [](const Image& image)
+            { return image.EncodeJpg(CFG.JpgQuality); }
+            : [](const Image& image)
+            { return image.EncodePng(std::optional{ 0 }); }
     };
     const auto loader{
         use_jpg
