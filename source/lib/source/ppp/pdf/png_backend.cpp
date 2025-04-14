@@ -156,13 +156,14 @@ fs::path PngDocument::Write(fs::path path)
     }
 
 #if __cpp_lib_ranges_enumerate
-    for (const auto& [i, page] : std::ranges::enumerate_view(Pages))
+    for (const auto& [i, page] : Pages | std::views::enumerate)
     {
 #else
     for (size_t i = 0; i < Pages.size(); i++)
     {
         const PngPage& page{ Pages[i] };
 #endif
+
         const fs::path png_path{ png_folder / fs::path{ std::to_string(i) }.replace_extension(".png") };
         {
             const auto png_path_str{ png_path.string() };

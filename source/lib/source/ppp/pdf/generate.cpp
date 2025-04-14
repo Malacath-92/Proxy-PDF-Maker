@@ -45,8 +45,15 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 
     auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
 
+#if __cpp_lib_ranges_enumerate
     for (auto [p, page_images] : images | std::views::enumerate)
     {
+#else
+    for (size_t p = 0; p < images.size(); p++)
+    {
+        const Page& page_images{ images[p] };
+#endif
+
         auto draw_image{
             [&](PdfPage* page, const GridImage& image, size_t x, size_t y, Length dx = 0_pts, Length dy = 0_pts, bool is_backside = false)
             {
