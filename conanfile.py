@@ -51,8 +51,6 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
 
-        self.options["harfbuzz"].with_glib = False
-
         self.options["pdf-writer"].shared = False
         self.options["pdf-writer"].with_tiff = False
 
