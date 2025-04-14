@@ -386,7 +386,6 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
     const auto page_size{ project.ComputePageSize() };
 
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
