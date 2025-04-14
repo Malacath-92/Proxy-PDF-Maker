@@ -1,5 +1,7 @@
 #include <ppp/ui/widget_scroll_area.hpp>
 
+#include <functional>
+
 #include <QCheckBox>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -419,182 +421,176 @@ class CardScrollArea::CardGrid : public QWidget
                 return card;
             }
         };
-        auto eat_or_make_real_card
-        {
-            [](const fs::path& card_name)
-            {
-                return eat_or_make_card(card_name, [](auto&&... args)
-                                        { return new CardWidget{ std::forward<decltype(args)>(args)... }; });
-            };
-            auto eat_or_make_dummy_card
-            {
-                [](const fs::path& card_name)
-                {
-                    return eat_or_make_card(card_name, [](auto&&... args)
-                                            { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; });
-                };
-
-                size_t i{ 0 };
-                const auto cols{ CFG.DisplayColumns };
-                for (auto& [card_name, _] : project.Data.Cards)
-                {
-                    if (ToQString(card_name).startsWith("__"))
-                    {
-                        continue;
-                    }
-
-                    auto* card_widget{ eat_or_make_real_card(card_name) };
-                    Cards[card_name] = card_widget;
-
-                    const auto x{ static_cast<int>(i / cols) };
-                    const auto y{ static_cast<int>(i % cols) };
-                    this_layout->addWidget(card_widget, x, y);
-                    ++i;
-                }
-
-                for (size_t j = i; j < cols; j++)
-                {
-                    fs::path card_name{ fmt::format("__dummy__{}", j) };
-                    auto* card_widget{ eat_or_make_dummy_card(card_name) };
-                    Cards[std::move(card_name)] = card_widget;
-                    this_layout->addWidget(card_widget, 0, static_cast<int>(j));
-                    ++i;
-                }
-
-                for (int c = 0; c < this_layout->columnCount(); c++)
-                {
-                    this_layout->setColumnStretch(c, 1);
-                }
-
-                for (auto& [card_name, card] : old_cards)
-                {
-                    delete card;
-                }
-
-                FirstItem = Cards.begin()->second;
-                Columns = cols;
-                Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / Columns));
-
-                setMinimumWidth(TotalWidthFromItemWidth(FirstItem->minimumWidth()));
-                setMinimumHeight(heightForWidth(minimumWidth()));
-                adjustSize();
-            }
-
-            std::unordered_map<fs::path, CardWidget*>& GetCards()
-            {
-                return Cards;
-            }
-
-          private:
-            std::unordered_map<fs::path, CardWidget*> Cards;
-            CardWidget* FirstItem;
-
-            uint32_t Columns;
-            uint32_t Rows;
+        auto eat_or_make_real_card{
+            std::bind_back(eat_or_make_card, [](auto&&... args)
+                           { return new CardWidget{ std::forward<decltype(args)>(args)... }; })
+        };
+        auto eat_or_make_dummy_card{
+            std::bind_back(eat_or_make_card, [](auto&&... args)
+                           { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; })
         };
 
-        CardScrollArea::CardScrollArea(Project & project)
+        size_t i{ 0 };
+        const auto cols{ CFG.DisplayColumns };
+        for (auto& [card_name, _] : project.Data.Cards)
         {
-            auto* global_label{ new QLabel{ "Global Controls:" } };
-            auto* global_decrement_button{ new QPushButton{ "-" } };
-            auto* global_increment_button{ new QPushButton{ "+" } };
-            auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
+            if (ToQString(card_name).startsWith("__"))
+            {
+                continue;
+            }
 
-            global_decrement_button->setToolTip("Remove one from all");
-            global_increment_button->setToolTip("Add one to all");
-            global_set_zero_button->setToolTip("Set all to zero");
+            auto* card_widget{ eat_or_make_real_card(card_name) };
+            Cards[card_name] = card_widget;
 
-            auto* global_number_layout{ new QHBoxLayout };
-            global_number_layout->addWidget(global_label);
-            global_number_layout->addWidget(global_decrement_button);
-            global_number_layout->addWidget(global_increment_button);
-            global_number_layout->addWidget(global_set_zero_button);
-            global_number_layout->addStretch();
-            global_number_layout->setContentsMargins(6, 0, 6, 0);
-
-            auto* global_number_widget{ new QWidget };
-            global_number_widget->setLayout(global_number_layout);
-
-            auto* card_grid{ new CardGrid{ project } };
-
-            auto* card_area_layout{ new QVBoxLayout };
-            card_area_layout->addWidget(global_number_widget);
-            card_area_layout->addWidget(card_grid);
-            card_area_layout->addStretch();
-            card_area_layout->setSpacing(0);
-
-            auto* card_area{ new QWidget };
-            card_area->setLayout(card_area_layout);
-
-            setWidgetResizable(true);
-            setFrameShape(QFrame::Shape::NoFrame);
-            setWidget(card_area);
-
-            setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
-
-            auto dec_number{
-                [=, &project]()
-                {
-                    for (auto& [_, card] : card_grid->GetCards())
-                    {
-                        card->DecrementNumber(project);
-                    }
-                }
-            };
-
-            auto inc_number{
-                [=, &project]()
-                {
-                    for (auto& [_, card] : card_grid->GetCards())
-                    {
-                        card->IncrementNumber(project);
-                    }
-                }
-            };
-
-            auto reset_number{
-                [=, &project]()
-                {
-                    for (auto& [_, card] : card_grid->GetCards())
-                    {
-                        card->ApplyNumber(project, 0);
-                    }
-                }
-            };
-
-            QObject::connect(global_decrement_button,
-                             &QPushButton::clicked,
-                             this,
-                             dec_number);
-            QObject::connect(global_increment_button,
-                             &QPushButton::clicked,
-                             this,
-                             inc_number);
-            QObject::connect(global_set_zero_button,
-                             &QPushButton::clicked,
-                             this,
-                             reset_number);
-
-            Grid = card_grid;
+            const auto x{ static_cast<int>(i / cols) };
+            const auto y{ static_cast<int>(i % cols) };
+            this_layout->addWidget(card_widget, x, y);
+            ++i;
         }
 
-        void CardScrollArea::Refresh(Project & project)
+        for (size_t j = i; j < cols; j++)
         {
-            Grid->Refresh(project);
-            setMinimumWidth(ComputeMinimumWidth());
+            fs::path card_name{ fmt::format("__dummy__{}", j) };
+            auto* card_widget{ eat_or_make_dummy_card(card_name) };
+            Cards[std::move(card_name)] = card_widget;
+            this_layout->addWidget(card_widget, 0, static_cast<int>(j));
+            ++i;
         }
 
-        int CardScrollArea::ComputeMinimumWidth()
+        for (int c = 0; c < this_layout->columnCount(); c++)
         {
-            const auto margins{ widget()->layout()->contentsMargins() };
-            return Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
+            this_layout->setColumnStretch(c, 1);
         }
 
-        void CardScrollArea::showEvent(QShowEvent * event)
+        for (auto& [card_name, card] : old_cards)
         {
-            QScrollArea::showEvent(event);
-
-            setMinimumWidth(ComputeMinimumWidth());
+            delete card;
         }
+
+        FirstItem = Cards.begin()->second;
+        Columns = cols;
+        Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / Columns));
+
+        setMinimumWidth(TotalWidthFromItemWidth(FirstItem->minimumWidth()));
+        setMinimumHeight(heightForWidth(minimumWidth()));
+        adjustSize();
+    }
+
+    std::unordered_map<fs::path, CardWidget*>& GetCards()
+    {
+        return Cards;
+    }
+
+  private:
+    std::unordered_map<fs::path, CardWidget*> Cards;
+    CardWidget* FirstItem;
+
+    uint32_t Columns;
+    uint32_t Rows;
+};
+
+CardScrollArea::CardScrollArea(Project& project)
+{
+    auto* global_label{ new QLabel{ "Global Controls:" } };
+    auto* global_decrement_button{ new QPushButton{ "-" } };
+    auto* global_increment_button{ new QPushButton{ "+" } };
+    auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
+
+    global_decrement_button->setToolTip("Remove one from all");
+    global_increment_button->setToolTip("Add one to all");
+    global_set_zero_button->setToolTip("Set all to zero");
+
+    auto* global_number_layout{ new QHBoxLayout };
+    global_number_layout->addWidget(global_label);
+    global_number_layout->addWidget(global_decrement_button);
+    global_number_layout->addWidget(global_increment_button);
+    global_number_layout->addWidget(global_set_zero_button);
+    global_number_layout->addStretch();
+    global_number_layout->setContentsMargins(6, 0, 6, 0);
+
+    auto* global_number_widget{ new QWidget };
+    global_number_widget->setLayout(global_number_layout);
+
+    auto* card_grid{ new CardGrid{ project } };
+
+    auto* card_area_layout{ new QVBoxLayout };
+    card_area_layout->addWidget(global_number_widget);
+    card_area_layout->addWidget(card_grid);
+    card_area_layout->addStretch();
+    card_area_layout->setSpacing(0);
+
+    auto* card_area{ new QWidget };
+    card_area->setLayout(card_area_layout);
+
+    setWidgetResizable(true);
+    setFrameShape(QFrame::Shape::NoFrame);
+    setWidget(card_area);
+
+    setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
+
+    auto dec_number{
+        [=, &project]()
+        {
+            for (auto& [_, card] : card_grid->GetCards())
+            {
+                card->DecrementNumber(project);
+            }
+        }
+    };
+
+    auto inc_number{
+        [=, &project]()
+        {
+            for (auto& [_, card] : card_grid->GetCards())
+            {
+                card->IncrementNumber(project);
+            }
+        }
+    };
+
+    auto reset_number{
+        [=, &project]()
+        {
+            for (auto& [_, card] : card_grid->GetCards())
+            {
+                card->ApplyNumber(project, 0);
+            }
+        }
+    };
+
+    QObject::connect(global_decrement_button,
+                     &QPushButton::clicked,
+                     this,
+                     dec_number);
+    QObject::connect(global_increment_button,
+                     &QPushButton::clicked,
+                     this,
+                     inc_number);
+    QObject::connect(global_set_zero_button,
+                     &QPushButton::clicked,
+                     this,
+                     reset_number);
+
+    Grid = card_grid;
+}
+
+void CardScrollArea::Refresh(Project& project)
+{
+    Grid->Refresh(project);
+    setMinimumWidth(ComputeMinimumWidth());
+}
+
+int CardScrollArea::ComputeMinimumWidth()
+{
+    const auto margins{ widget()->layout()->contentsMargins() };
+    return Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
+}
+
+void CardScrollArea::showEvent(QShowEvent* event)
+{
+    QScrollArea::showEvent(event);
+
+    setMinimumWidth(ComputeMinimumWidth());
+}
 
 #include <widget_scroll_area.moc>

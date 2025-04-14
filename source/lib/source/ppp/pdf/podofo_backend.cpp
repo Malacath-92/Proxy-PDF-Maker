@@ -1,5 +1,7 @@
 #include <ppp/pdf/podofo_backend.hpp>
 
+#include <functional>
+
 #include <dla/vector_math.h>
 
 #include <podofo/podofo.h>
@@ -104,10 +106,8 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     const auto use_jpg{ CFG.PdfImageFormat == ImageFormat::Jpg };
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
-            ? [](const Image& image)
-            { return image->EncodeJpg(CFG.JpgQuality); }
-            : [](const Image& image)
-            { return image->EncodePng(std::optional{ 0 }); }
+            ? std::bind_back(&Image::EncodeJpg, CFG.JpgQuality)
+            : std::bind_back(&Image::EncodePng, std::optional{ 0 })
     };
     const auto loader{
         use_jpg
