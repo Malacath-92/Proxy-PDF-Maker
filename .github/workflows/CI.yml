@@ -16,18 +16,18 @@ jobs:
         os: [MacOS-ARM, MacOS-x86, Ubuntu, Windows]
         build_type: [Debug, Release]
         include:
-          - os: Windows
-            compiler: MSVC
-            runs_on: windows-2022
           - os: MacOS-ARM
-            compiler: AppleClang
-            runs_on: macos-14
-          - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
           - os: Ubuntu
             compiler: Gcc
             runs_on: ubuntu-24.04
+          - os: MacOS-x86
+            compiler: AppleClang
+            runs_on: macos-14
+          - os: Windows
+            compiler: MSVC
+            runs_on: windows-2022
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -93,7 +93,7 @@ jobs:
 
       - name: Configure (MacOS-x86)
         id: configure-osx-x86
-        if: ${{ matrix.os == 'MacOS-ARM' }}
+        if: ${{ matrix.os == 'MacOS-x86' }}
         run: |
           mkdir build
           cd build
