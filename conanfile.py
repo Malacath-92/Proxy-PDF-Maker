@@ -53,5 +53,7 @@ class ProxyPDF(ConanFile):
 
         self.options["harfbuzz"].with_glib = False
 
-        self.options["podofo"].shared = False
-        self.options["podofo"].with_libidn = False
+        self.options["pdf-writer"].shared = False
+        self.options["pdf-writer"].with_tiff = False
+
+        self.options["crc32c"].shared = False
