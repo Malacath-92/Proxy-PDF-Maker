@@ -13,13 +13,16 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [MacOS, Ubuntu, Windows]
+        os: [MacOS-ARM, MacOS-x86, Ubuntu, Windows]
         build_type: [Debug, Release]
         include:
           - os: Windows
             compiler: MSVC
             runs_on: windows-2022
-          - os: MacOS
+          - os: MacOS-ARM
+            compiler: AppleClang
+            runs_on: macos-14
+          - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
           - os: Ubuntu
@@ -44,7 +47,7 @@ jobs:
       - uses: lukka/get-cmake@v3.31.6
 
       - name: Xcode Select Version (MacOS)
-        if: ${{ matrix.os == 'MacOS' }}
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.2'
@@ -73,20 +76,28 @@ jobs:
             conan profile detect --force
 
       - name: Conan set Ninja Generator (MacOS)
-        if: ${{ matrix.os == 'MacOS' }}
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
         run: |
           cd .conan_home/profiles
           echo "[conf]" >> default
           echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
           echo "" >> default
           
-      - name: Configure (MacOS)
-        id: configure-osx
-        if: ${{ matrix.os == 'MacOS' }}
+      - name: Configure (MacOS-ARM)
+        id: configure-osx-arm
+        if: ${{ matrix.os == 'MacOS-ARM' }}
         run: |
           mkdir build
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Configure (MacOS-x86)
+        id: configure-osx-x86
+        if: ${{ matrix.os == 'MacOS-ARM' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
@@ -105,7 +116,7 @@ jobs:
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Always save Conan Cache
-        if: always() && (steps.configure-osx.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
+        if: always() && (steps.configure-osx-arm.conclusion == 'success' || steps.configure-osx-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
