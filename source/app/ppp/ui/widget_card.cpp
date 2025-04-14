@@ -52,7 +52,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     const bool has_bleed_edge{ params.BleedEdge > 0_mm };
 
     QPixmap pixmap{
-        [&, this]()
+        [&]()
         {
             if (has_image)
             {

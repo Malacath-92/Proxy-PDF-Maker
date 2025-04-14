@@ -173,7 +173,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto set_images_folder{
-            [=, this, &project, &application]()
+            [=, this, &project]()
             {
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
@@ -269,7 +269,6 @@ class PrintOptionsWidget : public QGroupBox
         const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
         const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
-        const Size initial_card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
         const Size initial_page_size{ project.ComputePageSize() };
         const Size initial_cards_size{ project.ComputeCardsSize() };
         const Size initial_max_margins{ initial_page_size - initial_cards_size };
@@ -519,7 +518,7 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         auto pick_color{
-            [&project](const ColorRGB8& color) -> std::optional<ColorRGB8>
+            [](const ColorRGB8& color) -> std::optional<ColorRGB8>
             {
                 const QColor initial_color{ color.r, color.g, color.b };
                 const QColor picked_color{ QColorDialog::getColor(initial_color) };
@@ -539,7 +538,7 @@ class PrintOptionsWidget : public QGroupBox
         };
 
         auto pick_color_a{
-            [=, this, &project]()
+            [=, &project]()
             {
                 if (const auto picked_color{ pick_color(project.Data.GuidesColorA) })
                 {
@@ -1031,7 +1030,7 @@ class GlobalOptionsWidget : public QGroupBox
         };
 
         auto change_render_backend{
-            [=, &application, &project](const QString& t)
+            [=, &project](const QString& t)
             {
                 CFG.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
                                       .value_or(PdfBackend::LibHaru));
