@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <ranges>
+#include <string>
 
 #include <QFile>
 #include <QSettings>
@@ -46,7 +47,12 @@ Config LoadConfig()
             [](std::string_view str)
             {
                 float val;
+#ifdef __clang__
+                // Clang and AppleClang do not support std::from_chars overloads with floating points
+                val = std::stof(std::string{ str });
+#else
                 std::from_chars(str.data(), str.data() + str.size(), val);
+#endif
                 return val;
             },
         };

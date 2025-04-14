@@ -3,6 +3,7 @@
 #include <array>
 #include <charconv>
 #include <ranges>
+#include <string>
 
 #include <dla/fmt_format.h>
 #include <dla/scalar_math.h>
@@ -383,7 +384,12 @@ cv::Mat LoadColorCube(const fs::path& file_path)
         [](std::string_view str)
         {
             float val;
+#ifdef __clang__
+            // Clang and AppleClang do not support std::from_chars overloads with floating points
+            val = std::stof(std::string{ str });
+#else
             std::from_chars(str.data(), str.data() + str.size(), val);
+#endif
             return val;
         }) };
     static constexpr auto float_color_to_byte{ std::views::transform(
