@@ -314,7 +314,7 @@ class PrintPreview::PagePreview : public QWidget
         return true;
     }
 
-    virtual int heightForWidth(int width) const
+    virtual int heightForWidth(int width) const override
     {
         return static_cast<int>(static_cast<float>(width) / PageRatio);
     }
@@ -389,8 +389,6 @@ void PrintPreview::Refresh(const Project& project)
     const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
     const auto page_size{ project.ComputePageSize() };
 
-    const auto [page_width, page_height]{ page_size.pod() };
-    const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
 
     struct TempPage
