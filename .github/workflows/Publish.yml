@@ -11,7 +11,6 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     strategy:
       fail-fast: True
-      max-parallel: 1
       matrix:
         os: [Ubuntu, Windows]
         include:
