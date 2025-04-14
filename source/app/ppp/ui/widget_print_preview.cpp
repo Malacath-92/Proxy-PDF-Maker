@@ -52,8 +52,8 @@ class PageGrid : public QWidget
                             image_name,
                             project,
                             CardImage::Params{
-                                .RoundedCorners{ false },
-                                .Rotation{ rotation },
+                                .RoundedCorners = false,
+                                .Rotation = rotation,
                                 .BleedEdge{ project.Data.BleedEdge },
                             },
                         },
@@ -83,7 +83,7 @@ class PageGrid : public QWidget
                         CFG.FallbackName,
                         project,
                         CardImage::Params{
-                            .Rotation{ rotation },
+                            .Rotation = rotation,
                             .BleedEdge{ project.Data.BleedEdge },
                         },
                     },
@@ -333,8 +333,8 @@ class PrintPreview::PagePreview : public QWidget
             Overlay->setFixedHeight(height);
         }
 
-        const dla::tvec2 size{ width, height };
-        const dla::tvec2 page_size{ PageWidth, PageHeight };
+        const dla::ivec2 size{ width, height };
+        const Size page_size{ PageWidth, PageHeight };
         const auto pixel_ratio{ size / page_size };
 
         const auto padding_width_left{ PaddingWidth - LeftMargins };

@@ -335,11 +335,11 @@ class DummyCardWidget : public CardWidget
 
   private slots:
     // clang-format off
-    virtual void EditNumber(Project&) {}
-    virtual void IncrementNumber(Project&) {}
-    virtual void DecrementNumber(Project&) {}
-    virtual void SetShortEdge(Project&, Qt::CheckState) {}
-    virtual void SetOversized(Project&, Qt::CheckState) {}
+    virtual void EditNumber(Project&) override {}
+    virtual void IncrementNumber(Project&) override {}
+    virtual void DecrementNumber(Project&)  override{}
+    virtual void SetShortEdge(Project&, Qt::CheckState)  override{}
+    virtual void SetOversized(Project&, Qt::CheckState)  override{}
     // clang-format on
 };
 
@@ -420,12 +420,18 @@ class CardScrollArea::CardGrid : public QWidget
             }
         };
         auto eat_or_make_real_card{
-            std::bind_back(eat_or_make_card, [](auto&&... args)
-                           { return new CardWidget{ std::forward<decltype(args)>(args)... }; })
+            [&](const fs::path& card_name)
+            {
+                return eat_or_make_card(card_name, [](auto&&... args)
+                                        { return new CardWidget{ std::forward<decltype(args)>(args)... }; });
+            }
         };
         auto eat_or_make_dummy_card{
-            std::bind_back(eat_or_make_card, [](auto&&... args)
-                           { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; })
+            [&](const fs::path& card_name)
+            {
+                return eat_or_make_card(card_name, [](auto&&... args)
+                                        { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; });
+            }
         };
 
         size_t i{ 0 };
