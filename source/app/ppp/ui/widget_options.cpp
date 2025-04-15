@@ -20,6 +20,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <dla/scalar_math.h>
 #include <dla/vector_math.h>
 
 #include <ppp/app.hpp>
@@ -438,6 +439,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_top_margin{
             [=, &project](double v)
             {
+                project.Data.RelativeMargins.y = static_cast<float>(v) / left_margin_spin->maximum();
                 project.Data.Margins.y = static_cast<float>(v) * 1_mm;
                 main_window()->MarginsChanged(project);
             }
@@ -446,6 +448,7 @@ class PrintOptionsWidget : public QGroupBox
         auto change_left_margin{
             [=, &project](double v)
             {
+                project.Data.RelativeMargins.x = static_cast<float>(v) / top_margin_spin->maximum();
                 project.Data.Margins.x = static_cast<float>(v) * 1_mm;
                 main_window()->MarginsChanged(project);
             }
@@ -620,6 +623,8 @@ class PrintOptionsWidget : public QGroupBox
         PaperInfo = paper_info->GetWidget();
         CardsInfo = cards_info->GetWidget();
         BasePdf = base_pdf_choice;
+        LeftMarginSpin = left_margin_spin;
+        TopMarginSpin = top_margin_spin;
     }
 
     void RefreshWidgets(const Project& project)
@@ -663,6 +668,18 @@ class PrintOptionsWidget : public QGroupBox
         const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
         BasePdf->setEnabled(infer_size);
         BasePdf->setVisible(infer_size);
+
+        const auto page_size{ project.ComputePageSize() };
+        const auto cards_size{ project.ComputeCardsSize() };
+        const auto max_margins{ page_size - cards_size };
+        if ((project.Data.RelativeMargins.x - 0.5f) < 0.001f)
+        {
+            LeftMarginSpin->setValue(max_margins.x / 2.0f / 1_mm);
+        }
+        if ((project.Data.RelativeMargins.y - 0.5f) < 0.001f)
+        {
+            TopMarginSpin->setValue(max_margins.y / 2.0f / 1_mm);
+        }
     }
 
   private:
@@ -693,7 +710,7 @@ class PrintOptionsWidget : public QGroupBox
 
     static std::string SizeToString(Size page_size)
     {
-        return fmt::format("{:.1f}cm x {:.1f}cm", page_size.x / 1_cm, page_size.y / 1_cm);
+        return fmt::format("{:.1f} x {:.1f} mm", page_size.x / 1_mm, page_size.y / 1_mm);
     }
 
     QLineEdit* PrintOutput;
@@ -706,6 +723,8 @@ class PrintOptionsWidget : public QGroupBox
     QLabel* PaperInfo;
     QLabel* CardsInfo;
     QWidget* BasePdf;
+    QDoubleSpinBox* LeftMarginSpin;
+    QDoubleSpinBox* TopMarginSpin;
 };
 
 class DefaultBacksidePreview : public QWidget
@@ -835,7 +854,13 @@ class CardOptionsWidget : public QGroupBox
         auto change_bleed_edge{
             [=, &project](double v)
             {
-                project.Data.BleedEdge = 1_mm * static_cast<float>(v);
+                const auto new_bleed_edge{ 1_mm * static_cast<float>(v) };
+                if (dla::math::abs(project.Data.BleedEdge - new_bleed_edge) < 0.001_mm)
+                {
+                    return;
+                }
+
+                project.Data.BleedEdge = new_bleed_edge;
                 main_window()->BleedChangedDiff(project.Data.BleedEdge);
                 main_window()->BleedChanged(project);
             }

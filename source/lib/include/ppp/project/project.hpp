@@ -94,6 +94,7 @@ class Project : public QObject
         // PDF generation options
         std::string PageSize{ CFG.DefaultPageSize };
         std::string BasePdf{ "None" };
+        dla::vec2 RelativeMargins{};
         Size Margins{};
         dla::uvec2 CardLayout{ 3, 3 };
         PageOrientation Orientation{ PageOrientation::Portrait };

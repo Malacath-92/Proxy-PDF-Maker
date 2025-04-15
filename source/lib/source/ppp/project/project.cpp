@@ -79,8 +79,9 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
             const Size page_size{ ComputePageSize() };
             const Size cards_size{ ComputeCardsSize() };
             const Size max_margins{ page_size - cards_size };
-            Data.Margins.x = json["margins"]["width"].get<float>() * max_margins.x;
-            Data.Margins.y = json["margins"]["height"].get<float>() * max_margins.y;
+            Data.RelativeMargins.x = json["margins"]["width"].get<float>();
+            Data.RelativeMargins.y = json["margins"]["height"].get<float>();
+            Data.Margins = Data.RelativeMargins * max_margins;
         }
 
         Data.FileName = json["file_name"].get<std::string>();
