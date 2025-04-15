@@ -43,7 +43,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
             card.Num = card_json["num"];
             card.Backside = card_json["backside"].get<std::string>();
             card.BacksideShortEdge = card_json["backside_short_edge"];
-            card.Oversized = card_json["oversized"];
+            card.Oversized = false;
         }
 
         Data.BleedEdge.value = json["bleed_edge"];
@@ -53,7 +53,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         Data.BacksideDefault = json["backside_default"].get<std::string>();
         Data.BacksideOffset.value = json["backside_offset"];
 
-        Data.OversizedEnabled = json["oversized_enabled"];
+        Data.OversizedEnabled = false;
 
         Data.PageSize = json["pagesize"];
         if (!CFG.PageSizes.contains(Data.PageSize))

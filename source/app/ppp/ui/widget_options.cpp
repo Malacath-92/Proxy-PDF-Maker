@@ -808,6 +808,8 @@ class CardOptionsWidget : public QGroupBox
 
         auto* oversized_checkbox{ new QCheckBox{ "Enable Oversized Option" } };
         oversized_checkbox->setChecked(project.Data.OversizedEnabled);
+        oversized_checkbox->setEnabled(false);
+        oversized_checkbox->setVisible(false);
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(bleed_edge);
