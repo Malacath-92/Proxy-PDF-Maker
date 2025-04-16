@@ -400,7 +400,6 @@ bool Cropper::DoCropWork(T* signaller)
             const PixelDensity max_density{ Cfg.MaxDPI };
 
             const auto card_size{ Data.CardSize() };
-            const auto card_size_with_bleed{ Data.CardSizeWithBleed() };
             const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
 
             const bool uncrop{ Cfg.EnableUncrop };
