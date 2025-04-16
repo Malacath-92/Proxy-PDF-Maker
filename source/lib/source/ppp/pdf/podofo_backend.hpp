@@ -27,6 +27,8 @@ class PoDoFoPage final : public PdfPage
 
   private:
     PoDoFo::PdfPage* Page{ nullptr };
+    Length CardWidth;
+    Length CornerRadius;
     PoDoFoImageCache* ImageCache;
 };
 
@@ -55,12 +57,14 @@ class PoDoFoDocument final : public PdfDocument
     PoDoFoDocument(const Project& project, PrintFn print_fn);
     virtual ~PoDoFoDocument() override = default;
 
-    virtual PoDoFoPage* NextPage(Size page_size) override;
+    virtual PoDoFoPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 
   private:
     std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;
+
+    const Project& TheProject;
 
     PoDoFo::PdfMemDocument Document;
     std::vector<PoDoFoPage> Pages;

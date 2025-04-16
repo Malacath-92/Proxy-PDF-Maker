@@ -57,6 +57,13 @@ class Project : public QObject
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
 
+    float CardRatio() const;
+    Size CardSize() const;
+    Size CardSizeWithBleed() const;
+    Size CardSizeWithFullBleed() const;
+    Length CardFullBleed() const;
+    Length CardCornerRadius() const;
+
   public slots:
     void SetPreview(const fs::path& image_name, ImagePreview preview);
 
@@ -92,6 +99,7 @@ class Project : public QObject
         bool OversizedEnabled{ false };
 
         // PDF generation options
+        std::string CardSizeChoice{ CFG.DefaultCardSize };
         std::string PageSize{ CFG.DefaultPageSize };
         std::string BasePdf{ "None" };
         dla::vec2 RelativeMargins{};
@@ -103,6 +111,17 @@ class Project : public QObject
         bool ExtendedGuides{ false };
         ColorRGB8 GuidesColorA{ 0, 0, 0 };
         ColorRGB8 GuidesColorB{ 190, 190, 190 };
+
+        // Utility functions
+        Size ComputePageSize() const;
+        Size ComputeCardsSize() const;
+
+        float CardRatio() const;
+        Size CardSize() const;
+        Size CardSizeWithBleed() const;
+        Size CardSizeWithFullBleed() const;
+        Length CardFullBleed() const;
+        Length CardCornerRadius() const;
     };
     ProjectData Data;
 

@@ -27,8 +27,13 @@ inline const std::array ValidImageExtensions{
 std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 
-Image CropImage(const Image& image, const fs::path& image_name, Length bleed_edge, PixelDensity max_density, PrintFn print_fn = nullptr);
-Image UncropImage(const Image& image, const fs::path& image_name, PrintFn print_fn = nullptr);
+Image CropImage(const Image& image,
+                const fs::path& image_name,
+                Size card_size_with_full_bleed,
+                Length bleed_edge,
+                PixelDensity max_density,
+                PrintFn print_fn = nullptr);
+Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, PrintFn print_fn = nullptr);
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 
@@ -40,6 +45,8 @@ bool NeedRunMinimalCropper(const fs::path& image_dir,
 void RunMinimalCropper(const fs::path& image_dir,
                        const fs::path& crop_dir,
                        std::span<const fs::path> card_list,
+                       Size card_size,
+                       Size card_size_with_full_bleed,
                        Length bleed_edge,
                        PixelDensity max_density,
                        const std::string& color_cube_name,

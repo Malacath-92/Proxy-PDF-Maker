@@ -42,7 +42,11 @@ class CardImage : public QLabel
     Params OriginalParams;
 
     bool Rotated;
+    Size CardSize;
+    Size CardSizeWithFullBleed;
+    float CardRatio;
     Length BleedEdge;
+    Length CornerRadius;
 
     QWidget* Spinner{ nullptr };
 };

@@ -110,7 +110,16 @@ class ActionsWidget : public QGroupBox
                             const fs::path& crop_dir{ project.Data.CropDir };
                             if (NeedRunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.ColorCube))
                             {
-                                RunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.MaxDPI, CFG.ColorCube, GetCubeImage(application, CFG.ColorCube), print_fn);
+                                RunMinimalCropper(image_dir,
+                                                  crop_dir,
+                                                  used_cards,
+                                                  project.CardSize(),
+                                                  project.CardSizeWithFullBleed(),
+                                                  bleed_edge,
+                                                  CFG.MaxDPI,
+                                                  CFG.ColorCube,
+                                                  GetCubeImage(application, CFG.ColorCube),
+                                                  print_fn);
                             }
                         }
 
@@ -380,7 +389,7 @@ class PrintOptionsWidget : public QGroupBox
                 const bool fit_size{ project.Data.PageSize == Config::FitSize };
                 if (!fit_size)
                 {
-                    const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
+                    const Size card_size_with_bleed{ project.CardSizeWithBleed() };
                     project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
                 }
 
@@ -418,7 +427,7 @@ class PrintOptionsWidget : public QGroupBox
                 project.Data.BasePdf = t.toStdString();
 
                 const Size page_size{ project.ComputePageSize() };
-                const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
+                const Size card_size_with_bleed{ project.CardSizeWithBleed() };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
                 const Size cards_size{ project.ComputeCardsSize() };
@@ -484,7 +493,7 @@ class PrintOptionsWidget : public QGroupBox
                 }
 
                 const Size page_size{ project.ComputePageSize() };
-                const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
+                const Size card_size_with_bleed{ project.CardSizeWithBleed() };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
                 const Size cards_size{ project.ComputeCardsSize() };
@@ -708,9 +717,9 @@ class PrintOptionsWidget : public QGroupBox
         return base_pdf_names;
     }
 
-    static std::string SizeToString(Size page_size)
+    static std::string SizeToString(Size size)
     {
-        return fmt::format("{:.1f} x {:.1f} mm", page_size.x / 1_mm, page_size.y / 1_mm);
+        return fmt::format("{:.1f} x {:.1f} mm", size.x / 1_mm, size.y / 1_mm);
     }
 
     QLineEdit* PrintOutput;

@@ -399,7 +399,9 @@ bool Cropper::DoCropWork(T* signaller)
             const Length bleed_edge{ Data.BleedEdge };
             const PixelDensity max_density{ Cfg.MaxDPI };
 
-            const auto image_size{ CFG.CardSizeWithoutBleed.Dimensions + 2 * bleed_edge };
+            const auto card_size{ Data.CardSize() };
+            const auto card_size_with_bleed{ Data.CardSizeWithBleed() };
+            const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
 
             const bool uncrop{ Cfg.EnableUncrop };
 
@@ -441,8 +443,8 @@ bool Cropper::DoCropWork(T* signaller)
                 if (!crop_file_hash.isEmpty())
                 {
                     const Image image{ Image::Read(crop_file) };
-                    const Image uncropped_image{ UncropImage(image, card_name, nullptr) };
-                    uncropped_image.Write(input_file, 3, 95, CFG.CardSizeWithBleed.Dimensions);
+                    const Image uncropped_image{ UncropImage(image, card_name, card_size, nullptr) };
+                    uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
 
                     std::unique_lock image_db_lock{ ImageDBMutex };
                     ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
@@ -465,15 +467,15 @@ bool Cropper::DoCropWork(T* signaller)
             }
 
             const Image image{ Image::Read(input_file) };
-            const Image cropped_image{ CropImage(image, card_name, bleed_edge, max_density, nullptr) };
+            const Image cropped_image{ CropImage(image, card_name, card_size_with_full_bleed, bleed_edge, max_density, nullptr) };
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-                vibrant_image.Write(output_file, 3, 95, image_size);
+                vibrant_image.Write(output_file, 3, 95, card_size);
             }
             else
             {
-                cropped_image.Write(output_file, 3, 95, image_size);
+                cropped_image.Write(output_file, 3, 95, card_size);
             }
 
             {
@@ -528,7 +530,9 @@ bool Cropper::DoPreviewWork(T* signaller)
         {
             std::shared_lock lock{ PropertyMutex };
             const Pixel preview_width{ Cfg.BasePreviewWidth };
-            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / CFG.CardRatio) };
+            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / Data.CardRatio()) };
+            const Size card_size{ Data.CardSize() };
+            const Size card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
             const bool enable_uncrop{ Cfg.EnableUncrop };
 
             const fs::path input_file{ Data.ImageDir / card_name };
@@ -565,7 +569,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.UncroppedImage = image;
-                image_preview.CroppedImage = CropImage(image, card_name, 0_mm, 1200_dpi, nullptr);
+                image_preview.CroppedImage = CropImage(image, card_name, card_size_with_full_bleed, 0_mm, 1200_dpi, nullptr);
 
                 {
                     std::unique_lock image_db_lock{ ImageDBMutex };
@@ -594,7 +598,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                     [&]() -> PixelSize
                     {
                         const auto [w, h]{ uncropped_size.pod() };
-                        const auto [bw, bh]{ CFG.CardSizeWithBleed.Dimensions.pod() };
+                        const auto [bw, bh]{ card_size_with_full_bleed.pod() };
                         const auto density{ dla::math::min(w / bw, h / bh) };
                         const auto crop{ dla::math::round(0.12_in * density) };
                         return uncropped_size - 2.0f * crop;
@@ -605,7 +609,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.CroppedImage = image;
-                image_preview.UncroppedImage = UncropImage(image, card_name, nullptr);
+                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, nullptr);
 
                 signaller->PreviewUpdated(card_name, image_preview);
             }

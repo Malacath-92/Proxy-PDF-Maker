@@ -31,7 +31,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * project.Data.BleedEdge };
+    const auto card_size_with_bleed{ project.CardSize() };
     const auto page_size{ project.ComputePageSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };
@@ -164,7 +164,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                 "Rendering page {}...\nImage number {} - {}"
             };
 
-            PdfPage* front_page{ pdf->NextPage(page_size) };
+            PdfPage* front_page{ pdf->NextPage() };
 
             size_t i{};
             for (size_t y = 0; y < rows; y++)
@@ -194,7 +194,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                 "Rendering backside for page {}...\nImage number {} - {}"
             };
 
-            PdfPage* back_page{ pdf->NextPage(page_size) };
+            PdfPage* back_page{ pdf->NextPage() };
 
             size_t i{};
             for (size_t y = 0; y < rows; y++)

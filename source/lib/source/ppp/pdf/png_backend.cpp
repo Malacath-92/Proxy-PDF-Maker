@@ -42,8 +42,8 @@ void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Lengt
 void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CFG.CardCornerRadius.Dimension * dx };
-    const auto ty{ y + CFG.CardCornerRadius.Dimension * dy };
+    const auto tx{ x + CornerRadius * dx };
+    const auto ty{ y + CornerRadius * dy };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);
@@ -108,7 +108,7 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
     : TheProject{ project }
     , PrintFunction{ std::move(print_fn) }
 {
-    const auto card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * TheProject.Data.BleedEdge };
+    const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const dla::ivec2 card_size_pixels{
         static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
         static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),
@@ -130,13 +130,14 @@ PngDocument::~PngDocument()
 {
 }
 
-PngPage* PngDocument::NextPage(Size /*page_size*/)
+PngPage* PngDocument::NextPage()
 {
     auto& new_page{ Pages.emplace_back() };
     new_page.TheProject = &TheProject;
     new_page.PerfectFit = TheProject.Data.PageSize == Config::FitSize;
     new_page.CardSize = PrecomputedCardSize;
     new_page.PageSize = PrecomputedPageSize;
+    new_page.CornerRadius = TheProject.CardCornerRadius();
     new_page.Page = cv::Mat::zeros(cv::Size{ static_cast<int32_t>(PrecomputedPageSize.x / 1_pix), static_cast<int32_t>(PrecomputedPageSize.y / 1_pix) }, CV_8UC4);
     new_page.ImageCache = ImageCache.get();
     return &new_page;

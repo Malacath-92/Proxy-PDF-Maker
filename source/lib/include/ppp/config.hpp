@@ -33,6 +33,7 @@ struct Config
     Pixel BasePreviewWidth{ 248_pix };
     PixelDensity MaxDPI{ 1200_dpi };
     uint32_t DisplayColumns{ 5 };
+    std::string DefaultCardSize{ "Magic the Gathering" };
     std::string DefaultPageSize{ "Letter" };
     std::string ColorCube{ "None" };
     fs::path FallbackName{ "fallback.png"_p };
@@ -57,11 +58,13 @@ struct Config
         uint32_t Decimals;
     };
 
-    float CardSizeScale{ 1.0f };
-    SizeInfo CardSizeWithoutBleed{ { 2.48_in, 3.46_in }, 1_in, 2u };
-    SizeInfo CardSizeWithBleed{ { 2.72_in, 3.70_in }, 1_in, 2u };
-    LengthInfo CardCornerRadius{ 1_in / 8, 1_in, 3u };
-    float CardRatio{ CardSizeWithoutBleed.Dimensions.x / CardSizeWithoutBleed.Dimensions.y };
+    struct CardSizeInfo
+    {
+        SizeInfo CardSize;
+        LengthInfo BleedEdge;
+        LengthInfo CornerRadius;
+        float CardSizeScale{ 1.0f };
+    };
 
     std::map<std::string, SizeInfo> PageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
@@ -71,6 +74,33 @@ struct Config
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
         { std::string{ FitSize }, {} },
         { std::string{ BasePDFSize }, {} },
+    };
+
+    std::map<std::string, CardSizeInfo> CardSizes{
+        {
+            "Magic the Gathering",
+            {
+                .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
+                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .CornerRadius{ 1_in / 8, 1_in, 3u },
+            },
+        },
+        {
+            "MtG Oversized",
+            {
+                .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
+                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .CornerRadius{ 1_in / 4, 1_in, 2u },
+            },
+        },
+        {
+            "Yu-Gi-Oh",
+            {
+                .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
+                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .CornerRadius{ 0.05_in, 1_in, 2u },
+            },
+        },
     };
 
     void SetPdfBackend(PdfBackend backend);

@@ -1,5 +1,7 @@
 #include <ppp/pdf/haru_backend.hpp>
 
+#include <ppp/project/project.hpp>
+
 inline HPDF_REAL ToHaruReal(Length l)
 {
     return static_cast<HPDF_REAL>(l / 1_pts);
@@ -11,8 +13,8 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
     const auto real_fy{ ToHaruReal(fy) };
     const auto real_tx{ ToHaruReal(tx) };
     const auto real_ty{ ToHaruReal(ty) };
-    const auto line_width{ CFG.CardSizeWithoutBleed.Dimensions.x / 2.5_in };
-    const auto dash_size{ ToHaruReal(CFG.CardCornerRadius.Dimension) / 5.0f };
+    const auto line_width{ CardWidth / 2.5_in };
+    const auto dash_size{ ToHaruReal(CornerRadius) / 5.0f };
 
     HPDF_Page_SetLineWidth(Page, line_width);
 
@@ -36,8 +38,8 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
 void HaruPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CFG.CardCornerRadius.Dimension * dx };
-    const auto ty{ y + CFG.CardCornerRadius.Dimension * dy };
+    const auto tx{ x + CornerRadius * dx };
+    const auto ty{ y + CornerRadius * dy };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);
@@ -97,8 +99,9 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
     return libharu_image;
 }
 
-HaruPdfDocument::HaruPdfDocument(PrintFn print_fn)
-    : PrintFunction{ std::move(print_fn) }
+HaruPdfDocument::HaruPdfDocument(const Project& project, PrintFn print_fn)
+    : TheProject{ project }
+    , PrintFunction{ std::move(print_fn) }
 {
     static constexpr auto error_handler{
         [](HPDF_STATUS error_no,
@@ -120,10 +123,13 @@ HaruPdfDocument::~HaruPdfDocument()
     HPDF_Free(Document);
 }
 
-HaruPdfPage* HaruPdfDocument::NextPage(Size page_size)
+HaruPdfPage* HaruPdfDocument::NextPage()
 {
+    const auto page_size{ TheProject.ComputePageSize() };
     auto& new_page{ Pages.emplace_back() };
     new_page.Page = HPDF_AddPage(Document);
+    new_page.CardWidth = TheProject.CardSize().x;
+    new_page.CornerRadius = TheProject.CardCornerRadius();
     HPDF_Page_SetWidth(new_page.Page, ToHaruReal(page_size.x));
     HPDF_Page_SetHeight(new_page.Page, ToHaruReal(page_size.y));
     new_page.ImageCache = ImageCache.get();

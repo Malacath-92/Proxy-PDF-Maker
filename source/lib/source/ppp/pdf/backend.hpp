@@ -50,7 +50,7 @@ class PdfDocument
   public:
     virtual ~PdfDocument() = default;
 
-    virtual PdfPage* NextPage(Size page_size) = 0;
+    virtual PdfPage* NextPage() = 0;
 
     virtual fs::path Write(fs::path path) = 0;
 };

@@ -155,9 +155,8 @@ class GuidesOverlay : public QWidget
         BleedEdge = project.Data.BleedEdge;
         CornerWeight = project.Data.CornerWeight;
 
-        const Length card_width{ CFG.CardSizeWithoutBleed.Dimensions.x + 2 * project.Data.BleedEdge };
-        const Length card_height{ CFG.CardSizeWithoutBleed.Dimensions.y + 2 * project.Data.BleedEdge };
-        CardSizeWithBleedEdge = Size{ card_width, card_height };
+        CardSizeWithBleedEdge = project.CardSizeWithBleed();
+        CornerRadius = project.CardCornerRadius();
 
         PenOne.setWidth(2);
         PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
@@ -200,8 +199,8 @@ class GuidesOverlay : public QWidget
             grid_size.x / columns,
             grid_size.y / rows,
         };
-        const auto pixel_ratio{ card_size / CFG.CardSizeWithBleed.Dimensions };
-        const auto line_length{ CFG.CardCornerRadius.Dimension * pixel_ratio };
+        const auto pixel_ratio{ card_size / CardSizeWithBleedEdge };
+        const auto line_length{ CornerRadius * pixel_ratio };
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
@@ -238,6 +237,7 @@ class GuidesOverlay : public QWidget
     Length BleedEdge;
     float CornerWeight;
     Size CardSizeWithBleedEdge;
+    Length CornerRadius;
 
     QPen PenOne;
     QPen PenTwo;
@@ -268,9 +268,8 @@ class BordersOverlay : public QWidget
         BleedEdge = project.Data.BleedEdge;
         CornerWeight = project.Data.CornerWeight;
 
-        const Length card_width{ CFG.CardSizeWithoutBleed.Dimensions.x + 2 * project.Data.BleedEdge };
-        const Length card_height{ CFG.CardSizeWithoutBleed.Dimensions.y + 2 * project.Data.BleedEdge };
-        CardSizeWithBleedEdge = Size{ card_width, card_height };
+        CardSizeWithBleedEdge = project.CardSizeWithBleed();
+        CornerRadius = project.CardCornerRadius();
 
         Pen.setWidth(1);
         Pen.setColor(QColor{ 255, 0, 0 });
@@ -307,8 +306,8 @@ class BordersOverlay : public QWidget
             grid_size.x / columns,
             grid_size.y / rows,
         };
-        const auto pixel_ratio{ card_size_with_bleed / CFG.CardSizeWithBleed.Dimensions };
-        const auto corner_radius{ CFG.CardCornerRadius.Dimension * pixel_ratio };
+        const auto pixel_ratio{ card_size_with_bleed / CardSizeWithBleedEdge };
+        const auto corner_radius{ CornerRadius * pixel_ratio };
         const auto offset{ BleedEdge * pixel_ratio };
         const auto card_size{ card_size_with_bleed - 2 * offset };
 
@@ -352,6 +351,7 @@ class BordersOverlay : public QWidget
     Length BleedEdge;
     float CornerWeight;
     Size CardSizeWithBleedEdge;
+    Length CornerRadius;
 
     QPen Pen;
     QPainterPath CardBorder;
@@ -414,8 +414,8 @@ class PrintPreview::PagePreview : public QWidget
         PageWidth = page_width;
         PageHeight = page_height;
 
-        const Length card_width{ CFG.CardSizeWithoutBleed.Dimensions.x + 2 * project.Data.BleedEdge };
-        const Length card_height{ CFG.CardSizeWithoutBleed.Dimensions.y + 2 * project.Data.BleedEdge };
+        const Size card_size_with_bleed{ project.CardSizeWithBleed() };
+        const auto [card_width, card_height]{ card_size_with_bleed.pod() };
         CardWidth = card_width;
         CardHeight = card_height;
 

@@ -71,7 +71,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         }
         else
         {
-            const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * Data.BleedEdge };
+            const Size card_size_with_bleed{ CardSizeWithBleed() };
             Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
         }
 
@@ -285,7 +285,6 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
     }
     return Data.BacksideDefault;
 }
-
 Size Project::ComputePageSize() const
 {
     const bool fit_size{ Data.PageSize == Config::FitSize };
@@ -313,8 +312,125 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeCardsSize() const
 {
-    const Size card_size_with_bleed{ CFG.CardSizeWithoutBleed.Dimensions + 2 * Data.BleedEdge };
+    const Size card_size_with_bleed{ CardSize() + 2 * Data.BleedEdge };
     return Data.CardLayout * card_size_with_bleed;
+}
+
+float Project::CardRatio() const
+{
+    return Data.CardRatio();
+}
+
+Size Project::CardSize() const
+{
+    return Data.CardSize();
+}
+
+Size Project::CardSizeWithBleed() const
+{
+    return Data.CardSizeWithBleed();
+}
+
+Size Project::CardSizeWithFullBleed() const
+{
+    return Data.CardSizeWithFullBleed();
+}
+
+Length Project::CardFullBleed() const
+{
+    return Data.CardFullBleed();
+}
+
+Length Project::CardCornerRadius() const
+{
+    return Data.CardCornerRadius();
+}
+
+Size Project::ProjectData::ComputePageSize() const
+{
+    const bool fit_size{ PageSize == Config::FitSize };
+    const bool infer_size{ PageSize == Config::BasePDFSize };
+
+    if (fit_size)
+    {
+        return ComputeCardsSize();
+    }
+    else if (infer_size)
+    {
+        return LoadPdfSize(BasePdf + ".pdf")
+            .value_or(CFG.PageSizes["A4"].Dimensions);
+    }
+    else
+    {
+        auto page_size{ CFG.PageSizes[PageSize].Dimensions };
+        if (Orientation == PageOrientation::Landscape)
+        {
+            std::swap(page_size.x, page_size.y);
+        }
+        return page_size;
+    }
+}
+
+Size Project::ProjectData::ComputeCardsSize() const
+{
+    const Size card_size_with_bleed{ CardSize() + 2 * BleedEdge };
+    return CardLayout * card_size_with_bleed;
+}
+
+float Project::ProjectData::CardRatio() const
+{
+    const auto& card_size{ CardSize() };
+    return card_size.x / card_size.y;
+}
+
+Size Project::ProjectData::CardSize() const
+{
+    const auto& card_size_info{
+        CFG.CardSizes.contains(CardSizeChoice)
+            ? CFG.CardSizes.at(CardSizeChoice)
+            : CFG.CardSizes.at(CFG.DefaultCardSize),
+    };
+    return card_size_info.CardSize.Dimensions;
+}
+
+Size Project::ProjectData::CardSizeWithBleed() const
+{
+    const auto& card_size_info{
+        CFG.CardSizes.contains(CardSizeChoice)
+            ? CFG.CardSizes.at(CardSizeChoice)
+            : CFG.CardSizes.at(CFG.DefaultCardSize),
+    };
+    return card_size_info.CardSize.Dimensions + BleedEdge * 2;
+}
+
+Size Project::ProjectData::CardSizeWithFullBleed() const
+{
+    const auto& card_size_info{
+        CFG.CardSizes.contains(CardSizeChoice)
+            ? CFG.CardSizes.at(CardSizeChoice)
+            : CFG.CardSizes.at(CFG.DefaultCardSize),
+    };
+    return card_size_info.CardSize.Dimensions + card_size_info.BleedEdge.Dimension * 2;
+}
+
+Length Project::ProjectData::CardFullBleed() const
+{
+    const auto& card_size_info{
+        CFG.CardSizes.contains(CardSizeChoice)
+            ? CFG.CardSizes.at(CardSizeChoice)
+            : CFG.CardSizes.at(CFG.DefaultCardSize),
+    };
+    return card_size_info.BleedEdge.Dimension;
+}
+
+Length Project::ProjectData::CardCornerRadius() const
+{
+    const auto& card_size_info{
+        CFG.CardSizes.contains(CardSizeChoice)
+            ? CFG.CardSizes.at(CardSizeChoice)
+            : CFG.CardSizes.at(CFG.DefaultCardSize),
+    };
+    return card_size_info.CornerRadius.Dimension;
 }
 
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)

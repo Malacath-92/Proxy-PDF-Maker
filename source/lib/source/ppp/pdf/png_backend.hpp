@@ -30,6 +30,7 @@ class PngPage final : public PdfPage
     bool PerfectFit{};
     PixelSize CardSize{};
     PixelSize PageSize{};
+    Length CornerRadius;
     PngImageCache* ImageCache;
 };
 
@@ -56,7 +57,7 @@ class PngDocument final : public PdfDocument
     PngDocument(const Project& project, PrintFn print_fn);
     virtual ~PngDocument() override;
 
-    virtual PngPage* NextPage(Size page_size) override;
+    virtual PngPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 

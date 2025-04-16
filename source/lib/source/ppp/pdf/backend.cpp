@@ -9,7 +9,7 @@ std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project
     switch (backend)
     {
     case PdfBackend::LibHaru:
-        return std::make_unique<HaruPdfDocument>(std::move(print_fn));
+        return std::make_unique<HaruPdfDocument>(project, std::move(print_fn));
     case PdfBackend::PoDoFo:
         return std::make_unique<PoDoFoDocument>(project, std::move(print_fn));
     case PdfBackend::Png:

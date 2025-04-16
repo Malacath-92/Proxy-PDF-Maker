@@ -4,6 +4,8 @@
 
 #include <ppp/pdf/backend.hpp>
 
+class Project;
+
 class HaruPdfDocument;
 class HaruPdfImageCache;
 
@@ -20,10 +22,12 @@ class HaruPdfPage final : public PdfPage
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     HPDF_Page Page{ nullptr };
+    Length CardWidth;
+    Length CornerRadius;
     HaruPdfImageCache* ImageCache;
 };
 
@@ -49,15 +53,16 @@ class HaruPdfImageCache
 class HaruPdfDocument final : public PdfDocument
 {
   public:
-    HaruPdfDocument(PrintFn print_fn);
+    HaruPdfDocument(const Project& project, PrintFn print_fn);
     virtual ~HaruPdfDocument() override;
 
-    virtual HaruPdfPage* NextPage(Size page_size) override;
+    virtual HaruPdfPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 
   private:
     HPDF_Doc Document;
+    const Project& TheProject;
     std::vector<HaruPdfPage> Pages;
 
     std::unique_ptr<HaruPdfImageCache> ImageCache;

@@ -48,6 +48,13 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     ImageName = image_name;
     OriginalParams = params;
 
+    Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
+    CardSize = project.CardSize();
+    CardSizeWithFullBleed = project.CardSizeWithFullBleed();
+    CardRatio = CardSize.x / CardSize.y;
+    BleedEdge = params.BleedEdge;
+    CornerRadius = project.CardCornerRadius();
+
     const bool has_image{ project.HasPreview(image_name) };
     const bool has_bleed_edge{ params.BleedEdge > 0_mm };
 
@@ -59,7 +66,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 if (has_bleed_edge)
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, project.Data.BleedEdge, 6800_dpi, nullptr) };
+                    Image image{ CropImage(uncropped_image, image_name, CardSizeWithFullBleed, project.Data.BleedEdge, 6800_dpi, nullptr) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -73,7 +80,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             else
             {
                 const int width{ static_cast<int>(CFG.BasePreviewWidth.value) };
-                const int height{ static_cast<int>(width / CFG.CardRatio) };
+                const int height{ static_cast<int>(width / CardRatio) };
                 QPixmap raw_pixmap{ width, height };
                 raw_pixmap.fill(QColor::fromRgb(0x808080));
                 return raw_pixmap;
@@ -103,17 +110,14 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     }
 
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
-
-    Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
-    BleedEdge = params.BleedEdge;
 }
 
 int CardImage::heightForWidth(int width) const
 {
-    float card_ratio{ CFG.CardRatio };
+    float card_ratio{ CardRatio };
     if (BleedEdge > 0_mm)
     {
-        const auto card_size{ CFG.CardSizeWithoutBleed.Dimensions + 2.0f * BleedEdge };
+        const auto card_size{ CardSize + 2.0f * BleedEdge };
         card_ratio = card_size.x / card_size.y;
     }
 
@@ -143,7 +147,7 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
                 if (BleedEdge > 0_mm)
                 {
                     const Image& uncropped_image{ preview.UncroppedImage };
-                    Image image{ CropImage(uncropped_image, image_name, BleedEdge, 6800_dpi, nullptr) };
+                    Image image{ CropImage(uncropped_image, image_name, CardSizeWithFullBleed, BleedEdge, 6800_dpi, nullptr) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -165,8 +169,7 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 
     if (OriginalParams.RoundedCorners)
     {
-        const Length card_corner_radius_inch{ CFG.CardCornerRadius.Dimension };
-        const Pixel card_corner_radius_pixels{ card_corner_radius_inch * pixmap.width() / CFG.CardSizeWithoutBleed.Dimensions.x };
+        const Pixel card_corner_radius_pixels{ CornerRadius * pixmap.width() / CardSize.x };
 
         QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
