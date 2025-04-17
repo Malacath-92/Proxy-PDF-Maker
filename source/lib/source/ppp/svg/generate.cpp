@@ -1,3 +1,4 @@
+
 #include <ppp/svg/generate.hpp>
 
 #include <QPen>
@@ -8,7 +9,7 @@
 
 #include <ppp/project/project.hpp>
 
-void DrawSvg(QPainter& painter, const QPainterPath& path, PrintFn print_fn)
+void DrawSvg(QPainter& painter, const QPainterPath& path, PrintFn /*print_fn*/)
 {
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
@@ -37,7 +38,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                Size card_size,
                                Length bleed_edge,
                                Length corner_radius,
-                               PrintFn print_fn)
+                               PrintFn /*print_fn*/)
 {
     const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
     const auto card_size_with_bleed_pixels{ size / grid };
@@ -83,7 +84,6 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 void GenerateCardsSvg(const Project& project, PrintFn print_fn)
 {
     const auto svg_path{ fs::path{ project.Data.FileName }.replace_extension(".svg") };
-    const dla::vec2 svg_size{ project.Data.CardLayout * project.CardSizeWithBleed() / 1_m };
 
     PPP_LOG("Generating card path...");
     QPainterPath path{ GenerateCardsPath(project, print_fn) };
