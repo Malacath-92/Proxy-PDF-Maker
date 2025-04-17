@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include <ppp/util.hpp>
 
 class Project;

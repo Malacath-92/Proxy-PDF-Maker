@@ -15,7 +15,7 @@ consteval uint64_t ImageCacheFormatVersion()
 
 consteval std::string_view JsonFormatVersion()
 {
-    return "PPP00004";
+    return "PPP00005";
 }
 
 consteval std::string_view ImageDbFormatVersion()

@@ -1,0 +1,101 @@
+#include <ppp/svg/generate.hpp>
+
+#include <QPen>
+#include <QRect>
+#include <QSvgGenerator>
+
+#include <ppp/qt_util.hpp>
+
+#include <ppp/project/project.hpp>
+
+void DrawSvg(QPainter& painter, const QPainterPath& path, PrintFn print_fn)
+{
+    painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
+
+    QPen pen{};
+    pen.setWidth(1);
+    pen.setColor(QColor{ 255, 0, 0 });
+    painter.setPen(pen);
+    painter.drawPath(path);
+}
+
+QPainterPath GenerateCardsPath(const Project& project, PrintFn print_fn)
+{
+    const auto svg_size{ project.Data.CardLayout * project.CardSizeWithBleed() / 1_mm };
+    return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
+                             svg_size,
+                             project.Data.CardLayout,
+                             project.CardSize(),
+                             project.Data.BleedEdge,
+                             project.CardCornerRadius(),
+                             std::move(print_fn));
+}
+
+QPainterPath GenerateCardsPath(dla::vec2 origin,
+                               dla::vec2 size,
+                               dla::uvec2 grid,
+                               Size card_size,
+                               Length bleed_edge,
+                               Length corner_radius,
+                               PrintFn print_fn)
+{
+    const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
+    const auto card_size_with_bleed_pixels{ size / grid };
+    const auto pixel_ratio{ card_size_with_bleed_pixels / card_size_with_bleed };
+    const auto corner_radius_pixels{ corner_radius * pixel_ratio };
+    const auto offset_pixels{ bleed_edge * pixel_ratio };
+    const auto card_size_pixels{ card_size_with_bleed_pixels - 2 * offset_pixels };
+
+    QPainterPath card_border;
+    if (bleed_edge > 0_mm)
+    {
+        const QRectF rect{
+            origin.x,
+            origin.y,
+            size.x,
+            size.y,
+        };
+        card_border.addRect(rect);
+    }
+
+    const auto& [columns, rows]{ grid.pod() };
+    for (uint32_t x = 0; x < columns; x++)
+    {
+        for (uint32_t y = 0; y < rows; y++)
+        {
+            const dla::uvec2 idx{ x, y };
+            const auto top_left_corner{
+                origin + idx * card_size_with_bleed_pixels + offset_pixels
+            };
+            const QRectF rect{
+                top_left_corner.x,
+                top_left_corner.y,
+                card_size_pixels.x,
+                card_size_pixels.y,
+            };
+            card_border.addRoundedRect(rect, corner_radius_pixels.x, corner_radius_pixels.y);
+        }
+    }
+
+    return card_border;
+}
+
+void GenerateCardsSvg(const Project& project, PrintFn print_fn)
+{
+    const auto svg_path{ fs::path{ project.Data.FileName }.replace_extension(".svg") };
+    const dla::vec2 svg_size{ project.Data.CardLayout * project.CardSizeWithBleed() / 1_m };
+
+    PPP_LOG("Generating card path...");
+    QPainterPath path{ GenerateCardsPath(project, print_fn) };
+
+    QSvgGenerator generator{};
+    generator.setFileName(ToQString(svg_path));
+    generator.setTitle("Card cutting guides.");
+    generator.setDescription("An SVG containing exact cutting guides for the accompaniying sheet.");
+
+    PPP_LOG("Drawing card path...");
+    QPainter painter;
+    painter.begin(&generator);
+    DrawSvg(painter, path, print_fn);
+    painter.end();
+}

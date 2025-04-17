@@ -107,6 +107,7 @@ class Project : public QObject
         dla::uvec2 CardLayout{ 3, 3 };
         PageOrientation Orientation{ PageOrientation::Portrait };
         fs::path FileName{ "_printme" };
+        bool ExportExactGuides{ false };
         bool EnableGuides{ true };
         bool ExtendedGuides{ false };
         ColorRGB8 GuidesColorA{ 0, 0, 0 };

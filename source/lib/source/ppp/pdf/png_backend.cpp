@@ -59,7 +59,7 @@ void PngPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w
         const auto real_y{ card_idx_y * static_cast<int32_t>(CardSize.y / 1_pix) };
         const auto real_w{ static_cast<int32_t>(CardSize.x / 1_pix) };
         const auto real_h{ static_cast<int32_t>(CardSize.y / 1_pix) };
-        ImageCache->GetImage(image_path, w, h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+        ImageCache->GetImage(image_path, real_w, real_h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
     }
     else
     {
@@ -67,11 +67,11 @@ void PngPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w
         const auto real_y{ ToPixels(y) };
         const auto real_w{ ToPixels(w) };
         const auto real_h{ ToPixels(h) };
-        ImageCache->GetImage(image_path, w, h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+        ImageCache->GetImage(image_path, real_w, real_h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
     }
 }
 
-const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, Image::Rotation rotation)
+const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
 {
     const auto it{
         std::ranges::find_if(image_cache, [&](const ImageCacheEntry& entry)
@@ -82,13 +82,10 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, Length w, Length h, 
         return it->PngImage;
     }
 
-    const auto real_w{ w * CFG.MaxDPI };
-    const auto real_h{ h * CFG.MaxDPI };
-
     const Image loaded_image{
         Image::Read(image_path)
             .Rotate(rotation)
-            .Resize({ real_w, real_h }),
+            .Resize({ w * 1_pix, h * 1_pix }),
     };
     const cv::Mat& three_channel_image{ loaded_image.GetUnderlying() };
     cv::Mat four_channel_image{};
@@ -123,6 +120,8 @@ PngDocument::PngDocument(const Project& project, PrintFn print_fn)
         static_cast<float>(page_size_pixels.x) * 1_pix,
         static_cast<float>(page_size_pixels.y) * 1_pix,
     };
+
+    PageSize = project.ComputePageSize();
 
     ImageCache = std::make_unique<PngImageCache>();
 }

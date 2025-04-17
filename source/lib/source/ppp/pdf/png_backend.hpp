@@ -37,14 +37,14 @@ class PngPage final : public PdfPage
 class PngImageCache
 {
   public:
-    const cv::Mat& GetImage(fs::path image_path, Length w, Length h, Image::Rotation rotation);
+    const cv::Mat& GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
 
   private:
     struct ImageCacheEntry
     {
         fs::path ImagePath;
-        Length Width;
-        Length Height;
+        int32_t Width;
+        int32_t Height;
         Image::Rotation ImageRotation;
         cv::Mat PngImage;
     };

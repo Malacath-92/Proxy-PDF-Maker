@@ -85,6 +85,7 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         }
 
         Data.FileName = json["file_name"].get<std::string>();
+        Data.ExportExactGuides = json["export_exact_guides"];
         Data.EnableGuides = json["enable_guides"];
         Data.ExtendedGuides = json["extended_guides"];
         Data.GuidesColorA.r = json["guides_color_a"][0];
@@ -153,6 +154,7 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
         };
         json["orientation"] = magic_enum::enum_name(Data.Orientation);
         json["file_name"] = Data.FileName.string();
+        json["export_exact_guides"] = Data.ExportExactGuides;
         json["enable_guides"] = Data.EnableGuides;
         json["extended_guides"] = Data.ExtendedGuides;
         json["guides_color_a"] = std::array{ Data.GuidesColorA.r, Data.GuidesColorA.g, Data.GuidesColorA.b };

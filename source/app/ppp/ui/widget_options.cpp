@@ -30,6 +30,7 @@
 
 #include <ppp/pdf/generate.hpp>
 #include <ppp/pdf/util.hpp>
+#include <ppp/svg/generate.hpp>
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
@@ -127,6 +128,11 @@ class ActionsWidget : public QGroupBox
                         {
                             const auto file_path{ GeneratePdf(project, print_fn) };
                             OpenFile(file_path);
+
+                            if (project.Data.ExportExactGuides)
+                            {
+                                GenerateCardsSvg(project, print_fn);
+                            }
                         }
                         catch (const std::exception& e)
                         {
@@ -170,7 +176,7 @@ class ActionsWidget : public QGroupBox
                             }
                         };
 
-                        auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
 
                         main_window->setEnabled(false);
                         reload_window.ShowDuringWork(load_project_work);
@@ -195,7 +201,7 @@ class ActionsWidget : public QGroupBox
 
                         project.Init(nullptr);
 
-                        auto main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
                         main_window->ImageDirChangedDiff(project.Data.ImageDir,
                                                          project.Data.CropDir,
                                                          project.Data.Previews | std::views::keys | std::ranges::to<std::vector>());
@@ -336,6 +342,10 @@ class PrintOptionsWidget : public QGroupBox
         orientation->setEnabled(!initial_fit_size && !initial_infer_size);
         orientation->setVisible(!initial_fit_size && !initial_infer_size);
 
+        auto* export_exact_guides_checkbox{ new QCheckBox{ "Export Exact Guides" } };
+        export_exact_guides_checkbox->setChecked(project.Data.ExportExactGuides);
+        export_exact_guides_checkbox->setToolTip("Decides whether a .svg file will be generated that contains the exact guides for the current layout");
+
         auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
         enable_guides_checkbox->setChecked(project.Data.EnableGuides);
         auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
@@ -360,6 +370,7 @@ class PrintOptionsWidget : public QGroupBox
         layout->addWidget(top_margin);
         layout->addWidget(cards_layout);
         layout->addWidget(orientation);
+        layout->addWidget(export_exact_guides_checkbox);
         layout->addWidget(enable_guides_checkbox);
         layout->addWidget(extended_guides_checkbox);
         layout->addWidget(guides_color_a);
@@ -508,6 +519,16 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
+        auto change_export_exact_guides{
+            [=, &project](Qt::CheckState s)
+            {
+                const bool enabled{ s == Qt::CheckState::Checked };
+                project.Data.ExportExactGuides = enabled;
+
+                main_window()->ExactGuidesEnabledChanged(project);
+            }
+        };
+
         auto change_enable_guides{
             [=, &project](Qt::CheckState s)
             {
@@ -605,6 +626,10 @@ class PrintOptionsWidget : public QGroupBox
                          &QComboBox::currentTextChanged,
                          this,
                          change_orientation);
+        QObject::connect(export_exact_guides_checkbox,
+                         &QCheckBox::checkStateChanged,
+                         this,
+                         change_export_exact_guides);
         QObject::connect(enable_guides_checkbox,
                          &QCheckBox::checkStateChanged,
                          this,

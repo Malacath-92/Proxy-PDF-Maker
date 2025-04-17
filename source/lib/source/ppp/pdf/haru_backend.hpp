@@ -22,7 +22,7 @@ class HaruPdfPage final : public PdfPage
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
 
-    virtual void Finish() override {};
+    virtual void Finish() override{};
 
   private:
     HPDF_Page Page{ nullptr };

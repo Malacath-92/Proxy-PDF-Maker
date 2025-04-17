@@ -12,6 +12,7 @@
 #include <ppp/util.hpp>
 
 #include <ppp/pdf/util.hpp>
+#include <ppp/svg/generate.hpp>
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
@@ -268,11 +269,8 @@ class BordersOverlay : public QWidget
         BleedEdge = project.Data.BleedEdge;
         CornerWeight = project.Data.CornerWeight;
 
-        CardSizeWithBleedEdge = project.CardSizeWithBleed();
+        CardSize = project.CardSize();
         CornerRadius = project.CardCornerRadius();
-
-        Pen.setWidth(1);
-        Pen.setColor(QColor{ 255, 0, 0 });
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -282,18 +280,15 @@ class BordersOverlay : public QWidget
     virtual void paintEvent(QPaintEvent* /*event*/) override
     {
         QPainter painter{ this };
-        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
-
-        painter.setPen(Pen);
-        painter.drawPath(CardBorder);
-
+        DrawSvg(painter, CardBorder, nullptr);
         painter.end();
     }
 
     void ResizeOverlay(PageGrid* grid)
     {
-        const auto columns{ static_cast<QGridLayout*>(grid->layout())->columnCount() };
-        const auto rows{ static_cast<QGridLayout*>(grid->layout())->rowCount() };
+        const uint32_t columns{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->columnCount()) };
+        const uint32_t rows{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->rowCount()) };
+
         const dla::vec2 first_card_corner{
             static_cast<float>(grid->pos().x()),
             static_cast<float>(grid->pos().y()),
@@ -302,42 +297,7 @@ class BordersOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        const dla::vec2 card_size_with_bleed{
-            grid_size.x / columns,
-            grid_size.y / rows,
-        };
-        const auto pixel_ratio{ card_size_with_bleed / CardSizeWithBleedEdge };
-        const auto corner_radius{ CornerRadius * pixel_ratio };
-        const auto offset{ BleedEdge * pixel_ratio };
-        const auto card_size{ card_size_with_bleed - 2 * offset };
-
-        CardBorder.clear();
-
-        if (BleedEdge > 0_mm)
-        {
-            const QRectF rect{
-                first_card_corner.x,
-                first_card_corner.y,
-                grid_size.x,
-                grid_size.y,
-            };
-            CardBorder.addRect(rect);
-        }
-
-        for (const auto& [idx, oversized] : Cards)
-        {
-            const auto top_left_corner{
-                first_card_corner + idx * card_size_with_bleed + offset
-            };
-
-            const QRectF rect{
-                top_left_corner.x,
-                top_left_corner.y,
-                card_size.x,
-                card_size.y,
-            };
-            CardBorder.addRoundedRect(rect, corner_radius.x, corner_radius.y);
-        }
+        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, CornerRadius, nullptr);
     }
 
   private:
@@ -350,10 +310,9 @@ class BordersOverlay : public QWidget
 
     Length BleedEdge;
     float CornerWeight;
-    Size CardSizeWithBleedEdge;
+    Size CardSize;
     Length CornerRadius;
 
-    QPen Pen;
     QPainterPath CardBorder;
 };
 
@@ -404,8 +363,11 @@ class PrintPreview::PagePreview : public QWidget
             Guides->setParent(this);
         }
 
-        Borders = new BordersOverlay{ project, card_grid };
-        Borders->setParent(this);
+        if (project.Data.ExportExactGuides && !params.GridParams.IsBackside)
+        {
+            Borders = new BordersOverlay{ project, card_grid };
+            Borders->setParent(this);
+        }
 
         grid->SetOverlays(Guides, Borders);
 
