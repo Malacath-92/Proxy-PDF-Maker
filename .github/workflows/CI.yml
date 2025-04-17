@@ -19,12 +19,12 @@ jobs:
           - os: MacOS-ARM
             compiler: AppleClang
             runs_on: macos-14
-          - os: Ubuntu
-            compiler: Gcc
-            runs_on: ubuntu-24.04
           - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
+          - os: Ubuntu
+            compiler: Gcc
+            runs_on: ubuntu-24.04
           - os: Windows
             compiler: MSVC
             runs_on: windows-2022

@@ -12,24 +12,24 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [Ubuntu, Windows]
+        os: [MacOS-ARM, MacOS-x86, Ubuntu, Windows]
         include:
           - os: Windows
             compiler: MSVC
-            c_compiler: cl
-            cxx_compiler: cl
-            generator: Visual Studio 17 2022
-            build_type_variable: CMAKE_CONFIGURATION_TYPES
             runs_on: windows-2022
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-windows_amd64.zip
           - os: Ubuntu
             compiler: Gcc
-            c_compiler: gcc-14
-            cxx_compiler: g++-14
-            generator: Ninja
-            build_type_variable: CMAKE_BUILD_TYPE
             runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
+          - os: MacOS-ARM
+            compiler: AppleClang
+            runs_on: macos-14
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
+          - os: MacOS-x86
+            compiler: AppleClang
+            runs_on: macos-14
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -47,6 +47,12 @@ jobs:
           python-version: 3.11
 
       - uses: lukka/get-cmake@v3.31.6
+
+      - name: Xcode Select Version (MacOS)
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
 
       - name: Install Extra Packages (Ubuntu)
         if: ${{ matrix.os == 'Ubuntu' }}
@@ -70,6 +76,31 @@ jobs:
             pip install conan
             conan --version
             conan profile detect --force
+
+      - name: Conan set Ninja Generator (MacOS)
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
+        run: |
+          cd .conan_home/profiles
+          echo "[conf]" >> default
+          echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
+          echo "" >> default
+
+      - name: Configure (MacOS-ARM)
+        id: configure-osx-arm
+        if: ${{ matrix.os == 'MacOS-ARM' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Configure (MacOS-x86)
+        id: configure-osx-x86
+        if: ${{ matrix.os == 'MacOS-x86' }}
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
 
       - name: Configure (Ubuntu)
         if: ${{ matrix.os == 'Ubuntu' }}
