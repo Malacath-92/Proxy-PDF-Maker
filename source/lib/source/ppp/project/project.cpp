@@ -320,51 +320,51 @@ Size Project::ComputeCardsSize() const
 
 float Project::CardRatio() const
 {
-    return Data.CardRatio();
+    return Data.CardRatio(CFG);
 }
 
 Size Project::CardSize() const
 {
-    return Data.CardSize();
+    return Data.CardSize(CFG);
 }
 
 Size Project::CardSizeWithBleed() const
 {
-    return Data.CardSizeWithBleed();
+    return Data.CardSizeWithBleed(CFG);
 }
 
 Size Project::CardSizeWithFullBleed() const
 {
-    return Data.CardSizeWithFullBleed();
+    return Data.CardSizeWithFullBleed(CFG);
 }
 
 Length Project::CardFullBleed() const
 {
-    return Data.CardFullBleed();
+    return Data.CardFullBleed(CFG);
 }
 
 Length Project::CardCornerRadius() const
 {
-    return Data.CardCornerRadius();
+    return Data.CardCornerRadius(CFG);
 }
 
-Size Project::ProjectData::ComputePageSize() const
+Size Project::ProjectData::ComputePageSize(const Config& config) const
 {
     const bool fit_size{ PageSize == Config::FitSize };
     const bool infer_size{ PageSize == Config::BasePDFSize };
 
     if (fit_size)
     {
-        return ComputeCardsSize();
+        return ComputeCardsSize(config);
     }
     else if (infer_size)
     {
         return LoadPdfSize(BasePdf + ".pdf")
-            .value_or(CFG.PageSizes["A4"].Dimensions);
+            .value_or(config.PageSizes.at("A4").Dimensions);
     }
     else
     {
-        auto page_size{ CFG.PageSizes[PageSize].Dimensions };
+        auto page_size{ config.PageSizes.at(PageSize).Dimensions };
         if (Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
@@ -373,64 +373,64 @@ Size Project::ProjectData::ComputePageSize() const
     }
 }
 
-Size Project::ProjectData::ComputeCardsSize() const
+Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
-    const Size card_size_with_bleed{ CardSize() + 2 * BleedEdge };
+    const Size card_size_with_bleed{ CardSize(config) + 2 * BleedEdge };
     return CardLayout * card_size_with_bleed;
 }
 
-float Project::ProjectData::CardRatio() const
+float Project::ProjectData::CardRatio(const Config& config) const
 {
-    const auto& card_size{ CardSize() };
+    const auto& card_size{ CardSize(config) };
     return card_size.x / card_size.y;
 }
 
-Size Project::ProjectData::CardSize() const
+Size Project::ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{
-        CFG.CardSizes.contains(CardSizeChoice)
-            ? CFG.CardSizes.at(CardSizeChoice)
-            : CFG.CardSizes.at(CFG.DefaultCardSize),
+        config.CardSizes.contains(CardSizeChoice)
+            ? config.CardSizes.at(CardSizeChoice)
+            : config.CardSizes.at(CFG.DefaultCardSize),
     };
     return card_size_info.CardSize.Dimensions;
 }
 
-Size Project::ProjectData::CardSizeWithBleed() const
+Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{
-        CFG.CardSizes.contains(CardSizeChoice)
-            ? CFG.CardSizes.at(CardSizeChoice)
-            : CFG.CardSizes.at(CFG.DefaultCardSize),
+        config.CardSizes.contains(CardSizeChoice)
+            ? config.CardSizes.at(CardSizeChoice)
+            : config.CardSizes.at(config.DefaultCardSize),
     };
     return card_size_info.CardSize.Dimensions + BleedEdge * 2;
 }
 
-Size Project::ProjectData::CardSizeWithFullBleed() const
+Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        CFG.CardSizes.contains(CardSizeChoice)
-            ? CFG.CardSizes.at(CardSizeChoice)
-            : CFG.CardSizes.at(CFG.DefaultCardSize),
+        config.CardSizes.contains(CardSizeChoice)
+            ? config.CardSizes.at(CardSizeChoice)
+            : config.CardSizes.at(config.DefaultCardSize),
     };
     return card_size_info.CardSize.Dimensions + card_size_info.BleedEdge.Dimension * 2;
 }
 
-Length Project::ProjectData::CardFullBleed() const
+Length Project::ProjectData::CardFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        CFG.CardSizes.contains(CardSizeChoice)
-            ? CFG.CardSizes.at(CardSizeChoice)
-            : CFG.CardSizes.at(CFG.DefaultCardSize),
+        config.CardSizes.contains(CardSizeChoice)
+            ? config.CardSizes.at(CardSizeChoice)
+            : config.CardSizes.at(config.DefaultCardSize),
     };
     return card_size_info.BleedEdge.Dimension;
 }
 
-Length Project::ProjectData::CardCornerRadius() const
+Length Project::ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{
-        CFG.CardSizes.contains(CardSizeChoice)
-            ? CFG.CardSizes.at(CardSizeChoice)
-            : CFG.CardSizes.at(CFG.DefaultCardSize),
+        config.CardSizes.contains(CardSizeChoice)
+            ? config.CardSizes.at(CardSizeChoice)
+            : config.CardSizes.at(config.DefaultCardSize),
     };
     return card_size_info.CornerRadius.Dimension;
 }

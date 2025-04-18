@@ -405,9 +405,9 @@ bool Cropper::DoCropWork(T* signaller)
             const Length bleed_edge{ Data.BleedEdge };
             const PixelDensity max_density{ Cfg.MaxDPI };
 
-            const auto full_bleed_edge{ Data.CardFullBleed() };
-            const auto card_size{ Data.CardSize() };
-            const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
+            const auto full_bleed_edge{ Data.CardFullBleed(Cfg) };
+            const auto card_size{ Data.CardSize(Cfg) };
+            const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed(Cfg) };
 
             const bool uncrop{ Cfg.EnableUncrop };
 
@@ -538,10 +538,10 @@ bool Cropper::DoPreviewWork(T* signaller)
         {
             std::shared_lock lock{ PropertyMutex };
             const Pixel preview_width{ Cfg.BasePreviewWidth };
-            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / Data.CardRatio()) };
-            const auto full_bleed_edge{ Data.CardFullBleed() };
-            const Size card_size{ Data.CardSize() };
-            const Size card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
+            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / Data.CardRatio(Cfg)) };
+            const auto full_bleed_edge{ Data.CardFullBleed(Cfg) };
+            const Size card_size{ Data.CardSize(Cfg) };
+            const Size card_size_with_full_bleed{ Data.CardSizeWithFullBleed(Cfg) };
             const bool enable_uncrop{ Cfg.EnableUncrop };
 
             const fs::path input_file{ Data.ImageDir / card_name };

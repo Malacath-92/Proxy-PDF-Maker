@@ -114,15 +114,15 @@ class Project : public QObject
         ColorRGB8 GuidesColorB{ 190, 190, 190 };
 
         // Utility functions
-        Size ComputePageSize() const;
-        Size ComputeCardsSize() const;
+        Size ComputePageSize(const Config& config) const;
+        Size ComputeCardsSize(const Config& config) const;
 
-        float CardRatio() const;
-        Size CardSize() const;
-        Size CardSizeWithBleed() const;
-        Size CardSizeWithFullBleed() const;
-        Length CardFullBleed() const;
-        Length CardCornerRadius() const;
+        float CardRatio(const Config& config) const;
+        Size CardSize(const Config& config) const;
+        Size CardSizeWithBleed(const Config& config) const;
+        Size CardSizeWithFullBleed(const Config& config) const;
+        Length CardFullBleed(const Config& config) const;
+        Length CardCornerRadius(const Config& config) const;
     };
     ProjectData Data;
 
