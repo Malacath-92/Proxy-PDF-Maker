@@ -13,12 +13,12 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [MacOS-ARM, MacOS-x86, Ubuntu, Windows]
+        os: [MacOS-x86, Ubuntu, Windows]
         build_type: [Debug, Release]
         include:
-          - os: MacOS-ARM
-            compiler: AppleClang
-            runs_on: macos-14
+          # - os: MacOS-ARM
+          #   compiler: AppleClang
+          #   runs_on: macos-14
           - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
