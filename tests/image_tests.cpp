@@ -118,6 +118,6 @@ TEST_CASE("Grow image", "[image_resize_grow]")
 TEST_CASE("Calculate DPI", "[image_dpi]")
 {
     const auto card_size_info{ CFG.CardSizes.at(CFG.DefaultCardSize) };
-    const auto dpi{ g_BaseImage.Density(card_size_info.CardSize.Dimensions + 2.0f * card_size_info.BleedEdge.Dimension) * 1_in };
+    const auto dpi{ g_BaseImage.Density(card_size_info.CardSize.Dimensions + 2.0f * card_size_info.InputBleed.Dimension) * card_size_info.CardSizeScale * 1_in };
     REQUIRE(static_cast<int>(dpi.value) == 87);
 }

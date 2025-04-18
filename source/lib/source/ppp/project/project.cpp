@@ -392,7 +392,7 @@ Size Project::ProjectData::CardSize(const Config& config) const
             ? config.CardSizes.at(CardSizeChoice)
             : config.CardSizes.at(CFG.DefaultCardSize),
     };
-    return card_size_info.CardSize.Dimensions;
+    return card_size_info.CardSize.Dimensions * card_size_info.CardSizeScale;
 }
 
 Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
@@ -402,7 +402,7 @@ Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
             ? config.CardSizes.at(CardSizeChoice)
             : config.CardSizes.at(config.DefaultCardSize),
     };
-    return card_size_info.CardSize.Dimensions + BleedEdge * 2;
+    return card_size_info.CardSize.Dimensions * card_size_info.CardSizeScale + BleedEdge * 2;
 }
 
 Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
@@ -412,7 +412,7 @@ Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
             ? config.CardSizes.at(CardSizeChoice)
             : config.CardSizes.at(config.DefaultCardSize),
     };
-    return card_size_info.CardSize.Dimensions + card_size_info.BleedEdge.Dimension * 2;
+    return (card_size_info.CardSize.Dimensions + card_size_info.InputBleed.Dimension * 2) * card_size_info.CardSizeScale;
 }
 
 Length Project::ProjectData::CardFullBleed(const Config& config) const
@@ -422,7 +422,7 @@ Length Project::ProjectData::CardFullBleed(const Config& config) const
             ? config.CardSizes.at(CardSizeChoice)
             : config.CardSizes.at(config.DefaultCardSize),
     };
-    return card_size_info.BleedEdge.Dimension;
+    return card_size_info.InputBleed.Dimension * card_size_info.CardSizeScale;
 }
 
 Length Project::ProjectData::CardCornerRadius(const Config& config) const
@@ -432,7 +432,7 @@ Length Project::ProjectData::CardCornerRadius(const Config& config) const
             ? config.CardSizes.at(CardSizeChoice)
             : config.CardSizes.at(config.DefaultCardSize),
     };
-    return card_size_info.CornerRadius.Dimension;
+    return card_size_info.CornerRadius.Dimension * card_size_info.CardSizeScale;
 }
 
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)

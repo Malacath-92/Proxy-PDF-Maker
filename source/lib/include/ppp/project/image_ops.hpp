@@ -29,7 +29,8 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
 
 Image CropImage(const Image& image,
                 const fs::path& image_name,
-                Size card_size_with_full_bleed,
+                Size card_size,
+                Length full_bleed,
                 Length bleed_edge,
                 PixelDensity max_density,
                 PrintFn print_fn = nullptr);
@@ -46,7 +47,7 @@ void RunMinimalCropper(const fs::path& image_dir,
                        const fs::path& crop_dir,
                        std::span<const fs::path> card_list,
                        Size card_size,
-                       Size card_size_with_full_bleed,
+                       Length full_bleed,
                        Length bleed_edge,
                        PixelDensity max_density,
                        const std::string& color_cube_name,

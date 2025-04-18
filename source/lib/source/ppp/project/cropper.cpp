@@ -475,7 +475,7 @@ bool Cropper::DoCropWork(T* signaller)
             }
 
             const Image image{ Image::Read(input_file) };
-            const Image cropped_image{ CropImage(image, card_name, card_size_with_full_bleed, bleed_edge, max_density, nullptr) };
+            const Image cropped_image{ CropImage(image, card_name, card_size, full_bleed_edge, bleed_edge, max_density, nullptr) };
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
@@ -580,7 +580,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.UncroppedImage = image;
-                image_preview.CroppedImage = CropImage(image, card_name, card_size_with_full_bleed, 0_mm, 1200_dpi, nullptr);
+                image_preview.CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi, nullptr);
 
                 {
                     std::unique_lock image_db_lock{ ImageDBMutex };

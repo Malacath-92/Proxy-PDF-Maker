@@ -43,7 +43,7 @@ class CardImage : public QLabel
 
     bool Rotated;
     Size CardSize;
-    Size CardSizeWithFullBleed;
+    Length FullBleed;
     float CardRatio;
     Length BleedEdge;
     Length CornerRadius;

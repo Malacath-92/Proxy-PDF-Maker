@@ -61,7 +61,7 @@ struct Config
     struct CardSizeInfo
     {
         SizeInfo CardSize;
-        LengthInfo BleedEdge;
+        LengthInfo InputBleed;
         LengthInfo CornerRadius;
         float CardSizeScale{ 1.0f };
     };
@@ -81,7 +81,7 @@ struct Config
             "Magic the Gathering",
             {
                 .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
-                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .InputBleed{ 0.12_in, 1_in, 2u },
                 .CornerRadius{ 1_in / 8, 1_in, 3u },
             },
         },
@@ -89,7 +89,7 @@ struct Config
             "MtG Oversized",
             {
                 .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
-                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .InputBleed{ 0.12_in, 1_in, 2u },
                 .CornerRadius{ 1_in / 4, 1_in, 2u },
             },
         },
@@ -97,7 +97,7 @@ struct Config
             "Yu-Gi-Oh",
             {
                 .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
-                .BleedEdge{ 0.12_in, 1_in, 2u },
+                .InputBleed{ 0.12_in, 1_in, 2u },
                 .CornerRadius{ 0.05_in, 1_in, 2u },
             },
         },

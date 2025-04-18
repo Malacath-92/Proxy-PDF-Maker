@@ -115,7 +115,7 @@ class ActionsWidget : public QGroupBox
                                                   crop_dir,
                                                   used_cards,
                                                   project.CardSize(),
-                                                  project.CardSizeWithFullBleed(),
+                                                  project.CardFullBleed(),
                                                   bleed_edge,
                                                   CFG.MaxDPI,
                                                   CFG.ColorCube,
