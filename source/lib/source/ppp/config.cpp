@@ -268,7 +268,8 @@ Config LoadConfig()
                     const auto group_name_split{ group.split("-") };
                     const QStringList card_size_name_split{ group_name_split.begin() + 1, group_name_split.end() };
                     const auto card_size_name_start{ card_size_name_split.join("-") };
-                    config.CardSizes[card_size_name_start.toStdString()] = std::move(card_size_info).value();
+                    auto card_size_name{ card_size_name_start.trimmed().toStdString() };
+                    config.CardSizes[std::move(card_size_name)] = std::move(card_size_info).value();
                 }
                 settings.endGroup();
             }
