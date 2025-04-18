@@ -443,7 +443,7 @@ class PrintOptionsWidget : public QGroupBox
                 project.Data.CardSizeChoice = std::move(new_choice);
                 main_window()->CardSizeChanged(project);
                 main_window()->CardSizeChangedDiff(project.Data.CardSizeChoice);
-                
+
                 // Refresh anything needed for size change
                 change_papersize(ToQString(project.Data.PageSize));
             }
@@ -839,10 +839,11 @@ class CardOptionsWidget : public QGroupBox
     {
         setTitle("Card Options");
 
+        const auto full_bleed{ project.CardFullBleed() };
         auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
         auto* bleed_edge_spin{ bleed_edge->GetWidget() };
         bleed_edge_spin->setDecimals(2);
-        bleed_edge_spin->setRange(0, 0.12_in / 1_mm);
+        bleed_edge_spin->setRange(0, full_bleed / 1_mm);
         bleed_edge_spin->setSingleStep(0.1);
         bleed_edge_spin->setSuffix("mm");
         bleed_edge_spin->setValue(project.Data.BleedEdge / 1_mm);
@@ -1023,7 +1024,17 @@ class CardOptionsWidget : public QGroupBox
 
     void Refresh(const Project& project)
     {
-        BleedEdgeSpin->setValue(project.Data.BleedEdge / 1_mm);
+        const auto full_bleed{ project.CardFullBleed() };
+        const auto full_bleed_rounded{ QString::number(full_bleed / 1_mm, 'f', 2).toFloat() };
+        if (static_cast<int32_t>(BleedEdgeSpin->maximum() / 0.001) != static_cast<int32_t>(full_bleed_rounded / 0.001))
+        {
+            BleedEdgeSpin->setRange(0, full_bleed / 1_mm);
+            BleedEdgeSpin->setValue(0);
+        }
+        else
+        {
+            BleedEdgeSpin->setValue(project.Data.BleedEdge / 1_mm);
+        }
         BacksideCheckbox->setChecked(project.Data.BacksideEnabled);
         BacksideOffsetSpin->setValue(project.Data.BacksideOffset.value);
         OversizedCheckbox->setChecked(project.Data.OversizedEnabled);
