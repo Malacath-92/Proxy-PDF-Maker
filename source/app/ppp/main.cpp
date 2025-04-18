@@ -3,9 +3,7 @@
 #include <QApplication>
 #include <QPushButton>
 
-#ifdef WIN32
 #include <QtPlugin>
-#endif
 
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
@@ -31,9 +29,9 @@ int main(int argc, char** argv)
 
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
 #elif defined(__APPLE__)
-    //Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+    Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #else
-    //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
+    Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #endif
 
     PrintProxyPrepApplication app{ argc, argv };
