@@ -19,6 +19,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
   signals:
     void NewProjectOpened(Project& project);
     void ImageDirChanged(Project& project);
+    void CardSizeChanged(Project& project);
     void PageSizeChanged(Project& project);
     void MarginsChanged(Project& project);
     void CardLayoutChanged(Project& project);
@@ -43,6 +44,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     // These exist solely to get the data safely to another thread
     void NewProjectOpenedDiff(const Project::ProjectData& data);
     void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
+    void CardSizeChangedDiff(std::string card_size);
     void BleedChangedDiff(Length bleed);
     void EnableUncropChangedDiff(bool enable_uncrop);
     void ColorCubeChangedDiff(const std::string& cube_name);

@@ -20,5 +20,5 @@ consteval std::string_view JsonFormatVersion()
 
 consteval std::string_view ImageDbFormatVersion()
 {
-    return "PPP00001";
+    return "PPP00002";
 }

@@ -19,6 +19,7 @@ class CardProvider : public QObject, public efsw::FileWatchListener
 
     void NewProjectOpened(const Project& project);
     void ImageDirChanged(const Project& project);
+    void CardSizeChanged(const Project& project);
     void BleedChanged(const Project& project);
     void EnableUncropChanged(const Project& project);
     void ColorCubeChanged(const Project& project);

@@ -73,12 +73,14 @@ int main(int argc, char** argv)
     {
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpenedDiff, &cropper, &Cropper::ClearCropWork);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChangedDiff, &cropper, &Cropper::ClearCropWork);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::CardSizeChangedDiff, &cropper, &Cropper::ClearCropWork);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChangedDiff, &cropper, &Cropper::ClearCropWork);
 
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChangedDiff, &cropper, &Cropper::ClearPreviewWork);
 
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpenedDiff, &cropper, &Cropper::NewProjectOpenedDiff);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChangedDiff, &cropper, &Cropper::ImageDirChangedDiff);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::CardSizeChangedDiff, &cropper, &Cropper::CardSizeChangedDiff);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChangedDiff, &cropper, &Cropper::BleedChangedDiff);
 
         QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChangedDiff, &cropper, &Cropper::EnableUncropChangedDiff);
@@ -91,6 +93,7 @@ int main(int argc, char** argv)
         // Sequence refreshing of cards after cleanup of cropper
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChanged, &card_provider, &CardProvider::EnableUncropChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
@@ -112,6 +115,7 @@ int main(int argc, char** argv)
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::CardSizeChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PageSizeChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::MarginsChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::CardLayoutChanged, print_preview, &PrintPreview::Refresh);

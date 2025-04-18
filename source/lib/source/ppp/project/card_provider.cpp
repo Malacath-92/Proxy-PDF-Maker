@@ -57,6 +57,14 @@ void CardProvider::ImageDirChanged(const Project& project)
     // ... and add all new files ...
     Start();
 }
+void CardProvider::CardSizeChanged(const Project& /*project*/)
+{
+    // Generate new crops and previews ...
+    for (const fs::path& image : ListFiles())
+    {
+        CardAdded(image, true, true);
+    }
+}
 void CardProvider::BleedChanged(const Project& project)
 {
     OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);

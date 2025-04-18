@@ -291,8 +291,12 @@ class PrintOptionsWidget : public QGroupBox
 
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
+        auto* card_size{ new ComboBoxWithLabel{
+            "&Card Size", std::views::keys(CFG.CardSizes) | std::ranges::to<std::vector>(), project.Data.CardSizeChoice } };
+        card_size->setToolTip("Additional card sizes can be defined in config.ini");
         auto* paper_size{ new ComboBoxWithLabel{
             "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
+        paper_size->setToolTip("Additional card sizes can be defined in config.ini");
 
         auto* base_pdf_choice{ new ComboBoxWithLabel{
             "&Base Pdf", GetBasePdfNames(), project.Data.BasePdf } };
@@ -362,6 +366,7 @@ class PrintOptionsWidget : public QGroupBox
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(print_output);
+        layout->addWidget(card_size);
         layout->addWidget(paper_size);
         layout->addWidget(base_pdf_choice);
         layout->addWidget(paper_info);
@@ -423,6 +428,24 @@ class PrintOptionsWidget : public QGroupBox
                 orientation->setVisible(!fit_size && !infer_size);
 
                 main_window()->PageSizeChanged(project);
+            }
+        };
+
+        auto change_cardsize{
+            [=, &project](QString t)
+            {
+                std::string new_choice{ t.toStdString() };
+                if (new_choice == project.Data.CardSizeChoice)
+                {
+                    return;
+                }
+
+                project.Data.CardSizeChoice = std::move(new_choice);
+                main_window()->CardSizeChanged(project);
+                main_window()->CardSizeChangedDiff(project.Data.CardSizeChoice);
+                
+                // Refresh anything needed for size change
+                change_papersize(ToQString(project.Data.PageSize));
             }
         };
 
@@ -598,6 +621,10 @@ class PrintOptionsWidget : public QGroupBox
                          &QLineEdit::textChanged,
                          this,
                          change_output);
+        QObject::connect(card_size->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_cardsize);
         QObject::connect(paper_size->GetWidget(),
                          &QComboBox::currentTextChanged,
                          this,

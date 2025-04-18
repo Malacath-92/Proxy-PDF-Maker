@@ -12,7 +12,10 @@
 bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
 {
     return static_cast<int32_t>(std::floor(lhs.DPI.value)) != static_cast<int32_t>(std::floor(rhs.DPI.value)) ||
-           static_cast<int32_t>(std::floor(lhs.Width.value)) != static_cast<int32_t>(std::floor(rhs.Width.value));
+           static_cast<int32_t>(std::floor(lhs.Width.value)) != static_cast<int32_t>(std::floor(rhs.Width.value)) ||
+           static_cast<int32_t>(std::floor(lhs.CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.CardSize.x / 0.001_mm)) ||
+           static_cast<int32_t>(std::floor(lhs.CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.CardSize.y / 0.001_mm)) ||
+           static_cast<int32_t>(std::floor(lhs.FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.FullBleedEdge / 0.001_mm));
 }
 
 void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
@@ -26,7 +29,10 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
         static_cast<qsizetype>(hash.size()),
     };
     entry.Params.DPI.value = json["dpi"].get<int32_t>();
-    entry.Params.Width.value = json["width"].get<int32_t>();
+    entry.Params.Width = json["width"].get<int32_t>() * 1_pix;
+    entry.Params.CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
+    entry.Params.CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
+    entry.Params.FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
 }
 
 void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
@@ -48,6 +54,21 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
         {
             "width",
             static_cast<int32_t>(entry.Params.Width.value),
+        },
+        {
+            "card_size",
+            {
+                "width",
+                static_cast<int32_t>(entry.Params.CardSize.x / 0.001_mm),
+            },
+            {
+                "height",
+                static_cast<int32_t>(entry.Params.CardSize.y / 0.001_mm),
+            },
+        },
+        {
+            "card_input_bleed",
+            static_cast<int32_t>(entry.Params.FullBleedEdge / 0.001_mm),
         },
     };
 }

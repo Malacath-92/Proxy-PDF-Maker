@@ -118,6 +118,12 @@ void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& cro
     LoadedPreviews = loaded_previews;
 }
 
+void Cropper::CardSizeChangedDiff(std::string card_size)
+{
+    std::unique_lock lock{ PropertyMutex };
+    Data.CardSizeChoice = std::move(card_size);
+}
+
 void Cropper::BleedChangedDiff(Length bleed)
 {
     std::unique_lock lock{ PropertyMutex };
@@ -399,6 +405,7 @@ bool Cropper::DoCropWork(T* signaller)
             const Length bleed_edge{ Data.BleedEdge };
             const PixelDensity max_density{ Cfg.MaxDPI };
 
+            const auto full_bleed_edge{ Data.CardFullBleed() };
             const auto card_size{ Data.CardSize() };
             const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
 
@@ -418,6 +425,8 @@ bool Cropper::DoCropWork(T* signaller)
 
             ImageParameters image_params{
                 .DPI{ max_density },
+                .CardSize{ card_size },
+                .FullBleedEdge{ full_bleed_edge },
             };
 
             {
@@ -530,6 +539,7 @@ bool Cropper::DoPreviewWork(T* signaller)
             std::shared_lock lock{ PropertyMutex };
             const Pixel preview_width{ Cfg.BasePreviewWidth };
             const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / Data.CardRatio()) };
+            const auto full_bleed_edge{ Data.CardFullBleed() };
             const Size card_size{ Data.CardSize() };
             const Size card_size_with_full_bleed{ Data.CardSizeWithFullBleed() };
             const bool enable_uncrop{ Cfg.EnableUncrop };
@@ -545,6 +555,8 @@ bool Cropper::DoPreviewWork(T* signaller)
             // Fake image parameters
             ImageParameters image_params{
                 .Width{ preview_width },
+                .CardSize{ card_size },
+                .FullBleedEdge{ full_bleed_edge },
             };
 
             // Generate Preview ...

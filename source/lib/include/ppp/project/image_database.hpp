@@ -8,6 +8,8 @@ struct ImageParameters
 {
     PixelDensity DPI{ 0_dpi };
     Pixel Width{ 0_pix };
+    Size CardSize{ 0_mm, 0_mm };
+    Length FullBleedEdge{ 0_mm };
 };
 
 struct ImageDataBaseEntry
