@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Experimental option for custom card sizes
 - Option to export exact guides to svg
 
+### Changed
+- Cutting guides now don't draw into the card post cutting anymore
+
 ## [0.8.1] - 2025-13-04
 
 ### Fixed
