@@ -30,6 +30,10 @@ int main(int argc, char** argv)
     }
 
     Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+#elif defined(__APPLE__)
+    Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+#else
+    Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #endif
 
     PrintProxyPrepApplication app{ argc, argv };
