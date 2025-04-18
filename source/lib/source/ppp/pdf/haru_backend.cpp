@@ -14,7 +14,7 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
     const auto real_tx{ ToHaruReal(tx) };
     const auto real_ty{ ToHaruReal(ty) };
     const auto line_width{ CardWidth / 2.5_in };
-    const auto dash_size{ ToHaruReal(CornerRadius) / 5.0f };
+    const auto dash_size{ ToHaruReal(CornerRadius) / 10.0f };
 
     HPDF_Page_SetLineWidth(Page, line_width);
 
@@ -38,8 +38,8 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
 void HaruPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CornerRadius * dx };
-    const auto ty{ y + CornerRadius * dy };
+    const auto tx{ x + CornerRadius * dx * 0.5f };
+    const auto ty{ y + CornerRadius * dy * 0.5f };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);

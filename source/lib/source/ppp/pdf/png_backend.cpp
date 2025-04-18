@@ -42,8 +42,8 @@ void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Lengt
 void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CornerRadius * dx };
-    const auto ty{ y + CornerRadius * dy };
+    const auto tx{ x + CornerRadius * dx * 0.5f };
+    const auto ty{ y + CornerRadius * dy * 0.5f };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);

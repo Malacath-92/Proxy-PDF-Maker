@@ -20,7 +20,7 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
     const auto real_tx{ ToPoDoFoPoints(tx) };
     const auto real_ty{ ToPoDoFoPoints(ty) };
     const auto line_width{ CardWidth / 2.5_in };
-    const auto dash_size{ ToPoDoFoPoints(CornerRadius) / 5.0f };
+    const auto dash_size{ ToPoDoFoPoints(CornerRadius) / 10.0f };
 
     PoDoFo::PdfPainter painter;
     painter.SetPage(Page);
@@ -57,8 +57,8 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
 void PoDoFoPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CornerRadius * dx };
-    const auto ty{ y + CornerRadius * dy };
+    const auto tx{ x + CornerRadius * dx * 0.5f };
+    const auto ty{ y + CornerRadius * dy * 0.5f };
 
     DrawDashedLine(colors, x, y, tx, y);
     DrawDashedLine(colors, x, y, x, ty);

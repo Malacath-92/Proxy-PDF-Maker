@@ -159,11 +159,11 @@ class GuidesOverlay : public QWidget
         CardSizeWithBleedEdge = project.CardSizeWithBleed();
         CornerRadius = project.CardCornerRadius();
 
-        PenOne.setWidth(2);
+        PenOne.setWidth(1);
         PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
 
         PenTwo.setDashPattern({ 2.0f, 4.0f });
-        PenTwo.setWidth(2);
+        PenTwo.setWidth(1);
         PenTwo.setColor(QColor{ project.Data.GuidesColorB.r, project.Data.GuidesColorB.g, project.Data.GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
@@ -201,7 +201,7 @@ class GuidesOverlay : public QWidget
             grid_size.y / rows,
         };
         const auto pixel_ratio{ card_size / CardSizeWithBleedEdge };
-        const auto line_length{ CornerRadius * pixel_ratio };
+        const auto line_length{ CornerRadius * pixel_ratio * 0.5f };
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
