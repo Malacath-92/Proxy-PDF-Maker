@@ -132,10 +132,12 @@ elseif(APPLE)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QCocoaIntegrationPlugin)
 
-	find_library(AppKitFramework AppKit REQUIRED)
+	find_library(AppKitFramework CoreVideo REQUIRED)
+	find_library(AppKitFramework IO REQUIRED)
 
 	target_link_options(proxy_pdf_dependencies INTERFACE
-		-framework AppKit)
+		-framework CoreVideo
+		-framework IO)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
