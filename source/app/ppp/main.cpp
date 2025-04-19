@@ -4,6 +4,13 @@
 #include <QPushButton>
 
 #include <QtPlugin>
+#ifdef WIN32
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+#elif defined(__APPLE__)
+Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+#else
+Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
+#endif
 
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
@@ -26,12 +33,6 @@ int main(int argc, char** argv)
         std::setlocale(LC_ALL, locale_name);
         std::locale::global(std::locale(locale_name));
     }
-
-    Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
-#elif defined(__APPLE__)
-    Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
-#else
-    Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #endif
 
     PrintProxyPrepApplication app{ argc, argv };
