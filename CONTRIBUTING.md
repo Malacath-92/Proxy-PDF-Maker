@@ -50,7 +50,7 @@ Code contributions are very welcome, to help you make them here is some informat
 |  	| Windows 	| Ubuntu 	| OSX 	|
 |---	|---	|---	|---	|
 | Compiler 	| Visual Studio 2022 	| gcc-14 	| Xcode 16.2 	|
-| Status 	| Builds, Tests, Runs 	| Builds, Tests, Not Running 	| Builds, Not Linking 	|
+| Status 	| Builds, Tests, Runs 	| Builds, Tests, Not Running 	| Compiles, Does not Link 	|
 
 [![Build Status](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/CI.yml)
 

@@ -9,7 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0] - 2025-17-04
 
 ### Added
-- Experimental support for OSX
 - Experimental option for custom card sizes
 - Option to export exact guides to svg
 
