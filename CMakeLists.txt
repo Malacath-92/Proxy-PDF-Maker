@@ -132,16 +132,10 @@ elseif(APPLE)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QCocoaIntegrationPlugin)
 
-	find_library(CoreVideoFramework CoreVideo REQUIRED)
-	find_library(IOSurfaceFramework IOSurface REQUIRED)
-	find_library(QuartzCoreFramework QuartzCore REQUIRED)
-	find_library(UniformTypeIdentifiersFramework UniformTypeIdentifiers REQUIRED)
+	find_library(AppKitFramework AppKit REQUIRED)
 
 	target_link_options(proxy_pdf_dependencies INTERFACE
-		-framework CoreVideo
-		-framework IOSurface
-		-framework QuartzCore
-		-framework UniformTypeIdentifiers)
+		-framework AppKit)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
