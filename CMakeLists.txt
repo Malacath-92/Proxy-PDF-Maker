@@ -132,7 +132,8 @@ elseif(APPLE)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QCocoaIntegrationPlugin)
 	target_link_options(proxy_pdf_dependencies INTERFACE
-		-framework CoreVideo)
+		-framework CoreVideo
+		-framework IOSurface)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
