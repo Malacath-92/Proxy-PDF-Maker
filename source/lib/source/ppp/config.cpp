@@ -252,7 +252,7 @@ Config LoadConfig()
                         full_card_size_info->CardSize = std::move(card_size_info).value();
                         full_card_size_info->InputBleed = std::move(bleed_edge_info).value();
                         full_card_size_info->CornerRadius = std::move(corner_radius_info).value();
-                        full_card_size_info->CardSizeScale = settings.value("Card.Scale", 1.0f).toFloat();
+                        full_card_size_info->CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
                     };
                 }
                 return full_card_size_info;
@@ -379,7 +379,10 @@ void SaveConfig(Config config)
                 set_size(settings, "Card.Size", card_size_info.CardSize);
                 set_length(settings, "Input.Bleed", card_size_info.InputBleed);
                 set_length(settings, "Corner.Radius", card_size_info.CornerRadius);
-                settings.setValue("Card.Scale", card_size_info.CardSizeScale);
+                if (static_cast<int32_t>(card_size_info.CardSizeScale * 10000) != 10000)
+                {
+                    settings.setValue("Card.Scale", card_size_info.CardSizeScale);
+                }
             }
         };
 
