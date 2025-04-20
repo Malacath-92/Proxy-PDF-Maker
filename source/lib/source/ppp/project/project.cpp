@@ -55,7 +55,8 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
 
         Data.OversizedEnabled = false;
 
-        Data.PageSize = json["pagesize"];
+        Data.CardSizeChoice = json["card_size"];
+        Data.PageSize = json["page_size"];
         if (!CFG.PageSizes.contains(Data.PageSize))
         {
             Data.PageSize = CFG.DefaultPageSize;
@@ -137,7 +138,8 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
 
         json["oversized_enabled"] = Data.OversizedEnabled;
 
-        json["pagesize"] = Data.PageSize;
+        json["card_size"] = Data.CardSizeChoice;
+        json["page_size"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
         {
             const Size page_size{ ComputePageSize() };
