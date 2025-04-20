@@ -64,7 +64,7 @@ To build the project locally you require the following software:
 
 ### Building
 
-Run the following commands to configure your projects:
+Open a command prompt in the root of the project. Then run the following commands to configure your projects:
 
 ```sh
 mkdir build
@@ -84,6 +84,5 @@ cmake --build .
 When you submit a Pull-Request Github will kick off jobs to test your code. Please make sure they all pass before expecting a maintainer to look closely at your PR. Also make sure that you format your code at least once, you can do this via the following command:
 
 ```sh
-cd build
 cmake --build . --target=format_proxy_pdf
 ```
