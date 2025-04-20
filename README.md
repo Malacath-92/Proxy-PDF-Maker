@@ -18,6 +18,38 @@ On the top-left you can switch over to the `Preview`, which shows you a preview 
 ## Options
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here.
 
+### Card Size
+The options for this are defined in config.ini, for example you may define this option:
+```ini
+[CARD_SIZE - Carcassone]
+Card.Size=44 x 68 mm
+Input.Bleed=2 mm
+Corner.Radius=1 mm
+Card.Scale=1.0
+```
+Every group that starts with exactly `CARD_SIZE -` will be added to the drop-down. For formatting see [Dimension Formatting](#dimension-formatting). These numbers have the typical meaning for printing, but here is a somewhat superficial explanation for them.
+
+#### Card.Size
+This is the physical size of the card once printed and cut to size. Note that if the input has a different aspect ratio the image will be stretched to accommodate.
+
+#### Input.Bleed
+This is the physical size of the bleed edge present on the input images. If you only know this in pixels you can calculate it in physical units. For example when
+- the input image is 680x880 pixels,
+- the card size is 30x40mm,
+- and the input image has 40 pixels of bleed edge on each side.
+Then the `Input.Bleed` value is 2mm. The full calculation is as follows:
+```py
+card_width = 30 mm
+image_width := 680 pixels
+input_bleed_in_pixels := 40 pixels
+cropped_image_width = image_width - 2 * input_bleed_in_pixels = 680 - 2 * 40 = 600
+pixels_per_mm = cropped_image_width / card_width = 600 / 30 = 20
+input_bleed = input_bleed_in_pixels / pixels_per_mm =  40 / 20 = 2
+```
+
+#### Corner.Radius
+This is the radius of the corners, not that this affects the size of the cutting guides to avoid the guides overlapping the image once corners are clipped.
+
 ### Paper Size: Fit
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
@@ -72,10 +104,7 @@ Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.
 Determines the resolution of previews in the card grid and the page preview. Smaller numbers result in faster cropping but worse previews.
 
 ### Default Page Size
-Dropdown to choose the default page size when creating a new project. Page sizes can be configured in config.ini, the format has to be `width x height unit` where
-- `width` and `height` are decimal number, with a period as decimal divider,
-- the two values are divided by a single `x` surrounded by spaces
-- and `unit` is one of `cm`, `mm`, or `inches`.
+Dropdown to choose the default page size when creating a new project. Page sizes can be configured in config.ini, for formatting see the [Dimension Formatting](#dimension-formatting) section.
 
 ### Theme
 Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
@@ -106,6 +135,26 @@ Lets you choose a folder in which you have your images, this is saved with the p
 
 ### Open Images
 Opens the image folder for this project in a file explorer.
+
+## Dimension Formatting
+The format has to be either `width x height unit` for 2-dimensional or `size unit` for one-dimensional settings, where
+- `width`, `height`, and `size` are decimal numbers, with a period as decimal divider,
+    - in the 2d case the two values are divided by a single `x` surrounded by spaces
+- and `unit` is one of `cm`, `mm`, or `inches`.
+For example, valid options are
+```ini
+Page.Size = 11.5 x 13.5 inches
+Card.Size = 88 x 88 mm
+Corner.Radius = 0.1 inches
+```
+while invalid options are
+```ini
+Page.Size = 11.5 x 13.5 x 100 inches    # three values
+Card.Size = 88x88 mm                    # No spaces around the x
+Corner.Radius = 2,68478e-19 light years # comma as decimal separator, 
+                                        # scientific notation
+                                        # unsupported unit
+```
 
 ## Png Generation
 An advanced feature that is still experimental is png generation. This may be useful for some software that assembles printouts in some other way, for example some cutting machines layout software. To enable this option open `config.ini` and set the following option:
