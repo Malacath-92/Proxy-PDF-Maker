@@ -94,6 +94,15 @@ struct Config
             },
         },
         {
+            "MtG Novelty",
+            {
+                .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
+                .InputBleed{ 0.12_in, 1_in, 2u },
+                .CornerRadius{ 1_in / 4, 1_in, 2u },
+                .CardSizeScale{ 0.5f },
+            },
+        },
+        {
             "Yu-Gi-Oh",
             {
                 .CardSize{ { 59_mm, 86_mm }, 1_mm, 0u },
