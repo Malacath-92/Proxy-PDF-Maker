@@ -62,6 +62,16 @@ To build the project locally you require the following software:
 - Conan 2
 - A functioning C++ Compiler, see tested versions above
 
+### Cloning the Repo
+
+Open a command prompt wherever you want the project to be cloned to. Then run the following command:
+
+```sh
+git clone https://github.com/Malacath-92/Proxy-PDF-Maker.git
+cd Proxy-PDF-Maker
+git submodule update --init --recursive
+```
+
 ### Building
 
 Open a command prompt in the root of the project. Then run the following commands to configure your projects:
