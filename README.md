@@ -59,6 +59,9 @@ The `Base Pdf` option is only available with the `PoDoFo` render backend. It wil
 ### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
 
+### Export Exact Guides
+Enables exporting an `.svg` file next to the exported `.pdf` which contains exact guides of the cards, including rounded corners. These can for example be imported into software that operates automatic cutting machines (e.g. Silhouette Studio).
+
 ### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
 
