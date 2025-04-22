@@ -37,40 +37,25 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
 
 void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
 {
-    json = nlohmann::json{
-        {
-            "hash",
-            nlohmann::json::binary_t{
-                std::vector<uint8_t>{
-                    entry.SourceHash.begin(),
-                    entry.SourceHash.end(),
-                },
-            },
-        },
-        {
-            "dpi",
-            static_cast<int32_t>(entry.Params.DPI.value),
-        },
-        {
-            "width",
-            static_cast<int32_t>(entry.Params.Width.value),
-        },
-        {
-            "card_size",
-            {
-                "width",
-                static_cast<int32_t>(entry.Params.CardSize.x / 0.001_mm),
-            },
-            {
-                "height",
-                static_cast<int32_t>(entry.Params.CardSize.y / 0.001_mm),
-            },
-        },
-        {
-            "card_input_bleed",
-            static_cast<int32_t>(entry.Params.FullBleedEdge / 0.001_mm),
+    json["hash"] = nlohmann::json::binary_t{
+        std::vector<uint8_t>{
+            entry.SourceHash.begin(),
+            entry.SourceHash.end(),
         },
     };
+    json["dpi"] = static_cast<int32_t>(entry.Params.DPI.value),
+    json["width"] = static_cast<int32_t>(entry.Params.Width.value),
+    json["card_size"] = nlohmann::json{
+        {
+            "width",
+            static_cast<int32_t>(entry.Params.CardSize.x / 0.001_mm),
+        },
+        {
+            "height",
+            static_cast<int32_t>(entry.Params.CardSize.y / 0.001_mm),
+        },
+    };
+    json["card_input_bleed"] = static_cast<int32_t>(entry.Params.FullBleedEdge / 0.001_mm);
 }
 
 ImageDataBase ImageDataBase::Read(const fs::path& path)

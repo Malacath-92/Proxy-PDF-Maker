@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2025-22-04
+
+### Fixed
+- Cropper will no longer rerun on every startup
+
 ## [0.9.0] - 2025-20-04
 
 ### Added
