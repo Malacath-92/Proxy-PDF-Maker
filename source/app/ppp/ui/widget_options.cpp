@@ -57,6 +57,7 @@ class ActionsWidget : public QGroupBox
         auto* load_button{ new QPushButton{ "Load Project" } };
         auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
         auto* open_images_button{ new QPushButton{ "Open Images" } };
+        auto* render_alignment_button{ new QPushButton{ "Alignment Test" } };
 
         const QWidget* buttons[]{
             cropper_progress_bar,
@@ -65,6 +66,7 @@ class ActionsWidget : public QGroupBox
             load_button,
             set_images_button,
             open_images_button,
+            render_alignment_button,
         };
 
         auto widths{ buttons | std::views::transform([](const QWidget* widget)
@@ -80,6 +82,7 @@ class ActionsWidget : public QGroupBox
         layout->addWidget(load_button, 2, 1);
         layout->addWidget(set_images_button, 3, 0);
         layout->addWidget(open_images_button, 3, 1);
+        layout->addWidget(render_alignment_button, 4, 0, 1, 2);
         setLayout(layout);
 
         const auto render{
@@ -218,6 +221,34 @@ class ActionsWidget : public QGroupBox
             }
         };
 
+        const auto render_alignment{
+            [=, &project]()
+            {
+                GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
+
+                const auto render_work{
+                    [=, &project, &render_align_window]()
+                    {
+                        const auto print_fn{ render_align_window.MakePrintFn() };
+                        try
+                        {
+                            const auto file_path{ GenerateTestPdf(project, print_fn) };
+                            OpenFile(file_path);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            PPP_LOG("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
+                            render_align_window.Sleep(3_s);
+                        }
+                    }
+                };
+
+                window()->setEnabled(false);
+                render_align_window.ShowDuringWork(render_work);
+                window()->setEnabled(true);
+            }
+        };
+
         QObject::connect(render_button,
                          &QPushButton::clicked,
                          this,
@@ -238,6 +269,10 @@ class ActionsWidget : public QGroupBox
                          &QPushButton::clicked,
                          this,
                          open_images_folder);
+        QObject::connect(render_alignment_button,
+                         &QPushButton::clicked,
+                         this,
+                         render_alignment);
 
         CropperProgressBar = cropper_progress_bar;
         RenderButton = render_button;

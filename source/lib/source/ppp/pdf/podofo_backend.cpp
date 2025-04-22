@@ -54,6 +54,28 @@ void PoDoFoPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Le
     painter.FinishPage();
 }
 
+void PoDoFoPage::DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty)
+{
+    const auto real_fx{ ToPoDoFoPoints(fx) };
+    const auto real_fy{ ToPoDoFoPoints(fy) };
+    const auto real_tx{ ToPoDoFoPoints(tx) };
+    const auto real_ty{ ToPoDoFoPoints(ty) };
+    const auto line_width{ CardWidth / 2.5_in };
+    const PoDoFo::PdfColor col{ color.r, color.g, color.b };
+
+    PoDoFo::PdfPainter painter;
+    painter.SetPage(Page);
+    painter.Save();
+
+    painter.SetStrokeWidth(line_width);
+    painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Solid, nullptr, false, 1.0, false);
+    painter.SetStrokingColor(col);
+    painter.DrawLine(real_fx, real_fy, real_tx, real_ty);
+
+    painter.Restore();
+    painter.FinishPage();
+}
+
 void PoDoFoPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
@@ -80,6 +102,30 @@ void PoDoFoPage::DrawImage(const fs::path& image_path, Length x, Length y, Lengt
     painter.Save();
 
     painter.DrawImage(real_x, real_y, image, w_scale, h_scale);
+
+    painter.Restore();
+    painter.FinishPage();
+}
+
+void PoDoFoPage::DrawText(std::string_view text, TextBB bounding_box)
+{
+    const PoDoFo::PdfRect rect{
+        ToPoDoFoPoints(bounding_box.TopLeft.x),
+        ToPoDoFoPoints(bounding_box.BottomRight.y),
+        ToPoDoFoPoints(bounding_box.BottomRight.x - bounding_box.TopLeft.x),
+        ToPoDoFoPoints(bounding_box.TopLeft.y - bounding_box.BottomRight.y),
+    };
+
+    PoDoFo::PdfPainter painter;
+    painter.SetPage(Page);
+    painter.Save();
+
+    painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Solid, nullptr, false, 1.0, false);
+    painter.SetFont(Document->GetFont());
+    painter.DrawMultiLineText(rect,
+                              PoDoFo::PdfString{ text.data(), static_cast<PoDoFo::pdf_long>(text.size()) },
+                              PoDoFo::ePdfAlignment_Center,
+                              PoDoFo::ePdfVerticalAlignment_Center);
 
     painter.Restore();
     painter.FinishPage();
@@ -185,6 +231,7 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                 ToPoDoFoPoints(page_size.y)),
             new_page_idx);
     }
+    new_page.Document = this;
     new_page.CardWidth = TheProject.CardSize().x;
     new_page.CornerRadius = TheProject.CardCornerRadius();
     new_page.ImageCache = ImageCache.get();
@@ -206,4 +253,13 @@ fs::path PoDoFoDocument::Write(fs::path path)
         // Rethrow as a std::exception so the agnostic code can catch it
         throw std::logic_error{ e.what() };
     }
+}
+
+PoDoFo::PdfFont* PoDoFoDocument::GetFont()
+{
+    if (Font == nullptr)
+    {
+        Font = Document.CreateFont("arial");
+    }
+    return Font;
 }

@@ -185,7 +185,7 @@ void Project::InitProperties(PrintFn print_fn)
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        CFG.EnableStartupCrop ? ListImageFiles(Data.CropDir)
+        CFG.EnableStartupCrop ? ListImageFiles(Data.ImageDir)
                               : ListImageFiles(Data.ImageDir, Data.CropDir)
     };
 

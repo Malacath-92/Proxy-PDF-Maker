@@ -18,14 +18,19 @@ class HaruPdfPage final : public PdfPage
 
     virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) override;
 
+    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) override;
+
     virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) override;
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
+
+    virtual void DrawText(std::string_view text, TextBB bounding_box) override;
 
     virtual void Finish() override{};
 
   private:
     HPDF_Page Page{ nullptr };
+    HaruPdfDocument* Document;
     Length CardWidth;
     Length CornerRadius;
     HaruPdfImageCache* ImageCache;
@@ -60,12 +65,16 @@ class HaruPdfDocument final : public PdfDocument
 
     virtual fs::path Write(fs::path path) override;
 
+    HPDF_Font GetFont();
+
   private:
     HPDF_Doc Document;
     const Project& TheProject;
     std::vector<HaruPdfPage> Pages;
 
     std::unique_ptr<HaruPdfImageCache> ImageCache;
+
+    HPDF_Font Font{ nullptr };
 
     PrintFn PrintFunction;
 };

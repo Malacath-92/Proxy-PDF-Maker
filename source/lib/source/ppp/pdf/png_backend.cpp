@@ -39,6 +39,27 @@ void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Lengt
     }
 }
 
+void PngPage::DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty)
+{
+    const auto real_fx{ ToPixels(fx) };
+    const auto real_fy{ ToPixels(fy) };
+    const auto real_tx{ ToPixels(tx) };
+    const auto real_ty{ ToPixels(ty) };
+    const auto real_w{ (ToPixels(0.2_mm) / 2) * 2 };
+
+    const cv::Point line_from{ real_fx, real_fy };
+    const cv::Point line_to{ real_tx, real_ty };
+    const cv::Point delta{ line_to - line_from };
+
+    const cv::Point perp{ delta.x == 0 ? cv::Point{ real_w / 2, 0 } : cv::Point{ 0, real_w / 2 } };
+    const cv::Point from{ line_from - perp };
+    const cv::Point to{ line_to + perp };
+
+    const cv::Scalar color_cv{ color.b * 255, color.g * 255, color.r * 255, 255.0f };
+
+    cv::rectangle(Page, from, to, color_cv, cv::FILLED);
+}
+
 void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
@@ -69,6 +90,15 @@ void PngPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w
         const auto real_h{ ToPixels(h) };
         ImageCache->GetImage(image_path, real_w, real_h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
     }
+}
+
+void PngPage::DrawText(std::string_view text, TextBB bounding_box)
+{
+    const auto real_left{ ToPixels(bounding_box.TopLeft.x) };
+    const auto real_top{ ToPixels(bounding_box.TopLeft.x) };
+    const cv::Scalar black{ 0, 0, 0, 255.0f };
+
+    cv::putText(Page, cv::String{ text.data(), text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
 }
 
 const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
@@ -133,6 +163,7 @@ PngPage* PngDocument::NextPage()
 {
     auto& new_page{ Pages.emplace_back() };
     new_page.TheProject = &TheProject;
+    new_page.Document = this;
     new_page.PerfectFit = TheProject.Data.PageSize == Config::FitSize;
     new_page.CardSize = PrecomputedCardSize;
     new_page.PageSize = PrecomputedPageSize;

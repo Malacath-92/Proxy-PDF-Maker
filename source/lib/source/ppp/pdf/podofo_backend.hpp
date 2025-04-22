@@ -19,14 +19,19 @@ class PoDoFoPage final : public PdfPage
 
     virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) override;
 
+    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) override;
+
     virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) override;
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
+
+    virtual void DrawText(std::string_view text, TextBB bounding_box) override;
 
     virtual void Finish() override{};
 
   private:
     PoDoFo::PdfPage* Page{ nullptr };
+    PoDoFoDocument* Document{ nullptr };
     Length CardWidth;
     Length CornerRadius;
     PoDoFoImageCache* ImageCache;
@@ -61,6 +66,8 @@ class PoDoFoDocument final : public PdfDocument
 
     virtual fs::path Write(fs::path path) override;
 
+    PoDoFo::PdfFont* GetFont();
+
   private:
     std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;
 
@@ -70,6 +77,8 @@ class PoDoFoDocument final : public PdfDocument
     std::vector<PoDoFoPage> Pages;
 
     std::unique_ptr<PoDoFoImageCache> ImageCache;
+
+    PoDoFo::PdfFont* Font{ nullptr };
 
     PrintFn PrintFunction;
 };

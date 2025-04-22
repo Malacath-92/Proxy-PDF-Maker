@@ -1,5 +1,7 @@
 #include <ppp/pdf/haru_backend.hpp>
 
+#include <QStandardPaths>
+
 #include <ppp/project/project.hpp>
 
 inline HPDF_REAL ToHaruReal(Length l)
@@ -35,6 +37,21 @@ void HaruPdfPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, L
     HPDF_Page_Stroke(Page);
 }
 
+void HaruPdfPage::DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty)
+{
+    const auto real_fx{ ToHaruReal(fx) };
+    const auto real_fy{ ToHaruReal(fy) };
+    const auto real_tx{ ToHaruReal(tx) };
+    const auto real_ty{ ToHaruReal(ty) };
+    const auto line_width{ CardWidth / 2.5_in };
+
+    HPDF_Page_SetLineWidth(Page, line_width);
+    HPDF_Page_SetRGBStroke(Page, color.r, color.g, color.b);
+    HPDF_Page_MoveTo(Page, real_fx, real_fy);
+    HPDF_Page_LineTo(Page, real_tx, real_ty);
+    HPDF_Page_Stroke(Page);
+}
+
 void HaruPdfPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
 {
     const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
@@ -52,6 +69,22 @@ void HaruPdfPage::DrawImage(const fs::path& image_path, Length x, Length y, Leng
     const auto real_w{ ToHaruReal(w) };
     const auto real_h{ ToHaruReal(h) };
     HPDF_Page_DrawImage(Page, ImageCache->GetImage(image_path, rotation), real_x, real_y, real_w, real_h);
+}
+
+void HaruPdfPage::DrawText(std::string_view text, TextBB bounding_box)
+{
+    const auto left{ ToHaruReal(bounding_box.TopLeft.x) };
+    const auto top{ ToHaruReal(bounding_box.TopLeft.y) };
+    const auto right{ ToHaruReal(bounding_box.BottomRight.x) };
+    const auto bottom{ ToHaruReal(bounding_box.BottomRight.y) };
+
+    HPDF_Page_SetFontAndSize(Page, Document->GetFont(), 12);
+
+    char text_cpy[1024]{};
+    text.copy(text_cpy, std::min(text.size(), sizeof(text_cpy) - 1));
+    HPDF_Page_BeginText(Page);
+    HPDF_Page_TextRect(Page, left, top, right, bottom, text_cpy, HPDF_TALIGN_CENTER, nullptr);
+    HPDF_Page_EndText(Page);
 }
 
 HaruPdfImageCache::HaruPdfImageCache(HPDF_Doc document)
@@ -128,6 +161,7 @@ HaruPdfPage* HaruPdfDocument::NextPage()
     const auto page_size{ TheProject.ComputePageSize() };
     auto& new_page{ Pages.emplace_back() };
     new_page.Page = HPDF_AddPage(Document);
+    new_page.Document = this;
     new_page.CardWidth = TheProject.CardSize().x;
     new_page.CornerRadius = TheProject.CardCornerRadius();
     HPDF_Page_SetWidth(new_page.Page, ToHaruReal(page_size.x));
@@ -143,4 +177,14 @@ fs::path HaruPdfDocument::Write(fs::path path)
     PPP_LOG_WITH(PrintFunction, "Saving to {}...", pdf_path_string);
     HPDF_SaveToFile(Document, pdf_path_string.c_str());
     return pdf_path;
+}
+HPDF_Font HaruPdfDocument::GetFont()
+{
+    if (Font == nullptr)
+    {
+        const auto arial_path{ QStandardPaths::locate(QStandardPaths::FontsLocation, "arial.ttf") };
+        const auto arial_font_name{ HPDF_LoadTTFontFromFile(Document, arial_path.toStdString().c_str(), true) };
+        Font = HPDF_GetFont(Document, arial_font_name, HPDF_ENCODING_FONT_SPECIFIC);
+    }
+    return Font;
 }

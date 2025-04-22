@@ -224,3 +224,59 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 
     return pdf->Write(project.Data.FileName);
 }
+
+fs::path GenerateTestPdf(const Project& project, PrintFn print_fn)
+{
+    const auto page_size{ project.ComputePageSize() };
+    const auto [page_width, page_height]{ page_size.pod() };
+
+    const auto page_half{ page_size / 2 };
+    const auto page_fourth{ page_size / 4 };
+    const auto page_eighth{ page_size / 8 };
+    const auto page_sixteenth{ page_size / 16 };
+
+    auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
+
+    {
+        auto* front_page{ pdf->NextPage() };
+
+        {
+            const Size text_top_left{ 0_mm, page_height - page_sixteenth.y };
+            const Size text_bottom_right{ page_width, page_height - page_eighth.y };
+            front_page->DrawText("This is a test page, follow instructions to verify your settings will work fine for proxies.",
+                                 { text_top_left, text_bottom_right });
+        }
+
+        {
+            const auto left_line_x{ page_fourth.x };
+            front_page->DrawSolidLine(ColorRGB32f{}, left_line_x, 0_mm, left_line_x, page_height - page_eighth.y);
+
+            if (project.Data.BacksideEnabled)
+            {
+                const Size backside_text_top_left{ left_line_x, page_height - page_eighth.y };
+                const Size backside_text_bottom_right{ page_width, page_half.y };
+                front_page->DrawText("Shine a light through this page, the line on the back should align with the front. "
+                                     "If not, measure the difference and paste it into the backside offset option.",
+                                     { backside_text_top_left, backside_text_bottom_right });
+            }
+
+            const auto right_line_x{ page_fourth.x + 20_mm };
+            front_page->DrawSolidLine(ColorRGB32f{}, right_line_x, 0_mm, right_line_x, page_half.y);
+
+            const Size text_top_left{ right_line_x, page_fourth.y };
+            const Size text_bottom_right{ page_width, 0_mm };
+            front_page->DrawText("These lines should be exactly 20mm apart. If not, make sure to print at 100% scaling.",
+                                 { text_top_left, text_bottom_right });
+        }
+    }
+
+    if (project.Data.BacksideEnabled)
+    {
+        auto* back_page{ pdf->NextPage() };
+
+        const auto backside_left_line_x{ page_width - page_fourth.x + project.Data.BacksideOffset };
+        back_page->DrawSolidLine(ColorRGB32f{}, backside_left_line_x, 0_mm, backside_left_line_x, page_height);
+    }
+
+    return pdf->Write("alignment.pdf");
+}

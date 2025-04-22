@@ -23,6 +23,8 @@ class PdfPage
 
     virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) = 0;
 
+    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) = 0;
+
     enum class CrossSegment
     {
         TopLeft,
@@ -33,6 +35,13 @@ class PdfPage
     virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) = 0;
 
     virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) = 0;
+
+    struct TextBB
+    {
+        Size TopLeft;
+        Size BottomRight;
+    };
+    virtual void DrawText(std::string_view text, TextBB bounding_box) = 0;
 
     virtual void Finish() = 0;
 
