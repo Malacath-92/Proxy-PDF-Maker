@@ -7,7 +7,7 @@ Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) pa
 Additionally you will have to install Visual Studio Redistributable: 	https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 # Running the Program
-First, throw some images with bleed edge in the `images` folder. Note that images starting with `__` will not be visible in the program. Then, when you open the program or hit the `Run Cropper` button from the GUI, it will go through all the images and crop them. From there you can start to setup your page.
+First, throw some images with bleed edge in the `images` folder. Note that images starting with `__` will not be visible in the program. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping
 
 ## Cards
 The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a +/-, use these to adjust how many copies for each card you want. On the top you have global controls to +/- all cards or reset them back to 1.
@@ -121,9 +121,6 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 ## Actions
 At the top of the options you can see an `Actions` section, which are all buttons do perform various actions.
 
-### Run Cropper
-When adding new images, removing images, changing color cube, changing bleed edge, or changing preview resolution you will have to press this button to update previews, the card grid, and to render the document.
-
 ### Render Document
 When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
 
@@ -138,6 +135,9 @@ Lets you choose a folder in which you have your images, this is saved with the p
 
 ### Open Images
 Opens the image folder for this project in a file explorer.
+
+### Alignment Test
+Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned. 
 
 ## Dimension Formatting
 The format has to be either `width x height unit` for 2-dimensional or `size unit` for one-dimensional settings, where
