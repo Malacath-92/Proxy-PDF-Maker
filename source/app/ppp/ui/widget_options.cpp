@@ -222,7 +222,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto render_alignment{
-            [=, &project]()
+            [this, & project]()
             {
                 GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
 
