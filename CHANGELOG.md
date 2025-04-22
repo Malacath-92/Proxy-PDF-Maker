@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2025-22-04
+
+### Added
+- Another render option which is labeled "Alignment Test" that prints a small two-page pdf that you can print to test alignment
+
 ## [0.9.1] - 2025-22-04
 
 ### Fixed
