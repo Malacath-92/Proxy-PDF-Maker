@@ -372,6 +372,20 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
     return img;
 }
 
+Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
+{
+    Image img{};
+    cv::copyMakeBorder(m_Impl,
+                       img.m_Impl,
+                       static_cast<int>(top.value),
+                       static_cast<int>(bottom.value),
+                       static_cast<int>(left.value),
+                       static_cast<int>(right.value),
+                       cv::BORDER_REFLECT,
+                       0xFFFFFFFF);
+    return img;
+}
+
 Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
     const int cube_size_minus_one{ color_cube.cols - 1 };

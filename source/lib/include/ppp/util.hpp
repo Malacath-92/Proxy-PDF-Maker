@@ -121,3 +121,13 @@ std::vector<fs::path> ListFolders(const fs::path& path);
 bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
+
+template<class FunT>
+struct AtScopeExit
+{
+    ~AtScopeExit()
+    {
+        Dtor();
+    }
+    FunT Dtor;
+};

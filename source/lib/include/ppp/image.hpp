@@ -49,6 +49,7 @@ class [[nodiscard]] Image
 
     Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
+    Image AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
     Image ApplyColorCube(const cv::Mat& color_cube) const;
 
