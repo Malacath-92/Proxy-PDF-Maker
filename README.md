@@ -1,4 +1,15 @@
 # Proxy PDF Maker
+
+<p align="center">
+    <a href="https://isocpp.org/"><img src="https://img.shields.io/badge/C%2B%2B-23-blue.svg"></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+    <br>
+    <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml/badge.svg"></a>
+    <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-CI.yml/badge.svg"></a>
+    <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml/badge.svg"></a>
+    <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml/badge.svg"></a>
+</p>
+
 Proxy PDF Maker is an app for creating PDF files for at-home printing of TCG Proxies. It handles cropping of bleed edges, alignment on pages, cutting guides, matching backsides, and more. This repo is a complete rewrite of [print-proxy-prep](https://github.com/preshtildeath/print-proxy-prep) app, which was written in Python. This app is instead written in C++ to get better performance, and allow easy distribution of binaries.
 
 # Installation
