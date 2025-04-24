@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.3] - 2025-24-04
+
+### Fixed
+- Card size on pdf when generating with bleed edge is now correct again
+
 ## [0.9.2] - 2025-22-04
 
 ### Added
