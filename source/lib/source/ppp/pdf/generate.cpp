@@ -31,7 +31,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
         },
     };
 
-    const auto card_size_with_bleed{ project.CardSize() };
+    const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const auto page_size{ project.ComputePageSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };
