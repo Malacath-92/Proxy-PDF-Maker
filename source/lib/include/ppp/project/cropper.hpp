@@ -87,6 +87,9 @@ class Cropper : public QObject
     Config Cfg;
     std::vector<fs::path> LoadedPreviews;
 
+    std::shared_mutex IgnoreMutex;
+    std::vector<fs::path> IgnoreNotification;
+
     class CropperSignalRouter* Router;
 
     // We give the cropper a few updates before triggering done

@@ -412,7 +412,8 @@ bool Cropper::DoCropWork(T* signaller)
             const auto card_size_with_bleed{ Data.CardSizeWithBleed(Cfg) };
             const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed(Cfg) };
 
-            const bool uncrop{ Cfg.EnableUncrop };
+            const bool enable_uncrop{ Cfg.EnableUncrop };
+            const bool fancy_uncrop{ Cfg.EnableFancyUncrop };
 
             const std::string color_cube_name{ Cfg.ColorCube };
 
@@ -440,7 +441,43 @@ bool Cropper::DoCropWork(T* signaller)
                 }
             }
 
-            if (uncrop && !fs::exists(input_file) && fs::exists(crop_file))
+            std::vector<fs::path> new_ignore_notifications{};
+            std::vector<fs::path> discard_ignore_notifications{};
+
+            AtScopeExit flush_ignore_notifications{
+                [&]()
+                {
+                    std::lock_guard ignore_lock{ IgnoreMutex };
+                    for (fs::path& ignore_path : new_ignore_notifications)
+                    {
+                        if (!std::ranges::contains(IgnoreNotification, ignore_path))
+                        {
+                            IgnoreNotification.push_back(std::move(ignore_path));
+                        }
+                    }
+                    for (const fs::path& ignore_path : discard_ignore_notifications)
+                    {
+                        std::erase(IgnoreNotification, ignore_path);
+                    }
+                }
+            };
+
+            const auto should_ignore{
+                [&](const fs::path& file_path)
+                {
+                    std::lock_guard ignore_lock{ IgnoreMutex };
+                    return std::ranges::contains(IgnoreNotification, file_path);
+                }
+            };
+
+            AtScopeExit update_progress{
+                [&]()
+                {
+                    signaller->CropProgress(progress);
+                }
+            };
+
+            if (enable_uncrop && fs::exists(crop_file))
             {
                 QByteArray crop_file_hash{
                     [&, this]()
@@ -453,12 +490,36 @@ bool Cropper::DoCropWork(T* signaller)
                 // non-empty hash indicates that the source has changed
                 if (!crop_file_hash.isEmpty())
                 {
-                    const Image image{ Image::Read(crop_file) };
-                    const Image uncropped_image{ UncropImage(image, card_name, card_size, nullptr) };
-                    uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
+                    const auto handle_ignore{
+                        [&]
+                        {
+                            if (should_ignore(crop_file))
+                            {
+                                // we just wrote to this file, ignore the change and write to DB
+                                discard_ignore_notifications.push_back(crop_file);
 
-                    std::unique_lock image_db_lock{ ImageDBMutex };
-                    ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                                std::unique_lock image_db_lock{ ImageDBMutex };
+                                ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                                return true;
+                            }
+                            else
+                            {
+                                // we will now write to this file, we expect to get a notification on its change that we should ignore
+                                new_ignore_notifications.push_back(crop_file);
+                                return false;
+                            }
+                        }
+                    };
+
+                    if (!handle_ignore())
+                    {
+                        const Image image{ Image::Read(crop_file) };
+                        const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop, nullptr) };
+                        uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
+
+                        std::unique_lock image_db_lock{ ImageDBMutex };
+                        ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                    }
                 }
             }
 
@@ -473,8 +534,27 @@ bool Cropper::DoCropWork(T* signaller)
             // empty hash indicates that the source has not changed
             if (input_file_hash.isEmpty())
             {
-                signaller->CropProgress(progress);
                 return true;
+            }
+
+            AtScopeExit write_to_db{
+                [&]()
+                {
+                    std::unique_lock image_db_lock{ ImageDBMutex };
+                    ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
+                }
+            };
+
+            if (should_ignore(input_file))
+            {
+                // we just wrote to this file, ignore the change and write to DB
+                discard_ignore_notifications.push_back(input_file);
+                return true;
+            }
+            else if (enable_uncrop && crop_file == output_file)
+            {
+                // we will now write to this file, we expect to get a notification on its change that we should ignore
+                new_ignore_notifications.push_back(crop_file);
             }
 
             const Image image{ Image::Read(input_file) };
@@ -489,12 +569,6 @@ bool Cropper::DoCropWork(T* signaller)
                 cropped_image.Write(output_file, 3, 95, card_size_with_bleed);
             }
 
-            {
-                std::unique_lock image_db_lock{ ImageDBMutex };
-                ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
-            }
-
-            signaller->CropProgress(progress);
             return true;
         }
         catch (...)
@@ -545,7 +619,9 @@ bool Cropper::DoPreviewWork(T* signaller)
             const auto full_bleed_edge{ Data.CardFullBleed(Cfg) };
             const Size card_size{ Data.CardSize(Cfg) };
             const Size card_size_with_full_bleed{ Data.CardSizeWithFullBleed(Cfg) };
+
             const bool enable_uncrop{ Cfg.EnableUncrop };
+            const bool fancy_uncrop{ Cfg.EnableFancyUncrop };
 
             const fs::path input_file{ Data.ImageDir / card_name };
             const fs::path crop_file{ Data.CropDir / card_name };
@@ -623,7 +699,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.CroppedImage = image;
-                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, nullptr);
+                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop, nullptr);
 
                 signaller->PreviewUpdated(card_name, image_preview);
             }

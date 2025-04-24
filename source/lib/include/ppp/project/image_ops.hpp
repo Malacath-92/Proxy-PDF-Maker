@@ -34,7 +34,7 @@ Image CropImage(const Image& image,
                 Length bleed_edge,
                 PixelDensity max_density,
                 PrintFn print_fn = nullptr);
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, PrintFn print_fn = nullptr);
+Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop, PrintFn print_fn = nullptr);
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 

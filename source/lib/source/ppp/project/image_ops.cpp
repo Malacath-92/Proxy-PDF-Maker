@@ -80,7 +80,7 @@ Image CropImage(const Image& image,
     return cropped_image;
 }
 
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, PrintFn print_fn)
+Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop, PrintFn print_fn)
 {
     const PixelDensity density{ image.Density(card_size) };
     Pixel c{ 0.12_in * density };
@@ -88,7 +88,14 @@ Image UncropImage(const Image& image, const fs::path& image_name, Size card_size
     const PixelDensity dpi{ (density * 1_in / 1_m) };
     PPP_LOG("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
 
-    return image.AddBlackBorder(c, c, c, c);
+    if (fancy_uncrop)
+    {
+        return image.AddReflectBorder(c, c, c, c);
+    }
+    else
+    {
+        return image.AddBlackBorder(c, c, c, c);
+    }
 }
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name)
@@ -210,7 +217,7 @@ void RunMinimalCropper(const fs::path& image_dir,
                 continue;
             }
 
-            const Image image{ UncropImage(Image::Read(crop_dir / img_file), img_file, card_size, print_fn) };
+            const Image image{ UncropImage(Image::Read(crop_dir / img_file), img_file, card_size, CFG.EnableFancyUncrop, print_fn) };
             const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density, print_fn) };
             cropped_image.Write(intermediate_dir / img_file);
         }

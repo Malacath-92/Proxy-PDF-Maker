@@ -7,16 +7,6 @@
 #include <ppp/project/project.hpp>
 #include <ppp/util.hpp>
 
-template<class FunT>
-struct AtScopeExit
-{
-    ~AtScopeExit()
-    {
-        Dtor();
-    }
-    FunT Dtor;
-};
-
 std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
 {
     const fs::path full_path{ "./res/base_pdfs" / pdf_path };

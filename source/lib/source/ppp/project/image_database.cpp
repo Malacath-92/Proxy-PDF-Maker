@@ -110,6 +110,11 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
     };
     QByteArray cur_hash{ QCryptographicHash::hash(get_source_data(), QCryptographicHash::Md5) };
 
+    if (!fs::exists(destination))
+    {
+        return cur_hash;
+    }
+
     auto it{ DataBase.find(destination) };
     if (it != DataBase.end())
     {
