@@ -99,7 +99,7 @@ struct Config
                 .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
                 .InputBleed{ 0.12_in, 1_in, 2u },
                 .CornerRadius{ 1_in / 4, 1_in, 2u },
-                .CardSizeScale{ 0.5f },
+                .CardSizeScale = 0.5f,
             },
         },
         {
