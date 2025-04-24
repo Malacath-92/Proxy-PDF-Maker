@@ -1,0 +1,23 @@
+name: Github Actions CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  macos-arm64-debug:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: MacOS-Arm64
+      compiler: AppleClang
+      runs_on: macos-14
+      build_type: Debug
+  macos-arm64-release:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: MacOS-Arm64
+      compiler: AppleClang
+      runs_on: macos-14
+      build_type: Release

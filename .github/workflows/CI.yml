@@ -1,37 +1,29 @@
 name: Github Actions CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+      runs_on:
+        required: true
+        type: string
+      build_type:
+        required: true
+        type: string
 
 jobs:
   build:
-    name: ${{ matrix.os }} ${{ matrix.compiler }} ${{ matrix.build_type }}
-    runs-on: ${{ matrix.runs_on }}
-    strategy:
-      fail-fast: True
-      matrix:
-        os: [Ubuntu, Windows]
-        build_type: [Debug, Release]
-        include:
-          # - os: MacOS-ARM
-          #   compiler: AppleClang
-          #   runs_on: macos-14
-          # - os: MacOS-x86
-          #   compiler: AppleClang
-          #   runs_on: macos-14
-          - os: Ubuntu
-            compiler: Gcc
-            runs_on: ubuntu-24.04
-          - os: Windows
-            compiler: MSVC
-            runs_on: windows-2022
+    name: ${{ inputs.os }} ${{ inputs.compiler }} ${{ inputs.build_type }}
+    runs-on: ${{ inputs.runs_on }}
 
     steps:
       - name: Free Disk Space (Ubuntu)
-        if: ${{ matrix.os == 'Ubuntu' }}
+        if: ${{ inputs.os == 'Ubuntu' }}
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
@@ -47,13 +39,13 @@ jobs:
       - uses: lukka/get-cmake@v3.31.6
 
       - name: Xcode Select Version (MacOS)
-        if: ${{ startsWith(matrix.os, 'MacOS') }}
+        if: ${{ startsWith(inputs.os, 'MacOS') }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.2'
 
       - name: Install Extra Packages (Ubuntu)
-        if: ${{ matrix.os == 'Ubuntu' }}
+        if: ${{ inputs.os == 'Ubuntu' }}
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
@@ -66,7 +58,7 @@ jobs:
         with:
           path: |
             ./.conan_home
-          key: ${{ matrix.os }}-${{ matrix.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
+          key: ${{ inputs.os }}-${{ inputs.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
       - name: Install Conan
         run: |
@@ -76,44 +68,44 @@ jobs:
             conan profile detect --force
 
       - name: Conan set Ninja Generator (MacOS)
-        if: ${{ startsWith(matrix.os, 'MacOS') }}
+        if: ${{ startsWith(inputs.os, 'MacOS') }}
         run: |
           cd .conan_home/profiles
           echo "[conf]" >> default
           echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
           echo "" >> default
           
-      - name: Configure (MacOS-ARM)
+      - name: Configure (MacOS-ARM64)
         id: configure-osx-arm
-        if: ${{ matrix.os == 'MacOS-ARM' }}
+        if: ${{ inputs.os == 'MacOS-ARM64' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Configure (MacOS-x86)
         id: configure-osx-x86
-        if: ${{ matrix.os == 'MacOS-x86' }}
+        if: ${{ inputs.os == 'MacOS-x86' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
-        if: ${{ matrix.os == 'Ubuntu' }}
+        if: ${{ inputs.os == 'Ubuntu' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build_type}} -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GNinja -DCMAKE_BUILD_TYPE=${{inputs.build_type}} -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
 
       - name: Configure (Windows)
         id: configure-win
-        if: ${{ matrix.os == 'Windows' }}
+        if: ${{ inputs.os == 'Windows' }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Always save Conan Cache
         if: always() && (steps.configure-osx-arm.conclusion == 'success' || steps.configure-osx-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
@@ -126,9 +118,9 @@ jobs:
       - name: Build
         run: |
             cd build
-            cmake --build . --config ${{matrix.build_type}}
+            cmake --build . --config ${{inputs.build_type}}
 
       - name: Test
         run: |
             cd build
-            ctest . -C ${{matrix.build_type}} --output-on-failure
+            ctest . -C ${{inputs.build_type}} --output-on-failure

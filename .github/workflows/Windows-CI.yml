@@ -1,0 +1,23 @@
+name: Github Actions CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  windows-debug:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: Windows
+      compiler: MSVC
+      runs_on: windows-2022
+      build_type: Debug
+  windows-release:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: Windows
+      compiler: MSVC
+      runs_on: windows-2022
+      build_type: Release
