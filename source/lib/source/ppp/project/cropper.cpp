@@ -180,6 +180,8 @@ void Cropper::CardRemoved(const fs::path& card_name)
             }
         }
     }
+
+    std::erase(LoadedPreviews, card_name);
 }
 
 void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
