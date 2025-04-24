@@ -76,7 +76,7 @@ jobs:
           echo "" >> default
           
       - name: Configure (MacOS-ARM64)
-        id: configure-osx-arm
+        id: configure-macos-arm
         if: ${{ inputs.os == 'MacOS-ARM64' }}
         run: |
           mkdir build
@@ -84,7 +84,7 @@ jobs:
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Configure (MacOS-x86)
-        id: configure-osx-x86
+        id: configure-macos-x86
         if: ${{ inputs.os == 'MacOS-x86' }}
         run: |
           mkdir build
@@ -107,8 +107,14 @@ jobs:
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
+      - name: Clean up Conan
+        run: |
+          conan remove -f "*" --builds
+          conan remove -f "*" --src
+          conan remove -f "*" --system-reqs
+
       - name: Always save Conan Cache
-        if: always() && (steps.configure-osx-arm.conclusion == 'success' || steps.configure-osx-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
+        if: always() && (steps.configure-macos-arm.conclusion == 'success' || steps.configure-macos-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
