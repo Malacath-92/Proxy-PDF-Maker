@@ -222,7 +222,7 @@ class ActionsWidget : public QGroupBox
         };
 
         const auto render_alignment{
-            [this, & project]()
+            [this, &project]()
             {
                 GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
 
@@ -922,11 +922,6 @@ class CardOptionsWidget : public QGroupBox
         back_over_divider->setFrameShape(QFrame::Shape::HLine);
         back_over_divider->setFrameShadow(QFrame::Shadow::Sunken);
 
-        auto* oversized_checkbox{ new QCheckBox{ "Enable Oversized Option" } };
-        oversized_checkbox->setChecked(project.Data.OversizedEnabled);
-        oversized_checkbox->setEnabled(false);
-        oversized_checkbox->setVisible(false);
-
         auto* layout{ new QVBoxLayout };
         layout->addWidget(bleed_edge);
         layout->addWidget(corner_weight);
@@ -937,7 +932,6 @@ class CardOptionsWidget : public QGroupBox
         layout->addWidget(backside_default_preview);
         layout->addWidget(backside_offset);
         layout->addWidget(back_over_divider);
-        layout->addWidget(oversized_checkbox);
 
         layout->setAlignment(backside_default_preview, Qt::AlignmentFlag::AlignHCenter);
 
@@ -1013,14 +1007,6 @@ class CardOptionsWidget : public QGroupBox
             }
         };
 
-        auto switch_oversized_enabled{
-            [=, &project](Qt::CheckState s)
-            {
-                project.Data.OversizedEnabled = s == Qt::CheckState::Checked;
-                main_window()->OversizedEnabledChanged(project);
-            }
-        };
-
         QObject::connect(bleed_edge_spin,
                          &QDoubleSpinBox::valueChanged,
                          this,
@@ -1045,16 +1031,11 @@ class CardOptionsWidget : public QGroupBox
                          &QDoubleSpinBox::valueChanged,
                          this,
                          change_backside_offset);
-        QObject::connect(oversized_checkbox,
-                         &QCheckBox::checkStateChanged,
-                         this,
-                         switch_oversized_enabled);
 
         BleedEdgeSpin = bleed_edge_spin;
         BacksideCheckbox = backside_checkbox;
         BacksideOffsetSpin = backside_offset_spin;
         BacksideDefaultPreview = backside_default_preview;
-        OversizedCheckbox = oversized_checkbox;
     }
 
     void Refresh(const Project& project)
@@ -1072,7 +1053,6 @@ class CardOptionsWidget : public QGroupBox
         }
         BacksideCheckbox->setChecked(project.Data.BacksideEnabled);
         BacksideOffsetSpin->setValue(project.Data.BacksideOffset.value);
-        OversizedCheckbox->setChecked(project.Data.OversizedEnabled);
     }
 
     void RefreshWidgets(const Project& project)
@@ -1085,7 +1065,6 @@ class CardOptionsWidget : public QGroupBox
     QCheckBox* BacksideCheckbox{ nullptr };
     QDoubleSpinBox* BacksideOffsetSpin{ nullptr };
     DefaultBacksidePreview* BacksideDefaultPreview{ nullptr };
-    QCheckBox* OversizedCheckbox{ nullptr };
 };
 
 class GlobalOptionsWidget : public QGroupBox

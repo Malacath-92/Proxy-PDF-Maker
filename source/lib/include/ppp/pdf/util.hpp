@@ -17,13 +17,11 @@ struct PageImage
 struct Page
 {
     std::vector<PageImage> RegularImages;
-    std::vector<PageImage> OversizedImages;
 };
 
 struct GridImage
 {
     std::reference_wrapper<const fs::path> Image;
-    bool Oversized;
     bool BacksideShortEdge;
 };
 using Grid = std::vector<std::vector<std::optional<GridImage>>>;
@@ -38,4 +36,4 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
 
 dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, bool left_to_right);
 
-Image::Rotation GetCardRotation(bool is_backside, bool is_oversized, bool is_short_edge);
+Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge);

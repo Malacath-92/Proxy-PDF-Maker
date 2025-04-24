@@ -60,25 +60,19 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                 const auto img_path{ output_dir / image.Image };
                 if (fs::exists(img_path))
                 {
-                    const bool oversized{ image.Oversized };
-                    if (oversized && is_backside)
-                    {
-                        x = x - 1;
-                    }
-
                     const auto real_x{ start_x + float(x) * card_width + dx };
                     const auto real_y{ start_y - float(y + 1) * card_height + dy };
-                    const auto real_w{ oversized ? 2 * card_width : card_width };
+                    const auto real_w{ card_width };
                     const auto real_h{ card_height };
 
-                    const auto rotation{ GetCardRotation(is_backside, oversized, image.BacksideShortEdge) };
+                    const auto rotation{ GetCardRotation(is_backside, image.BacksideShortEdge) };
                     page->DrawImage(img_path, real_x, real_y, real_w, real_h, rotation);
                 }
             }
         };
 
         const auto draw_guides{
-            [&](PdfPage* page, size_t x, size_t y, const GridImage& card)
+            [&](PdfPage* page, size_t x, size_t y)
             {
                 auto draw_cross_at_grid{
                     [&](PdfPage* page, size_t x, size_t y, CrossSegment s, Length dx, Length dy)
@@ -109,38 +103,21 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                     }
                 };
 
-                const Length bleed{ card.Oversized ? 2 * project.Data.BleedEdge : project.Data.BleedEdge };
+                const Length bleed{ project.Data.BleedEdge };
                 const Length offset{ project.Data.CornerWeight * bleed };
-                if (card.Oversized)
-                {
-                    draw_cross_at_grid(page,
-                                       x + 2,
-                                       y + 0,
-                                       CrossSegment::TopRight,
-                                       -offset,
-                                       -offset);
-                    draw_cross_at_grid(page,
-                                       x + 2,
-                                       y + 1,
-                                       CrossSegment::BottomRight,
-                                       -offset,
-                                       +offset);
-                }
-                else
-                {
-                    draw_cross_at_grid(page,
-                                       x + 1,
-                                       y + 0,
-                                       CrossSegment::TopRight,
-                                       -offset,
-                                       -offset);
-                    draw_cross_at_grid(page,
-                                       x + 1,
-                                       y + 1,
-                                       CrossSegment::BottomRight,
-                                       -offset,
-                                       +offset);
-                }
+
+                draw_cross_at_grid(page,
+                                   x + 1,
+                                   y + 0,
+                                   CrossSegment::TopRight,
+                                   -offset,
+                                   -offset);
+                draw_cross_at_grid(page,
+                                   x + 1,
+                                   y + 1,
+                                   CrossSegment::BottomRight,
+                                   -offset,
+                                   +offset);
 
                 draw_cross_at_grid(page,
                                    x,
@@ -179,7 +156,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 
                         if (project.Data.EnableGuides)
                         {
-                            draw_guides(front_page, x, y, card.value());
+                            draw_guides(front_page, x, y);
                         }
                     }
                 }
@@ -212,7 +189,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 
                         if (project.Data.EnableGuides && project.Data.BacksideEnableGuides)
                         {
-                            draw_guides(back_page, x, y, card.value());
+                            draw_guides(back_page, x, y);
                         }
                     }
                 }

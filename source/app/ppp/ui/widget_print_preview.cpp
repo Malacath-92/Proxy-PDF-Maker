@@ -47,9 +47,9 @@ class PageGrid : public QWidget
             {
                 if (auto& card{ card_grid[x][y] })
                 {
-                    const auto& [image_name, oversized, backside_short_edge]{ card.value() };
+                    const auto& [image_name, backside_short_edge]{ card.value() };
 
-                    const Image::Rotation rotation{ GetCardRotation(params.IsBackside, oversized, backside_short_edge) };
+                    const Image::Rotation rotation{ GetCardRotation(params.IsBackside, backside_short_edge) };
                     auto* image_widget{
                         new CardImage{
                             image_name,
@@ -62,14 +62,7 @@ class PageGrid : public QWidget
                         },
                     };
 
-                    if (oversized)
-                    {
-                        grid->addWidget(image_widget, x, y, 1, 2);
-                    }
-                    else
-                    {
-                        grid->addWidget(image_widget, x, y);
-                    }
+                    grid->addWidget(image_widget, x, y);
                 }
             }
         }
@@ -80,7 +73,7 @@ class PageGrid : public QWidget
             const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(rows), params.IsBackside).pod() };
             if (grid->itemAtPosition(x, y) == nullptr)
             {
-                const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false, false) };
+                const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false) };
                 auto* image_widget{
                     new CardImage{
                         CFG.FallbackName,
@@ -146,10 +139,7 @@ class GuidesOverlay : public QWidget
             {
                 if (const auto card{ card_grid[y][x] })
                 {
-                    Cards.push_back({
-                        { x, y },
-                        card.value().Oversized,
-                    });
+                    Cards.push_back({ x, y });
                 }
             }
         }
@@ -205,7 +195,7 @@ class GuidesOverlay : public QWidget
         const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
 
         Lines.clear();
-        for (const auto& [idx, oversized] : Cards)
+        for (const auto& idx : Cards)
         {
             const auto top_left_corner{ first_card_corner + idx * card_size };
 
@@ -228,12 +218,7 @@ class GuidesOverlay : public QWidget
     }
 
   private:
-    struct Card
-    {
-        dla::uvec2 Index;
-        bool Oversized;
-    };
-    std::vector<Card> Cards;
+    std::vector<dla::uvec2> Cards;
 
     Length BleedEdge;
     float CornerWeight;
@@ -248,24 +233,8 @@ class GuidesOverlay : public QWidget
 class BordersOverlay : public QWidget
 {
   public:
-    BordersOverlay(const Project& project, const Grid& card_grid)
+    BordersOverlay(const Project& project)
     {
-        const auto rows{ card_grid.size() };
-        const auto columns{ card_grid.front().size() };
-
-        for (uint32_t x = 0; x < columns; x++)
-        {
-            for (uint32_t y = 0; y < rows; y++)
-            {
-                if (const auto card{ card_grid[y][x] })
-                {
-                    Cards.push_back({
-                        { x, y },
-                        card.value().Oversized,
-                    });
-                }
-            }
-        }
         BleedEdge = project.Data.BleedEdge;
         CornerWeight = project.Data.CornerWeight;
 
@@ -301,13 +270,6 @@ class BordersOverlay : public QWidget
     }
 
   private:
-    struct Card
-    {
-        dla::uvec2 Index;
-        bool Oversized;
-    };
-    std::vector<Card> Cards;
-
     Length BleedEdge;
     float CornerWeight;
     Size CardSize;
@@ -365,7 +327,7 @@ class PrintPreview::PagePreview : public QWidget
 
         if (project.Data.ExportExactGuides && !params.GridParams.IsBackside)
         {
-            Borders = new BordersOverlay{ project, card_grid };
+            Borders = new BordersOverlay{ project };
             Borders->setParent(this);
         }
 

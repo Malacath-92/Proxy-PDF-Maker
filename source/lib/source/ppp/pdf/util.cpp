@@ -40,13 +40,11 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
 std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows)
 {
     const auto images_per_page{ columns * rows };
-    const auto oversized_images_per_page{ (columns / 2) * rows };
 
     // throw all images N times into a list
     struct TempImageData
     {
         std::reference_wrapper<const fs::path> Image;
-        bool Oversized;
         bool BacksideShortEdge;
     };
     std::vector<TempImageData> images;
@@ -56,27 +54,17 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
         {
             images.push_back({
                 img,
-                info.Oversized && project.Data.OversizedEnabled,
                 info.BacksideShortEdge,
             });
         }
     }
 
-    // favor filling up with oversized cards first
-    std::ranges::sort(images, {}, &TempImageData::Oversized);
-
     auto page_has_space{
-        [=](const Page& page, bool image_is_oversized)
+        [=](const Page& page)
         {
             const size_t regular_images{ page.RegularImages.size() };
-            const size_t oversized_images{ page.OversizedImages.size() };
-            const size_t single_spaces{ regular_images + 2 * oversized_images };
+            const size_t single_spaces{ regular_images };
             const size_t free_single_spaces{ images_per_page - single_spaces };
-            if (image_is_oversized)
-            {
-                const size_t free_double_spaces{ oversized_images_per_page - oversized_images };
-                return free_double_spaces > 0 and free_single_spaces > 1;
-            }
             return free_single_spaces > 0;
         }
     };
@@ -84,18 +72,17 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     auto is_page_full{
         [=](const Page& page)
         {
-            return !page_has_space(page, false);
+            return !page_has_space(page);
         }
     };
 
     std::vector<Page> pages;
     std::vector<Page> unfinished_pages;
 
-    for (const auto& [img, oversized, backside_short_edge] : images)
+    for (const auto& [img, backside_short_edge] : images)
     {
         // get a page that can fit this card
-        auto page_with_space{ std::ranges::find_if(unfinished_pages, [=](const Page& page)
-                                                   { return page_has_space(page, oversized); }) };
+        auto page_with_space{ std::ranges::find_if(unfinished_pages, page_has_space) };
 
         // or start a new page if none is available
         if (page_with_space == unfinished_pages.end())
@@ -105,10 +92,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
         }
 
         // add image to the page
-        (oversized
-             ? page_with_space->OversizedImages
-             : page_with_space->RegularImages)
-            .push_back({ img, backside_short_edge });
+        page_with_space->RegularImages.push_back({ img, backside_short_edge });
 
         // push full page into final list
         if (is_page_full(*page_with_space))
@@ -143,7 +127,6 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
     {
         Page& backside_page{ backside_pages.emplace_back() };
         backside_page.RegularImages = page.RegularImages | std::views::transform(backside_of_image) | std::ranges::to<std::vector>();
-        backside_page.OversizedImages = page.OversizedImages | std::views::transform(backside_of_image) | std::ranges::to<std::vector>();
     }
 
     return backside_pages;
@@ -159,29 +142,8 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
     };
 
     using TempGridImage = std::variant<std::monostate, // empty
-                                       std::nullptr_t, // implicit 2nd half of oversized
                                        GridImage>;     // explicit image
     auto card_grid{ std::vector{ rows, std::vector{ columns, TempGridImage{} } } };
-
-    {
-        size_t k{ 0 };
-        for (const auto& [img, backside_short_edge] : page.OversizedImages)
-        {
-            dla::uvec2 coord{ get_coord(k) };
-            const auto& [x, y]{ coord.pod() };
-
-            // find slot that fits an oversized card
-            while (y + 1 >= columns || !std::holds_alternative<std::monostate>(card_grid[x][y + 1]))
-            {
-                ++k;
-                coord = get_coord(k);
-            }
-
-            card_grid[x][y] = GridImage{ img, true, backside_short_edge };
-            card_grid[x][y + 1] = nullptr;
-            k += 2;
-        }
-    }
 
     {
         size_t k{ 0 };
@@ -190,14 +152,14 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
             dla::uvec2 coord{ get_coord(k) };
             const auto& [x, y]{ coord.pod() };
 
-            // find slot that fits an oversized card
+            // find an empty slot
             while (!std::holds_alternative<std::monostate>(card_grid[x][y]))
             {
                 ++k;
                 coord = get_coord(k);
             }
 
-            card_grid[x][y] = GridImage{ img, false, backside_short_edge };
+            card_grid[x][y] = GridImage{ img, backside_short_edge };
         }
     }
 
@@ -210,10 +172,6 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
                 struct Visitor
                 {
                     std::optional<GridImage> operator()(std::monostate)
-                    {
-                        return std::nullopt;
-                    }
-                    std::optional<GridImage> operator()(std::nullptr_t)
                     {
                         return std::nullopt;
                     }
@@ -242,27 +200,11 @@ dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, bool left_to_right)
     return { x, y };
 }
 
-Image::Rotation GetCardRotation(bool is_backside, bool is_oversized, bool is_short_edge)
+Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge)
 {
-    if (is_backside)
+    if (is_backside && is_short_edge)
     {
-        if (is_short_edge)
-        {
-            if (is_oversized)
-            {
-                return Image::Rotation::Degree90;
-            }
-            return Image::Rotation::Degree180;
-        }
-        else if (is_oversized)
-        {
-            return Image::Rotation::Degree270;
-        }
+        return Image::Rotation::Degree180;
     }
-    else if (is_oversized)
-    {
-        return Image::Rotation::Degree90;
-    }
-
     return Image::Rotation::None;
 }

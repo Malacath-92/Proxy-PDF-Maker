@@ -33,7 +33,6 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void BacksideGuidesEnabledChanged(Project& project);
     void BacksideDefaultChanged(Project& project);
     void BacksideOffsetChanged(Project& project);
-    void OversizedEnabledChanged(Project& project);
     void DisplayColumnsChanged(Project& project);
     void RenderBackendChanged(Project& project);
     void EnableUncropChanged(Project& project);

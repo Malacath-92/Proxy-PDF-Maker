@@ -17,7 +17,6 @@ struct CardInfo
     uint32_t Num{ 1 };
     fs::path Backside{};
     bool BacksideShortEdge{ false };
-    bool Oversized{ false };
 };
 using CardMap = std::map<fs::path, CardInfo>;
 
@@ -94,9 +93,6 @@ class Project : public QObject
         bool BacksideEnableGuides{ false };
         fs::path BacksideDefault{ "__back.png" };
         Length BacksideOffset{ 0_mm };
-
-        // Oversized options
-        bool OversizedEnabled{ false };
 
         // PDF generation options
         std::string CardSizeChoice{ CFG.DefaultCardSize };

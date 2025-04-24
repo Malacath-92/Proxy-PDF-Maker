@@ -106,7 +106,6 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, scroll_area, &CardScrollArea::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::DisplayColumnsChanged, scroll_area, &CardScrollArea::Refresh);
     }
 
@@ -128,7 +127,6 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
     }
 
@@ -145,8 +143,6 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::RefreshWidgets);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, options, &OptionsWidget::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::OversizedEnabledChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, options, &OptionsWidget::RefreshWidgets);
     }
 

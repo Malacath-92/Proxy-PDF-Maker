@@ -25,7 +25,6 @@ class CardWidget : public QFrame
     CardWidget(const fs::path& card_name, Project& project)
         : CardName{ card_name }
         , BacksideEnabled{ project.Data.BacksideEnabled }
-        , OversizedEnabled{ project.Data.OversizedEnabled }
     {
         const uint32_t initial_number{ card_name.empty() ? 1 : project.Data.Cards[card_name].Num };
 
@@ -122,10 +121,8 @@ class CardWidget : public QFrame
     virtual void Refresh(Project& project)
     {
         const bool backside_changed{ BacksideEnabled != project.Data.BacksideEnabled };
-        const bool oversized_changed{ OversizedEnabled != project.Data.OversizedEnabled };
 
         BacksideEnabled = project.Data.BacksideEnabled;
-        OversizedEnabled = project.Data.OversizedEnabled;
 
         if (backside_changed)
         {
@@ -133,10 +130,7 @@ class CardWidget : public QFrame
             layout()->replaceWidget(ImageWidget, card_widget);
             std::swap(card_widget, ImageWidget);
             delete card_widget;
-        }
 
-        if (backside_changed || oversized_changed)
-        {
             auto* extra_options{ MakeExtraOptions(project) };
             if (ExtraOptions == nullptr)
             {
@@ -215,7 +209,7 @@ class CardWidget : public QFrame
 
     QWidget* MakeExtraOptions(Project& project)
     {
-        if (!BacksideEnabled && !OversizedEnabled)
+        if (!BacksideEnabled)
         {
             return nullptr;
         }
@@ -234,22 +228,6 @@ class CardWidget : public QFrame
                              &QCheckBox::checkStateChanged,
                              this,
                              std::bind_front(&CardWidget::SetShortEdge, this, std::ref(project)));
-
-            extra_options.push_back(short_edge_checkbox);
-        }
-
-        if (OversizedEnabled)
-        {
-            const bool is_oversized{ CardName.empty() ? false : project.Data.Cards[CardName].Oversized };
-
-            auto* short_edge_checkbox{ new QCheckBox{ "Big" } };
-            short_edge_checkbox->setChecked(is_oversized);
-            short_edge_checkbox->setToolTip("Determines whether this is an oversized card");
-
-            QObject::connect(short_edge_checkbox,
-                             &QCheckBox::checkStateChanged,
-                             this,
-                             std::bind_front(&CardWidget::SetOversized, this, std::ref(project)));
 
             extra_options.push_back(short_edge_checkbox);
         }
@@ -294,18 +272,11 @@ class CardWidget : public QFrame
         card.BacksideShortEdge = s == Qt::CheckState::Checked;
     }
 
-    virtual void SetOversized(Project& project, Qt::CheckState s)
-    {
-        auto& card{ project.Data.Cards[CardName] };
-        card.Oversized = s == Qt::CheckState::Checked;
-    }
-
   protected:
     fs::path CardName;
 
   private:
     bool BacksideEnabled{ false };
-    bool OversizedEnabled{ false };
 
     QWidget* ImageWidget{ nullptr };
     QLineEdit* NumberEdit{ nullptr };
@@ -339,7 +310,6 @@ class DummyCardWidget : public CardWidget
     virtual void IncrementNumber(Project&) override {}
     virtual void DecrementNumber(Project&)  override{}
     virtual void SetShortEdge(Project&, Qt::CheckState)  override{}
-    virtual void SetOversized(Project&, Qt::CheckState)  override{}
     // clang-format on
 };
 
