@@ -164,7 +164,7 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
     }
 
     // A non-image has changed, ignore this
-    if (std::ranges::contains(ValidImageExtensions, filepath.extension()))
+    if (!std::ranges::contains(ValidImageExtensions, filepath.extension()))
     {
         return;
     }
