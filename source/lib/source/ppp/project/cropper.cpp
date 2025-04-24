@@ -409,6 +409,7 @@ bool Cropper::DoCropWork(T* signaller)
 
             const auto full_bleed_edge{ Data.CardFullBleed(Cfg) };
             const auto card_size{ Data.CardSize(Cfg) };
+            const auto card_size_with_bleed{ Data.CardSizeWithBleed(Cfg) };
             const auto card_size_with_full_bleed{ Data.CardSizeWithFullBleed(Cfg) };
 
             const bool uncrop{ Cfg.EnableUncrop };
@@ -481,11 +482,11 @@ bool Cropper::DoCropWork(T* signaller)
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-                vibrant_image.Write(output_file, 3, 95, card_size);
+                vibrant_image.Write(output_file, 3, 95, card_size_with_bleed);
             }
             else
             {
-                cropped_image.Write(output_file, 3, 95, card_size);
+                cropped_image.Write(output_file, 3, 95, card_size_with_bleed);
             }
 
             {
