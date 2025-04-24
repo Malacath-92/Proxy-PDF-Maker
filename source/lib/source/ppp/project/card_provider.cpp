@@ -156,31 +156,32 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
                                     std::string old_filename)
 {
     const fs::path filepath{ filename };
+
+    // A sub-folder has changed, ignore this
+    if (!filepath.has_extension())
+    {
+        return;
+    }
+
+    // A non-image has changed, ignore this
+    if (std::ranges::contains(ValidImageExtensions, filepath.extension()))
+    {
+        return;
+    }
+
     switch (action)
     {
     case efsw::Action::Add:
-        if (filepath.has_extension())
-        {
-            CardAdded(filepath, true, true);
-        }
+        CardAdded(filepath, true, true);
         break;
     case efsw::Action::Delete:
-        if (filepath.has_extension())
-        {
-            CardRemoved(filepath);
-        }
+        CardRemoved(filepath);
         break;
     case efsw::Action::Modified:
-        if (filepath.has_extension())
-        {
-            CardModified(filepath);
-        }
+        CardModified(filepath);
         break;
     case efsw::Action::Moved:
-        if (filepath.has_extension())
-        {
-            CardRenamed(old_filename, filepath);
-        }
+        CardRenamed(old_filename, filepath);
         break;
     }
 }
