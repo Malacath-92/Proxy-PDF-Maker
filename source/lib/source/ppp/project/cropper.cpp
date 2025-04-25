@@ -283,6 +283,7 @@ void Cropper::CropWork()
     {
         if (CropDone.load(std::memory_order_relaxed) == 0)
         {
+            CropWorkStartPoint = std::chrono::high_resolution_clock::now();
             this->CropWorkStart();
             TotalWorkDone.store(0, std::memory_order_relaxed);
             CropDone.store(UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
@@ -301,6 +302,12 @@ void Cropper::CropWork()
                     std::shared_lock property_lock{ PropertyMutex };
                     ImageDB.Write(Data.CropDir / ".image.db");
                 }
+
+#ifdef LOG_CROPPER_TIMES
+                const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
+                const auto crop_work_duration{ crop_work_end_point - CropWorkStartPoint };
+                qDebug() << std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration);
+#endif
             }
         }
 

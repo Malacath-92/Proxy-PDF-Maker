@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <functional>
+#include <chrono>
 
 #include <QObject>
 #include <QTimer>
@@ -89,6 +90,9 @@ class Cropper : public QObject
 
     std::shared_mutex IgnoreMutex;
     std::vector<fs::path> IgnoreNotification;
+
+    using time_point = decltype(std::chrono::high_resolution_clock::now());
+    time_point CropWorkStartPoint;
 
     class CropperSignalRouter* Router;
 
