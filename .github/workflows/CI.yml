@@ -109,12 +109,10 @@ jobs:
 
       - name: Clean up Conan
         run: |
-          conan remove -f "*" --builds
-          conan remove -f "*" --src
-          conan remove -f "*" --system-reqs
+          conan cache clean "*"
 
       - name: Always save Conan Cache
-        if: always() && (steps.configure-macos-arm.conclusion == 'success' || steps.configure-macos-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
+        if: always() && (steps.configure-macos-arm.conclusion == 'success' || steps.configure-macos-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success')
         uses: actions/cache/save@v4
         with:
           path: |
