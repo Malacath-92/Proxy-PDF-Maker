@@ -306,7 +306,8 @@ void Cropper::CropWork()
 #ifdef LOG_CROPPER_TIMES
                 const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
                 const auto crop_work_duration{ crop_work_end_point - CropWorkStartPoint };
-                qDebug() << std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration);
+                qDebug() << "Total Work Items: " << TotalWorkDone.load(std::memory_order_relaxed);
+                qDebug() << "Total Time Taken: " << std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration);
 #endif
             }
         }
