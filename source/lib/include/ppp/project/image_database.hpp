@@ -10,6 +10,7 @@ struct ImageParameters
     Pixel Width{ 0_pix };
     Size CardSize{ 0_mm, 0_mm };
     Length FullBleedEdge{ 0_mm };
+    bool WillWriteOutput{ true };
 };
 
 struct ImageDataBaseEntry

@@ -628,6 +628,7 @@ bool Cropper::DoPreviewWork(T* signaller)
                 .Width{ preview_width },
                 .CardSize{ card_size },
                 .FullBleedEdge{ full_bleed_edge },
+                .WillWriteOutput = false,
             };
 
             // Generate Preview ...
