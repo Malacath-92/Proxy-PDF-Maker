@@ -180,8 +180,8 @@ void Project::InitProperties(PrintFn print_fn)
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        CFG.EnableStartupCrop ? ListImageFiles(Data.ImageDir)
-                              : ListImageFiles(Data.ImageDir, Data.CropDir)
+        CFG.EnableUncrop ? ListImageFiles(Data.ImageDir)
+                         : ListImageFiles(Data.ImageDir, Data.CropDir)
     };
 
     // Check that we have all our cards accounted for
