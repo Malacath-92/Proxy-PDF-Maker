@@ -189,16 +189,18 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
                      &GenericPopup::UpdateTextImpl);
     work_thread->start();
 
-    WorkerThread.reset(work_thread);
     Refresh = [work_thread](std::string_view text)
     {
         work_thread->Refresh(std::string{ text });
     };
+    WorkerThread.reset(work_thread);
 
     PopupBase::Show();
 
-    Refresh = nullptr;
+    work_thread->quit();
+    work_thread->wait();
     WorkerThread.reset();
+    Refresh = nullptr;
 }
 
 GenericPopup::UninstallLogHookAtScopeExit GenericPopup::InstallLogHook()
@@ -211,7 +213,7 @@ GenericPopup::UninstallLogHookAtScopeExit GenericPopup::InstallLogHook()
     LogHookId = Log::GetInstance(Log::m_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
                                                                   { UpdateText(message); });
 
-    return UninstallLogHookAtScopeExit{};
+    return UninstallLogHookAtScopeExit{ this };
 }
 
 void GenericPopup::UninstallLogHook()
