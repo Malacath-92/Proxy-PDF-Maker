@@ -80,8 +80,6 @@ class Cropper : public QObject
     std::mutex PendingPreviewWorkMutex;
     std::vector<fs::path> PendingPreviewWork;
 
-    std::mutex DirMutex;
-
     std::shared_mutex PropertyMutex;
     Project::ProjectData Data;
     Config Cfg;
