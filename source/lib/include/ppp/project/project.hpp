@@ -35,11 +35,11 @@ class Project : public QObject
     Project() = default;
     ~Project();
 
-    void Load(const fs::path& json_path, PrintFn print_fn);
-    void Dump(const fs::path& json_path, PrintFn print_fn) const;
+    void Load(const fs::path& json_path);
+    void Dump(const fs::path& json_path) const;
 
-    void Init(PrintFn print_fn);
-    void InitProperties(PrintFn print_fn);
+    void Init();
+    void InitProperties();
 
     void CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);

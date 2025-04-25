@@ -2,6 +2,8 @@
 
 #include <QStandardPaths>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/project.hpp>
 
 inline HPDF_REAL ToHaruReal(Length l)
@@ -132,21 +134,19 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
     return libharu_image;
 }
 
-HaruPdfDocument::HaruPdfDocument(const Project& project, PrintFn print_fn)
+HaruPdfDocument::HaruPdfDocument(const Project& project)
     : TheProject{ project }
-    , PrintFunction{ std::move(print_fn) }
 {
     static constexpr auto error_handler{
         [](HPDF_STATUS error_no,
            HPDF_STATUS detail_no,
-           void* user_data)
+           [[maybe_unused]] void* user_data)
         {
-            PrintFn& print_fn{ *static_cast<PrintFn*>(user_data) };
-            PPP_LOG("HaruPDF ERROR: error_no={}, detail_no={}\n", error_no, detail_no);
+            LogError("HaruPDF ERROR: error_no={}, detail_no={}", error_no, detail_no);
         }
     };
 
-    Document = HPDF_New(error_handler, &PrintFunction);
+    Document = HPDF_New(error_handler, nullptr);
     HPDF_SetCompressionMode(Document, HPDF_COMP_ALL);
 
     ImageCache = std::make_unique<HaruPdfImageCache>(Document);
@@ -174,7 +174,7 @@ fs::path HaruPdfDocument::Write(fs::path path)
 {
     const fs::path pdf_path{ fs::path{ path }.replace_extension(".pdf") };
     const auto pdf_path_string{ pdf_path.string() };
-    PPP_LOG_WITH(PrintFunction, "Saving to {}...", pdf_path_string);
+    LogInfo("Saving to {}...", pdf_path_string);
     HPDF_SaveToFile(Document, pdf_path_string.c_str());
     return pdf_path;
 }

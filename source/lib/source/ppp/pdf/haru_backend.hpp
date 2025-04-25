@@ -58,7 +58,7 @@ class HaruPdfImageCache
 class HaruPdfDocument final : public PdfDocument
 {
   public:
-    HaruPdfDocument(const Project& project, PrintFn print_fn);
+    HaruPdfDocument(const Project& project);
     virtual ~HaruPdfDocument() override;
 
     virtual HaruPdfPage* NextPage() override;
@@ -75,6 +75,4 @@ class HaruPdfDocument final : public PdfDocument
     std::unique_ptr<HaruPdfImageCache> ImageCache;
 
     HPDF_Font Font{ nullptr };
-
-    PrintFn PrintFunction;
 };

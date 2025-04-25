@@ -27,6 +27,7 @@
 #include <ppp/cubes.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/style.hpp>
+#include <ppp/util/log.hpp>
 
 #include <ppp/pdf/generate.hpp>
 #include <ppp/pdf/util.hpp>
@@ -93,7 +94,7 @@ class ActionsWidget : public QGroupBox
                 const auto render_work{
                     [=, &project, &application, &render_window]()
                     {
-                        const auto print_fn{ render_window.MakePrintFn() };
+                        const auto uninstall_log_hook{ render_window.InstallLogHook() };
 
                         {
                             std::vector<fs::path> used_cards{};
@@ -122,24 +123,23 @@ class ActionsWidget : public QGroupBox
                                                   bleed_edge,
                                                   CFG.MaxDPI,
                                                   CFG.ColorCube,
-                                                  GetCubeImage(application, CFG.ColorCube),
-                                                  print_fn);
+                                                  GetCubeImage(application, CFG.ColorCube));
                             }
                         }
 
                         try
                         {
-                            const auto file_path{ GeneratePdf(project, print_fn) };
+                            const auto file_path{ GeneratePdf(project) };
                             OpenFile(file_path);
 
                             if (project.Data.ExportExactGuides)
                             {
-                                GenerateCardsSvg(project, print_fn);
+                                GenerateCardsSvg(project);
                             }
                         }
                         catch (const std::exception& e)
                         {
-                            PPP_LOG("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
+                            LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
                             render_window.Sleep(3_s);
                         }
                     }
@@ -157,7 +157,7 @@ class ActionsWidget : public QGroupBox
                 if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
                 {
                     application.SetProjectPath(new_project_json.value());
-                    project.Dump(new_project_json.value(), nullptr);
+                    project.Dump(new_project_json.value());
                 }
             }
         };
@@ -175,7 +175,7 @@ class ActionsWidget : public QGroupBox
                         const auto load_project_work{
                             [=, &project, &reload_window]()
                             {
-                                project.Load(new_project_json.value(), reload_window.MakePrintFn());
+                                project.Load(new_project_json.value());
                             }
                         };
 
@@ -202,7 +202,7 @@ class ActionsWidget : public QGroupBox
                         project.Data.CropDir = project.Data.ImageDir / "crop";
                         project.Data.ImageCache = project.Data.CropDir / "preview.cache";
 
-                        project.Init(nullptr);
+                        project.Init();
 
                         auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
                         main_window->ImageDirChangedDiff(project.Data.ImageDir,
@@ -229,15 +229,15 @@ class ActionsWidget : public QGroupBox
                 const auto render_work{
                     [=, &project, &render_align_window]()
                     {
-                        const auto print_fn{ render_align_window.MakePrintFn() };
+                        const auto uninstall_log_hook{ render_align_window.InstallLogHook() };
                         try
                         {
-                            const auto file_path{ GenerateTestPdf(project, print_fn) };
+                            const auto file_path{ GenerateTestPdf(project) };
                             OpenFile(file_path);
                         }
                         catch (const std::exception& e)
                         {
-                            PPP_LOG("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
+                            LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
                             render_align_window.Sleep(3_s);
                         }
                     }

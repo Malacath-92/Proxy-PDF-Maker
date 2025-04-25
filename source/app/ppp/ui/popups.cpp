@@ -17,6 +17,7 @@
 #include <ppp/project/image_ops.hpp>
 
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 std::optional<fs::path> OpenFolderDialog(const fs::path& root)
@@ -200,16 +201,26 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
     WorkerThread.reset();
 }
 
-std::function<void(std::string_view)> GenericPopup::MakePrintFn()
+GenericPopup::UninstallLogHookAtScopeExit GenericPopup::InstallLogHook()
 {
-    return [this](std::string_view text)
+    if (LogHookId.has_value())
     {
-#ifndef NDEBUG
-        fmt::print("{}\n", text);
-        fflush(stdout);
-#endif
-        UpdateText(text);
-    };
+        UninstallLogHook();
+    }
+
+    LogHookId = Log::GetInstance(Log::m_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
+                                                                  { UpdateText(message); });
+
+    return UninstallLogHookAtScopeExit{};
+}
+
+void GenericPopup::UninstallLogHook()
+{
+    if (LogHookId.has_value())
+    {
+        Log::GetInstance(Log::m_MainLogName)->UninstallHook(LogHookId.value());
+        LogHookId.reset();
+    }
 }
 
 void GenericPopup::Sleep(dla::time_unit duration)

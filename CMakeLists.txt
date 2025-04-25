@@ -85,6 +85,8 @@ if(MSVC)
 endif()
 
 add_library(proxy_pdf_definitions INTERFACE)
+target_compile_definitions(proxy_pdf_definitions INTERFACE
+	PPP_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/source/")
 if(MSVC)
 	target_compile_definitions(proxy_pdf_definitions INTERFACE
 		_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING

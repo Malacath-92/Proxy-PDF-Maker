@@ -6,13 +6,15 @@
 
 #include <dla/scalar_math.h>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
 #include <ppp/pdf/backend.hpp>
 #include <ppp/pdf/util.hpp>
 
-fs::path GeneratePdf(const Project& project, PrintFn print_fn)
+fs::path GeneratePdf(const Project& project)
 {
     using CrossSegment = PdfPage::CrossSegment;
 
@@ -43,7 +45,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project) };
 
 #if __cpp_lib_ranges_enumerate
     for (auto [p, page_images] : images | std::views::enumerate)
@@ -150,7 +152,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        PPP_LOG(render_fmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(render_fmt, p + 1, i + 1, card->Image.get().string());
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
@@ -180,7 +182,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        PPP_LOG(render_fmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(render_fmt, p + 1, i + 1, card->Image.get().string());
 
                         auto backside_card{ card.value() };
                         backside_card.Image = project.GetBacksideImage(card->Image);
@@ -202,7 +204,7 @@ fs::path GeneratePdf(const Project& project, PrintFn print_fn)
     return pdf->Write(project.Data.FileName);
 }
 
-fs::path GenerateTestPdf(const Project& project, PrintFn print_fn)
+fs::path GenerateTestPdf(const Project& project)
 {
     const auto page_size{ project.ComputePageSize() };
     const auto [page_width, page_height]{ page_size.pod() };
@@ -212,7 +214,7 @@ fs::path GenerateTestPdf(const Project& project, PrintFn print_fn)
     const auto page_eighth{ page_size / 8 };
     const auto page_sixteenth{ page_size / 16 };
 
-    auto pdf{ CreatePdfDocument(CFG.Backend, project, print_fn) };
+    auto pdf{ CreatePdfDocument(CFG.Backend, project) };
 
     {
         auto* front_page{ pdf->NextPage() };

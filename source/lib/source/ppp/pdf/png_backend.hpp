@@ -59,7 +59,7 @@ class PngImageCache
 class PngDocument final : public PdfDocument
 {
   public:
-    PngDocument(const Project& project, PrintFn print_fn);
+    PngDocument(const Project& project);
     virtual ~PngDocument() override;
 
     virtual PngPage* NextPage() override;
@@ -77,6 +77,4 @@ class PngDocument final : public PdfDocument
     std::vector<PngPage> Pages;
 
     std::unique_ptr<PngImageCache> ImageCache;
-
-    PrintFn PrintFunction;
 };

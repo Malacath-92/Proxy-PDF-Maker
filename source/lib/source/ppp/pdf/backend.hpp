@@ -14,7 +14,7 @@
 class Project;
 class PdfDocument;
 
-std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project, PrintFn print_fn);
+std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project);
 
 class PdfPage
 {

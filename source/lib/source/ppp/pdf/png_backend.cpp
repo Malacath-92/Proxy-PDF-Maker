@@ -2,6 +2,8 @@
 
 #include <opencv2/imgproc.hpp>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/project.hpp>
 
 inline int32_t ToPixels(Length l)
@@ -131,9 +133,8 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h
     return image_cache.back().PngImage;
 }
 
-PngDocument::PngDocument(const Project& project, PrintFn print_fn)
+PngDocument::PngDocument(const Project& project)
     : TheProject{ project }
-    , PrintFunction{ std::move(print_fn) }
 {
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const dla::ivec2 card_size_pixels{
@@ -198,7 +199,7 @@ fs::path PngDocument::Write(fs::path path)
         const fs::path png_path{ png_folder / fs::path{ std::to_string(i) }.replace_extension(".png") };
         {
             const auto png_path_str{ png_path.string() };
-            PPP_LOG_WITH(PrintFunction, "Saving to {}...", png_path_str);
+            LogInfo("Saving to {}...", png_path_str);
         }
         if (fs::exists(png_path))
         {

@@ -8,6 +8,7 @@
 #include <QDialog>
 
 #include <ppp/util.hpp>
+#include <ppp/util/log.hpp>
 
 class QLabel;
 
@@ -49,7 +50,16 @@ class GenericPopup : public PopupBase
 
     void ShowDuringWork(std::function<void()> work);
 
-    std::function<void(std::string_view)> MakePrintFn();
+    struct UninstallLogHookAtScopeExit
+    {
+        ~UninstallLogHookAtScopeExit()
+        {
+            self->UninstallLogHook();
+        }
+        GenericPopup* self;
+    };
+    UninstallLogHookAtScopeExit InstallLogHook();
+    void UninstallLogHook();
 
     void Sleep(dla::time_unit duration);
 
@@ -63,6 +73,7 @@ class GenericPopup : public PopupBase
     QLabel* TextLabel;
     std::shared_ptr<void> WorkerThread;
     std::function<void(std::string_view)> Refresh;
+    std::optional<uint32_t> LogHookId;
 };
 
 class AboutPopup : public PopupBase

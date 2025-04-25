@@ -3,6 +3,7 @@ build*
 publish
 
 # Files generated during testing
+logs
 images*/*
 config.ini
 *.cache

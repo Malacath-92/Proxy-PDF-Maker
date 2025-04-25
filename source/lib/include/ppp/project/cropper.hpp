@@ -1,8 +1,8 @@
 #pragma once
 
 #include <atomic>
-#include <functional>
 #include <chrono>
+#include <functional>
 
 #include <QObject>
 #include <QTimer>

@@ -6,6 +6,8 @@
 
 #include <ppp/pdf/util.hpp>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/project.hpp>
 
 inline double ToPoDoFoPoints(Length l)
@@ -175,7 +177,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     return image_cache.back().PoDoFoImage.get();
 }
 
-PoDoFoDocument::PoDoFoDocument(const Project& project, PrintFn print_fn)
+PoDoFoDocument::PoDoFoDocument(const Project& project)
     : BaseDocument{
         project.Data.PageSize == Config::BasePDFSize && LoadPdfSize(project.Data.BasePdf + ".pdf")
             ? new PoDoFo::PdfMemDocument
@@ -183,7 +185,6 @@ PoDoFoDocument::PoDoFoDocument(const Project& project, PrintFn print_fn)
     }
     , TheProject{ project }
     , ImageCache{ std::make_unique<PoDoFoImageCache>(&Document) }
-    , PrintFunction{ std::move(print_fn) }
 {
     if (BaseDocument != nullptr)
     {
@@ -244,7 +245,7 @@ fs::path PoDoFoDocument::Write(fs::path path)
     {
         const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
         const auto pdf_path_string{ pdf_path.string() };
-        PPP_LOG_WITH(PrintFunction, "Saving to {}...", pdf_path_string);
+        LogInfo("Saving to {}...", pdf_path_string);
         Document.Write(pdf_path.c_str());
         return pdf_path;
     }

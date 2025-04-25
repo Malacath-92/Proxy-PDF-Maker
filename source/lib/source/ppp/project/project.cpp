@@ -7,6 +7,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/config.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 #include <ppp/pdf/util.hpp>
@@ -19,11 +20,11 @@ Project::~Project()
     WritePreviews(Data.ImageCache, Data.Previews);
 }
 
-void Project::Load(const fs::path& json_path, PrintFn print_fn)
+void Project::Load(const fs::path& json_path)
 {
     Data = ProjectData{};
 
-    PPP_LOG("Initializing project...");
+    LogInfo("Initializing project...");
 
     try
     {
@@ -104,18 +105,17 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
     }
     catch (const std::exception& e)
     {
-        PPP_LOG("Failed loading project from {}: {}", json_path.string(), e.what());
-        PPP_LOG("Continuing with an empty project...", json_path.string(), e.what());
+        LogError("Failed loading project from {}, continuing with an empty project: {}", json_path.string(), e.what());
     }
 
-    Init(print_fn);
+    Init();
 }
 
-void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
+void Project::Dump(const fs::path& json_path) const
 {
     if (std::ofstream file{ json_path })
     {
-        PPP_LOG("Writing project to {}...", json_path.string());
+        LogInfo("Writing project to {}...", json_path.string());
 
         nlohmann::json json{};
         json["version"] = JsonFormatVersion();
@@ -170,22 +170,22 @@ void Project::Dump(const fs::path& json_path, PrintFn print_fn) const
     }
     else
     {
-        PPP_LOG("Failed opening file {} for write...", json_path.string());
+        LogError("Failed opening file {} for write...", json_path.string());
     }
 }
 
-void Project::Init(PrintFn print_fn)
+void Project::Init()
 {
-    PPP_LOG("Loading preview cache...");
+    LogInfo("Loading preview cache...");
     Data.Previews = ReadPreviews(Data.ImageCache);
 
-    InitProperties(print_fn);
+    InitProperties();
     EnsureOutputFolder();
 }
 
-void Project::InitProperties(PrintFn print_fn)
+void Project::InitProperties()
 {
-    PPP_LOG("Collecting images...");
+    LogInfo("Collecting images...");
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{

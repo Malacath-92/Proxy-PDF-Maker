@@ -4,16 +4,16 @@
 
 #include <ppp/project/project.hpp>
 
-std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project, PrintFn print_fn)
+std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project)
 {
     switch (backend)
     {
     case PdfBackend::LibHaru:
-        return std::make_unique<HaruPdfDocument>(project, std::move(print_fn));
+        return std::make_unique<HaruPdfDocument>(project);
     case PdfBackend::PoDoFo:
-        return std::make_unique<PoDoFoDocument>(project, std::move(print_fn));
+        return std::make_unique<PoDoFoDocument>(project);
     case PdfBackend::Png:
-        return std::make_unique<PngDocument>(project, std::move(print_fn));
+        return std::make_unique<PngDocument>(project);
     default:
         return nullptr;
     }

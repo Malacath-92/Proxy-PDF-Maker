@@ -11,6 +11,8 @@
 #include <ppp/project/cropper_signal_router.hpp>
 #include <ppp/project/image_ops.hpp>
 
+#define LOG_CROPPER_TIMES
+
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
     : GetColorCube{ std::move(get_color_cube) }
     , ImageDB{ ImageDataBase::Read(project.Data.CropDir / ".image.db") }
@@ -514,7 +516,7 @@ bool Cropper::DoCropWork(T* signaller)
                     if (!handle_ignore())
                     {
                         const Image image{ Image::Read(crop_file) };
-                        const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop, nullptr) };
+                        const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop) };
                         uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
 
                         std::unique_lock image_db_lock{ ImageDBMutex };
@@ -558,7 +560,7 @@ bool Cropper::DoCropWork(T* signaller)
             }
 
             const Image image{ Image::Read(input_file) };
-            const Image cropped_image{ CropImage(image, card_name, card_size, full_bleed_edge, bleed_edge, max_density, nullptr) };
+            const Image cropped_image{ CropImage(image, card_name, card_size, full_bleed_edge, bleed_edge, max_density) };
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
@@ -660,7 +662,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.UncroppedImage = image;
-                image_preview.CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi, nullptr);
+                image_preview.CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
 
                 {
                     std::unique_lock image_db_lock{ ImageDBMutex };
@@ -700,7 +702,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                 ImagePreview image_preview{};
                 image_preview.CroppedImage = image;
-                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop, nullptr);
+                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
 
                 signaller->PreviewUpdated(card_name, image_preview);
             }

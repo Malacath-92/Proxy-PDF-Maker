@@ -18,6 +18,8 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
+#include <ppp/util/log.hpp>
+
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
     return ListFiles(path, ValidImageExtensions);
@@ -44,8 +46,7 @@ Image CropImage(const Image& image,
                 Size card_size,
                 Length full_bleed,
                 Length bleed_edge,
-                PixelDensity max_density,
-                PrintFn print_fn)
+                PixelDensity max_density)
 {
     const Size card_size_with_full_bleed{ card_size + 2 * full_bleed };
     const PixelDensity density{ image.Density(card_size_with_full_bleed) };
@@ -56,7 +57,7 @@ Image CropImage(const Image& image,
         {
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(dla::math::max(0_pix, c - bleed_pixels));
-            PPP_LOG("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
                     image_name.string(),
                     dpi.value,
                     c,
@@ -65,7 +66,7 @@ Image CropImage(const Image& image,
         else
         {
             c = dla::math::round(c);
-            PPP_LOG("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
         }
     }
 
@@ -74,19 +75,19 @@ Image CropImage(const Image& image,
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        PPP_LOG("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", image_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
+        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", image_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
 }
 
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop, PrintFn print_fn)
+Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop)
 {
     const PixelDensity density{ image.Density(card_size) };
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    PPP_LOG("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
+    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
 
     if (fancy_uncrop)
     {
@@ -182,8 +183,7 @@ void RunMinimalCropper(const fs::path& image_dir,
                        Length bleed_edge,
                        PixelDensity max_density,
                        const std::string& color_cube_name,
-                       const cv::Mat* color_cube,
-                       PrintFn print_fn)
+                       const cv::Mat* color_cube)
 {
     const fs::path output_dir{ GetOutputDir(crop_dir, bleed_edge, color_cube_name) };
     if (!fs::exists(output_dir))
@@ -216,8 +216,8 @@ void RunMinimalCropper(const fs::path& image_dir,
                 continue;
             }
 
-            const Image image{ UncropImage(Image::Read(crop_dir / img_file), img_file, card_size, CFG.EnableFancyUncrop, print_fn) };
-            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density, print_fn) };
+            const Image image{ UncropImage(Image::Read(crop_dir / img_file), img_file, card_size, CFG.EnableFancyUncrop) };
+            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density) };
             cropped_image.Write(intermediate_dir / img_file);
         }
     }
@@ -244,7 +244,7 @@ void RunMinimalCropper(const fs::path& image_dir,
             }
 
             const Image image{ Image::Read(image_dir / img_file) };
-            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density, print_fn) };
+            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density) };
             cropped_image.Write(intermediate_dir / img_file);
 
             const Image vibrant_image{ Image::Read(intermediate_dir / img_file).ApplyColorCube(*color_cube) };
@@ -272,7 +272,7 @@ void RunMinimalCropper(const fs::path& image_dir,
             }
 
             const Image image{ Image::Read(image_dir / img_file) };
-            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density, print_fn) };
+            const Image cropped_image{ CropImage(image, img_file, card_size, full_bleed, bleed_edge, max_density) };
             cropped_image.Write(output_dir / img_file);
         }
     }

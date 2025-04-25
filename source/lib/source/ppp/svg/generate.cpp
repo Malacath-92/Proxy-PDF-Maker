@@ -7,9 +7,11 @@
 
 #include <ppp/qt_util.hpp>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/project.hpp>
 
-void DrawSvg(QPainter& painter, const QPainterPath& path, PrintFn /*print_fn*/)
+void DrawSvg(QPainter& painter, const QPainterPath& path)
 {
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
@@ -20,7 +22,7 @@ void DrawSvg(QPainter& painter, const QPainterPath& path, PrintFn /*print_fn*/)
     painter.drawPath(path);
 }
 
-QPainterPath GenerateCardsPath(const Project& project, PrintFn print_fn)
+QPainterPath GenerateCardsPath(const Project& project)
 {
     const auto svg_size{ project.Data.CardLayout * project.CardSizeWithBleed() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
@@ -28,8 +30,7 @@ QPainterPath GenerateCardsPath(const Project& project, PrintFn print_fn)
                              project.Data.CardLayout,
                              project.CardSize(),
                              project.Data.BleedEdge,
-                             project.CardCornerRadius(),
-                             std::move(print_fn));
+                             project.CardCornerRadius());
 }
 
 QPainterPath GenerateCardsPath(dla::vec2 origin,
@@ -37,8 +38,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::uvec2 grid,
                                Size card_size,
                                Length bleed_edge,
-                               Length corner_radius,
-                               PrintFn /*print_fn*/)
+                               Length corner_radius)
 {
     const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
     const auto card_size_with_bleed_pixels{ size / grid };
@@ -81,21 +81,21 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
     return card_border;
 }
 
-void GenerateCardsSvg(const Project& project, PrintFn print_fn)
+void GenerateCardsSvg(const Project& project)
 {
     const auto svg_path{ fs::path{ project.Data.FileName }.replace_extension(".svg") };
 
-    PPP_LOG("Generating card path...");
-    QPainterPath path{ GenerateCardsPath(project, print_fn) };
+    LogInfo("Generating card path...");
+    QPainterPath path{ GenerateCardsPath(project) };
 
     QSvgGenerator generator{};
     generator.setFileName(ToQString(svg_path));
     generator.setTitle("Card cutting guides.");
     generator.setDescription("An SVG containing exact cutting guides for the accompaniying sheet.");
 
-    PPP_LOG("Drawing card path...");
+    LogInfo("Drawing card path...");
     QPainter painter;
     painter.begin(&generator);
-    DrawSvg(painter, path, print_fn);
+    DrawSvg(painter, path);
     painter.end();
 }

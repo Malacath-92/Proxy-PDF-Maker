@@ -249,7 +249,7 @@ class BordersOverlay : public QWidget
     virtual void paintEvent(QPaintEvent* /*event*/) override
     {
         QPainter painter{ this };
-        DrawSvg(painter, CardBorder, nullptr);
+        DrawSvg(painter, CardBorder);
         painter.end();
     }
 
@@ -266,7 +266,7 @@ class BordersOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, CornerRadius, nullptr);
+        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, CornerRadius);
     }
 
   private:

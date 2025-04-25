@@ -20,6 +20,8 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
@@ -35,11 +37,25 @@ int main(int argc, char** argv)
     }
 #endif
 
+    Log::RegisterThreadName("MainThread");
+
+    LogFlags log_flags{
+        LogFlags::Console |
+        LogFlags::File |
+        LogFlags::FatalQuit |
+        LogFlags::DetailFile |
+        LogFlags::DetailLine |
+        LogFlags::DetailColumn |
+        LogFlags::DetailThread |
+        LogFlags::DetailStacktrace
+    };
+    Log main_log{ log_flags, Log::m_MainLogName };
+
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
 
     Project project{};
-    project.Load(app.GetProjectPath(), nullptr);
+    project.Load(app.GetProjectPath());
 
     Cropper cropper{ [&app](std::string_view cube_name)
                      {
@@ -169,6 +185,6 @@ int main(int argc, char** argv)
     card_provider.Start();
 
     const int return_code{ app.exec() };
-    project.Dump(app.GetProjectPath(), nullptr);
+    project.Dump(app.GetProjectPath());
     return return_code;
 }

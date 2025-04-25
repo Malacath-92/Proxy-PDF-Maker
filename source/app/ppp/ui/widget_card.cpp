@@ -66,7 +66,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 if (has_bleed_edge)
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, project.Data.BleedEdge, 6800_dpi, nullptr) };
+                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, project.Data.BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -147,7 +147,7 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
                 if (BleedEdge > 0_mm)
                 {
                     const Image& uncropped_image{ preview.UncroppedImage };
-                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, BleedEdge, 6800_dpi, nullptr) };
+                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }

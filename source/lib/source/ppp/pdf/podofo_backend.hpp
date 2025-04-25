@@ -59,7 +59,7 @@ class PoDoFoImageCache
 class PoDoFoDocument final : public PdfDocument
 {
   public:
-    PoDoFoDocument(const Project& project, PrintFn print_fn);
+    PoDoFoDocument(const Project& project);
     virtual ~PoDoFoDocument() override = default;
 
     virtual PoDoFoPage* NextPage() override;
@@ -79,6 +79,4 @@ class PoDoFoDocument final : public PdfDocument
     std::unique_ptr<PoDoFoImageCache> ImageCache;
 
     PoDoFo::PdfFont* Font{ nullptr };
-
-    PrintFn PrintFunction;
 };
