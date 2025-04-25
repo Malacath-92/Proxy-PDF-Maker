@@ -144,6 +144,7 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
                 message.SourceInfo.column(),
                 message.SourceInfo.function_name(),
                 GetThreadName(std::this_thread::get_id()),
+                {},
             };
 
 #ifdef __cpp_lib_stacktrace
