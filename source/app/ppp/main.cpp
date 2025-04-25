@@ -64,6 +64,11 @@ int main(int argc, char** argv)
 
     auto* main_window{ new PrintProxyPrepMainWindow{ tabs, options } };
 
+    QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
+    QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);
+    QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &project, &Project::EnsureOutputFolder);
+    QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
+
     // TODO: More fine-grained control
     QObject::connect(&card_provider, &CardProvider::CardAdded, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
     QObject::connect(&card_provider, &CardProvider::CardRemoved, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
