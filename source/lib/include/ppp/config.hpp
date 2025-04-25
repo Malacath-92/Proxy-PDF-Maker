@@ -30,7 +30,6 @@ struct Config
 {
     bool EnableUncrop{ false };
     bool EnableFancyUncrop{ true };
-    bool EnableStartupCrop{ true };
     Pixel BasePreviewWidth{ 248_pix };
     PixelDensity MaxDPI{ 1200_dpi };
     uint32_t DisplayColumns{ 5 };
