@@ -6,12 +6,14 @@
 #include <QThread>
 #include <QTimer>
 
+#include <fmt/chrono.h>
+
 #include <ppp/qt_util.hpp>
+
+#include <ppp/util/log.hpp>
 
 #include <ppp/project/cropper_signal_router.hpp>
 #include <ppp/project/image_ops.hpp>
-
-#define LOG_CROPPER_TIMES
 
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
     : GetColorCube{ std::move(get_color_cube) }
@@ -305,12 +307,11 @@ void Cropper::CropWork()
                     ImageDB.Write(Data.CropDir / ".image.db");
                 }
 
-#ifdef LOG_CROPPER_TIMES
                 const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
                 const auto crop_work_duration{ crop_work_end_point - CropWorkStartPoint };
-                qDebug() << "Total Work Items: " << TotalWorkDone.load(std::memory_order_relaxed);
-                qDebug() << "Total Time Taken: " << std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration);
-#endif
+                LogInfo("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
+                        TotalWorkDone.load(std::memory_order_relaxed),
+                        std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
             }
         }
 
