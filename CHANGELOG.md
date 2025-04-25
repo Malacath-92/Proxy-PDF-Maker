@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2025-24-04
+
+### Changed
+- The uncrop option is now doing a nicer version that works alright for borderless cards
+- The output folder now has a reasonable name when generating with bleed edge
+
+### Fixed
+- Cropped files are written with the correct size again, so the embedded DPI information is correct
+- The cropper will no longer randomly fail reporting to be finished when uncropping is enabled
+
 ## [0.9.3] - 2025-24-04
 
 ### Fixed
