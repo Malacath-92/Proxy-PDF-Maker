@@ -100,18 +100,17 @@ Image UncropImage(const Image& image, const fs::path& image_name, Size card_size
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name)
 {
-    const bool has_bleed_edge{ bleed_edge > 0_mm };
-
     if (color_cube_name != "None")
     {
         return GetOutputDir(crop_dir / color_cube_name, bleed_edge, "None");
     }
 
+    const bool has_bleed_edge{ bleed_edge > 0_mm };
     if (has_bleed_edge)
     {
-        std::string bleed_folder{ std::to_string(bleed_edge.value * 1000) };
-        bleed_folder.erase(bleed_folder.find_last_not_of("0.") + 1);
+        std::string bleed_folder{ fmt::format("{:.2f}", bleed_edge / 1_mm) };
         std::replace(bleed_folder.begin(), bleed_folder.end(), '.', 'p');
+        std::replace(bleed_folder.begin(), bleed_folder.end(), ',', 'p');
         return crop_dir / bleed_folder;
     }
 

@@ -30,6 +30,15 @@ void Project::Load(const fs::path& json_path, PrintFn print_fn)
         const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ json_path }) };
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
+            if (JsonFormatVersion() == "PPP00007")
+            {
+                const auto crop_dir{ fs::path{ json["image_dir"].get<std::string>() } / "crop" };
+                for (const auto sub_dir : ListFolders(crop_dir))
+                {
+                    fs::remove_all(crop_dir / sub_dir);
+                }
+            }
+
             throw std::logic_error{ "Project version not compatible with App version..." };
         }
 
