@@ -16,6 +16,8 @@ class PrintProxyPrepMainWindow : public QMainWindow
 
     void OpenAboutPopup();
 
+    virtual void closeEvent(QCloseEvent* event) override;
+
   signals:
     void NewProjectOpened(Project& project);
     void ImageDirChanged(Project& project);

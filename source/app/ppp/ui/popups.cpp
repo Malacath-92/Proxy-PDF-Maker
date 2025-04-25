@@ -188,16 +188,18 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
                      &GenericPopup::UpdateTextImpl);
     work_thread->start();
 
-    WorkerThread.reset(work_thread);
     Refresh = [work_thread](std::string_view text)
     {
         work_thread->Refresh(std::string{ text });
     };
+    WorkerThread.reset(work_thread);
 
     PopupBase::Show();
 
-    Refresh = nullptr;
+    work_thread->quit();
+    work_thread->wait();
     WorkerThread.reset();
+    Refresh = nullptr;
 }
 
 std::function<void(std::string_view)> GenericPopup::MakePrintFn()
