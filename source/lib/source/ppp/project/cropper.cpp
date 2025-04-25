@@ -440,14 +440,6 @@ bool Cropper::DoCropWork(T* signaller)
                 .FullBleedEdge{ full_bleed_edge },
             };
 
-            {
-                std::lock_guard dir_lock{ DirMutex };
-                if (!fs::exists(output_dir))
-                {
-                    fs::create_directories(output_dir);
-                }
-            }
-
             std::vector<fs::path> new_ignore_notifications{};
             std::vector<fs::path> discard_ignore_notifications{};
 

@@ -171,6 +171,7 @@ void Project::Init(PrintFn print_fn)
     Data.Previews = ReadPreviews(Data.ImageCache);
 
     InitProperties(print_fn);
+    EnsureOutputFolder();
 }
 
 void Project::InitProperties(PrintFn print_fn)
@@ -342,6 +343,17 @@ Length Project::CardFullBleed() const
 Length Project::CardCornerRadius() const
 {
     return Data.CardCornerRadius(CFG);
+}
+
+void Project::EnsureOutputFolder() const
+{
+    const auto output_dir{
+        GetOutputDir(Data.CropDir, Data.BleedEdge, CFG.ColorCube)
+    };
+    if (!fs::exists(output_dir))
+    {
+        fs::create_directories(output_dir);
+    }
 }
 
 Size Project::ProjectData::ComputePageSize(const Config& config) const

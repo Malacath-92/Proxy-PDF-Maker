@@ -63,6 +63,8 @@ class Project : public QObject
     Length CardFullBleed() const;
     Length CardCornerRadius() const;
 
+    void EnsureOutputFolder() const;
+
   public slots:
     void SetPreview(const fs::path& image_name, ImagePreview preview);
 
