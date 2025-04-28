@@ -139,6 +139,9 @@ elseif(APPLE)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
+
+	target_link_libraries(proxy_pdf_definitions INTERFACE
+		stdc++_libbacktrace)
 endif() 
 
 add_library(proxy_pdf_pch INTERFACE)
@@ -185,6 +188,11 @@ target_link_libraries(proxy_pdf_lib PUBLIC
 set_target_properties(proxy_pdf_lib PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf_lib PUBLIC "source/lib/include")
 target_include_directories(proxy_pdf_lib PRIVATE "source/lib/source")
+set_target_properties(proxy_pdf_lib PROPERTIES
+    VS_GLOBAL_RunCodeAnalysis true
+    VS_GLOBAL_EnableMicrosoftCodeAnalysis false
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true
+    VS_GLOBAL_ClangTidyChecks -checks=-*,modernize-*,-modernize-use-trailing-return-type)
 
 # --------------------------------------------------
 # Create executable
@@ -199,6 +207,11 @@ target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_lib)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
+set_target_properties(proxy_pdf PROPERTIES
+    VS_GLOBAL_RunCodeAnalysis true
+    VS_GLOBAL_EnableMicrosoftCodeAnalysis false
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true
+    VS_GLOBAL_ClangTidyChecks -checks=-*,modernize-*,-modernize-use-trailing-return-type)
 
 # --------------------------------------------------
 # Set debugging properties
