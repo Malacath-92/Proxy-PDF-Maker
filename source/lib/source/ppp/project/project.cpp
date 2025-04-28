@@ -34,7 +34,7 @@ void Project::Load(const fs::path& json_path)
             if (JsonFormatVersion() == "PPP00007")
             {
                 const auto crop_dir{ fs::path{ json["image_dir"].get<std::string>() } / "crop" };
-                for (const auto sub_dir : ListFolders(crop_dir))
+                for (const auto& sub_dir : ListFolders(crop_dir))
                 {
                     fs::remove_all(crop_dir / sub_dir);
                 }
