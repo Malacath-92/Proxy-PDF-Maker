@@ -141,7 +141,7 @@ elseif(UNIX)
 		Qt6::QXcbIntegrationPlugin)
 
 	target_link_libraries(proxy_pdf_definitions INTERFACE
-		stdc++_libbacktrace)
+		stdc++exp)
 endif() 
 
 add_library(proxy_pdf_pch INTERFACE)
