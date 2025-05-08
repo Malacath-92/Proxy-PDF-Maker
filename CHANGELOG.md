@@ -6,15 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.9.4] - 2025-24-04
+## [0.9.4] - 2025-08-05
 
 ### Changed
 - The uncrop option is now doing a nicer version that works alright for borderless cards
 - The output folder now has a reasonable name when generating with bleed edge
+- The cropper has received a tiny speedup
 
 ### Fixed
 - Cropped files are written with the correct size again, so the embedded DPI information is correct
 - The cropper will no longer randomly fail reporting to be finished when uncropping is enabled
+- The program can no longer be closed in the middle of rendering a PDF to avoid a crash
+- Previews will no longe rbe regeerated on every startup
+- When running with uncrop option the cropper will no longer get stuck in an infinte loop of cropping
+
+### Removed
+- A deprecated option that was inaccessible and would not affect the program was removed
 
 ## [0.9.3] - 2025-24-04
 
