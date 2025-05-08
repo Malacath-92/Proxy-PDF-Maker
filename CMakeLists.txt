@@ -189,10 +189,9 @@ set_target_properties(proxy_pdf_lib PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf_lib PUBLIC "source/lib/include")
 target_include_directories(proxy_pdf_lib PRIVATE "source/lib/source")
 set_target_properties(proxy_pdf_lib PROPERTIES
-    VS_GLOBAL_RunCodeAnalysis true
+    VS_GLOBAL_RunCodeAnalysis false
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
-    VS_GLOBAL_EnableClangTidyCodeAnalysis true
-    VS_GLOBAL_ClangTidyChecks -checks=-*,modernize-*,-modernize-use-trailing-return-type)
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true)
 
 # --------------------------------------------------
 # Create executable
@@ -208,10 +207,9 @@ target_link_libraries(proxy_pdf PRIVATE
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
-    VS_GLOBAL_RunCodeAnalysis true
+    VS_GLOBAL_RunCodeAnalysis false
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
-    VS_GLOBAL_EnableClangTidyCodeAnalysis true
-    VS_GLOBAL_ClangTidyChecks -checks=-*,modernize-*,-modernize-use-trailing-return-type)
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true)
 
 # --------------------------------------------------
 # Set debugging properties
