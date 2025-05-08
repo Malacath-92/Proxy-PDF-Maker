@@ -323,6 +323,7 @@ class PrintOptionsWidget : public QGroupBox
         const Size initial_page_size{ project.ComputePageSize() };
         const Size initial_cards_size{ project.ComputeCardsSize() };
         const Size initial_max_margins{ initial_page_size - initial_cards_size };
+        const auto initial_margins{ project.ComputeMargins() };
 
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
@@ -347,14 +348,14 @@ class PrintOptionsWidget : public QGroupBox
         left_margin_spin->setSingleStep(0.1);
         left_margin_spin->setSuffix("mm");
         left_margin_spin->setRange(0, initial_max_margins.x / 1_mm);
-        left_margin_spin->setValue(project.Data.Margins.x / 1_mm);
+        left_margin_spin->setValue(initial_margins.x / 1_mm);
         auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
         auto* top_margin_spin{ top_margin->GetWidget() };
         top_margin_spin->setDecimals(2);
         top_margin_spin->setSingleStep(0.1);
         top_margin_spin->setSuffix("mm");
         top_margin_spin->setRange(0, initial_max_margins.y / 1_mm);
-        top_margin_spin->setValue(project.Data.Margins.y / 1_mm);
+        top_margin_spin->setValue(initial_margins.y / 1_mm);
 
         auto* cards_width{ new QDoubleSpinBox };
         cards_width->setDecimals(0);
@@ -517,8 +518,11 @@ class PrintOptionsWidget : public QGroupBox
         auto change_top_margin{
             [=, &project](double v)
             {
-                project.Data.RelativeMargins.y = static_cast<float>(v) / left_margin_spin->maximum();
-                project.Data.Margins.y = static_cast<float>(v) * 1_mm;
+                if (!project.Data.CustomMargins.has_value())
+                {
+                    project.Data.CustomMargins.emplace(project.ComputeMargins());
+                }
+                project.Data.CustomMargins.value().y = static_cast<float>(v) * 1_mm;
                 main_window()->MarginsChanged(project);
             }
         };
@@ -526,8 +530,11 @@ class PrintOptionsWidget : public QGroupBox
         auto change_left_margin{
             [=, &project](double v)
             {
-                project.Data.RelativeMargins.x = static_cast<float>(v) / top_margin_spin->maximum();
-                project.Data.Margins.x = static_cast<float>(v) * 1_mm;
+                if (!project.Data.CustomMargins.has_value())
+                {
+                    project.Data.CustomMargins.emplace(project.ComputeMargins());
+                }
+                project.Data.CustomMargins.value().x = static_cast<float>(v) * 1_mm;
                 main_window()->MarginsChanged(project);
             }
         };
@@ -768,14 +775,8 @@ class PrintOptionsWidget : public QGroupBox
         const auto page_size{ project.ComputePageSize() };
         const auto cards_size{ project.ComputeCardsSize() };
         const auto max_margins{ page_size - cards_size };
-        if ((project.Data.RelativeMargins.x - 0.5f) < 0.001f)
-        {
-            LeftMarginSpin->setValue(max_margins.x / 2.0f / 1_mm);
-        }
-        if ((project.Data.RelativeMargins.y - 0.5f) < 0.001f)
-        {
-            TopMarginSpin->setValue(max_margins.y / 2.0f / 1_mm);
-        }
+        LeftMarginSpin->setValue(max_margins.x / 2_mm);
+        TopMarginSpin->setValue(max_margins.y / 2_mm);
     }
 
   private:

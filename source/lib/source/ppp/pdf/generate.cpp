@@ -39,9 +39,10 @@ fs::path GeneratePdf(const Project& project)
     const auto [page_width, page_height]{ page_size.pod() };
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
+    const auto margins{ project.ComputeMargins() };
 
-    const Length start_x{ project.Data.Margins.x };
-    const Length start_y{ page_height - project.Data.Margins.y };
+    const Length start_x{ margins.x };
+    const Length start_y{ page_height - margins.y };
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 

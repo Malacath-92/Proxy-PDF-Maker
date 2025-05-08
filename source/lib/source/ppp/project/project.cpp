@@ -83,13 +83,15 @@ void Project::Load(const fs::path& json_path)
             Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
         }
 
+        if (json.contains("custom_margins")) {
+            Data.CustomMargins = Size{
+                json["custom_margins"]["width"].get<float>() * 1_cm,
+                json["custom_margins"]["height"].get<float>() * 1_cm,
+            };
+        }
+        else
         {
-            const Size page_size{ ComputePageSize() };
-            const Size cards_size{ ComputeCardsSize() };
-            const Size max_margins{ page_size - cards_size };
-            Data.RelativeMargins.x = json["margins"]["width"].get<float>();
-            Data.RelativeMargins.y = json["margins"]["height"].get<float>();
-            Data.Margins = Data.RelativeMargins * max_margins;
+            Data.CustomMargins.reset();
         }
 
         Data.FileName = json["file_name"].get<std::string>();
@@ -144,13 +146,13 @@ void Project::Dump(const fs::path& json_path) const
         json["card_size"] = Data.CardSizeChoice;
         json["page_size"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
-        {
+        if (Data.CustomMargins.has_value()) {
             const Size page_size{ ComputePageSize() };
             const Size cards_size{ ComputeCardsSize() };
             const Size max_margins{ page_size - cards_size };
-            json["margins"] = nlohmann::json{
-                { "width", Data.Margins.x / max_margins.x },
-                { "height", Data.Margins.y / max_margins.y },
+            json["custom_margins"] = nlohmann::json{
+                { "width", Data.CustomMargins->x / 1_cm },
+                { "height", Data.CustomMargins->y / 1_cm },
             };
         }
         json["card_layout"] = nlohmann::json{
@@ -324,6 +326,11 @@ Size Project::ComputeCardsSize() const
     return Data.CardLayout * card_size_with_bleed;
 }
 
+Size Project::ComputeMargins() const
+{
+    return Data.ComputeMargins(CFG);
+}
+
 float Project::CardRatio() const
 {
     return Data.CardRatio(CFG);
@@ -394,6 +401,19 @@ Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
     const Size card_size_with_bleed{ CardSize(config) + 2 * BleedEdge };
     return CardLayout * card_size_with_bleed;
+}
+
+Size Project::ProjectData::ComputeMargins(const Config& config) const
+{
+    if (CustomMargins.has_value())
+    {
+        return CustomMargins.value();
+    }
+
+    const Size page_size{ ComputePageSize(config) };
+    const Size cards_size{ ComputeCardsSize(config) };
+    const Size max_margins{ page_size - cards_size };
+    return max_margins / 2.0f;
 }
 
 float Project::ProjectData::CardRatio(const Config& config) const

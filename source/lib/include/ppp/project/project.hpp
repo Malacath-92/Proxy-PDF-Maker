@@ -55,6 +55,7 @@ class Project : public QObject
 
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
+    Size ComputeMargins() const;
 
     float CardRatio() const;
     Size CardSize() const;
@@ -100,8 +101,7 @@ class Project : public QObject
         std::string CardSizeChoice{ CFG.DefaultCardSize };
         std::string PageSize{ CFG.DefaultPageSize };
         std::string BasePdf{ "None" };
-        dla::vec2 RelativeMargins{};
-        Size Margins{};
+        std::optional<Size> CustomMargins{};
         dla::uvec2 CardLayout{ 3, 3 };
         PageOrientation Orientation{ PageOrientation::Portrait };
         fs::path FileName{ "_printme" };
@@ -114,6 +114,7 @@ class Project : public QObject
         // Utility functions
         Size ComputePageSize(const Config& config) const;
         Size ComputeCardsSize(const Config& config) const;
+        Size ComputeMargins(const Config& config) const;
 
         float CardRatio(const Config& config) const;
         Size CardSize(const Config& config) const;
