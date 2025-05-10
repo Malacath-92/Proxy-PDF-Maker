@@ -147,9 +147,6 @@ void Project::Dump(const fs::path& json_path) const
         json["page_size"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
         if (Data.CustomMargins.has_value()) {
-            const Size page_size{ ComputePageSize() };
-            const Size cards_size{ ComputeCardsSize() };
-            const Size max_margins{ page_size - cards_size };
             json["custom_margins"] = nlohmann::json{
                 { "width", Data.CustomMargins->x / 1_cm },
                 { "height", Data.CustomMargins->y / 1_cm },
