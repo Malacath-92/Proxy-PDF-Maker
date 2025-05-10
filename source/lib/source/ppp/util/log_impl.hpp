@@ -50,7 +50,7 @@ class Log::LogImpl
         Log::LogHook mHook;
     };
     std::vector<InstalledLogHook> mLogHooks;
-    
+
     std::ofstream mFileStream;
 
     const LogFlags mLogFlags;
