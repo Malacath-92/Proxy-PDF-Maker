@@ -72,28 +72,6 @@ Config LoadConfig()
                 return static_cast<uint32_t>(parts[1].size());
             },
         };
-        static constexpr auto get_base_unit{
-            [](std::string_view base_unit_str) -> std::optional<Length>
-            {
-                if (base_unit_str == "inches")
-                {
-                    return 1_in;
-                }
-                else if (base_unit_str == "cm")
-                {
-                    return 10_mm;
-                }
-                else if (base_unit_str == "mm")
-                {
-                    return 1_mm;
-                }
-                else if (base_unit_str == "points")
-                {
-                    return 1_pts;
-                }
-                return std::nullopt;
-            }
-        };
 
         static constexpr auto parse_size{
             [](std::string str) -> std::optional<Config::SizeInfo>
@@ -112,12 +90,12 @@ Config LoadConfig()
                     return std::nullopt;
                 }
 
-                const auto base_unit_opt{ get_base_unit(parts.back()) };
+                const auto base_unit_opt{ Config::GetUnitFromName(parts.back()) };
                 if (!base_unit_opt.has_value())
                 {
                     return std::nullopt;
                 }
-                const auto base_unit{ base_unit_opt.value() };
+                const auto base_unit{ base_unit_opt.value().m_Unit };
 
                 const auto width_str{ parts[0] };
                 const auto height_str{ parts[2] };
@@ -151,12 +129,12 @@ Config LoadConfig()
                     return std::nullopt;
                 }
 
-                const auto base_unit_opt{ get_base_unit(parts.back()) };
+                const auto base_unit_opt{ Config::GetUnitFromName(parts.back()) };
                 if (!base_unit_opt.has_value())
                 {
                     return std::nullopt;
                 }
-                const auto base_unit{ base_unit_opt.value() };
+                const auto base_unit{ base_unit_opt.value().m_Unit };
 
                 const auto length_str{ parts[0] };
                 const auto length{ to_float(length_str) };
@@ -220,8 +198,8 @@ Config LoadConfig()
                 auto base_unit{ settings.value("Base.Unit") };
                 if (base_unit.isValid())
                 {
-                    config.BaseUnit = get_base_unit(base_unit.toString().toStdString())
-                                          .value_or(1_mm);
+                    config.BaseUnit = Config::GetUnitFromName(base_unit.toString().toStdString())
+                                          .value_or(Config::SupportedBaseUnits[0]);
                 }
             }
 
@@ -298,25 +276,13 @@ void SaveConfig(Config config)
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
-        static constexpr auto get_unit_name{
-            [](const Length& base)
-            {
-                const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
-                const bool is_pts{ dla::math::abs(base - 1_pts) < 0.0001_pts };
-                const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
-                // clang-format off
-                return is_inches ? "inches" :
-                          is_pts ? "points" :
-                           is_cm ? "cm"
-                                 : "mm";
-                // clang-format on
-            }
-        };
         static constexpr auto set_size{
             [](QSettings& settings, const std::string& name, const Config::SizeInfo& info, float scale = 1.0f)
             {
                 const auto& [size, base, decimals]{ info };
-                const auto unit{ get_unit_name(base) };
+                const auto unit{ Config::GetUnitFromValue(base)
+                                     .transform(&UnitInfo::GetName)
+                                     .value_or("mm") };
                 const auto [width, height]{ (size / base / scale).pod() };
                 settings.setValue(name, fmt::format("{0:.{2}f} x {1:.{2}f} {3}", width, height, decimals, unit).c_str());
             }
@@ -325,7 +291,9 @@ void SaveConfig(Config config)
             [](QSettings& settings, const std::string& name, const Config::LengthInfo& info, float scale = 1.0f)
             {
                 const auto& [length, base, decimals]{ info };
-                const auto unit{ get_unit_name(base) };
+                const auto unit{ Config::GetUnitFromValue(base)
+                                     .transform(&UnitInfo::GetName)
+                                     .value_or("mm") };
                 settings.setValue(name, fmt::format("{0:.{1}f} {2}", length / base / scale, decimals, unit).c_str());
             }
         };
@@ -368,7 +336,8 @@ void SaveConfig(Config config)
                 settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
             }
 
-            settings.setValue("Base.Unit", get_unit_name(config.BaseUnit));
+            const auto base_unit_name{ config.BaseUnit.m_Name };
+            settings.setValue("Base.Unit", ToQString(base_unit_name));
 
             settings.endGroup();
         }

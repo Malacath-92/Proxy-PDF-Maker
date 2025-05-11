@@ -26,6 +26,19 @@ enum class PageOrientation
     Landscape
 };
 
+struct UnitInfo
+{
+    std::string_view m_Name;
+    std::string_view m_ShortName;
+    Length m_Unit;
+
+    // clang-format off
+    constexpr auto GetName() const { return m_Name; }
+    constexpr auto GetShortName() const { return m_ShortName; }
+    constexpr auto GetUnit() const { return m_Unit; }
+    // clang-format on
+};
+
 struct Config
 {
     bool EnableUncrop{ false };
@@ -41,14 +54,7 @@ struct Config
     ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };
     std::optional<int> JpgQuality{ std::nullopt };
-    Length BaseUnit{ 1_mm };
-
-    static inline constexpr std::array SupportedBaseUnits{
-        std::string_view{ "inches" },
-        std::string_view{ "points" },
-        std::string_view{ "mm" },
-        std::string_view{ "cm" },
-    };
+    UnitInfo BaseUnit{ SupportedBaseUnits[0] };
 
     static inline constexpr std::string_view FitSize{ "Fit" };
     static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
@@ -121,6 +127,52 @@ struct Config
     };
 
     void SetPdfBackend(PdfBackend backend);
+
+    static inline constexpr std::array SupportedBaseUnits{
+        UnitInfo{
+            "mm",
+            "mm",
+            1_mm,
+        },
+        UnitInfo{
+            "cm",
+            "cm",
+            10_mm,
+        },
+        UnitInfo{
+            "inches",
+            "in",
+            1_in,
+        },
+        UnitInfo{
+            "points",
+            "pts",
+            1_pts,
+        },
+    };
+
+    static inline constexpr std::optional<UnitInfo> GetUnitFromName(std::string_view unit_name)
+    {
+        for (const auto& unit_info : SupportedBaseUnits)
+        {
+            if (unit_info.m_Name == unit_name)
+            {
+                return unit_info;
+            }
+        }
+        return std::nullopt;
+    }
+    static inline constexpr std::optional<UnitInfo> GetUnitFromValue(Length unit_value)
+    {
+        for (const auto& unit_info : SupportedBaseUnits)
+        {
+            if (dla::math::abs(unit_info.m_Unit - unit_value) < 0.0001_mm)
+            {
+                return unit_info;
+            }
+        }
+        return std::nullopt;
+    }
 };
 
 Config LoadConfig();

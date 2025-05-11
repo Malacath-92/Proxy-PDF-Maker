@@ -318,16 +318,16 @@ class PrintOptionsWidget : public QGroupBox
             }
         };
 
-        const auto initial_base_unit{ CFG.BaseUnit };
-        const auto initial_base_unit_name{ GetLengthUnitShortName(initial_base_unit) };
+        const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
+        const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
         const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
         const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
 
-        const Size initial_page_size{ project.ComputePageSize() };
-        const Size initial_cards_size{ project.ComputeCardsSize() };
-        const Size initial_max_margins{ initial_page_size - initial_cards_size };
-        const auto initial_margins{ project.ComputeMargins() };
+        const auto initial_page_size{ project.ComputePageSize() };
+        const auto initial_cards_size{ project.ComputeCardsSize() };
+        const auto initial_max_margins{ (initial_page_size - initial_cards_size) / initial_base_unit };
+        const auto initial_margins{ project.ComputeMargins() / initial_base_unit };
 
         using namespace std::string_view_literals;
         auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
@@ -351,15 +351,15 @@ class PrintOptionsWidget : public QGroupBox
         left_margin_spin->setDecimals(2);
         left_margin_spin->setSingleStep(0.1);
         left_margin_spin->setSuffix(initial_base_unit_name);
-        left_margin_spin->setRange(0, initial_max_margins.x / initial_base_unit);
-        left_margin_spin->setValue(initial_margins.x / initial_base_unit);
+        left_margin_spin->setRange(0, initial_max_margins.x);
+        left_margin_spin->setValue(initial_margins.x);
         auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
         auto* top_margin_spin{ top_margin->GetWidget() };
         top_margin_spin->setDecimals(2);
         top_margin_spin->setSingleStep(0.1);
         top_margin_spin->setSuffix(initial_base_unit_name);
-        top_margin_spin->setRange(0, initial_max_margins.y / initial_base_unit);
-        top_margin_spin->setValue(initial_margins.y / initial_base_unit);
+        top_margin_spin->setRange(0, initial_max_margins.y);
+        top_margin_spin->setValue(initial_margins.y);
 
         auto* cards_width{ new QDoubleSpinBox };
         cards_width->setDecimals(0);
@@ -450,13 +450,13 @@ class PrintOptionsWidget : public QGroupBox
                 }
 
                 const Size cards_size{ project.ComputeCardsSize() };
-                const auto base_unit{ CFG.BaseUnit };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
+                const auto max_margins{ (page_size - cards_size) / base_unit };
 
-                const auto max_margins{ page_size - cards_size };
-                left_margin_spin->setRange(0, max_margins.x / base_unit);
-                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
-                top_margin_spin->setRange(0, max_margins.y / base_unit);
-                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
+                left_margin_spin->setRange(0, max_margins.x);
+                left_margin_spin->setValue(max_margins.x / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y);
+                top_margin_spin->setValue(max_margins.y / 2.0f);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -505,14 +505,14 @@ class PrintOptionsWidget : public QGroupBox
                 const Size card_size_with_bleed{ project.CardSizeWithBleed() };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
-                const Size cards_size{ project.ComputeCardsSize() };
-                const Size max_margins{ page_size - cards_size };
-                const auto base_unit{ CFG.BaseUnit };
+                const auto cards_size{ project.ComputeCardsSize() };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
+                const auto max_margins{ (page_size - cards_size) / base_unit };
 
-                left_margin_spin->setRange(0, max_margins.x / base_unit);
-                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
-                top_margin_spin->setRange(0, max_margins.y / base_unit);
-                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
+                left_margin_spin->setRange(0, max_margins.x);
+                left_margin_spin->setValue(max_margins.x / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y);
+                top_margin_spin->setValue(max_margins.y / 2.0f);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -529,7 +529,7 @@ class PrintOptionsWidget : public QGroupBox
                     project.Data.CustomMargins.emplace(project.ComputeMargins());
                 }
 
-                const auto base_unit{ CFG.BaseUnit };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
                 project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
                 main_window()->MarginsChanged(project);
             }
@@ -542,7 +542,7 @@ class PrintOptionsWidget : public QGroupBox
                 {
                     project.Data.CustomMargins.emplace(project.ComputeMargins());
                 }
-                const auto base_unit{ CFG.BaseUnit };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
                 project.Data.CustomMargins.value().x = static_cast<float>(v) * base_unit;
                 main_window()->MarginsChanged(project);
             }
@@ -581,14 +581,14 @@ class PrintOptionsWidget : public QGroupBox
                 const Size card_size_with_bleed{ project.CardSizeWithBleed() };
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
-                const Size cards_size{ project.ComputeCardsSize() };
-                const auto base_unit{ CFG.BaseUnit };
+                const auto cards_size{ project.ComputeCardsSize() };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
+                const auto max_margins{ (page_size - cards_size) / base_unit };
 
-                const auto max_margins{ page_size - cards_size };
-                left_margin_spin->setRange(0, max_margins.x / base_unit);
-                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
-                top_margin_spin->setRange(0, max_margins.y / base_unit);
-                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
+                left_margin_spin->setRange(0, max_margins.x);
+                left_margin_spin->setValue(max_margins.x / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y);
+                top_margin_spin->setValue(max_margins.y / 2.0f);
 
                 main_window()->OrientationChanged(project);
             }
@@ -784,7 +784,7 @@ class PrintOptionsWidget : public QGroupBox
 
         const auto page_size{ m_Project.ComputePageSize() };
         const auto cards_size{ m_Project.ComputeCardsSize() };
-        const auto base_unit{ CFG.BaseUnit };
+        const auto base_unit{ CFG.BaseUnit.m_Unit };
         const auto max_margins{ page_size - cards_size };
         LeftMarginSpin->setValue(max_margins.x / base_unit / 2.0f);
         TopMarginSpin->setValue(max_margins.y / base_unit / 2.0f);
@@ -792,8 +792,8 @@ class PrintOptionsWidget : public QGroupBox
 
     void BaseUnitChanged()
     {
-        const auto base_unit{ CFG.BaseUnit };
-        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+        const auto base_unit{ CFG.BaseUnit.m_Unit };
+        const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
         const auto page_size{ m_Project.ComputePageSize() };
         const auto cards_size{ m_Project.ComputeCardsSize() };
@@ -836,8 +836,8 @@ class PrintOptionsWidget : public QGroupBox
 
     static std::string SizeToString(Size size)
     {
-        const auto base_unit{ CFG.BaseUnit };
-        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+        const auto base_unit{ CFG.BaseUnit.m_Unit };
+        const auto base_unit_name{ CFG.BaseUnit.m_ShortName };
         return fmt::format("{:.1f} x {:.1f} {}", size.x / base_unit, size.y / base_unit, base_unit_name);
     }
 
@@ -912,8 +912,8 @@ class CardOptionsWidget : public QGroupBox
     {
         setTitle("Card Options");
 
-        const auto initial_base_unit{ CFG.BaseUnit };
-        const auto initial_base_unit_name{ GetLengthUnitShortName(initial_base_unit) };
+        const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
+        const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
         const auto full_bleed{ project.CardFullBleed() };
         auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
@@ -986,7 +986,7 @@ class CardOptionsWidget : public QGroupBox
         auto change_bleed_edge{
             [=, &project](double v)
             {
-                const auto base_unit{ CFG.BaseUnit };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
                 const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
                 if (dla::math::abs(project.Data.BleedEdge - new_bleed_edge) < 0.001_mm)
                 {
@@ -1044,7 +1044,7 @@ class CardOptionsWidget : public QGroupBox
         auto change_backside_offset{
             [=, &project](double v)
             {
-                const auto base_unit{ CFG.BaseUnit };
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
                 project.Data.BacksideOffset = base_unit * static_cast<float>(v);
                 main_window()->BacksideOffsetChanged(project);
             }
@@ -1083,7 +1083,7 @@ class CardOptionsWidget : public QGroupBox
 
     void Refresh()
     {
-        const auto base_unit{ CFG.BaseUnit };
+        const auto base_unit{ CFG.BaseUnit.m_Unit };
         const auto full_bleed{ m_Project.CardFullBleed() };
         const auto full_bleed_rounded{ QString::number(full_bleed / base_unit, 'f', 2).toFloat() };
         if (static_cast<int32_t>(BleedEdgeSpin->maximum() / 0.001) != static_cast<int32_t>(full_bleed_rounded / 0.001))
@@ -1106,18 +1106,18 @@ class CardOptionsWidget : public QGroupBox
 
     void BaseUnitChanged()
     {
-        const auto base_unit{ CFG.BaseUnit };
-        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+        const auto base_unit{ CFG.BaseUnit.m_Unit };
+        const auto base_unit_name{ CFG.BaseUnit.m_ShortName };
         const auto full_bleed{ m_Project.CardFullBleed() };
         const auto bleed{ m_Project.Data.BleedEdge };
         const auto backside_offset{ m_Project.Data.BacksideOffset };
 
         BleedEdgeSpin->setRange(0, full_bleed / base_unit);
-        BleedEdgeSpin->setSuffix(base_unit_name);
+        BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
         BleedEdgeSpin->setValue(bleed / base_unit);
 
         BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-        BacksideOffsetSpin->setSuffix(base_unit_name);
+        BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
         BacksideOffsetSpin->setValue(backside_offset / base_unit);
     }
 
@@ -1137,8 +1137,11 @@ class GlobalOptionsWidget : public QGroupBox
     {
         setTitle("Global Config");
 
+        const auto base_unit_name{ CFG.BaseUnit.m_Name };
         auto* base_unit{ new ComboBoxWithLabel{
-            "&Units", CFG.SupportedBaseUnits, GetLengthUnitName(CFG.BaseUnit) } };
+            "&Units",
+            CFG.SupportedBaseUnits | std::views::transform(&UnitInfo::m_Name) | std::ranges::to<std::vector>(),
+            base_unit_name } };
         base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
         auto* display_columns_spin_box{ new QDoubleSpinBox };
@@ -1204,7 +1207,9 @@ class GlobalOptionsWidget : public QGroupBox
         auto change_base_units{
             [=, &project](const QString& t)
             {
-                CFG.BaseUnit = GetLengthUnit(t.toStdString());
+                const auto base_unit{ CFG.GetUnitFromName(t.toStdString())
+                                          .value_or(Config::SupportedBaseUnits[0]) };
+                CFG.BaseUnit = base_unit;
                 SaveConfig(CFG);
                 main_window()->BaseUnitChanged(project);
             }
