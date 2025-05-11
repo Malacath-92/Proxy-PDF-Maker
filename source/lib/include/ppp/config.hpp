@@ -41,6 +41,14 @@ struct Config
     ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };
     std::optional<int> JpgQuality{ std::nullopt };
+    Length BaseUnit{ 1_mm };
+
+    static inline constexpr std::array SupportedBaseUnits{
+        std::string_view{ "inches" },
+        std::string_view{ "points" },
+        std::string_view{ "mm" },
+        std::string_view{ "cm" },
+    };
 
     static inline constexpr std::string_view FitSize{ "Fit" };
     static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };

@@ -54,8 +54,58 @@ inline auto operator""_p(const wchar_t *str, size_t len) { return fs::path(str, 
 inline auto operator""_p(const char16_t *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator""_p(const char32_t *str, size_t len) { return fs::path(str, str + len); }
 
+inline constexpr Length GetLengthUnit(std::string_view name)
+{
+    if (name == "inches")
+    {
+        return 1_in;
+    }
+    else if (name == "points")
+    {
+        return 1_pts;
+    }
+    else if (name == "cm")
+    {
+        return 10_mm;
+    }
+    else
+    {
+        return 1_mm;
+    }
+}
+inline constexpr const char* GetLengthUnitName(Length base)
+{
+    const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
+    const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
+    const bool is_mm{ dla::math::abs(base - 1_mm) < 0.00001_mm };
+    const bool is_pts{ dla::math::abs(base - 1_pts) < 0.0001_pts };
+    // clang-format off
+    return is_inches ? "inches" :
+               is_cm ? "cm" :
+               is_mm ? "mm" :
+              is_pts ? "points"
+                     : "??";
+    // clang-format on
+}
+inline constexpr const char* GetLengthUnitShortName(Length base)
+{
+    const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
+    const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
+    const bool is_mm{ dla::math::abs(base - 1_mm) < 0.00001_mm };
+    const bool is_pts{ dla::math::abs(base - 1_pts) < 0.0001_pts };
+    // clang-format off
+    return is_inches ? "in" :
+               is_cm ? "cm" :
+               is_mm ? "mm" :
+              is_pts ? "pts"
+                     : "??";
+    // clang-format on
+}
+
 template<class T>
-struct TagT{};
+struct TagT
+{
+};
 template<class T>
 inline constexpr TagT<T> Tag{};
 // clang-format off

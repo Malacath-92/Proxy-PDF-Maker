@@ -154,12 +154,12 @@ Generates a small two-page pdf file which you can print and then use to verify y
 The format has to be either `width x height unit` for 2-dimensional or `size unit` for one-dimensional settings, where
 - `width`, `height`, and `size` are decimal numbers, with a period as decimal divider,
     - in the 2d case the two values are divided by a single `x` surrounded by spaces
-- and `unit` is one of `cm`, `mm`, or `inches`.
+- and `unit` is one of `cm`, `mm`, `inches`, or `points`.
 For example, valid options are
 ```ini
 Page.Size = 11.5 x 13.5 inches
 Card.Size = 88 x 88 mm
-Corner.Radius = 0.1 inches
+Corner.Radius = 16 points
 ```
 while invalid options are
 ```ini

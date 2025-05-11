@@ -13,8 +13,10 @@ class OptionsWidget : public QScrollArea
   public:
     OptionsWidget(PrintProxyPrepApplication& application, Project& project);
 
-    void Refresh(const Project& project);
-    void RefreshWidgets(const Project& project);
+    void Refresh();
+    void RefreshWidgets();
+
+    void BaseUnitChanged();
 
   public slots:
     void CropperWorking();

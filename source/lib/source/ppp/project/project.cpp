@@ -83,7 +83,8 @@ void Project::Load(const fs::path& json_path)
             Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
         }
 
-        if (json.contains("custom_margins")) {
+        if (json.contains("custom_margins"))
+        {
             Data.CustomMargins = Size{
                 json["custom_margins"]["width"].get<float>() * 1_cm,
                 json["custom_margins"]["height"].get<float>() * 1_cm,
@@ -146,7 +147,8 @@ void Project::Dump(const fs::path& json_path) const
         json["card_size"] = Data.CardSizeChoice;
         json["page_size"] = Data.PageSize;
         json["base_pdf"] = Data.BasePdf;
-        if (Data.CustomMargins.has_value()) {
+        if (Data.CustomMargins.has_value())
+        {
             json["custom_margins"] = nlohmann::json{
                 { "width", Data.CustomMargins->x / 1_cm },
                 { "height", Data.CustomMargins->y / 1_cm },

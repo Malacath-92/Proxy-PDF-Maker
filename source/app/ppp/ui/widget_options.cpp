@@ -307,6 +307,7 @@ class PrintOptionsWidget : public QGroupBox
 {
   public:
     PrintOptionsWidget(Project& project)
+        : m_Project{ project }
     {
         setTitle("Print Options");
 
@@ -316,6 +317,9 @@ class PrintOptionsWidget : public QGroupBox
                 return ToQString(fmt::format(":enabled {{ background-color:#{:0>6x}; }}", ColorToInt(color)));
             }
         };
+
+        const auto initial_base_unit{ CFG.BaseUnit };
+        const auto initial_base_unit_name{ GetLengthUnitShortName(initial_base_unit) };
 
         const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
         const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
@@ -346,16 +350,16 @@ class PrintOptionsWidget : public QGroupBox
         auto* left_margin_spin{ left_margin->GetWidget() };
         left_margin_spin->setDecimals(2);
         left_margin_spin->setSingleStep(0.1);
-        left_margin_spin->setSuffix("mm");
-        left_margin_spin->setRange(0, initial_max_margins.x / 1_mm);
-        left_margin_spin->setValue(initial_margins.x / 1_mm);
+        left_margin_spin->setSuffix(initial_base_unit_name);
+        left_margin_spin->setRange(0, initial_max_margins.x / initial_base_unit);
+        left_margin_spin->setValue(initial_margins.x / initial_base_unit);
         auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
         auto* top_margin_spin{ top_margin->GetWidget() };
         top_margin_spin->setDecimals(2);
         top_margin_spin->setSingleStep(0.1);
-        top_margin_spin->setSuffix("mm");
-        top_margin_spin->setRange(0, initial_max_margins.y / 1_mm);
-        top_margin_spin->setValue(initial_margins.y / 1_mm);
+        top_margin_spin->setSuffix(initial_base_unit_name);
+        top_margin_spin->setRange(0, initial_max_margins.y / initial_base_unit);
+        top_margin_spin->setValue(initial_margins.y / initial_base_unit);
 
         auto* cards_width{ new QDoubleSpinBox };
         cards_width->setDecimals(0);
@@ -446,12 +450,13 @@ class PrintOptionsWidget : public QGroupBox
                 }
 
                 const Size cards_size{ project.ComputeCardsSize() };
+                const auto base_unit{ CFG.BaseUnit };
 
                 const auto max_margins{ page_size - cards_size };
-                left_margin_spin->setRange(0, max_margins.x / 1_mm);
-                left_margin_spin->setValue(max_margins.x / 2_mm);
-                top_margin_spin->setRange(0, max_margins.y / 1_mm);
-                top_margin_spin->setValue(max_margins.y / 2_mm);
+                left_margin_spin->setRange(0, max_margins.x / base_unit);
+                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y / base_unit);
+                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -502,11 +507,12 @@ class PrintOptionsWidget : public QGroupBox
 
                 const Size cards_size{ project.ComputeCardsSize() };
                 const Size max_margins{ page_size - cards_size };
+                const auto base_unit{ CFG.BaseUnit };
 
-                left_margin_spin->setRange(0, max_margins.x / 1_mm);
-                left_margin_spin->setValue(max_margins.x / 2_mm);
-                top_margin_spin->setRange(0, max_margins.y / 1_mm);
-                top_margin_spin->setValue(max_margins.y / 2_mm);
+                left_margin_spin->setRange(0, max_margins.x / base_unit);
+                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y / base_unit);
+                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
 
                 paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
                 cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
@@ -522,7 +528,9 @@ class PrintOptionsWidget : public QGroupBox
                 {
                     project.Data.CustomMargins.emplace(project.ComputeMargins());
                 }
-                project.Data.CustomMargins.value().y = static_cast<float>(v) * 1_mm;
+
+                const auto base_unit{ CFG.BaseUnit };
+                project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
                 main_window()->MarginsChanged(project);
             }
         };
@@ -534,7 +542,8 @@ class PrintOptionsWidget : public QGroupBox
                 {
                     project.Data.CustomMargins.emplace(project.ComputeMargins());
                 }
-                project.Data.CustomMargins.value().x = static_cast<float>(v) * 1_mm;
+                const auto base_unit{ CFG.BaseUnit };
+                project.Data.CustomMargins.value().x = static_cast<float>(v) * base_unit;
                 main_window()->MarginsChanged(project);
             }
         };
@@ -573,12 +582,13 @@ class PrintOptionsWidget : public QGroupBox
                 project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
                 const Size cards_size{ project.ComputeCardsSize() };
+                const auto base_unit{ CFG.BaseUnit };
 
                 const auto max_margins{ page_size - cards_size };
-                left_margin_spin->setRange(0, max_margins.x / 1_mm);
-                left_margin_spin->setValue(max_margins.x / 2_mm);
-                top_margin_spin->setRange(0, max_margins.y / 1_mm);
-                top_margin_spin->setValue(max_margins.y / 2_mm);
+                left_margin_spin->setRange(0, max_margins.x / base_unit);
+                left_margin_spin->setValue(max_margins.x / base_unit / 2.0f);
+                top_margin_spin->setRange(0, max_margins.y / base_unit);
+                top_margin_spin->setValue(max_margins.y / base_unit / 2.0f);
 
                 main_window()->OrientationChanged(project);
             }
@@ -730,7 +740,7 @@ class PrintOptionsWidget : public QGroupBox
         TopMarginSpin = top_margin_spin;
     }
 
-    void RefreshWidgets(const Project& project)
+    void RefreshWidgets()
     {
         const int base_pdf_size_idx{
             [&]()
@@ -755,28 +765,47 @@ class PrintOptionsWidget : public QGroupBox
         {
             PaperSize->removeItem(base_pdf_size_idx);
         }
-        PaperSize->setCurrentText(ToQString(project.Data.PageSize));
+        PaperSize->setCurrentText(ToQString(m_Project.Data.PageSize));
 
-        PrintOutput->setText(ToQString(project.Data.FileName.c_str()));
-        Orientation->setCurrentText(ToQString(magic_enum::enum_name(project.Data.Orientation)));
-        EnableGuides->setChecked(project.Data.EnableGuides);
+        PrintOutput->setText(ToQString(m_Project.Data.FileName.c_str()));
+        Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.Data.Orientation)));
+        EnableGuides->setChecked(m_Project.Data.EnableGuides);
 
-        ExtendedGuides->setEnabled(project.Data.EnableGuides);
-        GuidesColorA->setEnabled(project.Data.EnableGuides);
-        GuidesColorB->setEnabled(project.Data.EnableGuides);
+        ExtendedGuides->setEnabled(m_Project.Data.EnableGuides);
+        GuidesColorA->setEnabled(m_Project.Data.EnableGuides);
+        GuidesColorB->setEnabled(m_Project.Data.EnableGuides);
 
-        PaperInfo->setText(ToQString(SizeToString(project.ComputePageSize())));
-        CardsInfo->setText(ToQString(SizeToString(project.ComputeCardsSize())));
+        PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
+        CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
 
-        const bool infer_size{ project.Data.PageSize == Config::BasePDFSize };
+        const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
         BasePdf->setEnabled(infer_size);
         BasePdf->setVisible(infer_size);
 
-        const auto page_size{ project.ComputePageSize() };
-        const auto cards_size{ project.ComputeCardsSize() };
+        const auto page_size{ m_Project.ComputePageSize() };
+        const auto cards_size{ m_Project.ComputeCardsSize() };
+        const auto base_unit{ CFG.BaseUnit };
         const auto max_margins{ page_size - cards_size };
-        LeftMarginSpin->setValue(max_margins.x / 2_mm);
-        TopMarginSpin->setValue(max_margins.y / 2_mm);
+        LeftMarginSpin->setValue(max_margins.x / base_unit / 2.0f);
+        TopMarginSpin->setValue(max_margins.y / base_unit / 2.0f);
+    }
+
+    void BaseUnitChanged()
+    {
+        const auto base_unit{ CFG.BaseUnit };
+        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+
+        const auto page_size{ m_Project.ComputePageSize() };
+        const auto cards_size{ m_Project.ComputeCardsSize() };
+        const auto max_margins{ page_size - cards_size };
+        const auto margins{ m_Project.ComputeMargins() };
+
+        LeftMarginSpin->setSuffix(base_unit_name);
+        LeftMarginSpin->setRange(0, max_margins.x / base_unit);
+        LeftMarginSpin->setValue(margins.x / base_unit);
+        TopMarginSpin->setSuffix(base_unit_name);
+        TopMarginSpin->setRange(0, max_margins.y / base_unit);
+        TopMarginSpin->setValue(margins.y / base_unit);
     }
 
   private:
@@ -807,7 +836,9 @@ class PrintOptionsWidget : public QGroupBox
 
     static std::string SizeToString(Size size)
     {
-        return fmt::format("{:.1f} x {:.1f} mm", size.x / 1_mm, size.y / 1_mm);
+        const auto base_unit{ CFG.BaseUnit };
+        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+        return fmt::format("{:.1f} x {:.1f} {}", size.x / base_unit, size.y / base_unit, base_unit_name);
     }
 
     QLineEdit* PrintOutput;
@@ -822,12 +853,15 @@ class PrintOptionsWidget : public QGroupBox
     QWidget* BasePdf;
     QDoubleSpinBox* LeftMarginSpin;
     QDoubleSpinBox* TopMarginSpin;
+
+    Project& m_Project;
 };
 
 class DefaultBacksidePreview : public QWidget
 {
   public:
     DefaultBacksidePreview(const Project& project)
+        : m_Project{ project }
     {
         const fs::path& backside_name{ project.Data.BacksideDefault };
 
@@ -854,10 +888,10 @@ class DefaultBacksidePreview : public QWidget
         DefaultLabel = backside_default_label;
     }
 
-    void Refresh(const Project& project)
+    void Refresh()
     {
-        const fs::path& backside_name{ project.Data.BacksideDefault };
-        DefaultImage->Refresh(backside_name, MinimumWidth, project);
+        const fs::path& backside_name{ m_Project.Data.BacksideDefault };
+        DefaultImage->Refresh(backside_name, MinimumWidth, m_Project);
         DefaultLabel->setText(ToQString(backside_name.c_str()));
     }
 
@@ -866,23 +900,29 @@ class DefaultBacksidePreview : public QWidget
 
     BacksideImage* DefaultImage;
     QLabel* DefaultLabel;
+
+    const Project& m_Project;
 };
 
 class CardOptionsWidget : public QGroupBox
 {
   public:
     CardOptionsWidget(Project& project)
+        : m_Project{ project }
     {
         setTitle("Card Options");
+
+        const auto initial_base_unit{ CFG.BaseUnit };
+        const auto initial_base_unit_name{ GetLengthUnitShortName(initial_base_unit) };
 
         const auto full_bleed{ project.CardFullBleed() };
         auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
         auto* bleed_edge_spin{ bleed_edge->GetWidget() };
         bleed_edge_spin->setDecimals(2);
-        bleed_edge_spin->setRange(0, full_bleed / 1_mm);
+        bleed_edge_spin->setRange(0, full_bleed / initial_base_unit);
         bleed_edge_spin->setSingleStep(0.1);
-        bleed_edge_spin->setSuffix("mm");
-        bleed_edge_spin->setValue(project.Data.BleedEdge / 1_mm);
+        bleed_edge_spin->setSuffix(initial_base_unit_name);
+        bleed_edge_spin->setValue(project.Data.BleedEdge / initial_base_unit);
 
         auto* corner_weight_slider{ new QSlider{ Qt::Horizontal } };
         corner_weight_slider->setTickPosition(QSlider::NoTicks);
@@ -911,10 +951,10 @@ class CardOptionsWidget : public QGroupBox
 
         auto* backside_offset_spin{ new QDoubleSpinBox };
         backside_offset_spin->setDecimals(2);
-        backside_offset_spin->setRange(-0.3_in / 1_mm, 0.3_in / 1_mm);
+        backside_offset_spin->setRange(-0.3_in / initial_base_unit, 0.3_in / initial_base_unit);
         backside_offset_spin->setSingleStep(0.1);
-        backside_offset_spin->setSuffix("mm");
-        backside_offset_spin->setValue(project.Data.BacksideOffset / 1_mm);
+        backside_offset_spin->setSuffix(initial_base_unit_name);
+        backside_offset_spin->setValue(project.Data.BacksideOffset / initial_base_unit);
         auto* backside_offset{ new WidgetWithLabel{ "Off&set", backside_offset_spin } };
         backside_offset->setEnabled(project.Data.BacksideEnabled);
         backside_offset->setVisible(project.Data.BacksideEnabled);
@@ -946,7 +986,8 @@ class CardOptionsWidget : public QGroupBox
         auto change_bleed_edge{
             [=, &project](double v)
             {
-                const auto new_bleed_edge{ 1_mm * static_cast<float>(v) };
+                const auto base_unit{ CFG.BaseUnit };
+                const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
                 if (dla::math::abs(project.Data.BleedEdge - new_bleed_edge) < 0.001_mm)
                 {
                     return;
@@ -1003,7 +1044,8 @@ class CardOptionsWidget : public QGroupBox
         auto change_backside_offset{
             [=, &project](double v)
             {
-                project.Data.BacksideOffset = 1_mm * static_cast<float>(v);
+                const auto base_unit{ CFG.BaseUnit };
+                project.Data.BacksideOffset = base_unit * static_cast<float>(v);
                 main_window()->BacksideOffsetChanged(project);
             }
         };
@@ -1039,26 +1081,44 @@ class CardOptionsWidget : public QGroupBox
         BacksideDefaultPreview = backside_default_preview;
     }
 
-    void Refresh(const Project& project)
+    void Refresh()
     {
-        const auto full_bleed{ project.CardFullBleed() };
-        const auto full_bleed_rounded{ QString::number(full_bleed / 1_mm, 'f', 2).toFloat() };
+        const auto base_unit{ CFG.BaseUnit };
+        const auto full_bleed{ m_Project.CardFullBleed() };
+        const auto full_bleed_rounded{ QString::number(full_bleed / base_unit, 'f', 2).toFloat() };
         if (static_cast<int32_t>(BleedEdgeSpin->maximum() / 0.001) != static_cast<int32_t>(full_bleed_rounded / 0.001))
         {
-            BleedEdgeSpin->setRange(0, full_bleed / 1_mm);
+            BleedEdgeSpin->setRange(0, full_bleed / base_unit);
             BleedEdgeSpin->setValue(0);
         }
         else
         {
-            BleedEdgeSpin->setValue(project.Data.BleedEdge / 1_mm);
+            BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
         }
-        BacksideCheckbox->setChecked(project.Data.BacksideEnabled);
-        BacksideOffsetSpin->setValue(project.Data.BacksideOffset.value);
+        BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
+        BacksideOffsetSpin->setValue(m_Project.Data.BacksideOffset.value);
     }
 
-    void RefreshWidgets(const Project& project)
+    void RefreshWidgets()
     {
-        BacksideDefaultPreview->Refresh(project);
+        BacksideDefaultPreview->Refresh();
+    }
+
+    void BaseUnitChanged()
+    {
+        const auto base_unit{ CFG.BaseUnit };
+        const auto base_unit_name{ GetLengthUnitShortName(base_unit) };
+        const auto full_bleed{ m_Project.CardFullBleed() };
+        const auto bleed{ m_Project.Data.BleedEdge };
+        const auto backside_offset{ m_Project.Data.BacksideOffset };
+
+        BleedEdgeSpin->setRange(0, full_bleed / base_unit);
+        BleedEdgeSpin->setSuffix(base_unit_name);
+        BleedEdgeSpin->setValue(bleed / base_unit);
+
+        BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+        BacksideOffsetSpin->setSuffix(base_unit_name);
+        BacksideOffsetSpin->setValue(backside_offset / base_unit);
     }
 
   private:
@@ -1066,6 +1126,8 @@ class CardOptionsWidget : public QGroupBox
     QCheckBox* BacksideCheckbox{ nullptr };
     QDoubleSpinBox* BacksideOffsetSpin{ nullptr };
     DefaultBacksidePreview* BacksideDefaultPreview{ nullptr };
+
+    Project& m_Project;
 };
 
 class GlobalOptionsWidget : public QGroupBox
@@ -1074,6 +1136,10 @@ class GlobalOptionsWidget : public QGroupBox
     GlobalOptionsWidget(PrintProxyPrepApplication& application, Project& project)
     {
         setTitle("Global Config");
+
+        auto* base_unit{ new ComboBoxWithLabel{
+            "&Units", CFG.SupportedBaseUnits, GetLengthUnitName(CFG.BaseUnit) } };
+        base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
         auto* display_columns_spin_box{ new QDoubleSpinBox };
         display_columns_spin_box->setDecimals(0);
@@ -1119,6 +1185,7 @@ class GlobalOptionsWidget : public QGroupBox
             "&Theme", GetStyles(), application.GetTheme() } };
 
         auto* layout{ new QVBoxLayout };
+        layout->addWidget(base_unit);
         layout->addWidget(display_columns);
         layout->addWidget(backend);
         layout->addWidget(precropped_checkbox);
@@ -1132,6 +1199,15 @@ class GlobalOptionsWidget : public QGroupBox
         auto main_window{
             [this]()
             { return static_cast<PrintProxyPrepMainWindow*>(window()); }
+        };
+
+        auto change_base_units{
+            [=, &project](const QString& t)
+            {
+                CFG.BaseUnit = GetLengthUnit(t.toStdString());
+                SaveConfig(CFG);
+                main_window()->BaseUnitChanged(project);
+            }
         };
 
         auto change_display_columns{
@@ -1215,6 +1291,10 @@ class GlobalOptionsWidget : public QGroupBox
             }
         };
 
+        QObject::connect(base_unit->GetWidget(),
+                         &QComboBox::currentTextChanged,
+                         this,
+                         change_base_units);
         QObject::connect(display_columns_spin_box,
                          &QDoubleSpinBox::valueChanged,
                          this,
@@ -1278,16 +1358,22 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     CardOptions = card_options;
 }
 
-void OptionsWidget::Refresh(const Project& project)
+void OptionsWidget::Refresh()
 {
-    CardOptions->Refresh(project);
+    CardOptions->Refresh();
     widget()->adjustSize();
 }
 
-void OptionsWidget::RefreshWidgets(const Project& project)
+void OptionsWidget::RefreshWidgets()
 {
-    PrintOptions->RefreshWidgets(project);
-    CardOptions->RefreshWidgets(project);
+    PrintOptions->RefreshWidgets();
+    CardOptions->RefreshWidgets();
+}
+
+void OptionsWidget::BaseUnitChanged()
+{
+    PrintOptions->BaseUnitChanged();
+    CardOptions->BaseUnitChanged();
 }
 
 void OptionsWidget::CropperWorking()

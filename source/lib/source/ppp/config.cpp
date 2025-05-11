@@ -87,6 +87,10 @@ Config LoadConfig()
                 {
                     return 1_mm;
                 }
+                else if (base_unit_str == "points")
+                {
+                    return 1_pts;
+                }
                 return std::nullopt;
             }
         };
@@ -212,6 +216,15 @@ Config LoadConfig()
                 }
             }
 
+            {
+                auto base_unit{ settings.value("Base.Unit") };
+                if (base_unit.isValid())
+                {
+                    config.BaseUnit = get_base_unit(base_unit.toString().toStdString())
+                                          .value_or(1_mm);
+                }
+            }
+
             settings.endGroup();
         }
 
@@ -289,9 +302,11 @@ void SaveConfig(Config config)
             [](const Length& base)
             {
                 const bool is_inches{ dla::math::abs(base - 1_in) < 0.0001_in };
+                const bool is_pts{ dla::math::abs(base - 1_pts) < 0.0001_pts };
                 const bool is_cm{ dla::math::abs(base - 10_mm) < 0.0001_mm };
                 // clang-format off
                 return is_inches ? "inches" :
+                          is_pts ? "points" :
                            is_cm ? "cm"
                                  : "mm";
                 // clang-format on
@@ -351,7 +366,9 @@ void SaveConfig(Config config)
             if (config.JpgQuality.has_value())
             {
                 settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
-            };
+            }
+
+            settings.setValue("Base.Unit", get_unit_name(config.BaseUnit));
 
             settings.endGroup();
         }
