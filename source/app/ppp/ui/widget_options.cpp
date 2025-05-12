@@ -41,268 +41,6 @@
 #include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_label.hpp>
 
-class ActionsWidget : public QGroupBox
-{
-  public:
-    ActionsWidget(PrintProxyPrepApplication& application, Project& project)
-    {
-        setTitle("Actions");
-
-        auto* cropper_progress_bar{ new QProgressBar };
-        cropper_progress_bar->setToolTip("Cropper Progress");
-        cropper_progress_bar->setTextVisible(false);
-        cropper_progress_bar->setVisible(false);
-        cropper_progress_bar->setRange(0, ProgressBarResolution);
-        auto* render_button{ new QPushButton{ "Render Document" } };
-        auto* save_button{ new QPushButton{ "Save Project" } };
-        auto* load_button{ new QPushButton{ "Load Project" } };
-        auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
-        auto* open_images_button{ new QPushButton{ "Open Images" } };
-        auto* render_alignment_button{ new QPushButton{ "Alignment Test" } };
-
-        const QWidget* buttons[]{
-            cropper_progress_bar,
-            render_button,
-            save_button,
-            load_button,
-            set_images_button,
-            open_images_button,
-            render_alignment_button,
-        };
-
-        auto widths{ buttons | std::views::transform([](const QWidget* widget)
-                                                     { return widget->sizeHint().width(); }) };
-        const int32_t minimum_width{ *std::ranges::max_element(widths) };
-
-        auto* layout{ new QGridLayout };
-        layout->setColumnMinimumWidth(0, minimum_width + 10);
-        layout->setColumnMinimumWidth(1, minimum_width + 10);
-        layout->addWidget(cropper_progress_bar, 0, 0, 1, 2);
-        layout->addWidget(render_button, 1, 0, 1, 2);
-        layout->addWidget(save_button, 2, 0);
-        layout->addWidget(load_button, 2, 1);
-        layout->addWidget(set_images_button, 3, 0);
-        layout->addWidget(open_images_button, 3, 1);
-        layout->addWidget(render_alignment_button, 4, 0, 1, 2);
-        setLayout(layout);
-
-        const auto render{
-            [=, this, &application, &project]()
-            {
-                GenericPopup render_window{ window(), "Rendering PDF..." };
-
-                const auto render_work{
-                    [=, &project, &application, &render_window]()
-                    {
-                        const auto uninstall_log_hook{ render_window.InstallLogHook() };
-
-                        {
-                            std::vector<fs::path> used_cards{};
-                            for (const auto& [img, info] : project.Data.Cards)
-                            {
-                                if (info.Num > 0)
-                                {
-                                    used_cards.push_back(img);
-                                    if (project.Data.BacksideEnabled && !std::ranges::contains(used_cards, info.Backside))
-                                    {
-                                        used_cards.push_back(info.Backside.empty() ? project.Data.BacksideDefault : info.Backside);
-                                    }
-                                }
-                            }
-
-                            const Length bleed_edge{ project.Data.BleedEdge };
-                            const fs::path& image_dir{ project.Data.ImageDir };
-                            const fs::path& crop_dir{ project.Data.CropDir };
-                            if (NeedRunMinimalCropper(image_dir, crop_dir, used_cards, bleed_edge, CFG.ColorCube))
-                            {
-                                RunMinimalCropper(image_dir,
-                                                  crop_dir,
-                                                  used_cards,
-                                                  project.CardSize(),
-                                                  project.CardFullBleed(),
-                                                  bleed_edge,
-                                                  CFG.MaxDPI,
-                                                  CFG.ColorCube,
-                                                  GetCubeImage(application, CFG.ColorCube));
-                            }
-                        }
-
-                        try
-                        {
-                            const auto file_path{ GeneratePdf(project) };
-                            OpenFile(file_path);
-
-                            if (project.Data.ExportExactGuides)
-                            {
-                                GenerateCardsSvg(project);
-                            }
-                        }
-                        catch (const std::exception& e)
-                        {
-                            LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                            render_window.Sleep(3_s);
-                        }
-                    }
-                };
-
-                window()->setEnabled(false);
-                render_window.ShowDuringWork(render_work);
-                window()->setEnabled(true);
-            }
-        };
-
-        const auto save_project{
-            [=, &project, &application]()
-            {
-                if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
-                {
-                    application.SetProjectPath(new_project_json.value());
-                    project.Dump(new_project_json.value());
-                }
-            }
-        };
-
-        const auto load_project{
-            [=, this, &project, &application]()
-            {
-                if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
-                {
-                    if (new_project_json != application.GetProjectPath())
-                    {
-                        application.SetProjectPath(new_project_json.value());
-                        GenericPopup reload_window{ window(), "Reloading project..." };
-
-                        const auto load_project_work{
-                            [=, &project, &reload_window]()
-                            {
-                                project.Load(new_project_json.value());
-                            }
-                        };
-
-                        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-
-                        main_window->setEnabled(false);
-                        reload_window.ShowDuringWork(load_project_work);
-                        main_window->NewProjectOpenedDiff(project.Data);
-                        main_window->NewProjectOpened(project);
-                        main_window->setEnabled(true);
-                    }
-                }
-            }
-        };
-
-        const auto set_images_folder{
-            [=, this, &project]()
-            {
-                if (const auto new_image_dir{ OpenFolderDialog(".") })
-                {
-                    if (new_image_dir != project.Data.ImageDir)
-                    {
-                        project.Data.ImageDir = new_image_dir.value();
-                        project.Data.CropDir = project.Data.ImageDir / "crop";
-                        project.Data.ImageCache = project.Data.CropDir / "preview.cache";
-
-                        project.Init();
-
-                        auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-                        main_window->ImageDirChangedDiff(project.Data.ImageDir,
-                                                         project.Data.CropDir,
-                                                         project.Data.Previews | std::views::keys | std::ranges::to<std::vector>());
-                        main_window->ImageDirChanged(project);
-                    }
-                }
-            }
-        };
-
-        const auto open_images_folder{
-            [=, &project]()
-            {
-                OpenFolder(project.Data.ImageDir);
-            }
-        };
-
-        const auto render_alignment{
-            [this, &project]()
-            {
-                GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
-
-                const auto render_work{
-                    [=, &project, &render_align_window]()
-                    {
-                        const auto uninstall_log_hook{ render_align_window.InstallLogHook() };
-                        try
-                        {
-                            const auto file_path{ GenerateTestPdf(project) };
-                            OpenFile(file_path);
-                        }
-                        catch (const std::exception& e)
-                        {
-                            LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                            render_align_window.Sleep(3_s);
-                        }
-                    }
-                };
-
-                window()->setEnabled(false);
-                render_align_window.ShowDuringWork(render_work);
-                window()->setEnabled(true);
-            }
-        };
-
-        QObject::connect(render_button,
-                         &QPushButton::clicked,
-                         this,
-                         render);
-        QObject::connect(save_button,
-                         &QPushButton::clicked,
-                         this,
-                         save_project);
-        QObject::connect(load_button,
-                         &QPushButton::clicked,
-                         this,
-                         load_project);
-        QObject::connect(set_images_button,
-                         &QPushButton::clicked,
-                         this,
-                         set_images_folder);
-        QObject::connect(open_images_button,
-                         &QPushButton::clicked,
-                         this,
-                         open_images_folder);
-        QObject::connect(render_alignment_button,
-                         &QPushButton::clicked,
-                         this,
-                         render_alignment);
-
-        CropperProgressBar = cropper_progress_bar;
-        RenderButton = render_button;
-    }
-
-    void CropperWorking()
-    {
-        CropperProgressBar->setVisible(true);
-        CropperProgressBar->setValue(0);
-        RenderButton->setVisible(false);
-    }
-
-    void CropperDone()
-    {
-        CropperProgressBar->setVisible(false);
-        RenderButton->setVisible(true);
-    }
-
-    void CropperProgress(float progress)
-    {
-        const int progress_whole{ static_cast<int>(progress * ProgressBarResolution) };
-        CropperProgressBar->setValue(progress_whole);
-    }
-
-  private:
-    static inline constexpr int ProgressBarResolution{ 250 };
-    QProgressBar* CropperProgressBar;
-    QWidget* RenderButton;
-};
-
 class PrintOptionsWidget : public QGroupBox
 {
   public:
@@ -1337,7 +1075,6 @@ class GlobalOptionsWidget : public QGroupBox
 
 OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& project)
 {
-    auto* actions_widget{ new ActionsWidget{ application, project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
     auto* global_options{ new GlobalOptionsWidget{ application, project } };
@@ -1345,7 +1082,6 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     auto* widget{ new QWidget };
 
     auto* layout{ new QVBoxLayout };
-    layout->addWidget(actions_widget);
     layout->addWidget(print_options);
     layout->addWidget(card_options);
     layout->addWidget(global_options);
@@ -1358,7 +1094,6 @@ OptionsWidget::OptionsWidget(PrintProxyPrepApplication& application, Project& pr
     setMinimumHeight(400);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
 
-    Actions = actions_widget;
     PrintOptions = print_options;
     CardOptions = card_options;
 }
@@ -1379,19 +1114,4 @@ void OptionsWidget::BaseUnitChanged()
 {
     PrintOptions->BaseUnitChanged();
     CardOptions->BaseUnitChanged();
-}
-
-void OptionsWidget::CropperWorking()
-{
-    Actions->CropperWorking();
-}
-
-void OptionsWidget::CropperDone()
-{
-    Actions->CropperDone();
-}
-
-void OptionsWidget::CropperProgress(float progress)
-{
-    Actions->CropperProgress(progress);
 }

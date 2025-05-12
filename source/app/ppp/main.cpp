@@ -24,6 +24,8 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
+#include <ppp/ui/widget_actions.hpp>
+#include <ppp/ui/widget_options.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
 
@@ -77,8 +79,11 @@ int main(int argc, char** argv)
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
     auto* options{ new OptionsWidget{ app, project } };
+    
+    auto* actions{ new ActionsWidget{ app, project } };
 
     auto* main_window{ new PrintProxyPrepMainWindow{ tabs, options } };
+    main_window->addDockWidget(Qt::RightDockWidgetArea, actions);
 
     QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
     QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);
@@ -175,9 +180,9 @@ int main(int argc, char** argv)
     QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
 
     // Enable and disable Render button
-    QObject::connect(&cropper, &Cropper::CropWorkStart, options, &OptionsWidget::CropperWorking);
-    QObject::connect(&cropper, &Cropper::CropWorkDone, options, &OptionsWidget::CropperDone);
-    QObject::connect(&cropper, &Cropper::CropProgress, options, &OptionsWidget::CropperProgress);
+    QObject::connect(&cropper, &Cropper::CropWorkStart, actions, &ActionsWidget::CropperWorking);
+    QObject::connect(&cropper, &Cropper::CropWorkDone, actions, &ActionsWidget::CropperDone);
+    QObject::connect(&cropper, &Cropper::CropProgress, actions, &ActionsWidget::CropperProgress);
 
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
