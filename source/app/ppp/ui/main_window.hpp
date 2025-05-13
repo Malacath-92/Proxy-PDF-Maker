@@ -4,7 +4,6 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_options.hpp>
 #include <ppp/ui/widget_tabs.hpp>
 
 class PrintProxyPrepMainWindow : public QMainWindow
@@ -12,7 +11,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     Q_OBJECT
 
   public:
-    PrintProxyPrepMainWindow(MainTabs* tabs, OptionsWidget* options);
+    PrintProxyPrepMainWindow(MainTabs* tabs);
 
     void OpenAboutPopup();
 

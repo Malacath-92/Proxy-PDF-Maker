@@ -26,8 +26,8 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_actions.hpp>
 #include <ppp/ui/widget_card_options.hpp>
+#include <ppp/ui/widget_global_options.hpp>
 #include <ppp/ui/widget_guides_options.hpp>
-#include <ppp/ui/widget_options.hpp>
 #include <ppp/ui/widget_print_options.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
@@ -81,18 +81,19 @@ int main(int argc, char** argv)
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
-    auto* options{ new OptionsWidget{ app, project } };
 
     auto* actions{ new ActionsWidget{ app, project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* guides_options{ new GuidesOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
+    auto* global_options{ new GlobalOptionsWidget{ app, project } };
 
-    auto* main_window{ new PrintProxyPrepMainWindow{ tabs, options } };
+    auto* main_window{ new PrintProxyPrepMainWindow{ tabs } };
     main_window->addDockWidget(Qt::RightDockWidgetArea, actions);
     main_window->addDockWidget(Qt::RightDockWidgetArea, print_options);
     main_window->addDockWidget(Qt::RightDockWidgetArea, guides_options);
     main_window->addDockWidget(Qt::RightDockWidgetArea, card_options);
+    main_window->addDockWidget(Qt::RightDockWidgetArea, global_options);
 
     QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
     QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);

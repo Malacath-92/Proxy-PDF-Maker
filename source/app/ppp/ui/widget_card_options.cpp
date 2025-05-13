@@ -122,7 +122,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     layout->setAlignment(backside_default_preview, Qt::AlignmentFlag::AlignHCenter);
 
-    setLayout(layout);
+    auto* main_widget{ new QWidget };
+    main_widget->setLayout(layout);
+    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    setWidget(main_widget);
 
     auto main_window{
         [this]()

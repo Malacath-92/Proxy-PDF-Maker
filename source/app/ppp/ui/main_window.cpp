@@ -5,18 +5,10 @@
 
 #include <ppp/ui/popups.hpp>
 
-PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs, OptionsWidget* options)
+PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(MainTabs* tabs)
 {
     setWindowTitle("PDF Proxy Printer");
-
-    auto* window_layout{ new QHBoxLayout };
-    window_layout->addWidget(tabs);
-    window_layout->addWidget(options);
-
-    auto* window_area{ new QWidget };
-    window_area->setLayout(window_layout);
-
-    setCentralWidget(window_area);
+    setCentralWidget(tabs);
 }
 
 void PrintProxyPrepMainWindow::OpenAboutPopup()
