@@ -25,7 +25,9 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_actions.hpp>
+#include <ppp/ui/widget_guides_options.hpp>
 #include <ppp/ui/widget_options.hpp>
+#include <ppp/ui/widget_print_options.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
 
@@ -79,11 +81,15 @@ int main(int argc, char** argv)
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
     auto* options{ new OptionsWidget{ app, project } };
-    
+
     auto* actions{ new ActionsWidget{ app, project } };
+    auto* print_options{ new PrintOptionsWidget{ project } };
+    auto* guides_options{ new GuidesOptionsWidget{ project } };
 
     auto* main_window{ new PrintProxyPrepMainWindow{ tabs, options } };
     main_window->addDockWidget(Qt::RightDockWidgetArea, actions);
+    main_window->addDockWidget(Qt::RightDockWidgetArea, print_options);
+    main_window->addDockWidget(Qt::RightDockWidgetArea, guides_options);
 
     QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
     QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);
@@ -158,19 +164,22 @@ int main(int argc, char** argv)
 
     {
         // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, options, &OptionsWidget::RefreshWidgets);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, options, &OptionsWidget::RefreshWidgets);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::CardSizeChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::OrientationChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, options, &OptionsWidget::RefreshWidgets);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, options, &OptionsWidget::RefreshWidgets);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, options, &OptionsWidget::RefreshWidgets);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BaseUnitChanged, options, &OptionsWidget::BaseUnitChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, options, &OptionsWidget::RefreshWidgets);
+    }
+
+    {
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::PageSizeChanged, print_options, &PrintOptionsWidget::PageSizeChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
     }
 
     app.SetMainWindow(main_window);
