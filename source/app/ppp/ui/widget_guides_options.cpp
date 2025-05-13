@@ -34,13 +34,21 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
 
     auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
     enable_guides_checkbox->setChecked(project.Data.EnableGuides);
+
+    auto* backside_guides_checkbox{ new QCheckBox{ "Enable Backside Guides" } };
+    backside_guides_checkbox->setChecked(project.Data.BacksideEnableGuides);
+    backside_guides_checkbox->setEnabled(project.Data.BacksideEnabled);
+    backside_guides_checkbox->setVisible(project.Data.BacksideEnabled);
+
     auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
     extended_guides_checkbox->setChecked(project.Data.ExtendedGuides);
     extended_guides_checkbox->setEnabled(project.Data.EnableGuides);
+
     auto* guides_color_a_button{ new QPushButton };
     guides_color_a_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorA));
     auto* guides_color_a{ new WidgetWithLabel{ "Guides Color A", guides_color_a_button } };
     guides_color_a->setEnabled(project.Data.EnableGuides);
+
     auto* guides_color_b_button{ new QPushButton };
     guides_color_b_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorB));
     auto* guides_color_b{ new WidgetWithLabel{ "Guides Color B", guides_color_b_button } };
@@ -49,6 +57,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto* layout{ new QVBoxLayout };
     layout->addWidget(export_exact_guides_checkbox);
     layout->addWidget(enable_guides_checkbox);
+    layout->addWidget(backside_guides_checkbox);
     layout->addWidget(extended_guides_checkbox);
     layout->addWidget(guides_color_a);
     layout->addWidget(guides_color_b);
@@ -84,6 +93,14 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             guides_color_b->setEnabled(enabled);
 
             main_window()->GuidesEnabledChanged(m_Project);
+        }
+    };
+
+    auto switch_backside_guides_enabled{
+        [=, &project](Qt::CheckState s)
+        {
+            project.Data.BacksideEnableGuides = s == Qt::CheckState::Checked;
+            main_window()->BacksideGuidesEnabledChanged(project);
         }
     };
 
@@ -146,6 +163,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QCheckBox::checkStateChanged,
                      this,
                      change_enable_guides);
+    QObject::connect(backside_guides_checkbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     switch_backside_guides_enabled);
     QObject::connect(extended_guides_checkbox,
                      &QCheckBox::checkStateChanged,
                      this,
