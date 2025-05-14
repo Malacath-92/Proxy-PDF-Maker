@@ -11,7 +11,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     Q_OBJECT
 
   public:
-    PrintProxyPrepMainWindow(MainTabs* tabs);
+    PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options);
 
     void OpenAboutPopup();
 

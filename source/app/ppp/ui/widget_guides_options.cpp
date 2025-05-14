@@ -15,11 +15,9 @@
 #include <ppp/ui/widget_label.hpp>
 
 GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
-    : QDockWidget{ "GuidesOptions" }
-    , m_Project{ project }
+    : m_Project{ project }
 {
-    setFeatures(DockWidgetMovable | DockWidgetFloatable);
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName("Guides Options");
 
     const auto color_to_bg_style{
         [](const ColorRGB8& color)
@@ -61,11 +59,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(extended_guides_checkbox);
     layout->addWidget(guides_color_a);
     layout->addWidget(guides_color_b);
-
-    auto* main_widget{ new QWidget };
-    main_widget->setLayout(layout);
-    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWidget(main_widget);
+    setLayout(layout);
 
     auto main_window{
         [this]()

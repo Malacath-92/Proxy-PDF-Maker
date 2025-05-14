@@ -63,11 +63,9 @@ class DefaultBacksidePreview : public QWidget
 };
 
 CardOptionsWidget::CardOptionsWidget(Project& project)
-    : QDockWidget{ "Card Options" }
-    , m_Project{ project }
+    : m_Project{ project }
 {
-    setFeatures(DockWidgetMovable | DockWidgetFloatable);
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName("Card Options");
 
     const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
     const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
@@ -121,11 +119,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     layout->addWidget(backside_offset);
 
     layout->setAlignment(backside_default_preview, Qt::AlignmentFlag::AlignHCenter);
-
-    auto* main_widget{ new QWidget };
-    main_widget->setLayout(layout);
-    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWidget(main_widget);
+    setLayout(layout);
 
     auto main_window{
         [this]()

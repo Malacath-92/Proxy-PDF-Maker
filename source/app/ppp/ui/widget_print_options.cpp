@@ -17,11 +17,9 @@
 #include <ppp/ui/widget_label.hpp>
 
 PrintOptionsWidget::PrintOptionsWidget(Project& project)
-    : QDockWidget{ "Print Options" }
-    , m_Project{ project }
+    : m_Project{ project }
 {
-    setFeatures(DockWidgetMovable | DockWidgetFloatable);
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName("Print Options");
 
     const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
     const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
@@ -102,11 +100,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(top_margin);
     layout->addWidget(cards_layout);
     layout->addWidget(orientation);
-
-    auto* main_widget{ new QWidget };
-    main_widget->setLayout(layout);
-    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWidget(main_widget);
+    setLayout(layout);
 
     auto main_window{
         [this]()

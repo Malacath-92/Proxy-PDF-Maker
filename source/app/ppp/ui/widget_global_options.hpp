@@ -1,11 +1,11 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 
 class PrintProxyPrepApplication;
 class Project;
 
-class GlobalOptionsWidget : public QDockWidget
+class GlobalOptionsWidget : public QWidget
 {
   public:
     GlobalOptionsWidget(PrintProxyPrepApplication& application, Project& project);

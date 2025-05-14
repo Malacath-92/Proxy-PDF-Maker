@@ -1,10 +1,10 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 
 class Project;
 
-class GuidesOptionsWidget : public QDockWidget
+class GuidesOptionsWidget : public QWidget
 {
   public:
     GuidesOptionsWidget(Project& project);

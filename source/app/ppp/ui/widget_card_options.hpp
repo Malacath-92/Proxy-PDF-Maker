@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 
 class QCheckBox;
 class QDoubleSpinBox;
@@ -9,7 +9,7 @@ class QSlider;
 class DefaultBacksidePreview;
 class Project;
 
-class CardOptionsWidget : public QDockWidget
+class CardOptionsWidget : public QWidget
 {
   public:
     CardOptionsWidget(Project& project);

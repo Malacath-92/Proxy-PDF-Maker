@@ -21,10 +21,8 @@
 #include <ppp/ui/popups.hpp>
 
 ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& project)
-    : QDockWidget{ "Actions" }
 {
-    setFeatures(DockWidgetMovable | DockWidgetFloatable);
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName("Actions");
 
     auto* cropper_progress_bar{ new QProgressBar };
     cropper_progress_bar->setToolTip("Cropper Progress");
@@ -62,11 +60,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     layout->addWidget(set_images_button, 3, 0);
     layout->addWidget(open_images_button, 3, 1);
     layout->addWidget(render_alignment_button, 4, 0, 1, 2);
-
-    auto* main_widget{ new QWidget };
-    main_widget->setLayout(layout);
-    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWidget(main_widget);
+    setLayout(layout);
 
     const auto render{
         [=, this, &project]()

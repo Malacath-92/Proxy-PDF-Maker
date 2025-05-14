@@ -1,13 +1,13 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 
 class QProgressBar;
 
 class PrintProxyPrepApplication;
 class Project;
 
-class ActionsWidget : public QDockWidget
+class ActionsWidget : public QWidget
 {
   public:
     ActionsWidget(PrintProxyPrepApplication& application, Project& project);

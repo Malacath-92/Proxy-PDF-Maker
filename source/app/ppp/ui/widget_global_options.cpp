@@ -17,10 +17,8 @@
 #include <ppp/ui/widget_label.hpp>
 
 GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application, Project& project)
-    : QDockWidget{ "Global Config" }
 {
-    setFeatures(DockWidgetMovable | DockWidgetFloatable);
-    setAllowedAreas(Qt::AllDockWidgetAreas);
+    setObjectName("Global Config");
 
     const auto base_unit_name{ CFG.BaseUnit.m_Name };
     auto* base_unit{ new ComboBoxWithLabel{
@@ -82,11 +80,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     layout->addWidget(max_dpi);
     layout->addWidget(paper_sizes);
     layout->addWidget(themes);
-
-    auto* main_widget{ new QWidget };
-    main_widget->setLayout(layout);
-    main_widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    setWidget(main_widget);
+    setLayout(layout);
 
     auto main_window{
         [this]()

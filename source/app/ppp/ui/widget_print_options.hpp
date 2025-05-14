@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QDockWidget>
+#include <QWidget>
 
 #include <ppp/util.hpp>
 
@@ -13,7 +13,7 @@ class QLineEdit;
 class Project;
 class WidgetWithLabel;
 
-class PrintOptionsWidget : public QDockWidget
+class PrintOptionsWidget : public QWidget
 {
   public:
     PrintOptionsWidget(Project& project);
