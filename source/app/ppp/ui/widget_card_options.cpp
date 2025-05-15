@@ -74,11 +74,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BleedEdgeSpin->setSingleStep(0.1);
     m_BleedEdgeSpin->setSuffix(base_unit_name);
 
-    m_CornerWeightSlider = new QSlider{ Qt::Horizontal };
-    m_CornerWeightSlider->setTickPosition(QSlider::NoTicks);
-    m_CornerWeightSlider->setRange(0, 1000);
-    auto* corner_weight{ new WidgetWithLabel{ "&Corner Weight", m_CornerWeightSlider } };
-
     auto* bleed_back_divider{ new QFrame };
     bleed_back_divider->setFrameShape(QFrame::Shape::HLine);
     bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
@@ -100,7 +95,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
-    layout->addWidget(corner_weight);
     layout->addWidget(bleed_back_divider);
     layout->addWidget(m_BacksideOffset);
     layout->addWidget(m_BacksideDefaultButton);
@@ -122,14 +116,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
             project.Data.BleedEdge = new_bleed_edge;
             BleedChanged();
-        }
-    };
-
-    auto change_corner_weight{
-        [=, &project](int v)
-        {
-            project.Data.CornerWeight = static_cast<float>(v) / 1000.0f;
-            CornerWeightChanged();
         }
     };
 
@@ -170,10 +156,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_bleed_edge);
-    QObject::connect(m_CornerWeightSlider,
-                     &QSlider::valueChanged,
-                     this,
-                     change_corner_weight);
     QObject::connect(m_BacksideCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -223,8 +205,6 @@ void CardOptionsWidget::SetDefaults()
 
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
-
-    m_CornerWeightSlider->setValue(static_cast<int>(m_Project.Data.CornerWeight * 1000.0f));
 
     m_BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
 

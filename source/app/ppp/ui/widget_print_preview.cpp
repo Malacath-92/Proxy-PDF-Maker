@@ -144,7 +144,7 @@ class GuidesOverlay : public QWidget
             }
         }
         BleedEdge = project.Data.BleedEdge;
-        CornerWeight = project.Data.CornerWeight;
+        GuidesOffset = project.Data.GuidesOffset;
 
         CardSizeWithBleedEdge = project.CardSizeWithBleed();
         CornerRadius = project.CardCornerRadius();
@@ -192,7 +192,7 @@ class GuidesOverlay : public QWidget
         };
         const auto pixel_ratio{ card_size / CardSizeWithBleedEdge };
         const auto line_length{ CornerRadius * pixel_ratio * 0.5f };
-        const auto offset{ CornerWeight * BleedEdge * pixel_ratio };
+        const auto offset{ (BleedEdge - GuidesOffset) * pixel_ratio };
 
         Lines.clear();
         for (const auto& idx : Cards)
@@ -221,7 +221,7 @@ class GuidesOverlay : public QWidget
     std::vector<dla::uvec2> Cards;
 
     Length BleedEdge;
-    float CornerWeight;
+    Length GuidesOffset;
     Size CardSizeWithBleedEdge;
     Length CornerRadius;
 
@@ -236,7 +236,6 @@ class BordersOverlay : public QWidget
     BordersOverlay(const Project& project)
     {
         BleedEdge = project.Data.BleedEdge;
-        CornerWeight = project.Data.CornerWeight;
 
         CardSize = project.CardSize();
         CornerRadius = project.CardCornerRadius();
@@ -271,7 +270,6 @@ class BordersOverlay : public QWidget
 
   private:
     Length BleedEdge;
-    float CornerWeight;
     Size CardSize;
     Length CornerRadius;
 

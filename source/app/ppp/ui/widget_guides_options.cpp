@@ -28,13 +28,20 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
 
     m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
-    m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting extend to the edge of the page");
+    m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting extend to the edge of the page");
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
 
     auto* guides_color_b_button{ new QPushButton };
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
+    
+    auto* guides_offset{ new DoubleSpinBoxWithLabel{ "Guides O&ffset" } };
+    m_GuidesOffsetSpin = guides_offset->GetWidget();
+    m_GuidesOffsetSpin->setDecimals(3);
+    m_GuidesOffsetSpin->setSingleStep(0.1);
+    m_GuidesOffsetSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
+    m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
 
     SetDefaults();
 
@@ -45,6 +52,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_ExtendedGuidesCheckbox);
     layout->addWidget(m_GuidesColorA);
     layout->addWidget(m_GuidesColorB);
+    layout->addWidget(guides_offset);
     setLayout(layout);
 
     auto change_export_exact_guides{
@@ -130,6 +138,21 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         }
     };
 
+    auto change_guides_offset{
+        [=, &project](double v)
+        {
+            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto new_guides_offset{ base_unit * static_cast<float>(v) };
+            if (dla::math::abs(project.Data.GuidesOffset - new_guides_offset) < 0.001_mm)
+            {
+                return;
+            }
+
+            project.Data.GuidesOffset = new_guides_offset;
+            GuidesOffsetChanged();
+        }
+    };
+
     QObject::connect(m_ExportExactGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -154,6 +177,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      pick_color_b);
+    QObject::connect(m_GuidesOffsetSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_guides_offset);
 }
 
 void GuidesOptionsWidget::NewProjectOpened()
@@ -161,11 +188,27 @@ void GuidesOptionsWidget::NewProjectOpened()
     SetDefaults();
 }
 
+void GuidesOptionsWidget::BleedChanged()
+{
+    m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / CFG.BaseUnit.m_Unit);
+}
+
 void GuidesOptionsWidget::BacksideEnabledChanged()
 {
     m_BacksideGuidesCheckbox->setEnabled(m_Project.Data.BacksideEnabled);
     m_BacksideGuidesCheckbox->setVisible(m_Project.Data.BacksideEnabled);
 }
+
+void GuidesOptionsWidget::BaseUnitChanged()
+{
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
+    
+    m_GuidesOffsetSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
+    m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
+    m_GuidesOffsetSpin->setValue(m_Project.Data.GuidesOffset / base_unit);
+}
+
 
 void GuidesOptionsWidget::SetDefaults()
 {
@@ -185,6 +228,10 @@ void GuidesOptionsWidget::SetDefaults()
 
     m_GuidesColorB->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorB));
     m_GuidesColorB->setEnabled(m_Project.Data.EnableGuides);
+
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
+    m_GuidesOffsetSpin->setValue(m_Project.Data.GuidesOffset / base_unit);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)

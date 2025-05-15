@@ -89,7 +89,6 @@ class Project : public QObject
 
         // Bleed edge options
         Length BleedEdge{ 0_mm };
-        float CornerWeight{ 1.0f };
 
         // Backside options
         bool BacksideEnabled{ false };
@@ -105,11 +104,14 @@ class Project : public QObject
         dla::uvec2 CardLayout{ 3, 3 };
         PageOrientation Orientation{ PageOrientation::Portrait };
         fs::path FileName{ "_printme" };
+
+        // Guides options
         bool ExportExactGuides{ false };
         bool EnableGuides{ true };
         bool ExtendedGuides{ false };
         ColorRGB8 GuidesColorA{ 0, 0, 0 };
         ColorRGB8 GuidesColorB{ 190, 190, 190 };
+        Length GuidesOffset{ 0_mm };
 
         // Utility functions
         Size ComputePageSize(const Config& config) const;

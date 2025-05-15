@@ -56,7 +56,6 @@ void Project::Load(const fs::path& json_path)
         }
 
         Data.BleedEdge.value = json["bleed_edge"];
-        Data.CornerWeight = std::clamp(json["corner_weight"].get<float>(), 0.0f, 1.0f);
 
         Data.BacksideEnabled = json["backside_enabled"];
         Data.BacksideDefault = json["backside_default"].get<std::string>();
@@ -96,6 +95,7 @@ void Project::Load(const fs::path& json_path)
         }
 
         Data.FileName = json["file_name"].get<std::string>();
+
         Data.ExportExactGuides = json["export_exact_guides"];
         Data.EnableGuides = json["enable_guides"];
         Data.ExtendedGuides = json["extended_guides"];
@@ -105,6 +105,7 @@ void Project::Load(const fs::path& json_path)
         Data.GuidesColorB.r = json["guides_color_b"][0];
         Data.GuidesColorB.g = json["guides_color_b"][1];
         Data.GuidesColorB.b = json["guides_color_b"][2];
+        Data.GuidesOffset.value = json["guides_offset"];
     }
     catch (const std::exception& e)
     {
@@ -138,7 +139,6 @@ void Project::Dump(const fs::path& json_path) const
         json["cards"] = cards;
 
         json["bleed_edge"] = Data.BleedEdge.value;
-        json["corner_weight"] = Data.CornerWeight;
 
         json["backside_enabled"] = Data.BacksideEnabled;
         json["backside_default"] = Data.BacksideDefault.string();
@@ -160,11 +160,13 @@ void Project::Dump(const fs::path& json_path) const
         };
         json["orientation"] = magic_enum::enum_name(Data.Orientation);
         json["file_name"] = Data.FileName.string();
+
         json["export_exact_guides"] = Data.ExportExactGuides;
         json["enable_guides"] = Data.EnableGuides;
         json["extended_guides"] = Data.ExtendedGuides;
         json["guides_color_a"] = std::array{ Data.GuidesColorA.r, Data.GuidesColorA.g, Data.GuidesColorA.b };
         json["guides_color_b"] = std::array{ Data.GuidesColorB.r, Data.GuidesColorB.g, Data.GuidesColorB.b };
+        json["guides_offset"] = Data.GuidesOffset.value;
 
         file << json;
         file.close();

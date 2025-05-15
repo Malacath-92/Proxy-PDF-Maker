@@ -6,6 +6,7 @@
 #include <ppp/color.hpp>
 
 class QCheckBox;
+class QDoubleSpinBox;
 
 class Project;
 class WidgetWithLabel;
@@ -22,10 +23,13 @@ class GuidesOptionsWidget : public QWidget
     void GuidesEnabledChanged();
     void BacksideGuidesEnabledChanged();
     void GuidesColorChanged();
+    void GuidesOffsetChanged();
 
   public slots:
     void NewProjectOpened();
+    void BleedChanged();
     void BacksideEnabledChanged();
+    void BaseUnitChanged();
 
   private:
     void SetDefaults();
@@ -40,4 +44,5 @@ class GuidesOptionsWidget : public QWidget
     QCheckBox* m_ExtendedGuidesCheckbox{ nullptr };
     WidgetWithLabel* m_GuidesColorA{ nullptr };
     WidgetWithLabel* m_GuidesColorB{ nullptr };
+    QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
 };

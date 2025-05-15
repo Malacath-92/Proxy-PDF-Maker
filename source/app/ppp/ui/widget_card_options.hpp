@@ -19,7 +19,6 @@ class CardOptionsWidget : public QWidget
 
   signals:
     void BleedChanged();
-    void CornerWeightChanged();
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
@@ -35,7 +34,6 @@ class CardOptionsWidget : public QWidget
     Project& m_Project;
 
     QDoubleSpinBox* m_BleedEdgeSpin{ nullptr };
-    QSlider* m_CornerWeightSlider{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };

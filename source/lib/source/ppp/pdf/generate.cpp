@@ -107,7 +107,7 @@ fs::path GeneratePdf(const Project& project)
                 };
 
                 const Length bleed{ project.Data.BleedEdge };
-                const Length offset{ project.Data.CornerWeight * bleed };
+                const Length offset{ bleed - project.Data.GuidesOffset };
 
                 draw_cross_at_grid(page,
                                    x + 1,
