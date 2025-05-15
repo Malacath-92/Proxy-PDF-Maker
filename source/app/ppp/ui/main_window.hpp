@@ -25,13 +25,9 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void MarginsChanged(Project& project);
     void CardLayoutChanged(Project& project);
     void OrientationChanged(Project& project);
-    void ExactGuidesEnabledChanged(Project& project);
-    void GuidesEnabledChanged(Project& project);
-    void GuidesColorChanged(Project& project);
     void BleedChanged(Project& project);
     void CornerWeightChanged(Project& project);
     void BacksideEnabledChanged(Project& project);
-    void BacksideGuidesEnabledChanged(Project& project);
     void BacksideDefaultChanged(Project& project);
     void BacksideOffsetChanged(Project& project);
     void BaseUnitChanged(Project& project);

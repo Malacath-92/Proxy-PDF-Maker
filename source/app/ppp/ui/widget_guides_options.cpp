@@ -11,7 +11,6 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
@@ -19,52 +18,34 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
 {
     setObjectName("Guides Options");
 
-    const auto color_to_bg_style{
-        [](const ColorRGB8& color)
-        {
-            return ToQString(fmt::format(":enabled {{ background-color:#{:0>6x}; }}", ColorToInt(color)));
-        }
-    };
+    m_ExportExactGuidesCheckbox = new QCheckBox{ "Export Exact Guides" };
+    m_ExportExactGuidesCheckbox->setToolTip("Decides whether a .svg file will be generated that contains the exact guides for the current layout");
 
-    auto* export_exact_guides_checkbox{ new QCheckBox{ "Export Exact Guides" } };
-    export_exact_guides_checkbox->setChecked(project.Data.ExportExactGuides);
-    export_exact_guides_checkbox->setToolTip("Decides whether a .svg file will be generated that contains the exact guides for the current layout");
+    m_EnableGuidesCheckbox = new QCheckBox{ "Enable Guides" };
+    m_EnableGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on the output");
 
-    auto* enable_guides_checkbox{ new QCheckBox{ "Enable Guides" } };
-    enable_guides_checkbox->setChecked(project.Data.EnableGuides);
+    m_BacksideGuidesCheckbox = new QCheckBox{ "Enable Backside Guides" };
+    m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
 
-    auto* backside_guides_checkbox{ new QCheckBox{ "Enable Backside Guides" } };
-    backside_guides_checkbox->setChecked(project.Data.BacksideEnableGuides);
-    backside_guides_checkbox->setEnabled(project.Data.BacksideEnabled);
-    backside_guides_checkbox->setVisible(project.Data.BacksideEnabled);
-
-    auto* extended_guides_checkbox{ new QCheckBox{ "Extended Guides" } };
-    extended_guides_checkbox->setChecked(project.Data.ExtendedGuides);
-    extended_guides_checkbox->setEnabled(project.Data.EnableGuides);
+    m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
+    m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting extend to the edge of the page");
 
     auto* guides_color_a_button{ new QPushButton };
-    guides_color_a_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorA));
-    auto* guides_color_a{ new WidgetWithLabel{ "Guides Color A", guides_color_a_button } };
-    guides_color_a->setEnabled(project.Data.EnableGuides);
+    m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
 
     auto* guides_color_b_button{ new QPushButton };
-    guides_color_b_button->setStyleSheet(color_to_bg_style(project.Data.GuidesColorB));
-    auto* guides_color_b{ new WidgetWithLabel{ "Guides Color B", guides_color_b_button } };
-    guides_color_b->setEnabled(project.Data.EnableGuides);
+    m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
+
+    SetDefaults();
 
     auto* layout{ new QVBoxLayout };
-    layout->addWidget(export_exact_guides_checkbox);
-    layout->addWidget(enable_guides_checkbox);
-    layout->addWidget(backside_guides_checkbox);
-    layout->addWidget(extended_guides_checkbox);
-    layout->addWidget(guides_color_a);
-    layout->addWidget(guides_color_b);
+    layout->addWidget(m_ExportExactGuidesCheckbox);
+    layout->addWidget(m_EnableGuidesCheckbox);
+    layout->addWidget(m_BacksideGuidesCheckbox);
+    layout->addWidget(m_ExtendedGuidesCheckbox);
+    layout->addWidget(m_GuidesColorA);
+    layout->addWidget(m_GuidesColorB);
     setLayout(layout);
-
-    auto main_window{
-        [this]()
-        { return static_cast<PrintProxyPrepMainWindow*>(window()); }
-    };
 
     auto change_export_exact_guides{
         [=, this](Qt::CheckState s)
@@ -72,7 +53,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             const bool enabled{ s == Qt::CheckState::Checked };
             m_Project.Data.ExportExactGuides = enabled;
 
-            main_window()->ExactGuidesEnabledChanged(m_Project);
+            ExactGuidesEnabledChanged();
         }
     };
 
@@ -82,11 +63,11 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             const bool enabled{ s == Qt::CheckState::Checked };
             m_Project.Data.EnableGuides = enabled;
 
-            extended_guides_checkbox->setEnabled(enabled);
-            guides_color_a->setEnabled(enabled);
-            guides_color_b->setEnabled(enabled);
+            m_ExtendedGuidesCheckbox->setEnabled(enabled);
+            m_GuidesColorA->setEnabled(enabled);
+            m_GuidesColorB->setEnabled(enabled);
 
-            main_window()->GuidesEnabledChanged(m_Project);
+            GuidesEnabledChanged();
         }
     };
 
@@ -94,7 +75,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         [=, &project](Qt::CheckState s)
         {
             project.Data.BacksideEnableGuides = s == Qt::CheckState::Checked;
-            main_window()->BacksideGuidesEnabledChanged(project);
+            BacksideGuidesEnabledChanged();
         }
     };
 
@@ -131,8 +112,8 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             if (const auto picked_color{ pick_color(m_Project.Data.GuidesColorA) })
             {
                 m_Project.Data.GuidesColorA = picked_color.value();
-                guides_color_a_button->setStyleSheet(color_to_bg_style(m_Project.Data.GuidesColorA));
-                main_window()->GuidesColorChanged(m_Project);
+                guides_color_a_button->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorA));
+                GuidesColorChanged();
             }
         }
     };
@@ -143,25 +124,25 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             if (const auto picked_color{ pick_color(m_Project.Data.GuidesColorB) })
             {
                 m_Project.Data.GuidesColorB = picked_color.value();
-                guides_color_b_button->setStyleSheet(color_to_bg_style(m_Project.Data.GuidesColorB));
-                main_window()->GuidesColorChanged(m_Project);
+                guides_color_b_button->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorB));
+                GuidesColorChanged();
             }
         }
     };
 
-    QObject::connect(export_exact_guides_checkbox,
+    QObject::connect(m_ExportExactGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      change_export_exact_guides);
-    QObject::connect(enable_guides_checkbox,
+    QObject::connect(m_EnableGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      change_enable_guides);
-    QObject::connect(backside_guides_checkbox,
+    QObject::connect(m_BacksideGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      switch_backside_guides_enabled);
-    QObject::connect(extended_guides_checkbox,
+    QObject::connect(m_ExtendedGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      change_extended_guides);
@@ -173,4 +154,40 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      pick_color_b);
+}
+
+void GuidesOptionsWidget::NewProjectOpened()
+{
+    SetDefaults();
+}
+
+void GuidesOptionsWidget::BacksideEnabledChanged()
+{
+    m_BacksideGuidesCheckbox->setEnabled(m_Project.Data.BacksideEnabled);
+    m_BacksideGuidesCheckbox->setVisible(m_Project.Data.BacksideEnabled);
+}
+
+void GuidesOptionsWidget::SetDefaults()
+{
+    m_ExportExactGuidesCheckbox->setChecked(m_Project.Data.ExportExactGuides);
+
+    m_EnableGuidesCheckbox->setChecked(m_Project.Data.EnableGuides);
+
+    m_BacksideGuidesCheckbox->setChecked(m_Project.Data.BacksideEnableGuides);
+    m_BacksideGuidesCheckbox->setEnabled(m_Project.Data.BacksideEnabled);
+    m_BacksideGuidesCheckbox->setVisible(m_Project.Data.BacksideEnabled);
+
+    m_ExtendedGuidesCheckbox->setChecked(m_Project.Data.ExtendedGuides);
+    m_ExtendedGuidesCheckbox->setEnabled(m_Project.Data.EnableGuides);
+
+    m_GuidesColorA->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorA));
+    m_GuidesColorA->setEnabled(m_Project.Data.EnableGuides);
+
+    m_GuidesColorB->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorB));
+    m_GuidesColorB->setEnabled(m_Project.Data.EnableGuides);
+}
+
+QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)
+{
+    return ToQString(fmt::format(":enabled {{ background-color:#{:0>6x}; }}", ColorToInt(color)));
 }

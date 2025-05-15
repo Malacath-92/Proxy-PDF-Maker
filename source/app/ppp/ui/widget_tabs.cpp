@@ -19,7 +19,7 @@ MainTabs::MainTabs(Project& project, CardScrollArea* scroll_area, PrintPreview* 
             }
             else
             {
-                print_preview->Refresh(project);
+                print_preview->Refresh();
             }
         }
     };

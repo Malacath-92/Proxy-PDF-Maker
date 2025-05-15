@@ -430,13 +430,14 @@ class PrintPreview::PagePreview : public QWidget
 };
 
 PrintPreview::PrintPreview(const Project& project)
+    : m_Project{ project }
 {
-    Refresh(project);
+    Refresh();
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
 }
 
-void PrintPreview::Refresh(const Project& project)
+void PrintPreview::Refresh()
 {
     const auto current_scroll{ verticalScrollBar()->value() };
     if (auto* current_widget{ widget() })
@@ -444,9 +445,9 @@ void PrintPreview::Refresh(const Project& project)
         delete current_widget;
     }
 
-    const auto page_size{ project.ComputePageSize() };
+    const auto page_size{ m_Project.ComputePageSize() };
 
-    const auto [columns, rows]{ project.Data.CardLayout.pod() };
+    const auto [columns, rows]{ m_Project.Data.CardLayout.pod() };
 
     struct TempPage
     {
@@ -454,15 +455,15 @@ void PrintPreview::Refresh(const Project& project)
         bool Backside;
     };
 
-    const auto raw_pages{ DistributeCardsToPages(project, columns, rows) };
+    const auto raw_pages{ DistributeCardsToPages(m_Project, columns, rows) };
     auto pages{ raw_pages |
                 std::views::transform([](const Page& page)
                                       { return TempPage{ page, false }; }) |
                 std::ranges::to<std::vector>() };
 
-    if (project.Data.BacksideEnabled)
+    if (m_Project.Data.BacksideEnabled)
     {
-        const auto raw_backside_pages{ MakeBacksidePages(project, raw_pages) };
+        const auto raw_backside_pages{ MakeBacksidePages(m_Project, raw_pages) };
         const auto backside_pages{ raw_backside_pages |
                                    std::views::transform([](const Page& page)
                                                          { return TempPage{ page, true }; }) |
@@ -480,7 +481,7 @@ void PrintPreview::Refresh(const Project& project)
             [&](const TempPage& page)
             {
                 return new PagePreview{
-                    project,
+                    m_Project,
                     page.ThePage,
                     PagePreview::Params{
                         PageGrid::Params{

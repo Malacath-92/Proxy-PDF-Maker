@@ -165,16 +165,21 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::MarginsChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::CardLayoutChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::OrientationChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ExactGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::GuidesColorChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::CornerWeightChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
+    }
+
+    {
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpenedDiff, guides_options, &GuidesOptionsWidget::NewProjectOpened);
+
+        QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesColorChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
     }
 
     {
