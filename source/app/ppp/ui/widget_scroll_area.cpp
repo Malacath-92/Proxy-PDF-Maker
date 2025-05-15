@@ -317,8 +317,9 @@ class CardScrollArea::CardGrid : public QWidget
 {
   public:
     CardGrid(Project& project)
+        : m_Project{ project }
     {
-        Refresh(project);
+        FullRefresh();
     }
 
     int TotalWidthFromItemWidth(int item_width) const
@@ -355,7 +356,25 @@ class CardScrollArea::CardGrid : public QWidget
         setFixedHeight(height);
     }
 
-    void Refresh(Project& project)
+    void BacksideEnabledChanged()
+    {
+        FullRefresh();
+    }
+
+    void BacksideDefaultChanged()
+    {
+        for (const auto& [card_name, card_widget] : Cards)
+        {
+            card_widget->Refresh(m_Project);
+        }
+    }
+
+    void DisplayColumnsChanged()
+    {
+        FullRefresh();
+    }
+
+    void FullRefresh()
     {
         std::unordered_map<fs::path, CardWidget*> old_cards{
             std::move(Cards)
@@ -375,17 +394,17 @@ class CardScrollArea::CardGrid : public QWidget
         setLayout(this_layout);
 
         auto eat_or_make_card{
-            [&old_cards, &project](const fs::path& card_name, auto ctor) -> CardWidget*
+            [this, &old_cards](const fs::path& card_name, auto ctor) -> CardWidget*
             {
                 auto it{ old_cards.find(card_name) };
                 if (it == old_cards.end())
                 {
-                    return ctor(card_name, project);
+                    return ctor(card_name, m_Project);
                 }
 
                 CardWidget* card{ it->second };
                 old_cards.erase(it);
-                card->Refresh(project);
+                card->Refresh(m_Project);
                 return card;
             }
         };
@@ -406,7 +425,7 @@ class CardScrollArea::CardGrid : public QWidget
 
         size_t i{ 0 };
         const auto cols{ CFG.DisplayColumns };
-        for (auto& [card_name, _] : project.Data.Cards)
+        for (auto& [card_name, _] : m_Project.Data.Cards)
         {
             if (ToQString(card_name).startsWith("__"))
             {
@@ -456,6 +475,8 @@ class CardScrollArea::CardGrid : public QWidget
     }
 
   private:
+    Project& m_Project;
+
     std::unordered_map<fs::path, CardWidget*> Cards;
     CardWidget* FirstItem;
 
@@ -549,9 +570,48 @@ CardScrollArea::CardScrollArea(Project& project)
     Grid = card_grid;
 }
 
-void CardScrollArea::Refresh()
+void CardScrollArea::NewProjectOpened()
 {
-    Grid->Refresh(m_Project);
+}
+
+void CardScrollArea::ImageDirChanged()
+{
+    FullRefresh();
+}
+
+void CardScrollArea::BacksideEnabledChanged()
+{
+    Grid->BacksideEnabledChanged();
+}
+
+void CardScrollArea::BacksideDefaultChanged()
+{
+    Grid->BacksideDefaultChanged();
+}
+
+void CardScrollArea::DisplayColumnsChanged()
+{
+    Grid->DisplayColumnsChanged();
+}
+
+void CardScrollArea::CardAdded()
+{
+    FullRefresh();
+}
+
+void CardScrollArea::CardRemoved()
+{
+    FullRefresh();
+}
+
+void CardScrollArea::CardRenamed()
+{
+    FullRefresh();
+}
+
+void CardScrollArea::FullRefresh()
+{
+    Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
 }
 

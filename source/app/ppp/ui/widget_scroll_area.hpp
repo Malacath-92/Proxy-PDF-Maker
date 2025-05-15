@@ -9,9 +9,19 @@ class CardScrollArea : public QScrollArea
   public:
     CardScrollArea(Project& project);
 
-    void Refresh();
+  public slots:
+    void NewProjectOpened();
+    void ImageDirChanged();
+    void BacksideEnabledChanged();
+    void BacksideDefaultChanged();
+    void DisplayColumnsChanged();
+
+    void CardAdded();
+    void CardRemoved();
+    void CardRenamed();
 
   private:
+    void FullRefresh();
     int ComputeMinimumWidth();
 
     virtual void showEvent(QShowEvent* event) override;

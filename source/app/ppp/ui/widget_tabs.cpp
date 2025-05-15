@@ -13,11 +13,7 @@ MainTabs::MainTabs(CardScrollArea* scroll_area, PrintPreview* print_preview)
     auto current_changed{
         [=, this](int i)
         {
-            if (widget(i) == scroll_area)
-            {
-                scroll_area->Refresh();
-            }
-            else
+            if (widget(i) == print_preview)
             {
                 print_preview->Refresh();
             }
