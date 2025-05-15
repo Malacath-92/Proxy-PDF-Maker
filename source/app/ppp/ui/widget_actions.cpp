@@ -17,7 +17,6 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
 ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& project)
@@ -124,11 +123,10 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                         }
                     };
 
-                    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-
+                    auto* main_window{ window() };
                     main_window->setEnabled(false);
                     reload_window.ShowDuringWork(load_project_work);
-                    main_window->NewProjectOpened(project);
+                    NewProjectOpened();
                     main_window->setEnabled(true);
                 }
             }
@@ -148,8 +146,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
 
                     project.Init();
 
-                    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-                    main_window->ImageDirChanged(project);
+                    ImageDirChanged();
                 }
             }
         }

@@ -9,8 +9,14 @@ class Project;
 
 class ActionsWidget : public QWidget
 {
+    Q_OBJECT
+
   public:
     ActionsWidget(PrintProxyPrepApplication& application, Project& project);
+
+  signals:
+    void NewProjectOpened();
+    void ImageDirChanged();
 
   public slots:
     void CropperWorking();

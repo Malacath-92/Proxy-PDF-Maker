@@ -107,8 +107,8 @@ int main(int argc, char** argv)
         },
     };
 
-    QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
-    QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);
+    QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
+    QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
     QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
     QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
@@ -137,8 +137,8 @@ int main(int argc, char** argv)
     }
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &cropper_router, &CropperThreadRouter::NewProjectOpened);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &cropper_router, &CropperThreadRouter::ImageDirChanged);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper_router, &CropperThreadRouter::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper_router, &CropperThreadRouter::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &cropper_router, &CropperThreadRouter::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &cropper_router, &CropperThreadRouter::BleedChanged);
 
@@ -150,8 +150,8 @@ int main(int argc, char** argv)
 
     {
         // Sequence refreshing of cards after cleanup of cropper
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::EnableUncropChanged, &card_provider, &CardProvider::EnableUncropChanged);
@@ -162,8 +162,8 @@ int main(int argc, char** argv)
 
     {
         // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, scroll_area, &CardScrollArea::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, scroll_area, &CardScrollArea::Refresh);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, scroll_area, &CardScrollArea::Refresh);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(global_options, &GlobalOptionsWidget::DisplayColumnsChanged, scroll_area, &CardScrollArea::Refresh);
@@ -171,13 +171,13 @@ int main(int argc, char** argv)
 
     {
         // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
     }
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
     }
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
 
         QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
@@ -199,8 +199,8 @@ int main(int argc, char** argv)
     }
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
 
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::Refresh);
