@@ -20,11 +20,6 @@ class PrintProxyPrepMainWindow : public QMainWindow
   signals:
     void NewProjectOpened(Project& project);
     void ImageDirChanged(Project& project);
-    void CardSizeChanged(Project& project);
-    void PageSizeChanged(Project& project);
-    void MarginsChanged(Project& project);
-    void CardLayoutChanged(Project& project);
-    void OrientationChanged(Project& project);
     void BleedChanged(Project& project);
     void CornerWeightChanged(Project& project);
     void BacksideEnabledChanged(Project& project);

@@ -13,7 +13,6 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 PrintOptionsWidget::PrintOptionsWidget(Project& project)
@@ -34,49 +33,59 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     using namespace std::string_view_literals;
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
+    m_PrintOutput = print_output->GetWidget();
+
     auto* card_size{ new ComboBoxWithLabel{
         "&Card Size", std::views::keys(CFG.CardSizes) | std::ranges::to<std::vector>(), project.Data.CardSizeChoice } };
     card_size->setToolTip("Additional card sizes can be defined in config.ini");
+    m_CardSize = card_size->GetWidget();
+
     auto* paper_size{ new ComboBoxWithLabel{
         "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
     paper_size->setToolTip("Additional card sizes can be defined in config.ini");
+    m_PaperSize = paper_size->GetWidget();
 
-    auto* base_pdf_choice{ new ComboBoxWithLabel{
-        "&Base Pdf", GetBasePdfNames(), project.Data.BasePdf } };
-    base_pdf_choice->setEnabled(initial_infer_size);
-    base_pdf_choice->setVisible(initial_infer_size);
+    m_BasePdf = new ComboBoxWithLabel{
+        "&Base Pdf", GetBasePdfNames(), project.Data.BasePdf
+    };
+    m_BasePdf->setEnabled(initial_infer_size);
+    m_BasePdf->setVisible(initial_infer_size);
 
     auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size) } };
+    m_PaperInfo = paper_info->GetWidget();
+
     auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
+    m_CardsInfo = cards_info->GetWidget();
 
     auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
-    auto* left_margin_spin{ left_margin->GetWidget() };
-    left_margin_spin->setDecimals(2);
-    left_margin_spin->setSingleStep(0.1);
-    left_margin_spin->setSuffix(initial_base_unit_name);
-    left_margin_spin->setRange(0, initial_max_margins.x);
-    left_margin_spin->setValue(initial_margins.x);
-    auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
-    auto* top_margin_spin{ top_margin->GetWidget() };
-    top_margin_spin->setDecimals(2);
-    top_margin_spin->setSingleStep(0.1);
-    top_margin_spin->setSuffix(initial_base_unit_name);
-    top_margin_spin->setRange(0, initial_max_margins.y);
-    top_margin_spin->setValue(initial_margins.y);
+    m_LeftMarginSpin = left_margin->GetWidget();
+    m_LeftMarginSpin->setDecimals(2);
+    m_LeftMarginSpin->setSingleStep(0.1);
+    m_LeftMarginSpin->setSuffix(initial_base_unit_name);
+    m_LeftMarginSpin->setRange(0, initial_max_margins.x);
+    m_LeftMarginSpin->setValue(initial_margins.x);
 
-    auto* cards_width{ new QDoubleSpinBox };
-    cards_width->setDecimals(0);
-    cards_width->setRange(1, 10);
-    cards_width->setSingleStep(1);
-    cards_width->setValue(project.Data.CardLayout.x);
-    auto* cards_height{ new QDoubleSpinBox };
-    cards_height->setDecimals(0);
-    cards_height->setRange(1, 10);
-    cards_height->setSingleStep(1);
-    cards_height->setValue(project.Data.CardLayout.y);
+    auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
+    m_TopMarginSpin = top_margin->GetWidget();
+    m_TopMarginSpin->setDecimals(2);
+    m_TopMarginSpin->setSingleStep(0.1);
+    m_TopMarginSpin->setSuffix(initial_base_unit_name);
+    m_TopMarginSpin->setRange(0, initial_max_margins.y);
+    m_TopMarginSpin->setValue(initial_margins.y);
+
+    m_CardsWidth = new QDoubleSpinBox;
+    m_CardsWidth->setDecimals(0);
+    m_CardsWidth->setRange(1, 10);
+    m_CardsWidth->setSingleStep(1);
+    m_CardsWidth->setValue(project.Data.CardLayout.x);
+    m_CardsHeight = new QDoubleSpinBox;
+    m_CardsHeight->setDecimals(0);
+    m_CardsHeight->setRange(1, 10);
+    m_CardsHeight->setSingleStep(1);
+    m_CardsHeight->setValue(project.Data.CardLayout.y);
     auto* cards_layout_layout{ new QHBoxLayout };
-    cards_layout_layout->addWidget(cards_width);
-    cards_layout_layout->addWidget(cards_height);
+    cards_layout_layout->addWidget(m_CardsWidth);
+    cards_layout_layout->addWidget(m_CardsHeight);
     cards_layout_layout->setContentsMargins(0, 0, 0, 0);
     auto* cards_layout_container{ new QWidget };
     cards_layout_container->setLayout(cards_layout_layout);
@@ -88,12 +97,13 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.Data.Orientation) } };
     orientation->setEnabled(!initial_fit_size && !initial_infer_size);
     orientation->setVisible(!initial_fit_size && !initial_infer_size);
+    m_Orientation = orientation->GetWidget();
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);
     layout->addWidget(card_size);
     layout->addWidget(paper_size);
-    layout->addWidget(base_pdf_choice);
+    layout->addWidget(m_BasePdf);
     layout->addWidget(paper_info);
     layout->addWidget(cards_info);
     layout->addWidget(left_margin);
@@ -101,11 +111,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(cards_layout);
     layout->addWidget(orientation);
     setLayout(layout);
-
-    auto main_window{
-        [this]()
-        { return static_cast<PrintProxyPrepMainWindow*>(window()); }
-    };
 
     auto change_output{
         [=, this](QString t)
@@ -133,22 +138,22 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
 
-            left_margin_spin->setRange(0, max_margins.x);
-            left_margin_spin->setValue(max_margins.x / 2.0f);
-            top_margin_spin->setRange(0, max_margins.y);
-            top_margin_spin->setValue(max_margins.y / 2.0f);
+            m_LeftMarginSpin->setRange(0, max_margins.x);
+            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
+            m_TopMarginSpin->setRange(0, max_margins.y);
+            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
 
             paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
             cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
 
-            base_pdf_choice->setEnabled(infer_size);
-            base_pdf_choice->setVisible(infer_size);
+            m_BasePdf->setEnabled(infer_size);
+            m_BasePdf->setVisible(infer_size);
             cards_layout->setEnabled(fit_size);
             cards_layout->setVisible(fit_size);
             orientation->setEnabled(!fit_size && !infer_size);
             orientation->setVisible(!fit_size && !infer_size);
 
-            main_window()->PageSizeChanged(m_Project);
+            PageSizeChanged();
         }
     };
 
@@ -162,7 +167,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             }
 
             m_Project.Data.CardSizeChoice = std::move(new_choice);
-            main_window()->CardSizeChanged(m_Project);
+            CardSizeChanged();
 
             // Refresh anything needed for size change
             change_papersize(ToQString(m_Project.Data.PageSize));
@@ -188,15 +193,15 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
 
-            left_margin_spin->setRange(0, max_margins.x);
-            left_margin_spin->setValue(max_margins.x / 2.0f);
-            top_margin_spin->setRange(0, max_margins.y);
-            top_margin_spin->setValue(max_margins.y / 2.0f);
+            m_LeftMarginSpin->setRange(0, max_margins.x);
+            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
+            m_TopMarginSpin->setRange(0, max_margins.y);
+            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
 
             paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
             cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
 
-            main_window()->PageSizeChanged(m_Project);
+            PageSizeChanged();
         }
     };
 
@@ -210,7 +215,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             m_Project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
-            main_window()->MarginsChanged(m_Project);
+            MarginsChanged();
         }
     };
 
@@ -223,7 +228,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             }
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             m_Project.Data.CustomMargins.value().x = static_cast<float>(v) * base_unit;
-            main_window()->MarginsChanged(m_Project);
+            MarginsChanged();
         }
     };
 
@@ -231,7 +236,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         [=, this](double v)
         {
             m_Project.Data.CardLayout.x = static_cast<uint32_t>(v);
-            main_window()->CardLayoutChanged(m_Project);
+            CardLayoutChanged();
         }
     };
 
@@ -239,7 +244,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         [=, this](double v)
         {
             m_Project.Data.CardLayout.y = static_cast<uint32_t>(v);
-            main_window()->CardLayoutChanged(m_Project);
+            CardLayoutChanged();
         }
     };
 
@@ -264,12 +269,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
 
-            left_margin_spin->setRange(0, max_margins.x);
-            left_margin_spin->setValue(max_margins.x / 2.0f);
-            top_margin_spin->setRange(0, max_margins.y);
-            top_margin_spin->setValue(max_margins.y / 2.0f);
+            m_LeftMarginSpin->setRange(0, max_margins.x);
+            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
+            m_TopMarginSpin->setRange(0, max_margins.y);
+            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
 
-            main_window()->OrientationChanged(m_Project);
+            OrientationChanged();
         }
     };
 
@@ -285,23 +290,23 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_papersize);
-    QObject::connect(base_pdf_choice->GetWidget(),
+    QObject::connect(m_BasePdf->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
                      change_base_pdf);
-    QObject::connect(left_margin_spin,
+    QObject::connect(m_LeftMarginSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_left_margin);
-    QObject::connect(top_margin_spin,
+    QObject::connect(m_TopMarginSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_top_margin);
-    QObject::connect(cards_width,
+    QObject::connect(m_CardsWidth,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_cards_width);
-    QObject::connect(cards_height,
+    QObject::connect(m_CardsHeight,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_cards_height);
@@ -309,29 +314,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_orientation);
-
-    m_PrintOutput = print_output->GetWidget();
-    m_PaperSize = paper_size->GetWidget();
-    m_Orientation = orientation->GetWidget();
-    m_PaperInfo = paper_info->GetWidget();
-    m_CardsInfo = cards_info->GetWidget();
-    m_BasePdf = base_pdf_choice;
-    m_LeftMarginSpin = left_margin_spin;
-    m_TopMarginSpin = top_margin_spin;
 }
 
 void PrintOptionsWidget::NewProjectOpened()
 {
-    PageSizeChanged();
-}
-
-void PrintOptionsWidget::PageSizeChanged()
-{
-    const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
-    m_BasePdf->setEnabled(infer_size);
-    m_BasePdf->setVisible(infer_size);
-
-    RefreshSizes();
+    SetDefaults();
 }
 
 void PrintOptionsWidget::BleedChanged()
@@ -389,6 +376,30 @@ void PrintOptionsWidget::RenderBackendChanged()
         }
         m_PaperSize->setCurrentText(ToQString(m_Project.Data.PageSize));
     }
+
+    if (CFG.Backend != PdfBackend::PoDoFo && m_Project.Data.PageSize == Config::BasePDFSize)
+    {
+        m_PaperSize->setCurrentText(ToQString(CFG.DefaultPageSize));
+        m_Project.Data.PageSize = CFG.DefaultPageSize;
+        PageSizeChanged();
+    }
+}
+
+void PrintOptionsWidget::SetDefaults()
+{
+    m_PrintOutput->setText(ToQString(m_Project.Data.FileName));
+    m_CardSize->setCurrentText(ToQString(m_Project.Data.CardSizeChoice));
+    m_PaperSize->setCurrentText(ToQString(m_Project.Data.PageSize));
+    m_CardsWidth->setValue(m_Project.Data.CardLayout.x);
+    m_CardsHeight->setValue(m_Project.Data.CardLayout.y);
+    m_Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.Data.Orientation)));
+
+    const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
+    m_BasePdf->GetWidget()->setCurrentText(ToQString(m_Project.Data.BasePdf));
+    m_BasePdf->setEnabled(infer_size);
+    m_BasePdf->setVisible(infer_size);
+
+    RefreshSizes();
 }
 
 void PrintOptionsWidget::RefreshSizes()

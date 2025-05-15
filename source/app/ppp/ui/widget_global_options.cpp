@@ -112,11 +112,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
                                   .value_or(PdfBackend::LibHaru));
-            if (CFG.Backend != PdfBackend::PoDoFo && project.Data.PageSize == Config::BasePDFSize)
-            {
-                project.Data.PageSize = CFG.DefaultPageSize;
-                main_window()->PageSizeChanged(project);
-            }
             SaveConfig(CFG);
             main_window()->RenderBackendChanged(project);
         }

@@ -11,21 +11,31 @@ class QLabel;
 class QLineEdit;
 
 class Project;
-class WidgetWithLabel;
+class ComboBoxWithLabel;
 
 class PrintOptionsWidget : public QWidget
 {
+    Q_OBJECT
+
   public:
     PrintOptionsWidget(Project& project);
 
+  signals:
+    void PageSizeChanged();
+    void CardSizeChanged();
+    void MarginsChanged();
+    void CardLayoutChanged();
+    void OrientationChanged();
+
   public slots:
     void NewProjectOpened();
-    void PageSizeChanged();
     void BleedChanged();
     void BaseUnitChanged();
     void RenderBackendChanged();
 
   private:
+    void SetDefaults();
+
     void RefreshSizes();
 
     static std::vector<std::string> GetBasePdfNames();
@@ -34,11 +44,14 @@ class PrintOptionsWidget : public QWidget
     Project& m_Project;
 
     QLineEdit* m_PrintOutput{ nullptr };
+    QComboBox* m_CardSize{ nullptr };
     QComboBox* m_PaperSize{ nullptr };
+    QDoubleSpinBox* m_CardsWidth{ nullptr };
+    QDoubleSpinBox* m_CardsHeight{ nullptr };
     QComboBox* m_Orientation{ nullptr };
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };
-    QWidget* m_BasePdf{ nullptr };
+    ComboBoxWithLabel* m_BasePdf{ nullptr };
     QDoubleSpinBox* m_LeftMarginSpin{ nullptr };
     QDoubleSpinBox* m_TopMarginSpin{ nullptr };
 };

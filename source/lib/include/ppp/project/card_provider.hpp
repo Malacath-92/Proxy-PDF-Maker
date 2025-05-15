@@ -17,22 +17,22 @@ class CardProvider : public QObject, public efsw::FileWatchListener
 
     void Start();
 
-    void NewProjectOpened(const Project& project);
-    void ImageDirChanged(const Project& project);
-    void CardSizeChanged(const Project& project);
-    void BleedChanged(const Project& project);
-    void EnableUncropChanged(const Project& project);
-    void ColorCubeChanged(const Project& project);
-    void BasePreviewWidthChanged(const Project& project);
-    void MaxDPIChanged(const Project& project);
+    void NewProjectOpened();
+    void ImageDirChanged();
+    void CardSizeChanged();
+    void BleedChanged();
+    void EnableUncropChanged();
+    void ColorCubeChanged();
+    void BasePreviewWidthChanged();
+    void MaxDPIChanged();
 
+  private:
     virtual void handleFileAction(efsw::WatchID watchid,
                                   const std::string& dir,
                                   const std::string& filename,
                                   efsw::Action action,
                                   std::string old_filename) override;
 
-  private:
     std::vector<fs::path> ListFiles();
 
   signals:
@@ -42,6 +42,8 @@ class CardProvider : public QObject, public efsw::FileWatchListener
     void CardModified(const fs::path& card_name);
 
   private:
+    const Project& m_Project;
+
     fs::path ImageDir;
     fs::path CropDir;
     fs::path OutputDir;

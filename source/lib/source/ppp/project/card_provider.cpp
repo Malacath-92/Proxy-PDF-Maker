@@ -6,7 +6,8 @@
 #include <ppp/project/project.hpp>
 
 CardProvider::CardProvider(const Project& project)
-    : ImageDir{ project.Data.ImageDir }
+    : m_Project{ project }
+    , ImageDir{ project.Data.ImageDir }
     , CropDir{ CFG.EnableUncrop ? project.Data.CropDir : "" }
     , OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) }
 {
@@ -31,11 +32,11 @@ void CardProvider::Start()
     }
 }
 
-void CardProvider::NewProjectOpened(const Project& project)
+void CardProvider::NewProjectOpened()
 {
-    ImageDirChanged(project);
+    ImageDirChanged();
 }
-void CardProvider::ImageDirChanged(const Project& project)
+void CardProvider::ImageDirChanged()
 {
     // Image folder, and thus crop folder has changed, we have to
     // remove all old files ...
@@ -50,14 +51,14 @@ void CardProvider::ImageDirChanged(const Project& project)
         Watcher.removeWatch((CropDir / "").string());
     }
 
-    ImageDir = project.Data.ImageDir;
-    CropDir = project.Data.CropDir;
-    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+    ImageDir = m_Project.Data.ImageDir;
+    CropDir = m_Project.Data.CropDir;
+    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // ... and add all new files ...
     Start();
 }
-void CardProvider::CardSizeChanged(const Project& /*project*/)
+void CardProvider::CardSizeChanged()
 {
     // Generate new crops and previews ...
     for (const fs::path& image : ListFiles())
@@ -65,9 +66,9 @@ void CardProvider::CardSizeChanged(const Project& /*project*/)
         CardAdded(image, true, true);
     }
 }
-void CardProvider::BleedChanged(const Project& project)
+void CardProvider::BleedChanged()
 {
-    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -75,7 +76,7 @@ void CardProvider::BleedChanged(const Project& project)
         CardAdded(image, true, false);
     }
 }
-void CardProvider::EnableUncropChanged(const Project& project)
+void CardProvider::EnableUncropChanged()
 {
     // CFG.EnableUncrop option has changed, so we need to add/remove cards
     // that are in the crop folder but not the images folder ...
@@ -107,7 +108,7 @@ void CardProvider::EnableUncropChanged(const Project& project)
         // CFG.EnableUncrop was not enabled, now it is, so we add the
         // difference ... ...
         const auto crop_images{
-            ListImageFiles(project.Data.CropDir)
+            ListImageFiles(m_Project.Data.CropDir)
         };
         for (const fs::path& image : crop_images)
         {
@@ -118,13 +119,13 @@ void CardProvider::EnableUncropChanged(const Project& project)
         }
 
         // ... and add a new watch ...
-        CropDir = project.Data.CropDir;
+        CropDir = m_Project.Data.CropDir;
         Watcher.addWatch(CropDir.string(), this, false);
     }
 }
-void CardProvider::ColorCubeChanged(const Project& project)
+void CardProvider::ColorCubeChanged()
 {
-    OutputDir = GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube);
+    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -132,7 +133,7 @@ void CardProvider::ColorCubeChanged(const Project& project)
         CardAdded(image, true, false);
     }
 }
-void CardProvider::BasePreviewWidthChanged(const Project& /*project*/)
+void CardProvider::BasePreviewWidthChanged()
 {
     // Generate new previews only ...
     for (const fs::path& image : ListFiles())
@@ -140,7 +141,7 @@ void CardProvider::BasePreviewWidthChanged(const Project& /*project*/)
         CardAdded(image, false, true);
     }
 }
-void CardProvider::MaxDPIChanged(const Project& /*project*/)
+void CardProvider::MaxDPIChanged()
 {
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
