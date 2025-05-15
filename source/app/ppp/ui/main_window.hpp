@@ -37,14 +37,4 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void ColorCubeChanged(Project& project);
     void BasePreviewWidthChanged(Project& project);
     void MaxDPIChanged(Project& project);
-
-    // These exist solely to get the data safely to another thread
-    void NewProjectOpenedDiff(const Project::ProjectData& data);
-    void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
-    void CardSizeChangedDiff(std::string card_size);
-    void BleedChangedDiff(Length bleed);
-    void EnableUncropChangedDiff(bool enable_uncrop);
-    void ColorCubeChangedDiff(const std::string& cube_name);
-    void BasePreviewWidthChangedDiff(Pixel base_preview_width);
-    void MaxDPIChangedDiff(PixelDensity dpi);
 };

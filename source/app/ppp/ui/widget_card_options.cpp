@@ -137,7 +137,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             }
 
             project.Data.BleedEdge = new_bleed_edge;
-            main_window()->BleedChangedDiff(project.Data.BleedEdge);
             main_window()->BleedChanged(project);
         }
     };

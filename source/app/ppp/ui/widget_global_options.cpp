@@ -127,7 +127,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.EnableUncrop = s == Qt::CheckState::Checked;
             SaveConfig(CFG);
-            main_window()->EnableUncropChangedDiff(CFG.EnableUncrop);
             main_window()->EnableUncropChanged(project);
         }
     };
@@ -138,7 +137,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
             CFG.ColorCube = t.toStdString();
             SaveConfig(CFG);
             PreloadCube(application, CFG.ColorCube);
-            main_window()->ColorCubeChangedDiff(CFG.ColorCube);
             main_window()->ColorCubeChanged(project);
         }
     };
@@ -148,7 +146,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.BasePreviewWidth = static_cast<float>(v) * 1_pix;
             SaveConfig(CFG);
-            main_window()->BasePreviewWidthChangedDiff(CFG.BasePreviewWidth);
             main_window()->BasePreviewWidthChanged(project);
         }
     };
@@ -158,7 +155,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
             SaveConfig(CFG);
-            main_window()->MaxDPIChangedDiff(CFG.MaxDPI);
             main_window()->MaxDPIChanged(project);
         }
     };

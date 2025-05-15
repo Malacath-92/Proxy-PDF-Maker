@@ -163,7 +163,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             m_Project.Data.CardSizeChoice = std::move(new_choice);
             main_window()->CardSizeChanged(m_Project);
-            main_window()->CardSizeChangedDiff(m_Project.Data.CardSizeChoice);
 
             // Refresh anything needed for size change
             change_papersize(ToQString(m_Project.Data.PageSize));

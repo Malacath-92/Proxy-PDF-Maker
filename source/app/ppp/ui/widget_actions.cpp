@@ -128,7 +128,6 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
 
                     main_window->setEnabled(false);
                     reload_window.ShowDuringWork(load_project_work);
-                    main_window->NewProjectOpenedDiff(project.Data);
                     main_window->NewProjectOpened(project);
                     main_window->setEnabled(true);
                 }
@@ -150,9 +149,6 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     project.Init();
 
                     auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-                    main_window->ImageDirChangedDiff(project.Data.ImageDir,
-                                                     project.Data.CropDir,
-                                                     project.Data.Previews | std::views::keys | std::ranges::to<std::vector>());
                     main_window->ImageDirChanged(project);
                 }
             }
