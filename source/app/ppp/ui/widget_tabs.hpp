@@ -10,5 +10,5 @@ class PrintPreview;
 class MainTabs : public QTabWidget
 {
   public:
-    MainTabs(Project& project, CardScrollArea* scroll_area, PrintPreview* print_preview);
+    MainTabs(CardScrollArea* scroll_area, PrintPreview* print_preview);
 };

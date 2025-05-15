@@ -20,11 +20,6 @@ class PrintProxyPrepMainWindow : public QMainWindow
   signals:
     void NewProjectOpened(Project& project);
     void ImageDirChanged(Project& project);
-    void BleedChanged(Project& project);
-    void CornerWeightChanged(Project& project);
-    void BacksideEnabledChanged(Project& project);
-    void BacksideDefaultChanged(Project& project);
-    void BacksideOffsetChanged(Project& project);
     void BaseUnitChanged(Project& project);
     void DisplayColumnsChanged(Project& project);
     void RenderBackendChanged(Project& project);

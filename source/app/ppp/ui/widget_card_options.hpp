@@ -4,6 +4,7 @@
 
 class QCheckBox;
 class QDoubleSpinBox;
+class QPushButton;
 class QSlider;
 
 class DefaultBacksidePreview;
@@ -11,8 +12,17 @@ class Project;
 
 class CardOptionsWidget : public QWidget
 {
+    Q_OBJECT
+
   public:
     CardOptionsWidget(Project& project);
+
+  signals:
+    void BleedChanged();
+    void CornerWeightChanged();
+    void BacksideEnabledChanged();
+    void BacksideDefaultChanged();
+    void BacksideOffsetChanged();
 
   public slots:
     void NewProjectOpened();
@@ -20,11 +30,15 @@ class CardOptionsWidget : public QWidget
     void BaseUnitChanged();
 
   private:
+    void SetDefaults();
+
     Project& m_Project;
 
     QDoubleSpinBox* m_BleedEdgeSpin{ nullptr };
     QSlider* m_CornerWeightSlider{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
-    QDoubleSpinBox* m_BacksideOffsetSpin{ nullptr };
+    QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
+    QDoubleSpinBox* m_BacksideOffsetSpin{ nullptr };
+    QWidget* m_BacksideOffset{ nullptr };
 };

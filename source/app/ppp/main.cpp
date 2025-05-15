@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
-    auto* tabs{ new MainTabs{ project, scroll_area, print_preview } };
+    auto* tabs{ new MainTabs{ scroll_area, print_preview } };
 
     auto* actions{ new ActionsWidget{ app, project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
@@ -109,13 +109,13 @@ int main(int argc, char** argv)
 
     QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &project, &Project::EnsureOutputFolder);
     QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &project, &Project::EnsureOutputFolder);
-    QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &project, &Project::EnsureOutputFolder);
+    QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
     QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
     // TODO: More fine-grained control
-    QObject::connect(&card_provider, &CardProvider::CardAdded, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
-    QObject::connect(&card_provider, &CardProvider::CardRemoved, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
-    QObject::connect(&card_provider, &CardProvider::CardRenamed, scroll_area, std::bind_front(&CardScrollArea::Refresh, scroll_area, std::ref(project)));
+    QObject::connect(&card_provider, &CardProvider::CardAdded, scroll_area, &CardScrollArea::Refresh);
+    QObject::connect(&card_provider, &CardProvider::CardRemoved, scroll_area, &CardScrollArea::Refresh);
+    QObject::connect(&card_provider, &CardProvider::CardRenamed, scroll_area, &CardScrollArea::Refresh);
 
     CropperThreadRouter cropper_router{ project };
     {
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &cropper_router, &CropperThreadRouter::NewProjectOpened);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &cropper_router, &CropperThreadRouter::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &cropper_router, &CropperThreadRouter::CardSizeChanged);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &cropper_router, &CropperThreadRouter::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &cropper_router, &CropperThreadRouter::BleedChanged);
 
         QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChanged, &cropper_router, &CropperThreadRouter::EnableUncropChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &cropper_router, &CropperThreadRouter::ColorCubeChanged);
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, &card_provider, &CardProvider::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::EnableUncropChanged, &card_provider, &CardProvider::EnableUncropChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
@@ -164,8 +164,8 @@ int main(int argc, char** argv)
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, scroll_area, &CardScrollArea::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, scroll_area, &CardScrollArea::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, scroll_area, &CardScrollArea::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, scroll_area, &CardScrollArea::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, scroll_area, &CardScrollArea::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::DisplayColumnsChanged, scroll_area, &CardScrollArea::Refresh);
     }
 
@@ -173,16 +173,14 @@ int main(int argc, char** argv)
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::CornerWeightChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
     }
 
     {
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
+        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
 
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(print_options, &PrintOptionsWidget::PageSizeChanged, print_preview, &PrintPreview::Refresh);
@@ -201,16 +199,15 @@ int main(int argc, char** argv)
     }
 
     {
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::RenderBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
-    }
-
-    {
         QObject::connect(main_window, &PrintProxyPrepMainWindow::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
+
+        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::CornerWeightChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
     }
 
     app.SetMainWindow(main_window);

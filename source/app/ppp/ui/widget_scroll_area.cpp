@@ -464,6 +464,7 @@ class CardScrollArea::CardGrid : public QWidget
 };
 
 CardScrollArea::CardScrollArea(Project& project)
+    : m_Project{ project }
 {
     auto* global_label{ new QLabel{ "Global Controls:" } };
     auto* global_decrement_button{ new QPushButton{ "-" } };
@@ -548,9 +549,9 @@ CardScrollArea::CardScrollArea(Project& project)
     Grid = card_grid;
 }
 
-void CardScrollArea::Refresh(Project& project)
+void CardScrollArea::Refresh()
 {
-    Grid->Refresh(project);
+    Grid->Refresh(m_Project);
     setMinimumWidth(ComputeMinimumWidth());
 }
 

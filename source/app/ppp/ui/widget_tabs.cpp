@@ -5,17 +5,17 @@
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
 
-MainTabs::MainTabs(Project& project, CardScrollArea* scroll_area, PrintPreview* print_preview)
+MainTabs::MainTabs(CardScrollArea* scroll_area, PrintPreview* print_preview)
 {
     addTab(scroll_area, "Cards");
     addTab(print_preview, "Preview");
 
     auto current_changed{
-        [=, this, &project](int i)
+        [=, this](int i)
         {
             if (widget(i) == scroll_area)
             {
-                scroll_area->Refresh(project);
+                scroll_area->Refresh();
             }
             else
             {

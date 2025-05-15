@@ -9,12 +9,14 @@ class CardScrollArea : public QScrollArea
   public:
     CardScrollArea(Project& project);
 
-    void Refresh(Project& project);
+    void Refresh();
 
   private:
     int ComputeMinimumWidth();
 
     virtual void showEvent(QShowEvent* event) override;
+
+    Project& m_Project;
 
     class CardGrid;
     CardGrid* Grid;

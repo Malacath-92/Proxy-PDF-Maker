@@ -10,7 +10,6 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_label.hpp>
@@ -67,64 +66,49 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 {
     setObjectName("Card Options");
 
-    const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
-    const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
+    const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
-    const auto full_bleed{ project.CardFullBleed() };
     auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
-    auto* bleed_edge_spin{ bleed_edge->GetWidget() };
-    bleed_edge_spin->setDecimals(2);
-    bleed_edge_spin->setRange(0, full_bleed / initial_base_unit);
-    bleed_edge_spin->setSingleStep(0.1);
-    bleed_edge_spin->setSuffix(initial_base_unit_name);
-    bleed_edge_spin->setValue(project.Data.BleedEdge / initial_base_unit);
+    m_BleedEdgeSpin = bleed_edge->GetWidget();
+    m_BleedEdgeSpin->setDecimals(2);
+    m_BleedEdgeSpin->setSingleStep(0.1);
+    m_BleedEdgeSpin->setSuffix(base_unit_name);
 
-    auto* corner_weight_slider{ new QSlider{ Qt::Horizontal } };
-    corner_weight_slider->setTickPosition(QSlider::NoTicks);
-    corner_weight_slider->setRange(0, 1000);
-    corner_weight_slider->setValue(static_cast<int>(project.Data.CornerWeight * 1000.0f));
-    auto* corner_weight{ new WidgetWithLabel{ "&Corner Weight", corner_weight_slider } };
+    m_CornerWeightSlider = new QSlider{ Qt::Horizontal };
+    m_CornerWeightSlider->setTickPosition(QSlider::NoTicks);
+    m_CornerWeightSlider->setRange(0, 1000);
+    auto* corner_weight{ new WidgetWithLabel{ "&Corner Weight", m_CornerWeightSlider } };
 
     auto* bleed_back_divider{ new QFrame };
     bleed_back_divider->setFrameShape(QFrame::Shape::HLine);
     bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
 
-    auto* backside_checkbox{ new QCheckBox{ "Enable Backside" } };
-    backside_checkbox->setChecked(project.Data.BacksideEnabled);
+    m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
 
-    auto* backside_default_button{ new QPushButton{ "Choose Default" } };
-    backside_default_button->setEnabled(project.Data.BacksideEnabled);
-    backside_default_button->setVisible(project.Data.BacksideEnabled);
+    m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
-    auto* backside_default_preview{ new DefaultBacksidePreview{ project } };
-    backside_default_preview->setVisible(project.Data.BacksideEnabled);
+    m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
 
-    auto* backside_offset_spin{ new QDoubleSpinBox };
-    backside_offset_spin->setDecimals(2);
-    backside_offset_spin->setRange(-0.3_in / initial_base_unit, 0.3_in / initial_base_unit);
-    backside_offset_spin->setSingleStep(0.1);
-    backside_offset_spin->setSuffix(initial_base_unit_name);
-    backside_offset_spin->setValue(project.Data.BacksideOffset / initial_base_unit);
-    auto* backside_offset{ new WidgetWithLabel{ "Off&set", backside_offset_spin } };
-    backside_offset->setEnabled(project.Data.BacksideEnabled);
-    backside_offset->setVisible(project.Data.BacksideEnabled);
+    m_BacksideOffsetSpin = new QDoubleSpinBox;
+    m_BacksideOffsetSpin->setDecimals(2);
+    m_BacksideOffsetSpin->setSingleStep(0.1);
+    m_BacksideOffsetSpin->setSuffix(base_unit_name);
+
+    m_BacksideOffset = new WidgetWithLabel{ "Off&set", m_BacksideOffsetSpin };
+
+    SetDefaults();
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
     layout->addWidget(corner_weight);
     layout->addWidget(bleed_back_divider);
-    layout->addWidget(backside_checkbox);
-    layout->addWidget(backside_default_button);
-    layout->addWidget(backside_default_preview);
-    layout->addWidget(backside_offset);
+    layout->addWidget(m_BacksideOffset);
+    layout->addWidget(m_BacksideDefaultButton);
+    layout->addWidget(m_BacksideDefaultPreview);
+    layout->addWidget(m_BacksideOffset);
 
-    layout->setAlignment(backside_default_preview, Qt::AlignmentFlag::AlignHCenter);
+    layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     setLayout(layout);
-
-    auto main_window{
-        [this]()
-        { return static_cast<PrintProxyPrepMainWindow*>(window()); }
-    };
 
     auto change_bleed_edge{
         [=, &project](double v)
@@ -137,7 +121,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             }
 
             project.Data.BleedEdge = new_bleed_edge;
-            main_window()->BleedChanged(project);
+            BleedChanged();
         }
     };
 
@@ -145,7 +129,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         [=, &project](int v)
         {
             project.Data.CornerWeight = static_cast<float>(v) / 1000.0f;
-            main_window()->CornerWeightChanged(project);
+            CornerWeightChanged();
         }
     };
 
@@ -153,12 +137,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         [=, &project](Qt::CheckState s)
         {
             project.Data.BacksideEnabled = s == Qt::CheckState::Checked;
-            backside_default_button->setEnabled(project.Data.BacksideEnabled);
-            backside_default_button->setVisible(project.Data.BacksideEnabled);
-            backside_default_preview->setVisible(project.Data.BacksideEnabled);
-            backside_offset->setEnabled(project.Data.BacksideEnabled);
-            backside_offset->setVisible(project.Data.BacksideEnabled);
-            main_window()->BacksideEnabledChanged(project);
+            m_BacksideDefaultButton->setEnabled(project.Data.BacksideEnabled);
+            m_BacksideDefaultButton->setVisible(project.Data.BacksideEnabled);
+            m_BacksideDefaultPreview->setVisible(project.Data.BacksideEnabled);
+            m_BacksideOffset->setEnabled(project.Data.BacksideEnabled);
+            m_BacksideOffset->setVisible(project.Data.BacksideEnabled);
+            BacksideEnabledChanged();
         }
     };
 
@@ -168,7 +152,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             if (const auto default_backside_choice{ OpenImageDialog(project.Data.ImageDir) })
             {
                 project.Data.BacksideDefault = default_backside_choice.value();
-                main_window()->BacksideDefaultChanged(project);
+                BacksideDefaultChanged();
             }
         }
     };
@@ -178,58 +162,35 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         {
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             project.Data.BacksideOffset = base_unit * static_cast<float>(v);
-            main_window()->BacksideOffsetChanged(project);
+            BacksideOffsetChanged();
         }
     };
 
-    QObject::connect(bleed_edge_spin,
+    QObject::connect(m_BleedEdgeSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_bleed_edge);
-    QObject::connect(corner_weight_slider,
+    QObject::connect(m_CornerWeightSlider,
                      &QSlider::valueChanged,
                      this,
                      change_corner_weight);
-    QObject::connect(backside_checkbox,
+    QObject::connect(m_BacksideCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      switch_backside_enabled);
-    QObject::connect(backside_default_button,
+    QObject::connect(m_BacksideDefaultButton,
                      &QPushButton::clicked,
                      this,
                      pick_backside);
-    QObject::connect(backside_offset_spin,
+    QObject::connect(m_BacksideOffsetSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_backside_offset);
-
-    m_BleedEdgeSpin = bleed_edge_spin;
-    m_CornerWeightSlider = corner_weight_slider;
-    m_BacksideCheckbox = backside_checkbox;
-    m_BacksideOffsetSpin = backside_offset_spin;
-    m_BacksideDefaultPreview = backside_default_preview;
 }
 
 void CardOptionsWidget::NewProjectOpened()
 {
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
-    const auto full_bleed{ m_Project.CardFullBleed() };
-    const auto full_bleed_rounded{ QString::number(full_bleed / base_unit, 'f', 2).toFloat() };
-    if (static_cast<int32_t>(m_BleedEdgeSpin->maximum() / 0.001) != static_cast<int32_t>(full_bleed_rounded / 0.001))
-    {
-        m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
-        m_BleedEdgeSpin->setValue(0);
-    }
-    else
-    {
-        m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
-    }
-
-    m_CornerWeightSlider->setValue(m_Project.Data.CornerWeight);
-
-    m_BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
-    m_BacksideOffsetSpin->setValue(m_Project.Data.BacksideOffset.value);
-
+    SetDefaults();
     ImageDirChanged();
 }
 
@@ -253,4 +214,28 @@ void CardOptionsWidget::BaseUnitChanged()
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
     m_BacksideOffsetSpin->setValue(backside_offset / base_unit);
+}
+
+void CardOptionsWidget::SetDefaults()
+{
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto full_bleed{ m_Project.CardFullBleed() };
+
+    m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
+    m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
+
+    m_CornerWeightSlider->setValue(static_cast<int>(m_Project.Data.CornerWeight * 1000.0f));
+
+    m_BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
+
+    m_BacksideDefaultButton->setEnabled(m_Project.Data.BacksideEnabled);
+    m_BacksideDefaultButton->setVisible(m_Project.Data.BacksideEnabled);
+
+    m_BacksideDefaultPreview->setVisible(m_Project.Data.BacksideEnabled);
+
+    m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetSpin->setValue(m_Project.Data.BacksideOffset / base_unit);
+
+    m_BacksideOffset->setEnabled(m_Project.Data.BacksideEnabled);
+    m_BacksideOffset->setVisible(m_Project.Data.BacksideEnabled);
 }
