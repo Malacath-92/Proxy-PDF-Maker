@@ -13,7 +13,6 @@
 #include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application, Project& project)
@@ -82,11 +81,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     layout->addWidget(themes);
     setLayout(layout);
 
-    auto main_window{
-        [this]()
-        { return static_cast<PrintProxyPrepMainWindow*>(window()); }
-    };
-
     auto change_base_units{
         [=, &project](const QString& t)
         {
@@ -94,7 +88,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
                                       .value_or(Config::SupportedBaseUnits[0]) };
             CFG.BaseUnit = base_unit;
             SaveConfig(CFG);
-            main_window()->BaseUnitChanged(project);
+            BaseUnitChanged();
         }
     };
 
@@ -103,7 +97,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.DisplayColumns = static_cast<int>(v);
             SaveConfig(CFG);
-            main_window()->DisplayColumnsChanged(project);
+            DisplayColumnsChanged();
         }
     };
 
@@ -113,7 +107,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
             CFG.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
                                   .value_or(PdfBackend::LibHaru));
             SaveConfig(CFG);
-            main_window()->RenderBackendChanged(project);
+            RenderBackendChanged();
         }
     };
 
@@ -122,7 +116,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.EnableUncrop = s == Qt::CheckState::Checked;
             SaveConfig(CFG);
-            main_window()->EnableUncropChanged(project);
+            EnableUncropChanged();
         }
     };
 
@@ -132,7 +126,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
             CFG.ColorCube = t.toStdString();
             SaveConfig(CFG);
             PreloadCube(application, CFG.ColorCube);
-            main_window()->ColorCubeChanged(project);
+            ColorCubeChanged();
         }
     };
 
@@ -141,7 +135,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.BasePreviewWidth = static_cast<float>(v) * 1_pix;
             SaveConfig(CFG);
-            main_window()->BasePreviewWidthChanged(project);
+            BasePreviewWidthChanged();
         }
     };
 
@@ -150,7 +144,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
         {
             CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
             SaveConfig(CFG);
-            main_window()->MaxDPIChanged(project);
+            MaxDPIChanged();
         }
     };
 
