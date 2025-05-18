@@ -34,57 +34,57 @@ PrintProxyPrepApplication::~PrintProxyPrepApplication()
 
 void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
 {
-    MainWindow = main_window;
+    m_MainWindow = main_window;
 
-    if (WindowGeometry.has_value())
+    if (m_WindowGeometry.has_value())
     {
-        MainWindow->restoreGeometry(WindowGeometry.value());
-        WindowGeometry.reset();
+        m_MainWindow->restoreGeometry(m_WindowGeometry.value());
+        m_WindowGeometry.reset();
     }
 
-    if (WindowState.has_value())
+    if (m_WindowState.has_value())
     {
-        MainWindow->restoreState(WindowState.value());
-        WindowState.reset();
+        m_MainWindow->restoreState(m_WindowState.value());
+        m_WindowState.reset();
     }
 }
 QMainWindow* PrintProxyPrepApplication::GetMainWindow() const
 {
-    return MainWindow;
+    return m_MainWindow;
 }
 
 void PrintProxyPrepApplication::SetProjectPath(fs::path project_path)
 {
-    ProjectPath = std::move(project_path);
+    m_ProjectPath = std::move(project_path);
 }
 const fs::path& PrintProxyPrepApplication::GetProjectPath() const
 {
-    return ProjectPath;
+    return m_ProjectPath;
 }
 
 void PrintProxyPrepApplication::SetTheme(std::string theme)
 {
-    Theme = std::move(theme);
+    m_Theme = std::move(theme);
 }
 const std::string& PrintProxyPrepApplication::GetTheme() const
 {
-    return Theme;
+    return m_Theme;
 }
 
 void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 {
-    std::lock_guard lock{ CubesMutex };
-    if (!Cubes.contains(cube_name))
+    std::lock_guard lock{ m_CubesMutex };
+    if (!m_Cubes.contains(cube_name))
     {
-        Cubes[std::move(cube_name)] = std::move(cube);
+        m_Cubes[std::move(cube_name)] = std::move(cube);
     }
 }
 const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
 {
-    std::lock_guard lock{ CubesMutex };
-    if (Cubes.contains(cube_name))
+    std::lock_guard lock{ m_CubesMutex };
+    if (m_Cubes.contains(cube_name))
     {
-        return &Cubes.at(cube_name);
+        return &m_Cubes.at(cube_name);
     }
     return nullptr;
 }
@@ -99,7 +99,7 @@ bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
             // ... but only open the About window on the release
             if (key_event->type() == QEvent::Type::KeyRelease)
             {
-                static_cast<PrintProxyPrepMainWindow*>(MainWindow)->OpenAboutPopup();
+                static_cast<PrintProxyPrepMainWindow*>(m_MainWindow)->OpenAboutPopup();
             }
             return true;
         }
@@ -112,18 +112,18 @@ void PrintProxyPrepApplication::Load()
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     if (settings.contains("version"))
     {
-        WindowGeometry.emplace() = settings.value("geometry").toByteArray();
-        WindowState.emplace() = settings.value("state").toByteArray();
-        ProjectPath = settings.value("json").toString().toStdString();
-        Theme = settings.value("theme", "Default").toString().toStdString();
+        m_WindowGeometry.emplace() = settings.value("geometry").toByteArray();
+        m_WindowState.emplace() = settings.value("state").toByteArray();
+        m_ProjectPath = settings.value("json").toString().toStdString();
+        m_Theme = settings.value("theme", "Default").toString().toStdString();
     }
 }
 void PrintProxyPrepApplication::Save() const
 {
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
-    settings.setValue("geometry", MainWindow->saveGeometry());
-    settings.setValue("state", MainWindow->saveState());
-    settings.setValue("json", ToQString(ProjectPath));
-    settings.setValue("theme", ToQString(Theme));
+    settings.setValue("geometry", m_MainWindow->saveGeometry());
+    settings.setValue("state", m_MainWindow->saveState());
+    settings.setValue("json", ToQString(m_ProjectPath));
+    settings.setValue("theme", ToQString(m_Theme));
 }

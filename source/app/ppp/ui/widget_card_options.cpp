@@ -105,7 +105,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     setLayout(layout);
 
     auto change_bleed_edge{
-        [=, &project](double v)
+        [this, &project](double v)
         {
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
@@ -120,7 +120,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     auto switch_backside_enabled{
-        [=, &project](Qt::CheckState s)
+        [this, &project](Qt::CheckState s)
         {
             project.Data.BacksideEnabled = s == Qt::CheckState::Checked;
             m_BacksideDefaultButton->setEnabled(project.Data.BacksideEnabled);
@@ -133,7 +133,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     auto pick_backside{
-        [=, &project]()
+        [this, &project]()
         {
             if (const auto default_backside_choice{ OpenImageDialog(project.Data.ImageDir) })
             {
@@ -144,7 +144,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     auto change_backside_offset{
-        [=, &project](double v)
+        [this, &project](double v)
         {
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             project.Data.BacksideOffset = base_unit * static_cast<float>(v);

@@ -16,24 +16,20 @@ class HaruPdfPage final : public PdfPage
   public:
     virtual ~HaruPdfPage() override = default;
 
-    virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
-    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
 
-    virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) override;
+    virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
-
-    virtual void DrawText(std::string_view text, TextBB bounding_box) override;
+    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
     virtual void Finish() override{};
 
   private:
-    HPDF_Page Page{ nullptr };
-    HaruPdfDocument* Document;
-    Length CardWidth;
-    Length CornerRadius;
-    HaruPdfImageCache* ImageCache;
+    HPDF_Page m_Page{ nullptr };
+    HaruPdfDocument* m_Document;
+    HaruPdfImageCache* m_ImageCache;
 };
 
 class HaruPdfImageCache
@@ -44,15 +40,15 @@ class HaruPdfImageCache
     HPDF_Image GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    HPDF_Doc Document;
+    HPDF_Doc m_Document;
 
     struct ImageCacheEntry
     {
-        fs::path ImagePath;
-        Image::Rotation ImageRotation;
-        HPDF_Image HaruImage;
+        fs::path m_ImagePath;
+        Image::Rotation m_ImageRotation;
+        HPDF_Image m_HaruImage;
     };
-    std::vector<ImageCacheEntry> image_cache;
+    std::vector<ImageCacheEntry> m_Cache;
 };
 
 class HaruPdfDocument final : public PdfDocument
@@ -68,11 +64,12 @@ class HaruPdfDocument final : public PdfDocument
     HPDF_Font GetFont();
 
   private:
-    HPDF_Doc Document;
-    const Project& TheProject;
-    std::vector<HaruPdfPage> Pages;
+    const Project& m_Project;
 
-    std::unique_ptr<HaruPdfImageCache> ImageCache;
+    HPDF_Doc m_Document;
+    std::vector<HaruPdfPage> m_Pages;
 
-    HPDF_Font Font{ nullptr };
+    std::unique_ptr<HaruPdfImageCache> m_ImageCache;
+
+    HPDF_Font m_Font{ nullptr };
 };

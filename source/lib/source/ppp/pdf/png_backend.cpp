@@ -11,13 +11,18 @@ inline int32_t ToPixels(Length l)
     return static_cast<int32_t>(std::ceil(l * CFG.MaxDPI / 1_pix));
 }
 
-void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty)
+void PngPage::DrawSolidLine(LineData data, LineStyle style)
 {
+    const auto& fx{ data.m_From.x };
+    const auto& fy{ data.m_From.y };
+    const auto& tx{ data.m_To.x };
+    const auto& ty{ data.m_To.y };
+
     const auto real_fx{ ToPixels(fx) };
     const auto real_fy{ ToPixels(fy) };
     const auto real_tx{ ToPixels(tx) };
     const auto real_ty{ ToPixels(ty) };
-    const auto real_w{ (ToPixels(0.2_mm) / 2) * 2 };
+    const auto real_w{ (ToPixels(style.m_Thickness) / 2) * 2 };
 
     const cv::Point line_from{ real_fx, real_fy };
     const cv::Point line_to{ real_tx, real_ty };
@@ -27,91 +32,107 @@ void PngPage::DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Lengt
     const cv::Point from{ line_from - perp };
     const cv::Point to{ line_to + perp };
 
-    const cv::Scalar color_a{ colors[0].b * 255, colors[0].g * 255, colors[0].r * 255, 255.0f };
-    const cv::Scalar color_b{ colors[1].b * 255, colors[1].g * 255, colors[1].r * 255, 255.0f };
+    const cv::Scalar color_cv{ style.m_Color.b * 255, style.m_Color.g * 255, style.m_Color.r * 255, 255.0f };
 
-    cv::rectangle(Page, from, to, color_a, cv::FILLED);
+    cv::rectangle(m_Page, from, to, color_cv, cv::FILLED);
+}
 
-    constexpr float dash_freq{ 0.25f };
-    for (float alpha = 0; alpha < 1.0f; alpha += dash_freq)
+void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
+{
+    if (style.m_Color == style.m_SecondColor)
+    {
+        DrawSolidLine(data, style);
+        return;
+    }
+
+    const auto& fx{ data.m_From.x };
+    const auto& fy{ data.m_From.y };
+    const auto& tx{ data.m_To.x };
+    const auto& ty{ data.m_To.y };
+
+    const auto real_fx{ ToPixels(fx) };
+    const auto real_fy{ ToPixels(fy) };
+    const auto real_tx{ ToPixels(tx) };
+    const auto real_ty{ ToPixels(ty) };
+    const auto real_w{ (ToPixels(style.m_Thickness) / 2) * 2 };
+
+    const cv::Point line_from{ real_fx, real_fy };
+    const cv::Point line_to{ real_tx, real_ty };
+    const cv::Point delta{ line_to - line_from };
+
+    const cv::Point perp{ delta.x == 0 ? cv::Point{ real_w / 2, 0 } : cv::Point{ 0, real_w / 2 } };
+    const cv::Point from{ line_from - perp };
+    const cv::Point to{ line_to + perp };
+
+    const cv::Scalar color_a{ style.m_Color.b * 255, style.m_Color.g * 255, style.m_Color.r * 255, 255.0f };
+    const cv::Scalar color_b{ style.m_SecondColor.b * 255, style.m_SecondColor.g * 255, style.m_SecondColor.r * 255, 255.0f };
+
+    cv::rectangle(m_Page, from, to, color_a, cv::FILLED);
+
+    const float dash_freq{ style.m_DashSize / dla::distance(data.m_From, data.m_To) };
+    for (float alpha = 0; alpha < 1.0f; alpha += 2.0f * dash_freq)
     {
         const cv::Point sub_from{ from + alpha * delta };
         const cv::Point sub_to{ from + 2 * perp + (alpha + dash_freq / 2.0f) * delta };
-        cv::rectangle(Page, sub_from, sub_to, color_b, cv::FILLED);
+        cv::rectangle(m_Page, sub_from, sub_to, color_b, cv::FILLED);
     }
 }
 
-void PngPage::DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty)
+void PngPage::DrawImage(ImageData data)
 {
-    const auto real_fx{ ToPixels(fx) };
-    const auto real_fy{ ToPixels(fy) };
-    const auto real_tx{ ToPixels(tx) };
-    const auto real_ty{ ToPixels(ty) };
-    const auto real_w{ (ToPixels(0.2_mm) / 2) * 2 };
-
-    const cv::Point line_from{ real_fx, real_fy };
-    const cv::Point line_to{ real_tx, real_ty };
-    const cv::Point delta{ line_to - line_from };
-
-    const cv::Point perp{ delta.x == 0 ? cv::Point{ real_w / 2, 0 } : cv::Point{ 0, real_w / 2 } };
-    const cv::Point from{ line_from - perp };
-    const cv::Point to{ line_to + perp };
-
-    const cv::Scalar color_cv{ color.b * 255, color.g * 255, color.r * 255, 255.0f };
-
-    cv::rectangle(Page, from, to, color_cv, cv::FILLED);
-}
-
-void PngPage::DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s)
-{
-    const auto [dx, dy]{ CrossSegmentOffsets[static_cast<size_t>(s)].pod() };
-    const auto tx{ x + CornerRadius * dx * 0.5f };
-    const auto ty{ y + CornerRadius * dy * 0.5f };
-
-    DrawDashedLine(colors, x, y, tx, y);
-    DrawDashedLine(colors, x, y, x, ty);
-}
-
-void PngPage::DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation)
-{
-    if (PerfectFit)
+    const auto& image_path{ data.m_Path };
+    const auto& rotation{ data.m_Rotation };
+    const auto& x{ data.m_Pos.x };
+    const auto& y{ data.m_Pos.y };
+    if (m_PerfectFit)
     {
-        const auto card_idx_x{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(x)) / CardSize.x))) };
-        const auto card_idx_y{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(y)) / CardSize.y))) };
-        const auto real_x{ card_idx_x * static_cast<int32_t>(CardSize.x / 1_pix) };
-        const auto real_y{ card_idx_y * static_cast<int32_t>(CardSize.y / 1_pix) };
-        const auto real_w{ static_cast<int32_t>(CardSize.x / 1_pix) };
-        const auto real_h{ static_cast<int32_t>(CardSize.y / 1_pix) };
-        ImageCache->GetImage(image_path, real_w, real_h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+        const auto card_idx_x{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(x)) / m_CardSize.x))) };
+        const auto card_idx_y{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(y)) / m_CardSize.y))) };
+        const auto real_x{ card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix) };
+        const auto real_y{ card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) };
+        const auto real_w{ static_cast<int32_t>(m_CardSize.x / 1_pix) };
+        const auto real_h{ static_cast<int32_t>(m_CardSize.y / 1_pix) };
+        m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
+            .copyTo(m_Page(cv::Rect(real_x, real_y, real_w, real_h)));
     }
     else
     {
+        const auto& w{ data.m_Size.x };
+        const auto& h{ data.m_Size.y };
+
         const auto real_x{ ToPixels(x) };
         const auto real_y{ ToPixels(y) };
         const auto real_w{ ToPixels(w) };
         const auto real_h{ ToPixels(h) };
-        ImageCache->GetImage(image_path, real_w, real_h, rotation).copyTo(Page(cv::Rect(real_x, real_y, real_w, real_h)));
+        m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
+            .copyTo(m_Page(cv::Rect(real_x, real_y, real_w, real_h)));
     }
 }
 
-void PngPage::DrawText(std::string_view text, TextBB bounding_box)
+void PngPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
 {
-    const auto real_left{ ToPixels(bounding_box.TopLeft.x) };
-    const auto real_top{ ToPixels(bounding_box.TopLeft.x) };
+    const auto real_left{ ToPixels(bounding_box.m_TopLeft.x) };
+    const auto real_top{ ToPixels(bounding_box.m_TopLeft.x) };
     const cv::Scalar black{ 0, 0, 0, 255.0f };
 
-    cv::putText(Page, cv::String{ text.data(), text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
+    cv::putText(m_Page, cv::String{ text.data(), text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
 }
 
 const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
 {
+    // clang-format off
     const auto it{
-        std::ranges::find_if(image_cache, [&](const ImageCacheEntry& entry)
-                             { return entry.ImageRotation == rotation && entry.Width == w && entry.Height == h && entry.ImagePath == image_path; })
+        std::ranges::find_if(m_Cache,
+                             [&](const ImageCacheEntry& entry)
+                             { return entry.m_ImageRotation == rotation &&
+                                      entry.m_Width == w &&
+                                      entry.m_Height == h &&
+                                      entry.m_ImagePath == image_path; })
     };
-    if (it != image_cache.end())
+    // clang-format on
+    if (it != m_Cache.end())
     {
-        return it->PngImage;
+        return it->m_PngImage;
     }
 
     const Image loaded_image{
@@ -123,38 +144,38 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h
     cv::Mat four_channel_image{};
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
     const auto encoded_image{ loaded_image.EncodePng() };
-    image_cache.push_back({
+    m_Cache.push_back({
         std::move(image_path),
         w,
         h,
         rotation,
         std::move(four_channel_image),
     });
-    return image_cache.back().PngImage;
+    return m_Cache.back().m_PngImage;
 }
 
 PngDocument::PngDocument(const Project& project)
-    : TheProject{ project }
+    : m_Project{ project }
 {
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const dla::ivec2 card_size_pixels{
         static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
         static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),
     };
-    PrecomputedCardSize = PixelSize{
+    m_PrecomputedCardSize = PixelSize{
         static_cast<float>(card_size_pixels.x) * 1_pix,
         static_cast<float>(card_size_pixels.y) * 1_pix,
     };
 
-    const auto page_size_pixels{ card_size_pixels * TheProject.Data.CardLayout };
-    PrecomputedPageSize = PixelSize{
+    const auto page_size_pixels{ card_size_pixels * m_Project.Data.CardLayout };
+    m_PrecomputedPageSize = PixelSize{
         static_cast<float>(page_size_pixels.x) * 1_pix,
         static_cast<float>(page_size_pixels.y) * 1_pix,
     };
 
-    PageSize = project.ComputePageSize();
+    m_PageSize = project.ComputePageSize();
 
-    ImageCache = std::make_unique<PngImageCache>();
+    m_ImageCache = std::make_unique<PngImageCache>();
 }
 PngDocument::~PngDocument()
 {
@@ -162,15 +183,17 @@ PngDocument::~PngDocument()
 
 PngPage* PngDocument::NextPage()
 {
-    auto& new_page{ Pages.emplace_back() };
-    new_page.TheProject = &TheProject;
-    new_page.Document = this;
-    new_page.PerfectFit = TheProject.Data.PageSize == Config::FitSize;
-    new_page.CardSize = PrecomputedCardSize;
-    new_page.PageSize = PrecomputedPageSize;
-    new_page.CornerRadius = TheProject.CardCornerRadius();
-    new_page.Page = cv::Mat::zeros(cv::Size{ static_cast<int32_t>(PrecomputedPageSize.x / 1_pix), static_cast<int32_t>(PrecomputedPageSize.y / 1_pix) }, CV_8UC4);
-    new_page.ImageCache = ImageCache.get();
+    auto& new_page{ m_Pages.emplace_back() };
+    new_page.m_Project = &m_Project;
+    new_page.m_Document = this;
+    new_page.m_PerfectFit = m_Project.Data.PageSize == Config::FitSize;
+    new_page.m_CardSize = m_PrecomputedCardSize;
+    new_page.m_PageSize = m_PrecomputedPageSize;
+    new_page.m_Page = cv::Mat::zeros(cv::Size{
+                                         static_cast<int32_t>(m_PrecomputedPageSize.x / 1_pix),
+                                         static_cast<int32_t>(m_PrecomputedPageSize.y / 1_pix) },
+                                     CV_8UC4);
+    new_page.m_ImageCache = m_ImageCache.get();
     return &new_page;
 }
 
@@ -188,12 +211,12 @@ fs::path PngDocument::Write(fs::path path)
     }
 
 #if __cpp_lib_ranges_enumerate
-    for (const auto& [i, page] : Pages | std::views::enumerate)
+    for (const auto& [i, page] : m_Pages | std::views::enumerate)
     {
 #else
-    for (size_t i = 0; i < Pages.size(); i++)
+    for (size_t i = 0; i < m_Pages.size(); i++)
     {
-        const PngPage& page{ Pages[i] };
+        const PngPage& page{ m_Pages[i] };
 #endif
 
         const fs::path png_path{ png_folder / fs::path{ std::to_string(i) }.replace_extension(".png") };
@@ -206,7 +229,7 @@ fs::path PngDocument::Write(fs::path path)
             fs::remove(png_path);
         }
 
-        Image{ std::move(page.Page) }.Write(png_path, CFG.PngCompression.value_or(5), std::nullopt, PageSize);
+        Image{ std::move(page.m_Page) }.Write(png_path, CFG.PngCompression.value_or(5), std::nullopt, m_PageSize);
     }
 
     return png_folder;

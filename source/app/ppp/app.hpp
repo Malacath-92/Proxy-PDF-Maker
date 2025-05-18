@@ -35,14 +35,14 @@ class PrintProxyPrepApplication : public QApplication
     void Load();
     void Save() const;
 
-    QMainWindow* MainWindow{ nullptr };
+    QMainWindow* m_MainWindow{ nullptr };
 
-    fs::path ProjectPath{ cwd() / "proj.json" };
-    std::string Theme{ "Default" };
+    fs::path m_ProjectPath{ cwd() / "proj.json" };
+    std::string m_Theme{ "Default" };
 
-    mutable std::mutex CubesMutex;
-    std::unordered_map<std::string, cv::Mat> Cubes;
+    mutable std::mutex m_CubesMutex;
+    std::unordered_map<std::string, cv::Mat> m_Cubes;
 
-    std::optional<QByteArray> WindowGeometry{};
-    std::optional<QByteArray> WindowState{};
+    std::optional<QByteArray> m_WindowGeometry{};
+    std::optional<QByteArray> m_WindowState{};
 };

@@ -24,6 +24,7 @@ class GuidesOptionsWidget : public QWidget
     void BacksideGuidesEnabledChanged();
     void GuidesColorChanged();
     void GuidesOffsetChanged();
+    void GuidesThicknessChanged();
 
   public slots:
     void NewProjectOpened();
@@ -45,4 +46,5 @@ class GuidesOptionsWidget : public QWidget
     WidgetWithLabel* m_GuidesColorA{ nullptr };
     WidgetWithLabel* m_GuidesColorB{ nullptr };
     QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
+    QDoubleSpinBox* m_GuidesThicknessSpin{ nullptr };
 };

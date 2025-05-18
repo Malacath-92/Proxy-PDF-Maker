@@ -16,27 +16,24 @@ class PngPage final : public PdfPage
   public:
     virtual ~PngPage() override = default;
 
-    virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
-    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
 
-    virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) override;
+    virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
-
-    virtual void DrawText(std::string_view text, TextBB bounding_box) override;
+    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
     virtual void Finish() override{};
 
   private:
-    const Project* TheProject;
-    cv::Mat Page{};
-    PngDocument* Document{};
-    bool PerfectFit{};
-    PixelSize CardSize{};
-    PixelSize PageSize{};
-    Length CornerRadius;
-    PngImageCache* ImageCache;
+    const Project* m_Project;
+    cv::Mat m_Page{};
+    PngDocument* m_Document{};
+    bool m_PerfectFit{};
+    PixelSize m_CardSize{};
+    PixelSize m_PageSize{};
+    PngImageCache* m_ImageCache;
 };
 
 class PngImageCache
@@ -47,13 +44,13 @@ class PngImageCache
   private:
     struct ImageCacheEntry
     {
-        fs::path ImagePath;
-        int32_t Width;
-        int32_t Height;
-        Image::Rotation ImageRotation;
-        cv::Mat PngImage;
+        fs::path m_ImagePath;
+        int32_t m_Width;
+        int32_t m_Height;
+        Image::Rotation m_ImageRotation;
+        cv::Mat m_PngImage;
     };
-    std::vector<ImageCacheEntry> image_cache;
+    std::vector<ImageCacheEntry> m_Cache;
 };
 
 class PngDocument final : public PdfDocument
@@ -67,14 +64,14 @@ class PngDocument final : public PdfDocument
     virtual fs::path Write(fs::path path) override;
 
   private:
-    const Project& TheProject;
+    const Project& m_Project;
 
-    PixelSize PrecomputedCardSize;
-    PixelSize PrecomputedPageSize;
+    PixelSize m_PrecomputedCardSize;
+    PixelSize m_PrecomputedPageSize;
 
-    Size PageSize;
+    Size m_PageSize;
 
-    std::vector<PngPage> Pages;
+    std::vector<PngPage> m_Pages;
 
-    std::unique_ptr<PngImageCache> ImageCache;
+    std::unique_ptr<PngImageCache> m_ImageCache;
 };

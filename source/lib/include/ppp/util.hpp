@@ -24,6 +24,7 @@ using pixel_tag = dla::unit_tag<dla::unit_name::pixel>;
 using Pixel = dla::base_unit<pixel_tag>;
 
 using Size = dla::tvec2<Length>;
+using Position = dla::tvec2<Length>;
 using PixelSize = dla::tvec2<Pixel>;
 using PixelDensity = decltype(Pixel{} / Length{});
 

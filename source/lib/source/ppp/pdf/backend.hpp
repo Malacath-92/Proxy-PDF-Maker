@@ -21,9 +21,23 @@ class PdfPage
   public:
     virtual ~PdfPage() = default;
 
-    virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) = 0;
+    struct LineData
+    {
+        Position m_From;
+        Position m_To;
+    };
 
-    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) = 0;
+    struct LineStyle
+    {
+        Length m_Thickness{ 0.5_mm };
+        ColorRGB32f m_Color;
+    };
+
+    struct DashedLineStyle : LineStyle
+    {
+        ColorRGB32f m_SecondColor;
+        Length m_DashSize{ 0.1_mm };
+    };
 
     enum class CrossSegment
     {
@@ -32,21 +46,44 @@ class PdfPage
         BottomRight,
         BottomLeft,
     };
-    virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) = 0;
 
-    virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) = 0;
-
-    struct TextBB
+    struct CrossData
     {
-        Size TopLeft;
-        Size BottomRight;
+        Position m_Pos;
+        Length m_Length;
+        CrossSegment m_Segment;
     };
-    virtual void DrawText(std::string_view text, TextBB bounding_box) = 0;
+
+    struct ImageData
+    {
+        const fs::path& m_Path;
+        Position m_Pos;
+        Size m_Size;
+        Image::Rotation m_Rotation;
+    };
+
+    struct TextBoundingBox
+    {
+        Size m_TopLeft;
+        Size m_BottomRight;
+    };
+
+    virtual void DrawSolidLine(LineData data, LineStyle style) = 0;
+
+    virtual void DrawDashedLine(LineData data, DashedLineStyle style) = 0;
+
+    virtual void DrawSolidCross(CrossData data, LineStyle style);
+
+    virtual void DrawDashedCross(CrossData data, DashedLineStyle style);
+
+    virtual void DrawImage(ImageData data) = 0;
+
+    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) = 0;
 
     virtual void Finish() = 0;
 
   protected:
-    inline static constexpr std::array CrossSegmentOffsets{
+    inline static constexpr std::array c_CrossSegmentOffsets{
         dla::vec2{ +1.0f, -1.0f },
         dla::vec2{ -1.0f, -1.0f },
         dla::vec2{ -1.0f, +1.0f },

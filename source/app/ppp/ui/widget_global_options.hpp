@@ -12,7 +12,7 @@ class GlobalOptionsWidget : public QWidget
   public:
     GlobalOptionsWidget(PrintProxyPrepApplication& application, Project& project);
 
-signals:
+  signals:
     void BaseUnitChanged();
     void DisplayColumnsChanged();
     void RenderBackendChanged();

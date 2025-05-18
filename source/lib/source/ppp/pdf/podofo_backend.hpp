@@ -17,24 +17,20 @@ class PoDoFoPage final : public PdfPage
   public:
     virtual ~PoDoFoPage() override = default;
 
-    virtual void DrawDashedLine(std::array<ColorRGB32f, 2> colors, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
-    virtual void DrawSolidLine(ColorRGB32f color, Length fx, Length fy, Length tx, Length ty) override;
+    virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
 
-    virtual void DrawDashedCross(std::array<ColorRGB32f, 2> colors, Length x, Length y, CrossSegment s) override;
+    virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawImage(const fs::path& image_path, Length x, Length y, Length w, Length h, Image::Rotation rotation) override;
-
-    virtual void DrawText(std::string_view text, TextBB bounding_box) override;
+    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
     virtual void Finish() override{};
 
   private:
-    PoDoFo::PdfPage* Page{ nullptr };
-    PoDoFoDocument* Document{ nullptr };
-    Length CardWidth;
-    Length CornerRadius;
-    PoDoFoImageCache* ImageCache;
+    PoDoFo::PdfPage* m_Page{ nullptr };
+    PoDoFoDocument* m_Document{ nullptr };
+    PoDoFoImageCache* m_ImageCache;
 };
 
 class PoDoFoImageCache
@@ -45,15 +41,15 @@ class PoDoFoImageCache
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    PoDoFo::PdfMemDocument* Document;
+    PoDoFo::PdfMemDocument* m_Document;
 
     struct ImageCacheEntry
     {
-        fs::path ImagePath;
-        Image::Rotation ImageRotation;
-        std::unique_ptr<PoDoFo::PdfImage> PoDoFoImage;
+        fs::path m_ImagePath;
+        Image::Rotation m_ImageRotation;
+        std::unique_ptr<PoDoFo::PdfImage> m_PoDoFoImage;
     };
-    std::vector<ImageCacheEntry> image_cache;
+    std::vector<ImageCacheEntry> m_Cache;
 };
 
 class PoDoFoDocument final : public PdfDocument
@@ -69,14 +65,14 @@ class PoDoFoDocument final : public PdfDocument
     PoDoFo::PdfFont* GetFont();
 
   private:
-    std::unique_ptr<PoDoFo::PdfMemDocument> BaseDocument;
+    const Project& m_Project;
 
-    const Project& TheProject;
+    std::unique_ptr<PoDoFo::PdfMemDocument> m_BaseDocument;
 
-    PoDoFo::PdfMemDocument Document;
-    std::vector<PoDoFoPage> Pages;
+    PoDoFo::PdfMemDocument m_Document;
+    std::vector<PoDoFoPage> m_Pages;
 
-    std::unique_ptr<PoDoFoImageCache> ImageCache;
+    std::unique_ptr<PoDoFoImageCache> m_ImageCache;
 
-    PoDoFo::PdfFont* Font{ nullptr };
+    PoDoFo::PdfFont* m_Font{ nullptr };
 };

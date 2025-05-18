@@ -82,7 +82,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     setLayout(layout);
 
     auto change_base_units{
-        [=, &project](const QString& t)
+        [this, &project](const QString& t)
         {
             const auto base_unit{ CFG.GetUnitFromName(t.toStdString())
                                       .value_or(Config::SupportedBaseUnits[0]) };
@@ -93,7 +93,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_display_columns{
-        [=, &project](double v)
+        [this, &project](double v)
         {
             CFG.DisplayColumns = static_cast<int>(v);
             SaveConfig(CFG);
@@ -102,7 +102,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_render_backend{
-        [=, &project](const QString& t)
+        [this, &project](const QString& t)
         {
             CFG.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
                                   .value_or(PdfBackend::LibHaru));
@@ -112,7 +112,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_precropped{
-        [=, &project](Qt::CheckState s)
+        [this, &project](Qt::CheckState s)
         {
             CFG.EnableUncrop = s == Qt::CheckState::Checked;
             SaveConfig(CFG);
@@ -121,7 +121,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_color_cube{
-        [=, &application, &project](const QString& t)
+        [this, &application, &project](const QString& t)
         {
             CFG.ColorCube = t.toStdString();
             SaveConfig(CFG);
@@ -131,7 +131,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_preview_width{
-        [=, &project](double v)
+        [this, &project](double v)
         {
             CFG.BasePreviewWidth = static_cast<float>(v) * 1_pix;
             SaveConfig(CFG);
@@ -140,7 +140,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application,
     };
 
     auto change_max_dpi{
-        [=, &project](double v)
+        [this, &project](double v)
         {
             CFG.MaxDPI = static_cast<float>(v) * 1_dpi;
             SaveConfig(CFG);

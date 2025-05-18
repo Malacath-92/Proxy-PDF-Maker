@@ -20,17 +20,23 @@ fs::path GeneratePdf(const Project& project)
 
     const auto output_dir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) };
 
-    std::array<ColorRGB32f, 2> guides_colors{
-        ColorRGB32f{
-            static_cast<float>(project.Data.GuidesColorA.r) / 255.0f,
-            static_cast<float>(project.Data.GuidesColorA.g) / 255.0f,
-            static_cast<float>(project.Data.GuidesColorA.b) / 255.0f,
+    ColorRGB32f guides_color_a{
+        static_cast<float>(project.Data.GuidesColorA.r) / 255.0f,
+        static_cast<float>(project.Data.GuidesColorA.g) / 255.0f,
+        static_cast<float>(project.Data.GuidesColorA.b) / 255.0f,
+    };
+    ColorRGB32f guides_color_b{
+        static_cast<float>(project.Data.GuidesColorB.r) / 255.0f,
+        static_cast<float>(project.Data.GuidesColorB.g) / 255.0f,
+        static_cast<float>(project.Data.GuidesColorB.b) / 255.0f,
+    };
+
+    PdfPage::DashedLineStyle line_style{
+        {
+            project.Data.GuidesThickness,
+            guides_color_a,
         },
-        ColorRGB32f{
-            static_cast<float>(project.Data.GuidesColorB.r) / 255.0f,
-            static_cast<float>(project.Data.GuidesColorB.g) / 255.0f,
-            static_cast<float>(project.Data.GuidesColorB.b) / 255.0f,
-        },
+        guides_color_b,
     };
 
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
@@ -41,8 +47,10 @@ fs::path GeneratePdf(const Project& project)
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
     const auto margins{ project.ComputeMargins() };
 
-    const Length start_x{ margins.x };
-    const Length start_y{ page_height - margins.y };
+    const auto start_x{ margins.x };
+    const auto start_y{ page_height - margins.y };
+
+    const auto corner_radius{ project.CardCornerRadius() };
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
@@ -69,7 +77,13 @@ fs::path GeneratePdf(const Project& project)
                     const auto real_h{ card_height };
 
                     const auto rotation{ GetCardRotation(is_backside, image.BacksideShortEdge) };
-                    page->DrawImage(img_path, real_x, real_y, real_w, real_h, rotation);
+                    PdfPage::ImageData image_data{
+                        .m_Path{ img_path },
+                        .m_Pos{ real_x, real_y },
+                        .m_Size{ real_w, real_h },
+                        .m_Rotation = rotation,
+                    };
+                    page->DrawImage(image_data);
                 }
             }
         };
@@ -82,25 +96,50 @@ fs::path GeneratePdf(const Project& project)
                     {
                         const auto real_x{ start_x + float(x) * card_width + dx };
                         const auto real_y{ start_y - float(y) * card_height + dy };
-                        page->DrawDashedCross(guides_colors, real_x, real_y, s);
+
+                        PdfPage::CrossData cross{
+                            .m_Pos{
+                                real_x,
+                                real_y,
+                            },
+                            .m_Length{ corner_radius / 2.0f },
+                            .m_Segment = s,
+                        };
+                        page->DrawDashedCross(cross, line_style);
 
                         if (project.Data.ExtendedGuides)
                         {
                             if (x == 0)
                             {
-                                page->DrawDashedLine(guides_colors, real_x, real_y, 0_m, real_y);
+                                PdfPage::LineData line{
+                                    .m_From{ real_x, real_y },
+                                    .m_To{ 0_m, real_y },
+                                };
+                                page->DrawDashedLine(line, line_style);
                             }
                             if (x == columns)
                             {
-                                page->DrawDashedLine(guides_colors, real_x, real_y, page_width, real_y);
+                                PdfPage::LineData line{
+                                    .m_From{ real_x, real_y },
+                                    .m_To{ page_width, real_y },
+                                };
+                                page->DrawDashedLine(line, line_style);
                             }
                             if (y == rows)
                             {
-                                page->DrawDashedLine(guides_colors, real_x, real_y, real_x, 0_m);
+                                PdfPage::LineData line{
+                                    .m_From{ real_x, real_y },
+                                    .m_To{ real_x, 0_m },
+                                };
+                                page->DrawDashedLine(line, line_style);
                             }
                             if (y == 0)
                             {
-                                page->DrawDashedLine(guides_colors, real_x, real_y, real_x, page_height);
+                                PdfPage::LineData line{
+                                    .m_From{ real_x, real_y },
+                                    .m_To{ real_x, page_height },
+                                };
+                                page->DrawDashedLine(line, line_style);
                             }
                         }
                     }
@@ -217,6 +256,11 @@ fs::path GenerateTestPdf(const Project& project)
 
     auto pdf{ CreatePdfDocument(CFG.Backend, project) };
 
+    PdfPage::LineStyle line_style{
+        .m_Thickness = 0.2_mm,
+        .m_Color = ColorRGB32f{},
+    };
+
     {
         auto* front_page{ pdf->NextPage() };
 
@@ -229,7 +273,11 @@ fs::path GenerateTestPdf(const Project& project)
 
         {
             const auto left_line_x{ page_fourth.x };
-            front_page->DrawSolidLine(ColorRGB32f{}, left_line_x, 0_mm, left_line_x, page_height - page_eighth.y);
+            const PdfPage::LineData left_line{
+                .m_From{ left_line_x, 0_mm },
+                .m_To{ left_line_x, page_height - page_eighth.y },
+            };
+            front_page->DrawSolidLine(left_line, line_style);
 
             if (project.Data.BacksideEnabled)
             {
@@ -241,7 +289,11 @@ fs::path GenerateTestPdf(const Project& project)
             }
 
             const auto right_line_x{ page_fourth.x + 20_mm };
-            front_page->DrawSolidLine(ColorRGB32f{}, right_line_x, 0_mm, right_line_x, page_half.y);
+            const PdfPage::LineData right_line{
+                .m_From{ right_line_x, 0_mm },
+                .m_To{ right_line_x, page_half.y },
+            };
+            front_page->DrawSolidLine(right_line, line_style);
 
             const Size text_top_left{ right_line_x, page_fourth.y };
             const Size text_bottom_right{ page_width, 0_mm };
@@ -255,7 +307,11 @@ fs::path GenerateTestPdf(const Project& project)
         auto* back_page{ pdf->NextPage() };
 
         const auto backside_left_line_x{ page_width - page_fourth.x + project.Data.BacksideOffset };
-        back_page->DrawSolidLine(ColorRGB32f{}, backside_left_line_x, 0_mm, backside_left_line_x, page_height);
+        const PdfPage::LineData line{
+            .m_From{ backside_left_line_x, 0_mm },
+            .m_To{ backside_left_line_x, page_height },
+        };
+        back_page->DrawSolidLine(line, line_style);
     }
 
     return pdf->Write("alignment.pdf");
