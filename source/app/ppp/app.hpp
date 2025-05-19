@@ -29,6 +29,9 @@ class PrintProxyPrepApplication : public QApplication
     void SetCube(std::string cube_name, cv::Mat cube);
     const cv::Mat* GetCube(const std::string& cube_name) const;
 
+    bool GetObjectVisibility(const QString& object_name) const;
+    void SetObjectVisibility(const QString& object_name, bool visible);
+
   private:
     bool notify(QObject*, QEvent*) override;
 
@@ -42,6 +45,8 @@ class PrintProxyPrepApplication : public QApplication
 
     mutable std::mutex m_CubesMutex;
     std::unordered_map<std::string, cv::Mat> m_Cubes;
+
+    std::unordered_map<QString, bool> m_ObjectVisibilities;
 
     std::optional<QByteArray> m_WindowGeometry{};
     std::optional<QByteArray> m_WindowState{};

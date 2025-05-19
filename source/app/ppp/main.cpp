@@ -92,6 +92,7 @@ int main(int argc, char** argv)
 
     auto* options_area{
         new OptionsAreaWidget{
+            app,
             actions,
             print_options,
             guides_options,
@@ -99,6 +100,8 @@ int main(int argc, char** argv)
             global_options,
         },
     };
+
+    QObject::connect(options_area, &OptionsAreaWidget::SetObjectVisibility, &app, &PrintProxyPrepApplication::SetObjectVisibility);
 
     auto* main_window{
         new PrintProxyPrepMainWindow{

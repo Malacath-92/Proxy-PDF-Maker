@@ -89,6 +89,19 @@ const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) 
     return nullptr;
 }
 
+bool PrintProxyPrepApplication::GetObjectVisibility(const QString& object_name) const
+{
+    if (m_ObjectVisibilities.contains(object_name))
+    {
+        return m_ObjectVisibilities.at(object_name);
+    }
+    return true;
+}
+void PrintProxyPrepApplication::SetObjectVisibility(const QString& object_name, bool visible)
+{
+    m_ObjectVisibilities[object_name] = visible;
+}
+
 bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 {
     if (auto* key_event{ dynamic_cast<QKeyEvent*>(event) })
@@ -116,6 +129,23 @@ void PrintProxyPrepApplication::Load()
         m_WindowState.emplace() = settings.value("state").toByteArray();
         m_ProjectPath = settings.value("json").toString().toStdString();
         m_Theme = settings.value("theme", "Default").toString().toStdString();
+
+        if (settings.childGroups().contains("ObjectVisibility", Qt::CaseInsensitive))
+        {
+            settings.beginGroup("ObjectVisibility");
+            for (const auto& key : settings.allKeys())
+            {
+                m_ObjectVisibilities[key] = settings.value(key).toBool();
+            }
+            settings.endGroup();
+        }
+        else
+        {
+            m_ObjectVisibilities = {
+                { "Guides Options", false },
+                { "Global Config", false },
+            };
+        }
     }
 }
 void PrintProxyPrepApplication::Save() const
@@ -126,4 +156,13 @@ void PrintProxyPrepApplication::Save() const
     settings.setValue("state", m_MainWindow->saveState());
     settings.setValue("json", ToQString(m_ProjectPath));
     settings.setValue("theme", ToQString(m_Theme));
+
+    {
+        settings.beginGroup("ObjectVisibility");
+        for (const auto& [object_name, visible] : m_ObjectVisibilities)
+        {
+            settings.setValue(object_name, visible);
+        }
+        settings.endGroup();
+    }
 }
