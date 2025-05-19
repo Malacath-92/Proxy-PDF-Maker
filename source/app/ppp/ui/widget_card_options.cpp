@@ -96,7 +96,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
     layout->addWidget(bleed_back_divider);
-    layout->addWidget(m_BacksideOffset);
+    layout->addWidget(m_BacksideCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
     layout->addWidget(m_BacksideOffset);
