@@ -112,7 +112,7 @@ class Project : public QObject
         ColorRGB8 GuidesColorA{ 0, 0, 0 };
         ColorRGB8 GuidesColorB{ 190, 190, 190 };
         Length GuidesOffset{ 0_mm };
-        Length GuidesThickness{ 1_mm };
+        Length GuidesThickness{ 1_pts };
 
         // Utility functions
         Size ComputePageSize(const Config& config) const;

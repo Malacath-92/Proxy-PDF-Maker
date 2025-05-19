@@ -25,8 +25,8 @@ void PdfPage::DrawSolidCross(CrossData data, LineStyle style)
     const auto& y{ data.m_Pos.y };
 
     const auto [dx, dy]{ c_CrossSegmentOffsets[static_cast<size_t>(data.m_Segment)].pod() };
-    const auto tx{ x + data.m_Length * dx * 0.5f };
-    const auto ty{ y + data.m_Length * dy * 0.5f };
+    const auto tx{ x + data.m_Length * dx };
+    const auto ty{ y + data.m_Length * dy };
 
     DrawSolidLine(LineData{ data.m_Pos, { tx, y } }, style);
     DrawSolidLine(LineData{ data.m_Pos, { x, ty } }, style);
@@ -38,8 +38,8 @@ void PdfPage::DrawDashedCross(CrossData data, DashedLineStyle style)
     const auto& y{ data.m_Pos.y };
 
     const auto [dx, dy]{ c_CrossSegmentOffsets[static_cast<size_t>(data.m_Segment)].pod() };
-    const auto tx{ x + data.m_Length * dx * 0.5f };
-    const auto ty{ y + data.m_Length * dy * 0.5f };
+    const auto tx{ x + data.m_Length * dx };
+    const auto ty{ y + data.m_Length * dy };
 
     DrawDashedLine(LineData{ data.m_Pos, { tx, y } }, style);
     DrawDashedLine(LineData{ data.m_Pos, { x, ty } }, style);

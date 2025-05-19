@@ -36,7 +36,7 @@ class PdfPage
     struct DashedLineStyle : LineStyle
     {
         ColorRGB32f m_SecondColor;
-        Length m_DashSize{ 0.1_mm };
+        Length m_DashSize{ m_Thickness };
     };
 
     enum class CrossSegment
