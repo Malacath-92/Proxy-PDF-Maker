@@ -4,7 +4,6 @@
 #include <QPen>
 #include <QRect>
 #include <QSvgGenerator>
-#include <QDebug>
 
 #include <ppp/qt_util.hpp>
 
