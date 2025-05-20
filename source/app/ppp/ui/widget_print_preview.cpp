@@ -226,6 +226,36 @@ class GuidesOverlay : public QWidget
             const auto bottom_left_pos{ top_left_corner + dla::vec2(0.0f, 1.0f) * card_size + dla::vec2(1.0f, -1.0f) * offset };
             draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x + line_length.x, bottom_left_pos.y });
             draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, bottom_left_pos.y - line_length.y });
+
+            if (m_Project.Data.ExtendedGuides)
+            {
+                const uint32_t columns{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->columnCount()) };
+                const uint32_t rows{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->rowCount()) };
+
+                const auto [x, y]{ idx.pod() };
+                if (x == 0)
+                {
+                    draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, 0, top_left_pos.y });
+                    draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, 0, bottom_left_pos.y });
+                }
+                if (x + 1 == columns)
+                {
+                    const auto page_width{ static_cast<float>(width()) };
+                    draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, page_width, top_right_pos.y });
+                    draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, page_width, bottom_right_pos.y });
+                }
+                if (y == 0)
+                {
+                    draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x, 0 });
+                    draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x, 0 });
+                }
+                if (y + 1 == rows)
+                {
+                    const auto page_height{ static_cast<float>(height()) };
+                    draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, page_height });
+                    draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x, page_height });
+                }
+            }
         }
     }
 
