@@ -157,6 +157,8 @@ class GuidesOverlay : public QWidget
         CardSizeWithBleedEdge = project.CardSizeWithBleed();
         CornerRadius = project.CardCornerRadius();
 
+        CrossGuides = project.Data.CrossGuides;
+
         CardsSize = project.ComputeCardsSize();
 
         PenOne.setWidth(1);
@@ -205,21 +207,34 @@ class GuidesOverlay : public QWidget
         {
             const auto top_left_corner{ first_card_corner + idx * (card_size + spacing) };
 
+            const auto draw_guide{
+                [this](QLineF line)
+                {
+                    if (CrossGuides)
+                    {
+                        const auto from{ line.p1() };
+                        const auto delta{ line.p2() - from };
+                        line.setP1(from - delta);
+                    }
+                    Lines.push_back(line);
+                }
+            };
+
             const auto top_left_pos{ top_left_corner + offset };
-            Lines.push_back(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x + line_length.x, top_left_pos.y });
-            Lines.push_back(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x, top_left_pos.y + line_length.y });
+            draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x + line_length.x, top_left_pos.y });
+            draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x, top_left_pos.y + line_length.y });
 
             const auto top_right_pos{ top_left_corner + dla::vec2(1.0f, 0.0f) * card_size + dla::vec2(-1.0f, 1.0f) * offset };
-            Lines.push_back(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x - line_length.x, top_right_pos.y });
-            Lines.push_back(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x, top_right_pos.y + line_length.y });
+            draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x - line_length.x, top_right_pos.y });
+            draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x, top_right_pos.y + line_length.y });
 
             const auto bottom_right_pos{ top_left_corner + dla::vec2(1.0f, 1.0f) * card_size + dla::vec2(-1.0f, -1.0f) * offset };
-            Lines.push_back(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x - line_length.x, bottom_right_pos.y });
-            Lines.push_back(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x, bottom_right_pos.y - line_length.y });
+            draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x - line_length.x, bottom_right_pos.y });
+            draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x, bottom_right_pos.y - line_length.y });
 
             const auto bottom_left_pos{ top_left_corner + dla::vec2(0.0f, 1.0f) * card_size + dla::vec2(1.0f, -1.0f) * offset };
-            Lines.push_back(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x + line_length.x, bottom_left_pos.y });
-            Lines.push_back(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, bottom_left_pos.y - line_length.y });
+            draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x + line_length.x, bottom_left_pos.y });
+            draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, bottom_left_pos.y - line_length.y });
         }
     }
 
@@ -231,6 +246,8 @@ class GuidesOverlay : public QWidget
     Length GuidesOffset;
     Size CardSizeWithBleedEdge;
     Length CornerRadius;
+
+    bool CrossGuides;
 
     Size CardsSize;
 

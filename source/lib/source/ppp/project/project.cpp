@@ -98,7 +98,9 @@ void Project::Load(const fs::path& json_path)
 
         Data.ExportExactGuides = json["export_exact_guides"];
         Data.EnableGuides = json["enable_guides"];
+        Data.BacksideEnableGuides = json["enable_backside_guides"];
         Data.ExtendedGuides = json["extended_guides"];
+        Data.CrossGuides = json["cross_guides"];
         Data.GuidesColorA.r = json["guides_color_a"][0];
         Data.GuidesColorA.g = json["guides_color_a"][1];
         Data.GuidesColorA.b = json["guides_color_a"][2];
@@ -165,7 +167,9 @@ void Project::Dump(const fs::path& json_path) const
 
         json["export_exact_guides"] = Data.ExportExactGuides;
         json["enable_guides"] = Data.EnableGuides;
+        json["enable_backside_guides"] = Data.BacksideEnableGuides;
         json["extended_guides"] = Data.ExtendedGuides;
+        json["cross_guides"] = Data.CrossGuides;
         json["guides_color_a"] = std::array{ Data.GuidesColorA.r, Data.GuidesColorA.g, Data.GuidesColorA.b };
         json["guides_color_b"] = std::array{ Data.GuidesColorB.r, Data.GuidesColorB.g, Data.GuidesColorB.b };
         json["guides_offset"] = Data.GuidesOffset.value;

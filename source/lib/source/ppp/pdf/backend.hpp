@@ -45,6 +45,7 @@ class PdfPage
         TopRight,
         BottomRight,
         BottomLeft,
+        FullCross,
     };
 
     struct CrossData

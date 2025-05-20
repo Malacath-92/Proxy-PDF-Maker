@@ -95,7 +95,6 @@ class Project : public QObject
 
         // Backside options
         bool BacksideEnabled{ false };
-        bool BacksideEnableGuides{ false };
         fs::path BacksideDefault{ "__back.png" };
         Length BacksideOffset{ 0_mm };
 
@@ -111,7 +110,9 @@ class Project : public QObject
         // Guides options
         bool ExportExactGuides{ false };
         bool EnableGuides{ true };
+        bool BacksideEnableGuides{ false };
         bool ExtendedGuides{ false };
+        bool CrossGuides{ false };
         ColorRGB8 GuidesColorA{ 0, 0, 0 };
         ColorRGB8 GuidesColorB{ 190, 190, 190 };
         Length GuidesOffset{ 0_mm };

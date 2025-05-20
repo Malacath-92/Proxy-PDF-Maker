@@ -107,7 +107,7 @@ fs::path GeneratePdf(const Project& project)
                                 real_y,
                             },
                             .m_Length{ corner_radius / 2.0f },
-                            .m_Segment = s,
+                            .m_Segment = project.Data.CrossGuides ? CrossSegment::FullCross : s,
                         };
                         page->DrawDashedCross(cross, line_style);
 

@@ -28,7 +28,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
 
     m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
-    m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting extend to the edge of the page");
+    m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
+
+    m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
+    m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
@@ -57,6 +60,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_EnableGuidesCheckbox);
     layout->addWidget(m_BacksideGuidesCheckbox);
     layout->addWidget(m_ExtendedGuidesCheckbox);
+    layout->addWidget(m_CrossGuidesCheckbox);
     layout->addWidget(m_GuidesColorA);
     layout->addWidget(m_GuidesColorB);
     layout->addWidget(guides_offset);
@@ -99,6 +103,15 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         [this](Qt::CheckState s)
         {
             m_Project.Data.ExtendedGuides = s == Qt::CheckState::Checked;
+            ExtendedGuidesChanged();
+        }
+    };
+
+    auto change_cross_guides{
+        [this](Qt::CheckState s)
+        {
+            m_Project.Data.CrossGuides = s == Qt::CheckState::Checked;
+            CrossGuidesChanged();
         }
     };
 
@@ -192,6 +205,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QCheckBox::checkStateChanged,
                      this,
                      change_extended_guides);
+    QObject::connect(m_CrossGuidesCheckbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_cross_guides);
     QObject::connect(guides_color_a_button,
                      &QPushButton::clicked,
                      this,
@@ -252,6 +269,9 @@ void GuidesOptionsWidget::SetDefaults()
 
     m_ExtendedGuidesCheckbox->setChecked(m_Project.Data.ExtendedGuides);
     m_ExtendedGuidesCheckbox->setEnabled(m_Project.Data.EnableGuides);
+
+    m_CrossGuidesCheckbox->setChecked(m_Project.Data.CrossGuides);
+    m_CrossGuidesCheckbox->setEnabled(m_Project.Data.EnableGuides);
 
     m_GuidesColorA->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorA));
     m_GuidesColorA->setEnabled(m_Project.Data.EnableGuides);
