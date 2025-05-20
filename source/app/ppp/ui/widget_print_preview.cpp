@@ -28,6 +28,7 @@ class PageGrid : public QWidget
     struct Params
     {
         bool IsBackside{ false };
+        int Spacing{ 0 };
     };
 
     PageGrid(const Project& project, const Grid& card_grid, Params params)
@@ -104,6 +105,9 @@ class PageGrid : public QWidget
         }
 
         setLayout(grid);
+
+        CardsWidth = project.ComputeCardsSize().x;
+        Spacing = project.Data.Spacing;
     }
 
     bool DoesHaveMissingPreviews() const
@@ -123,6 +127,9 @@ class PageGrid : public QWidget
     bool HasMissingPreviews{ false };
     GuidesOverlay* Guides{ nullptr };
     BordersOverlay* Borders{ nullptr };
+
+    Length CardsWidth{};
+    Length Spacing{};
 };
 
 class GuidesOverlay : public QWidget
@@ -144,10 +151,13 @@ class GuidesOverlay : public QWidget
             }
         }
         BleedEdge = project.Data.BleedEdge;
+        Spacing = project.Data.Spacing;
         GuidesOffset = project.Data.GuidesOffset;
 
         CardSizeWithBleedEdge = project.CardSizeWithBleed();
         CornerRadius = project.CardCornerRadius();
+
+        CardsSize = project.ComputeCardsSize();
 
         PenOne.setWidth(1);
         PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
@@ -176,8 +186,6 @@ class GuidesOverlay : public QWidget
 
     void ResizeOverlay(PageGrid* grid)
     {
-        const auto columns{ static_cast<QGridLayout*>(grid->layout())->columnCount() };
-        const auto rows{ static_cast<QGridLayout*>(grid->layout())->rowCount() };
         const dla::vec2 first_card_corner{
             static_cast<float>(grid->pos().x()),
             static_cast<float>(grid->pos().y()),
@@ -186,18 +194,16 @@ class GuidesOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        const dla::vec2 card_size{
-            grid_size.x / columns,
-            grid_size.y / rows,
-        };
-        const auto pixel_ratio{ card_size / CardSizeWithBleedEdge };
+        const auto pixel_ratio{ grid_size / CardsSize };
+        const auto card_size{ CardSizeWithBleedEdge * pixel_ratio };
         const auto line_length{ CornerRadius * pixel_ratio * 0.5f };
         const auto offset{ (BleedEdge - GuidesOffset) * pixel_ratio };
+        const auto spacing{ Spacing * pixel_ratio };
 
         Lines.clear();
         for (const auto& idx : Cards)
         {
-            const auto top_left_corner{ first_card_corner + idx * card_size };
+            const auto top_left_corner{ first_card_corner + idx * (card_size + spacing) };
 
             const auto top_left_pos{ top_left_corner + offset };
             Lines.push_back(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x + line_length.x, top_left_pos.y });
@@ -221,9 +227,12 @@ class GuidesOverlay : public QWidget
     std::vector<dla::uvec2> Cards;
 
     Length BleedEdge;
+    Length Spacing;
     Length GuidesOffset;
     Size CardSizeWithBleedEdge;
     Length CornerRadius;
+
+    Size CardsSize;
 
     QPen PenOne;
     QPen PenTwo;
@@ -236,6 +245,7 @@ class BordersOverlay : public QWidget
     BordersOverlay(const Project& project)
     {
         BleedEdge = project.Data.BleedEdge;
+        Spacing = project.Data.Spacing;
 
         CardSize = project.CardSize();
         CornerRadius = project.CardCornerRadius();
@@ -265,11 +275,12 @@ class BordersOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, CornerRadius);
+        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, Spacing, CornerRadius);
     }
 
   private:
     Length BleedEdge;
+    Length Spacing;
     Size CardSize;
     Length CornerRadius;
 
@@ -279,6 +290,9 @@ class BordersOverlay : public QWidget
 void PageGrid::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+
+    const auto pixel_ratio{ static_cast<float>(event->size().width()) / CardsWidth };
+    layout()->setSpacing(static_cast<int>(pixel_ratio * Spacing));
 
     if (Guides != nullptr)
     {
@@ -336,13 +350,14 @@ class PrintPreview::PagePreview : public QWidget
         PageWidth = page_width;
         PageHeight = page_height;
 
-        const Size card_size_with_bleed{ project.CardSizeWithBleed() };
+        const auto card_size_with_bleed{ project.CardSizeWithBleed() };
         const auto [card_width, card_height]{ card_size_with_bleed.pod() };
         CardWidth = card_width;
         CardHeight = card_height;
 
-        PaddingWidth = (page_width - params.Columns * card_width) / 2.0f;
-        PaddingHeight = (page_height - params.Rows * card_height) / 2.0f;
+        const auto cards_size{ project.ComputeCardsSize() };
+        PaddingWidth = (page_width - cards_size.x) / 2.0f;
+        PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
         LeftMargins = PaddingWidth - margins.x;

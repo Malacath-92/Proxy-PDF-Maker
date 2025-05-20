@@ -30,6 +30,7 @@ class PrintOptionsWidget : public QWidget
   public slots:
     void NewProjectOpened();
     void BleedChanged();
+    void SpacingChanged();
     void BaseUnitChanged();
     void RenderBackendChanged();
 
@@ -37,6 +38,7 @@ class PrintOptionsWidget : public QWidget
     void SetDefaults();
 
     void RefreshSizes();
+    void RefreshCardLayout();
 
     static std::vector<std::string> GetBasePdfNames();
     static std::string SizeToString(Size size);

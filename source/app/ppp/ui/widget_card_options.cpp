@@ -74,9 +74,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BleedEdgeSpin->setSingleStep(0.1);
     m_BleedEdgeSpin->setSuffix(base_unit_name);
 
-    auto* bleed_back_divider{ new QFrame };
-    bleed_back_divider->setFrameShape(QFrame::Shape::HLine);
-    bleed_back_divider->setFrameShadow(QFrame::Shadow::Sunken);
+    auto* spacing{ new DoubleSpinBoxWithLabel{ "Card S&pacing" } };
+    m_SpacingSpin = spacing->GetWidget();
+    m_SpacingSpin->setDecimals(2);
+    m_SpacingSpin->setSingleStep(0.1);
+    m_SpacingSpin->setSuffix(base_unit_name);
 
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
 
@@ -95,7 +97,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
-    layout->addWidget(bleed_back_divider);
+    layout->addWidget(spacing);
     layout->addWidget(m_BacksideCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
@@ -116,6 +118,21 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
             project.Data.BleedEdge = new_bleed_edge;
             BleedChanged();
+        }
+    };
+
+    auto change_spacing{
+        [this, &project](double v)
+        {
+            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto new_spacing{ base_unit * static_cast<float>(v) };
+            if (dla::math::abs(project.Data.Spacing - new_spacing) < 0.001_mm)
+            {
+                return;
+            }
+
+            project.Data.Spacing = new_spacing;
+            SpacingChanged();
         }
     };
 
@@ -156,6 +173,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_bleed_edge);
+    QObject::connect(m_SpacingSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_spacing);
     QObject::connect(m_BacksideCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -186,12 +207,15 @@ void CardOptionsWidget::BaseUnitChanged()
     const auto base_unit{ CFG.BaseUnit.m_Unit };
     const auto base_unit_name{ CFG.BaseUnit.m_ShortName };
     const auto full_bleed{ m_Project.CardFullBleed() };
-    const auto bleed{ m_Project.Data.BleedEdge };
     const auto backside_offset{ m_Project.Data.BacksideOffset };
 
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
-    m_BleedEdgeSpin->setValue(bleed / base_unit);
+    m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
+
+    m_SpacingSpin->setRange(0, 1_cm / base_unit);
+    m_SpacingSpin->setSuffix(ToQString(base_unit_name));
+    m_SpacingSpin->setValue(m_Project.Data.Spacing / base_unit);
 
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
@@ -205,6 +229,9 @@ void CardOptionsWidget::SetDefaults()
 
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
+
+    m_SpacingSpin->setRange(0, 1_cm / base_unit);
+    m_SpacingSpin->setValue(m_Project.Data.Spacing / base_unit);
 
     m_BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
 

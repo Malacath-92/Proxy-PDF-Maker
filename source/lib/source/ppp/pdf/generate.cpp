@@ -50,6 +50,10 @@ fs::path GeneratePdf(const Project& project)
     const auto start_x{ margins.x };
     const auto start_y{ page_height - margins.y };
 
+    const auto bleed{ project.Data.BleedEdge };
+    const auto offset{ bleed - project.Data.GuidesOffset };
+    const auto spacing{ project.Data.Spacing };
+
     const auto corner_radius{ project.CardCornerRadius() };
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
@@ -71,8 +75,8 @@ fs::path GeneratePdf(const Project& project)
                 const auto img_path{ output_dir / image.Image };
                 if (fs::exists(img_path))
                 {
-                    const auto real_x{ start_x + float(x) * card_width + dx };
-                    const auto real_y{ start_y - float(y + 1) * card_height + dy };
+                    const auto real_x{ start_x + x * (card_width + spacing) + +dx };
+                    const auto real_y{ start_y - (y + 1) * card_height - y * spacing + dy };
                     const auto real_w{ card_width };
                     const auto real_h{ card_height };
 
@@ -94,8 +98,8 @@ fs::path GeneratePdf(const Project& project)
                 auto draw_cross_at_grid{
                     [&](PdfPage* page, size_t x, size_t y, CrossSegment s, Length dx, Length dy)
                     {
-                        const auto real_x{ start_x + float(x) * card_width + dx };
-                        const auto real_y{ start_y - float(y) * card_height + dy };
+                        const auto real_x{ start_x + x * (card_width + spacing) + dx };
+                        const auto real_y{ start_y - y * (card_height + spacing) + dy };
 
                         PdfPage::CrossData cross{
                             .m_Pos{
@@ -145,21 +149,18 @@ fs::path GeneratePdf(const Project& project)
                     }
                 };
 
-                const Length bleed{ project.Data.BleedEdge };
-                const Length offset{ bleed - project.Data.GuidesOffset };
-
                 draw_cross_at_grid(page,
                                    x + 1,
                                    y + 0,
                                    CrossSegment::TopRight,
-                                   -offset,
+                                   -offset - spacing,
                                    -offset);
                 draw_cross_at_grid(page,
                                    x + 1,
                                    y + 1,
                                    CrossSegment::BottomRight,
-                                   -offset,
-                                   +offset);
+                                   -offset - spacing,
+                                   +offset + spacing);
 
                 draw_cross_at_grid(page,
                                    x,
@@ -172,14 +173,14 @@ fs::path GeneratePdf(const Project& project)
                                    y + 1,
                                    CrossSegment::BottomLeft,
                                    +offset,
-                                   +offset);
+                                   +offset + spacing);
             }
         };
 
         const auto card_grid{ DistributeCardsToGrid(page_images, true, columns, rows) };
 
         {
-            static constexpr const char render_fmt[]{
+            static constexpr const char c_RenderFmt[]{
                 "Rendering page {}...\nImage number {} - {}"
             };
 
@@ -192,7 +193,7 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(render_fmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(c_RenderFmt, p + 1, i + 1, card->Image.get().string());
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
@@ -209,7 +210,7 @@ fs::path GeneratePdf(const Project& project)
 
         if (project.Data.BacksideEnabled)
         {
-            static constexpr const char render_fmt[]{
+            static constexpr const char c_RenderFmt[]{
                 "Rendering backside for page {}...\nImage number {} - {}"
             };
 
@@ -222,7 +223,7 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(render_fmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(c_RenderFmt, p + 1, i + 1, card->Image.get().string());
 
                         auto backside_card{ card.value() };
                         backside_card.Image = project.GetBacksideImage(card->Image);

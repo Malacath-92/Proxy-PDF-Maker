@@ -4,6 +4,7 @@
 #include <QPen>
 #include <QRect>
 #include <QSvgGenerator>
+#include <QDebug>
 
 #include <ppp/qt_util.hpp>
 
@@ -24,12 +25,13 @@ void DrawSvg(QPainter& painter, const QPainterPath& path)
 
 QPainterPath GenerateCardsPath(const Project& project)
 {
-    const auto svg_size{ project.Data.CardLayout * project.CardSizeWithBleed() / 1_mm };
+    const auto svg_size{ project.ComputeCardsSize() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
                              svg_size,
                              project.Data.CardLayout,
                              project.CardSize(),
                              project.Data.BleedEdge,
+                             project.Data.Spacing,
                              project.CardCornerRadius());
 }
 
@@ -38,14 +40,19 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::uvec2 grid,
                                Size card_size,
                                Length bleed_edge,
+                               Length spacing,
                                Length corner_radius)
 {
     const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
-    const auto card_size_with_bleed_pixels{ size / grid };
-    const auto pixel_ratio{ card_size_with_bleed_pixels / card_size_with_bleed };
+    const auto physical_canvas_size{
+        grid * card_size_with_bleed + (grid - 1) * spacing
+    };
+    const auto pixel_ratio{ size / physical_canvas_size };
+    const auto card_size_with_bleed_pixels{ card_size_with_bleed * pixel_ratio };
     const auto corner_radius_pixels{ corner_radius * pixel_ratio };
-    const auto offset_pixels{ bleed_edge * pixel_ratio };
-    const auto card_size_pixels{ card_size_with_bleed_pixels - 2 * offset_pixels };
+    const auto bleed_pixels{ bleed_edge * pixel_ratio };
+    const auto spacing_pixels{ spacing * pixel_ratio };
+    const auto card_size_pixels{ card_size_with_bleed_pixels - 2 * bleed_pixels };
 
     QPainterPath card_border;
     if (bleed_edge > 0_mm)
@@ -66,7 +73,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         {
             const dla::uvec2 idx{ x, y };
             const auto top_left_corner{
-                origin + idx * card_size_with_bleed_pixels + offset_pixels
+                origin + idx * (card_size_with_bleed_pixels + spacing_pixels) + bleed_pixels
             };
             const QRectF rect{
                 top_left_corner.x,

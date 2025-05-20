@@ -124,17 +124,13 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         {
             m_Project.Data.PageSize = t.toStdString();
 
-            const Size page_size{ m_Project.ComputePageSize() };
+            RefreshCardLayout();
 
-            const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
             const bool fit_size{ m_Project.Data.PageSize == Config::FitSize };
-            if (!fit_size)
-            {
-                const Size card_size_with_bleed{ m_Project.CardSizeWithBleed() };
-                m_Project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
-            }
+            const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
 
-            const Size cards_size{ m_Project.ComputeCardsSize() };
+            const auto page_size{ m_Project.ComputePageSize() };
+            const auto cards_size{ m_Project.ComputeCardsSize() };
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
 
@@ -185,10 +181,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             m_Project.Data.BasePdf = t.toStdString();
 
-            const Size page_size{ m_Project.ComputePageSize() };
-            const Size card_size_with_bleed{ m_Project.CardSizeWithBleed() };
-            m_Project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+            RefreshCardLayout();
 
+            const auto page_size{ m_Project.ComputePageSize() };
             const auto cards_size{ m_Project.ComputeCardsSize() };
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
@@ -261,10 +256,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            const Size page_size{ m_Project.ComputePageSize() };
-            const Size card_size_with_bleed{ m_Project.CardSizeWithBleed() };
-            m_Project.Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+            RefreshCardLayout();
 
+            const auto page_size{ m_Project.ComputePageSize() };
             const auto cards_size{ m_Project.ComputeCardsSize() };
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             const auto max_margins{ (page_size - cards_size) / base_unit };
@@ -322,6 +316,11 @@ void PrintOptionsWidget::NewProjectOpened()
 }
 
 void PrintOptionsWidget::BleedChanged()
+{
+    RefreshSizes();
+}
+
+void PrintOptionsWidget::SpacingChanged()
 {
     RefreshSizes();
 }
@@ -404,15 +403,30 @@ void PrintOptionsWidget::SetDefaults()
 
 void PrintOptionsWidget::RefreshSizes()
 {
+    RefreshCardLayout();
+
     m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
     m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
 
     const auto page_size{ m_Project.ComputePageSize() };
     const auto cards_size{ m_Project.ComputeCardsSize() };
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
     const auto max_margins{ page_size - cards_size };
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+
+    m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
     m_LeftMarginSpin->setValue(max_margins.x / base_unit / 2.0f);
+
+    m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
     m_TopMarginSpin->setValue(max_margins.y / base_unit / 2.0f);
+}
+
+void PrintOptionsWidget::RefreshCardLayout()
+{
+    if (m_Project.CacheCardLayout())
+    {
+        m_CardsWidth->setValue(m_Project.Data.CardLayout.x);
+        m_CardsHeight->setValue(m_Project.Data.CardLayout.y);
+    }
 }
 
 std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()

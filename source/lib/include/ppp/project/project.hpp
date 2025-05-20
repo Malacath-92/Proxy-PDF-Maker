@@ -53,6 +53,8 @@ class Project : public QObject
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
 
+    bool CacheCardLayout();
+
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
     Size ComputeMargins() const;
@@ -87,8 +89,9 @@ class Project : public QObject
         ImgDict Previews{};
         ImagePreview FallbackPreview{};
 
-        // Bleed edge options
+        // Card options
         Length BleedEdge{ 0_mm };
+        Length Spacing{ 0_mm };
 
         // Backside options
         bool BacksideEnabled{ false };

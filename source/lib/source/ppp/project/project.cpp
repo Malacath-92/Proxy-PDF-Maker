@@ -56,6 +56,7 @@ void Project::Load(const fs::path& json_path)
         }
 
         Data.BleedEdge.value = json["bleed_edge"];
+        Data.Spacing.value = json["spacing"];
 
         Data.BacksideEnabled = json["backside_enabled"];
         Data.BacksideDefault = json["backside_default"].get<std::string>();
@@ -78,8 +79,7 @@ void Project::Load(const fs::path& json_path)
         }
         else
         {
-            const Size card_size_with_bleed{ CardSizeWithBleed() };
-            Data.CardLayout = static_cast<dla::uvec2>(dla::floor(ComputePageSize() / card_size_with_bleed));
+            CacheCardLayout();
         }
 
         if (json.contains("custom_margins"))
@@ -140,6 +140,7 @@ void Project::Dump(const fs::path& json_path) const
         json["cards"] = cards;
 
         json["bleed_edge"] = Data.BleedEdge.value;
+        json["spacing"] = Data.Spacing.value;
 
         json["backside_enabled"] = Data.BacksideEnabled;
         json["backside_default"] = Data.BacksideDefault.string();
@@ -298,6 +299,37 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
     }
     return Data.BacksideDefault;
 }
+
+bool Project::CacheCardLayout()
+{
+    const bool fit_size{ Data.PageSize == Config::FitSize };
+    if (!fit_size)
+    {
+        const auto previous_layout{ Data.CardLayout };
+
+        const Size page_size{ ComputePageSize() };
+        const Size card_size_with_bleed{ CardSizeWithBleed() };
+        Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+
+        if (Data.Spacing > 0_mm)
+        {
+            const Size cards_size{ ComputeCardsSize() };
+            if (cards_size.x > page_size.x)
+            {
+                Data.CardLayout.x--;
+            }
+            if (cards_size.y > page_size.y)
+            {
+                Data.CardLayout.y--;
+            }
+        }
+
+        return previous_layout != Data.CardLayout;
+    }
+
+    return false;
+}
+
 Size Project::ComputePageSize() const
 {
     const bool fit_size{ Data.PageSize == Config::FitSize };
@@ -326,7 +358,7 @@ Size Project::ComputePageSize() const
 Size Project::ComputeCardsSize() const
 {
     const Size card_size_with_bleed{ CardSize() + 2 * Data.BleedEdge };
-    return Data.CardLayout * card_size_with_bleed;
+    return Data.CardLayout * card_size_with_bleed + (Data.CardLayout - 1) * Data.Spacing;
 }
 
 Size Project::ComputeMargins() const
