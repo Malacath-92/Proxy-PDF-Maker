@@ -12,6 +12,9 @@ void DrawSvg(QPainter& painter, const QPainterPath& path);
 QPainterPath GenerateCardsPath(const Project& project);
 QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::vec2 size,
+                               const Project& project);
+QPainterPath GenerateCardsPath(dla::vec2 origin,
+                               dla::vec2 size,
                                dla::uvec2 grid,
                                Size card_size,
                                Length bleed_edge,

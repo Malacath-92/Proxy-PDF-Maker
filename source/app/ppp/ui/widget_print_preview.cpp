@@ -27,8 +27,8 @@ class PageGrid : public QWidget
   public:
     struct Params
     {
-        bool IsBackside{ false };
-        int Spacing{ 0 };
+        bool m_IsBackside{ false };
+        int m_Spacing{ 0 };
     };
 
     PageGrid(const Project& project, const Grid& card_grid, Params params)
@@ -37,7 +37,7 @@ class PageGrid : public QWidget
         grid->setSpacing(0);
         grid->setContentsMargins(0, 0, 0, 0);
 
-        HasMissingPreviews = false;
+        m_HasMissingPreviews = false;
 
         const auto rows{ card_grid.front().size() };
         const auto columns{ card_grid.size() };
@@ -50,7 +50,7 @@ class PageGrid : public QWidget
                 {
                     const auto& [image_name, backside_short_edge]{ card.value() };
 
-                    const Image::Rotation rotation{ GetCardRotation(params.IsBackside, backside_short_edge) };
+                    const Image::Rotation rotation{ GetCardRotation(params.m_IsBackside, backside_short_edge) };
                     auto* image_widget{
                         new CardImage{
                             image_name,
@@ -71,10 +71,10 @@ class PageGrid : public QWidget
         // pad with dummy images
         for (uint32_t i = 0; i < rows; i++)
         {
-            const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(rows), params.IsBackside).pod() };
+            const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(rows), params.m_IsBackside).pod() };
             if (grid->itemAtPosition(x, y) == nullptr)
             {
-                const Image::Rotation rotation{ GetCardRotation(params.IsBackside, false) };
+                const Image::Rotation rotation{ GetCardRotation(params.m_IsBackside, false) };
                 auto* image_widget{
                     new CardImage{
                         CFG.FallbackName,
@@ -106,36 +106,37 @@ class PageGrid : public QWidget
 
         setLayout(grid);
 
-        CardsWidth = project.ComputeCardsSize().x;
-        Spacing = project.Data.Spacing;
+        m_CardsWidth = project.ComputeCardsSize().x;
+        m_Spacing = project.Data.Spacing;
     }
 
     bool DoesHaveMissingPreviews() const
     {
-        return HasMissingPreviews;
+        return m_HasMissingPreviews;
     }
 
     void SetOverlays(GuidesOverlay* guides, BordersOverlay* borders)
     {
-        Guides = guides;
-        Borders = borders;
+        m_Guides = guides;
+        m_Borders = borders;
     }
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
   private:
-    bool HasMissingPreviews{ false };
-    GuidesOverlay* Guides{ nullptr };
-    BordersOverlay* Borders{ nullptr };
+    bool m_HasMissingPreviews{ false };
+    GuidesOverlay* m_Guides{ nullptr };
+    BordersOverlay* m_Borders{ nullptr };
 
-    Length CardsWidth{};
-    Length Spacing{};
+    Length m_CardsWidth{};
+    Length m_Spacing{};
 };
 
 class GuidesOverlay : public QWidget
 {
   public:
     GuidesOverlay(const Project& project, const Grid& card_grid)
+        : m_Project{ project }
     {
         const auto rows{ card_grid.size() };
         const auto columns{ card_grid.front().size() };
@@ -146,27 +147,17 @@ class GuidesOverlay : public QWidget
             {
                 if (const auto card{ card_grid[y][x] })
                 {
-                    Cards.push_back({ x, y });
+                    m_Cards.push_back({ x, y });
                 }
             }
         }
-        BleedEdge = project.Data.BleedEdge;
-        Spacing = project.Data.Spacing;
-        GuidesOffset = project.Data.GuidesOffset;
 
-        CardSizeWithBleedEdge = project.CardSizeWithBleed();
-        CornerRadius = project.CardCornerRadius();
+        m_PenOne.setWidth(1);
+        m_PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
 
-        CrossGuides = project.Data.CrossGuides;
-
-        CardsSize = project.ComputeCardsSize();
-
-        PenOne.setWidth(1);
-        PenOne.setColor(QColor{ project.Data.GuidesColorA.r, project.Data.GuidesColorA.g, project.Data.GuidesColorA.b });
-
-        PenTwo.setDashPattern({ 2.0f, 4.0f });
-        PenTwo.setWidth(1);
-        PenTwo.setColor(QColor{ project.Data.GuidesColorB.r, project.Data.GuidesColorB.g, project.Data.GuidesColorB.b });
+        m_PenTwo.setDashPattern({ 2.0f, 4.0f });
+        m_PenTwo.setWidth(1);
+        m_PenTwo.setColor(QColor{ project.Data.GuidesColorB.r, project.Data.GuidesColorB.g, project.Data.GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -178,10 +169,10 @@ class GuidesOverlay : public QWidget
         QPainter painter{ this };
         painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
-        painter.setPen(PenOne);
-        painter.drawLines(Lines);
-        painter.setPen(PenTwo);
-        painter.drawLines(Lines);
+        painter.setPen(m_PenOne);
+        painter.drawLines(m_Lines);
+        painter.setPen(m_PenTwo);
+        painter.drawLines(m_Lines);
 
         painter.end();
     }
@@ -196,27 +187,27 @@ class GuidesOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        const auto pixel_ratio{ grid_size / CardsSize };
-        const auto card_size{ CardSizeWithBleedEdge * pixel_ratio };
-        const auto line_length{ CornerRadius * pixel_ratio * 0.5f };
-        const auto offset{ (BleedEdge - GuidesOffset) * pixel_ratio };
-        const auto spacing{ Spacing * pixel_ratio };
+        const auto pixel_ratio{ grid_size / m_Project.ComputeCardsSize() };
+        const auto card_size{ m_Project.CardSizeWithBleed() * pixel_ratio };
+        const auto line_length{ m_Project.CardCornerRadius() * pixel_ratio * 0.5f };
+        const auto offset{ (m_Project.Data.BleedEdge - m_Project.Data.GuidesOffset) * pixel_ratio };
+        const auto spacing{ m_Project.Data.Spacing * pixel_ratio };
 
-        Lines.clear();
-        for (const auto& idx : Cards)
+        m_Lines.clear();
+        for (const auto& idx : m_Cards)
         {
             const auto top_left_corner{ first_card_corner + idx * (card_size + spacing) };
 
             const auto draw_guide{
                 [this](QLineF line)
                 {
-                    if (CrossGuides)
+                    if (m_Project.Data.CrossGuides)
                     {
                         const auto from{ line.p1() };
                         const auto delta{ line.p2() - from };
                         line.setP1(from - delta);
                     }
-                    Lines.push_back(line);
+                    m_Lines.push_back(line);
                 }
             };
 
@@ -239,34 +230,21 @@ class GuidesOverlay : public QWidget
     }
 
   private:
-    std::vector<dla::uvec2> Cards;
+    const Project& m_Project;
 
-    Length BleedEdge;
-    Length Spacing;
-    Length GuidesOffset;
-    Size CardSizeWithBleedEdge;
-    Length CornerRadius;
+    std::vector<dla::uvec2> m_Cards;
 
-    bool CrossGuides;
-
-    Size CardsSize;
-
-    QPen PenOne;
-    QPen PenTwo;
-    QList<QLineF> Lines;
+    QPen m_PenOne;
+    QPen m_PenTwo;
+    QList<QLineF> m_Lines;
 };
 
 class BordersOverlay : public QWidget
 {
   public:
     BordersOverlay(const Project& project)
+        : m_Project{ project }
     {
-        BleedEdge = project.Data.BleedEdge;
-        Spacing = project.Data.Spacing;
-
-        CardSize = project.CardSize();
-        CornerRadius = project.CardCornerRadius();
-
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_PaintOnScreen);
@@ -275,15 +253,12 @@ class BordersOverlay : public QWidget
     virtual void paintEvent(QPaintEvent* /*event*/) override
     {
         QPainter painter{ this };
-        DrawSvg(painter, CardBorder);
+        DrawSvg(painter, m_CardBorder);
         painter.end();
     }
 
     void ResizeOverlay(PageGrid* grid)
     {
-        const uint32_t columns{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->columnCount()) };
-        const uint32_t rows{ static_cast<uint32_t>(static_cast<QGridLayout*>(grid->layout())->rowCount()) };
-
         const dla::vec2 first_card_corner{
             static_cast<float>(grid->pos().x()),
             static_cast<float>(grid->pos().y()),
@@ -292,33 +267,30 @@ class BordersOverlay : public QWidget
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
         };
-        CardBorder = GenerateCardsPath(first_card_corner, grid_size, { columns, rows }, CardSize, BleedEdge, Spacing, CornerRadius);
+        m_CardBorder = GenerateCardsPath(first_card_corner, grid_size, m_Project);
     }
 
   private:
-    Length BleedEdge;
-    Length Spacing;
-    Size CardSize;
-    Length CornerRadius;
+    const Project& m_Project;
 
-    QPainterPath CardBorder;
+    QPainterPath m_CardBorder;
 };
 
 void PageGrid::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 
-    const auto pixel_ratio{ static_cast<float>(event->size().width()) / CardsWidth };
-    layout()->setSpacing(static_cast<int>(pixel_ratio * Spacing));
+    const auto pixel_ratio{ static_cast<float>(event->size().width()) / m_CardsWidth };
+    layout()->setSpacing(static_cast<int>(pixel_ratio * m_Spacing));
 
-    if (Guides != nullptr)
+    if (m_Guides != nullptr)
     {
-        Guides->ResizeOverlay(this);
+        m_Guides->ResizeOverlay(this);
     }
 
-    if (Borders != nullptr)
+    if (m_Borders != nullptr)
     {
-        Borders->ResizeOverlay(this);
+        m_Borders->ResizeOverlay(this);
     }
 }
 
@@ -327,17 +299,17 @@ class PrintPreview::PagePreview : public QWidget
   public:
     struct Params
     {
-        PageGrid::Params GridParams{};
-        Size PageSize;
-        uint32_t Columns{ 3 };
-        uint32_t Rows{ 3 };
+        PageGrid::Params m_GridParams{};
+        Size m_PageSize;
+        uint32_t m_Columns{ 3 };
+        uint32_t m_Rows{ 3 };
     };
     PagePreview(const Project& project, const Page& page, Params params)
     {
-        const bool left_to_right{ !params.GridParams.IsBackside };
-        const ::Grid card_grid{ DistributeCardsToGrid(page, left_to_right, params.Columns, params.Rows) };
+        const bool left_to_right{ !params.m_GridParams.m_IsBackside };
+        const ::Grid card_grid{ DistributeCardsToGrid(page, left_to_right, params.m_Columns, params.m_Rows) };
 
-        auto* grid{ new PageGrid{ project, card_grid, params.GridParams } };
+        auto* grid{ new PageGrid{ project, card_grid, params.m_GridParams } };
 
         auto* layout{ new QVBoxLayout };
         layout->setSpacing(0);
@@ -348,46 +320,46 @@ class PrintPreview::PagePreview : public QWidget
         setLayout(layout);
         setStyleSheet("background-color: white;");
 
-        if (project.Data.EnableGuides && (!params.GridParams.IsBackside || project.Data.BacksideEnableGuides))
+        if (project.Data.EnableGuides && (!params.m_GridParams.m_IsBackside || project.Data.BacksideEnableGuides))
         {
-            Guides = new GuidesOverlay{ project, card_grid };
-            Guides->setParent(this);
+            m_Guides = new GuidesOverlay{ project, card_grid };
+            m_Guides->setParent(this);
         }
 
-        if (project.Data.ExportExactGuides && !params.GridParams.IsBackside)
+        if (project.Data.ExportExactGuides && !params.m_GridParams.m_IsBackside)
         {
-            Borders = new BordersOverlay{ project };
-            Borders->setParent(this);
+            m_Borders = new BordersOverlay{ project };
+            m_Borders->setParent(this);
         }
 
-        grid->SetOverlays(Guides, Borders);
+        grid->SetOverlays(m_Guides, m_Borders);
 
-        const auto& [page_width, page_height]{ params.PageSize.pod() };
-        PageRatio = page_width / page_height;
-        PageWidth = page_width;
-        PageHeight = page_height;
+        const auto& [page_width, page_height]{ params.m_PageSize.pod() };
+        m_PageRatio = page_width / page_height;
+        m_PageWidth = page_width;
+        m_PageHeight = page_height;
 
         const auto card_size_with_bleed{ project.CardSizeWithBleed() };
         const auto [card_width, card_height]{ card_size_with_bleed.pod() };
-        CardWidth = card_width;
-        CardHeight = card_height;
+        m_CardWidth = card_width;
+        m_CardHeight = card_height;
 
         const auto cards_size{ project.ComputeCardsSize() };
-        PaddingWidth = (page_width - cards_size.x) / 2.0f;
-        PaddingHeight = (page_height - cards_size.y) / 2.0f;
+        m_PaddingWidth = (page_width - cards_size.x) / 2.0f;
+        m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
-        LeftMargins = PaddingWidth - margins.x;
-        TopMargins = PaddingHeight - margins.y;
+        m_LeftMargins = m_PaddingWidth - margins.x;
+        m_TopMargins = m_PaddingHeight - margins.y;
 
-        LeftMargins += params.GridParams.IsBackside ? project.Data.BacksideOffset : 0_mm;
+        m_LeftMargins += params.m_GridParams.m_IsBackside ? project.Data.BacksideOffset : 0_mm;
 
-        Grid = grid;
+        m_Grid = grid;
     }
 
     bool DoesHaveMissingPreviews() const
     {
-        return Grid->DoesHaveMissingPreviews();
+        return m_Grid->DoesHaveMissingPreviews();
     }
 
     virtual bool hasHeightForWidth() const override
@@ -397,7 +369,7 @@ class PrintPreview::PagePreview : public QWidget
 
     virtual int heightForWidth(int width) const override
     {
-        return static_cast<int>(static_cast<float>(width) / PageRatio);
+        return static_cast<int>(static_cast<float>(width) / m_PageRatio);
     }
 
     virtual void resizeEvent(QResizeEvent* event) override
@@ -408,29 +380,29 @@ class PrintPreview::PagePreview : public QWidget
         const auto height{ heightForWidth(width) };
         setFixedHeight(height);
 
-        if (Guides != nullptr)
+        if (m_Guides != nullptr)
         {
-            Guides->setFixedWidth(width);
-            Guides->setFixedHeight(height);
+            m_Guides->setFixedWidth(width);
+            m_Guides->setFixedHeight(height);
         }
 
-        if (Borders != nullptr)
+        if (m_Borders != nullptr)
         {
-            Borders->setFixedWidth(width);
-            Borders->setFixedHeight(height);
+            m_Borders->setFixedWidth(width);
+            m_Borders->setFixedHeight(height);
         }
 
         const dla::ivec2 size{ width, height };
-        const Size page_size{ PageWidth, PageHeight };
+        const Size page_size{ m_PageWidth, m_PageHeight };
         const auto pixel_ratio{ size / page_size };
 
-        const auto padding_width_left{ PaddingWidth - LeftMargins };
-        const auto padding_width_right{ PaddingWidth + LeftMargins };
+        const auto padding_width_left{ m_PaddingWidth - m_LeftMargins };
+        const auto padding_width_right{ m_PaddingWidth + m_LeftMargins };
         const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * pixel_ratio.x) };
         const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * pixel_ratio.x) };
 
-        const auto padding_height_top{ PaddingHeight - TopMargins };
-        const auto padding_height_bottom{ PaddingHeight + TopMargins };
+        const auto padding_height_top{ m_PaddingHeight - m_TopMargins };
+        const auto padding_height_bottom{ m_PaddingHeight + m_TopMargins };
         const auto padding_height_top_pixels{ static_cast<int>(padding_height_top * pixel_ratio.y) };
         const auto padding_height_bottom_pixels{ static_cast<int>(padding_height_bottom * pixel_ratio.y) };
 
@@ -442,21 +414,21 @@ class PrintPreview::PagePreview : public QWidget
     }
 
   private:
-    float PageRatio;
-    Length PageWidth;
-    Length PageHeight;
+    float m_PageRatio;
+    Length m_PageWidth;
+    Length m_PageHeight;
 
-    Length CardWidth;
-    Length CardHeight;
+    Length m_CardWidth;
+    Length m_CardHeight;
 
-    Length PaddingWidth;
-    Length PaddingHeight;
-    Length LeftMargins;
-    Length TopMargins;
+    Length m_PaddingWidth;
+    Length m_PaddingHeight;
+    Length m_LeftMargins;
+    Length m_TopMargins;
 
-    PageGrid* Grid;
-    GuidesOverlay* Guides{ nullptr };
-    BordersOverlay* Borders{ nullptr };
+    PageGrid* m_Grid;
+    GuidesOverlay* m_Guides{ nullptr };
+    BordersOverlay* m_Borders{ nullptr };
 };
 
 PrintPreview::PrintPreview(const Project& project)

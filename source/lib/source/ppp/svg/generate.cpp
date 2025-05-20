@@ -27,6 +27,15 @@ QPainterPath GenerateCardsPath(const Project& project)
     const auto svg_size{ project.ComputeCardsSize() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
                              svg_size,
+                             project);
+}
+
+QPainterPath GenerateCardsPath(dla::vec2 origin,
+                               dla::vec2 size,
+                               const Project& project)
+{
+    return GenerateCardsPath(origin,
+                             size,
                              project.Data.CardLayout,
                              project.CardSize(),
                              project.Data.BleedEdge,
