@@ -210,19 +210,21 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         [this](Qt::CheckState s)
         {
             const bool custom_margins{ s == Qt::CheckState::Checked };
+
+            const auto base_unit{ CFG.BaseUnit.m_Unit };
+
             if (custom_margins)
             {
-                const auto base_unit{ CFG.BaseUnit.m_Unit };
                 const auto default_margins{ m_Project.ComputeMargins() };
-
                 m_Project.Data.CustomMargins.emplace(default_margins);
-                m_LeftMarginSpin->setValue(default_margins.x / base_unit);
-                m_TopMarginSpin->setValue(default_margins.y / base_unit);
             }
             else
             {
                 m_Project.Data.CustomMargins.reset();
-                MarginsChanged();
+
+                const auto default_margins{ m_Project.ComputeMargins() };
+                m_LeftMarginSpin->setValue(default_margins.x / base_unit);
+                m_TopMarginSpin->setValue(default_margins.y / base_unit);
             }
 
             m_LeftMarginSpin->setEnabled(custom_margins);
@@ -435,10 +437,20 @@ void PrintOptionsWidget::SetDefaults()
 
     const bool custom_margins{ m_Project.Data.CustomMargins.has_value() };
     m_CustomMargins->setChecked(custom_margins);
-    m_LeftMarginSpin->setEnabled(custom_margins);
-    m_TopMarginSpin->setEnabled(custom_margins);
+ 
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto page_size{ m_Project.ComputePageSize() };
+    const auto cards_size{ m_Project.ComputeCardsSize() };
+    const auto max_margins{ page_size - cards_size };
+    const auto margins{ m_Project.ComputeMargins() };
 
-    RefreshSizes();
+    m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
+    m_LeftMarginSpin->setValue(margins.x / base_unit / 2.0f);
+    m_LeftMarginSpin->setEnabled(custom_margins);
+
+    m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
+    m_TopMarginSpin->setValue(margins.y / base_unit / 2.0f);
+    m_TopMarginSpin->setEnabled(custom_margins);
 }
 
 void PrintOptionsWidget::RefreshSizes()
