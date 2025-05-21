@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2025-??-??
+
+### Added
+- The program now logs work being done to a file
+- You can now control guides thickness and length with an option
+- The units in which measurements are displayed can now be changed via the global units option
+- Guides can be set to full crosses instead of cross segments
+- Cards can be separated in the final output via a spacing option
+
+### Changed
+- The different options sections are now collapsible
+- To use custom margins you now have to tick a box first
+- The option to enable guides on backsides is now on the guides section  
+- The corner weight option was removed in favor of a guides offset option
+
+### Fixed
+- Custom margins now correctly offset backsides in the opposite direction
+- The print preview will now respect the extended guides option
+- Uncrop option will no longer override source images when settings change
+
 ## [0.9.4] - 2025-08-05
 
 ### Changed
