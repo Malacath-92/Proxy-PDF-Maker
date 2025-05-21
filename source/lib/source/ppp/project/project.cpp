@@ -363,8 +363,7 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeCardsSize() const
 {
-    const Size card_size_with_bleed{ CardSize() + 2 * Data.BleedEdge };
-    return Data.CardLayout * card_size_with_bleed + (Data.CardLayout - 1) * Data.Spacing;
+    return Data.ComputeCardsSize(CFG);
 }
 
 Size Project::ComputeMargins() const
@@ -441,7 +440,7 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
 Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
     const Size card_size_with_bleed{ CardSize(config) + 2 * BleedEdge };
-    return CardLayout * card_size_with_bleed;
+    return CardLayout * card_size_with_bleed + (CardLayout - 1) * Spacing;
 }
 
 Size Project::ProjectData::ComputeMargins(const Config& config) const
