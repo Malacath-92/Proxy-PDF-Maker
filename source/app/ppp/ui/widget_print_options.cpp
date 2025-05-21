@@ -21,7 +21,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 {
     setObjectName("Print Options");
 
-    const auto initial_base_unit{ CFG.BaseUnit.m_Unit };
     const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
     const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
@@ -29,8 +28,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     const auto initial_page_size{ project.ComputePageSize() };
     const auto initial_cards_size{ project.ComputeCardsSize() };
-    const auto initial_max_margins{ (initial_page_size - initial_cards_size) / initial_base_unit };
-    const auto initial_margins{ project.ComputeMargins() / initial_base_unit };
 
     using namespace std::string_view_literals;
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.Data.FileName.string() } };
@@ -65,27 +62,21 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
     m_LeftMarginSpin->setSuffix(initial_base_unit_name);
-    m_LeftMarginSpin->setRange(0, initial_max_margins.x);
-    m_LeftMarginSpin->setValue(initial_margins.x);
 
     auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
     m_TopMarginSpin = top_margin->GetWidget();
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
     m_TopMarginSpin->setSuffix(initial_base_unit_name);
-    m_TopMarginSpin->setRange(0, initial_max_margins.y);
-    m_TopMarginSpin->setValue(initial_margins.y);
 
     m_CardsWidth = new QDoubleSpinBox;
     m_CardsWidth->setDecimals(0);
     m_CardsWidth->setRange(1, 10);
     m_CardsWidth->setSingleStep(1);
-    m_CardsWidth->setValue(project.Data.CardLayout.x);
     m_CardsHeight = new QDoubleSpinBox;
     m_CardsHeight->setDecimals(0);
     m_CardsHeight->setRange(1, 10);
     m_CardsHeight->setSingleStep(1);
-    m_CardsHeight->setValue(project.Data.CardLayout.y);
     auto* cards_layout_layout{ new QHBoxLayout };
     cards_layout_layout->addWidget(m_CardsWidth);
     cards_layout_layout->addWidget(m_CardsHeight);
@@ -445,11 +436,11 @@ void PrintOptionsWidget::SetDefaults()
     const auto margins{ m_Project.ComputeMargins() };
 
     m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
-    m_LeftMarginSpin->setValue(margins.x / base_unit / 2.0f);
+    m_LeftMarginSpin->setValue(margins.x / base_unit);
     m_LeftMarginSpin->setEnabled(custom_margins);
 
     m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
-    m_TopMarginSpin->setValue(margins.y / base_unit / 2.0f);
+    m_TopMarginSpin->setValue(margins.y / base_unit);
     m_TopMarginSpin->setEnabled(custom_margins);
 }
 
