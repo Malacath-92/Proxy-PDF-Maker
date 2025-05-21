@@ -54,6 +54,7 @@ class PrintOptionsWidget : public QWidget
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };
     ComboBoxWithLabel* m_BasePdf{ nullptr };
+    QCheckBox* m_CustomMargins{ nullptr };
     QDoubleSpinBox* m_LeftMarginSpin{ nullptr };
     QDoubleSpinBox* m_TopMarginSpin{ nullptr };
 };

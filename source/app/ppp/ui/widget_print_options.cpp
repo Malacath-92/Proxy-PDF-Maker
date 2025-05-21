@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QCheckBox>
 #include <QDirIterator>
 #include <QHBoxLayout>
 
@@ -57,6 +58,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
     m_CardsInfo = cards_info->GetWidget();
 
+    m_CustomMargins = new QCheckBox{ "&Custom Margins" };
+
     auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
     m_LeftMarginSpin = left_margin->GetWidget();
     m_LeftMarginSpin->setDecimals(2);
@@ -99,6 +102,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     orientation->setVisible(!initial_fit_size && !initial_infer_size);
     m_Orientation = orientation->GetWidget();
 
+    SetDefaults();
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);
     layout->addWidget(card_size);
@@ -106,6 +111,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(m_BasePdf);
     layout->addWidget(paper_info);
     layout->addWidget(cards_info);
+    layout->addWidget(m_CustomMargins);
     layout->addWidget(left_margin);
     layout->addWidget(top_margin);
     layout->addWidget(cards_layout);
@@ -200,17 +206,27 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
-    auto change_top_margin{
-        [=, this](double v)
+    auto switch_custom_margins{
+        [this](Qt::CheckState s)
         {
-            if (!m_Project.Data.CustomMargins.has_value())
+            const bool custom_margins{ s == Qt::CheckState::Checked };
+            if (custom_margins)
             {
-                m_Project.Data.CustomMargins.emplace(m_Project.ComputeMargins());
+                const auto base_unit{ CFG.BaseUnit.m_Unit };
+                const auto default_margins{ m_Project.ComputeMargins() };
+
+                m_Project.Data.CustomMargins.emplace(default_margins);
+                m_LeftMarginSpin->setValue(default_margins.x / base_unit);
+                m_TopMarginSpin->setValue(default_margins.y / base_unit);
+            }
+            else
+            {
+                m_Project.Data.CustomMargins.reset();
+                MarginsChanged();
             }
 
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
-            m_Project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
-            MarginsChanged();
+            m_LeftMarginSpin->setEnabled(custom_margins);
+            m_TopMarginSpin->setEnabled(custom_margins);
         }
     };
 
@@ -219,10 +235,25 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         {
             if (!m_Project.Data.CustomMargins.has_value())
             {
-                m_Project.Data.CustomMargins.emplace(m_Project.ComputeMargins());
+                return;
             }
+
             const auto base_unit{ CFG.BaseUnit.m_Unit };
             m_Project.Data.CustomMargins.value().x = static_cast<float>(v) * base_unit;
+            MarginsChanged();
+        }
+    };
+
+    auto change_top_margin{
+        [=, this](double v)
+        {
+            if (!m_Project.Data.CustomMargins.has_value())
+            {
+                return;
+            }
+
+            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            m_Project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
             MarginsChanged();
         }
     };
@@ -288,6 +319,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_base_pdf);
+    QObject::connect(m_CustomMargins,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     switch_custom_margins);
     QObject::connect(m_LeftMarginSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
@@ -397,6 +432,11 @@ void PrintOptionsWidget::SetDefaults()
     m_BasePdf->GetWidget()->setCurrentText(ToQString(m_Project.Data.BasePdf));
     m_BasePdf->setEnabled(infer_size);
     m_BasePdf->setVisible(infer_size);
+
+    const bool custom_margins{ m_Project.Data.CustomMargins.has_value() };
+    m_CustomMargins->setChecked(custom_margins);
+    m_LeftMarginSpin->setEnabled(custom_margins);
+    m_TopMarginSpin->setEnabled(custom_margins);
 
     RefreshSizes();
 }
