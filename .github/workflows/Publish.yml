@@ -109,7 +109,6 @@ jobs:
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{matrix.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
-
       - name: Configure (Ubuntu)
         if: ${{ matrix.os == 'Ubuntu' }}
         run: |
@@ -137,6 +136,12 @@ jobs:
       - name: Get Release Notes
         id: extract_release_notes
         uses: ffurrer2/extract-release-notes@v2.2.0
+
+      - name: Build README.pdf
+        uses: baileyjm02/markdown-to-pdf@v1
+        with:
+          input_path: README.md
+          output_dir: publish
 
       - name: Zip Release
         run: |
