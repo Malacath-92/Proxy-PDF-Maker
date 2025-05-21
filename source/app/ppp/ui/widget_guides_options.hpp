@@ -27,9 +27,11 @@ class GuidesOptionsWidget : public QWidget
     void GuidesColorChanged();
     void GuidesOffsetChanged();
     void GuidesThicknessChanged();
+    void GuidesLengthChanged();
 
   public slots:
     void NewProjectOpened();
+    void CardSizeChanged();
     void BleedChanged();
     void BacksideEnabledChanged();
     void BaseUnitChanged();
@@ -50,4 +52,5 @@ class GuidesOptionsWidget : public QWidget
     WidgetWithLabel* m_GuidesColorB{ nullptr };
     QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
     QDoubleSpinBox* m_GuidesThicknessSpin{ nullptr };
+    QDoubleSpinBox* m_GuidesLengthSpin{ nullptr };
 };

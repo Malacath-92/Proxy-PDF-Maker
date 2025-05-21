@@ -109,6 +109,7 @@ void Project::Load(const fs::path& json_path)
         Data.GuidesColorB.b = json["guides_color_b"][2];
         Data.GuidesOffset.value = json["guides_offset"];
         Data.GuidesThickness.value = json["guides_thickness"];
+        Data.GuidesLength.value = json["guides_length"];
     }
     catch (const std::exception& e)
     {
@@ -174,6 +175,7 @@ void Project::Dump(const fs::path& json_path) const
         json["guides_color_b"] = std::array{ Data.GuidesColorB.r, Data.GuidesColorB.g, Data.GuidesColorB.b };
         json["guides_offset"] = Data.GuidesOffset.value;
         json["guides_thickness"] = Data.GuidesThickness.value;
+        json["guides_length"] = Data.GuidesLength.value;
 
         file << json;
         file.close();

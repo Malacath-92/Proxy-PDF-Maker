@@ -53,6 +53,13 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesThicknessSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
 
+    auto* guides_length{ new DoubleSpinBoxWithLabel{ "Guides &Length" } };
+    m_GuidesLengthSpin = guides_length->GetWidget();
+    m_GuidesLengthSpin->setDecimals(2);
+    m_GuidesLengthSpin->setSingleStep(0.1);
+    m_GuidesLengthSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
+
     SetDefaults();
 
     auto* layout{ new QVBoxLayout };
@@ -65,6 +72,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_GuidesColorB);
     layout->addWidget(guides_offset);
     layout->addWidget(guides_thickness);
+    layout->addWidget(guides_length);
     setLayout(layout);
 
     auto change_export_exact_guides{
@@ -178,14 +186,17 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         [this, &project](double v)
         {
             const auto base_unit{ CFG.BaseUnit.m_Unit };
-            const auto new_guides_thickness{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.Data.GuidesThickness - new_guides_thickness) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.Data.GuidesThickness = new_guides_thickness;
+            project.Data.GuidesThickness = base_unit * static_cast<float>(v);
             GuidesThicknessChanged();
+        }
+    };
+
+    auto change_guides_length{
+        [this, &project](double v)
+        {
+            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            project.Data.GuidesLength = base_unit * static_cast<float>(v);
+            GuidesLengthChanged();
         }
     };
 
@@ -225,11 +236,24 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_guides_thickness);
+    QObject::connect(m_GuidesLengthSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_guides_length);
 }
 
 void GuidesOptionsWidget::NewProjectOpened()
 {
     SetDefaults();
+}
+
+void GuidesOptionsWidget::CardSizeChanged()
+{
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto card_size{ m_Project.CardSize() };
+
+    m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
+    m_GuidesLengthSpin->setValue(m_Project.CardCornerRadius() / base_unit / 2.0f);
 }
 
 void GuidesOptionsWidget::BleedChanged()
@@ -247,6 +271,7 @@ void GuidesOptionsWidget::BaseUnitChanged()
 {
     const auto base_unit{ CFG.BaseUnit.m_Unit };
     const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
+    const auto card_size{ m_Project.CardSize() };
 
     m_GuidesOffsetSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
     m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
@@ -255,6 +280,10 @@ void GuidesOptionsWidget::BaseUnitChanged()
     m_GuidesThicknessSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.Data.GuidesThickness / base_unit);
+
+    m_GuidesLengthSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
+    m_GuidesLengthSpin->setValue(m_Project.CardCornerRadius() / base_unit / 2.0f);
 }
 
 void GuidesOptionsWidget::SetDefaults()
@@ -280,10 +309,16 @@ void GuidesOptionsWidget::SetDefaults()
     m_GuidesColorB->setEnabled(m_Project.Data.EnableGuides);
 
     const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto card_size{ m_Project.CardSize() };
+
     m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
     m_GuidesOffsetSpin->setValue(m_Project.Data.GuidesOffset / base_unit);
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.Data.GuidesThickness / base_unit);
+
+    m_GuidesLengthSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
+    m_GuidesLengthSpin->setValue(m_Project.CardCornerRadius() / base_unit / 2.0f);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)

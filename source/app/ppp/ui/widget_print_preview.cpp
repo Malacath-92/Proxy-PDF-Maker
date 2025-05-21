@@ -189,7 +189,7 @@ class GuidesOverlay : public QWidget
         };
         const auto pixel_ratio{ grid_size / m_Project.ComputeCardsSize() };
         const auto card_size{ m_Project.CardSizeWithBleed() * pixel_ratio };
-        const auto line_length{ m_Project.CardCornerRadius() * pixel_ratio * 0.5f };
+        const auto line_length{ m_Project.Data.GuidesLength * pixel_ratio };
         const auto offset{ (m_Project.Data.BleedEdge - m_Project.Data.GuidesOffset) * pixel_ratio };
         const auto spacing{ m_Project.Data.Spacing * pixel_ratio };
 
