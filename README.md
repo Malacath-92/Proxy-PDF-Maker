@@ -27,7 +27,7 @@ The left half of the window contains a grid of all cards you placed in the `imag
 On the top-left you can switch over to the `Preview`, which shows you a preview of the printed page. It should update automatically when you change printing settings on the right.
 
 ## Options
-The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here.
+The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that most options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
 
 ### Card Size
 The options for this are defined in config.ini, for example you may define this option:
@@ -70,25 +70,41 @@ The `Base Pdf` option is only available with the `PoDoFo` render backend. It wil
 ### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
 
+#### Guides Options
+
 ### Export Exact Guides
 Enables exporting an `.svg` file next to the exported `.pdf` which contains exact guides of the cards, including rounded corners. These can for example be imported into software that operates automatic cutting machines (e.g. Silhouette Studio).
 
-### Enable Guides
+#### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
 
 #### Extended Guides
 Extends the cutting guides for the cards on the edges of the layout to the very edge of the page, will require a tiny bit more ink to print but makes cutting much easier.
 
+#### Cross Guides
+This determines whether the guides are cross-shaped or L-shaped. If L-shaped they will "embrace" the card to make it easy to see which side of the guide is the card and reduce overlap of guides.
+
 #### Guides Color A/B:
 Guides are dashed lines made from these two colors. By default these are black and light gray. Choose colors that fit best for the cards you are printing.
 
-### Bleed Edge
+#### Guides Offset
+This will determine where the guides will be placed. At 0mm the guides will align exactly with the card edges, meaning the center of the guide will align with the card edge. If you want to avoid the potential error of having the guides be too long and thus showing after rounding off the corners, or if you plan to print (near-)rectangular cards, then it is advised to set this option to half the guides thickness.
+
+#### Guides Thickness
+This determines how thick the guides are, it defaults to 1 point, which is equivalent to 1/72 inches.
+
+#### Guides Length
+This determines the length of the guides, with cross-guides this is equivalent to half the size of the cross. It defaults to half the cards corner radius, if made too long you may risk that the guides intrude on the actual cards print are, unless you offset the guides to account for this.
+
+### Card Options
+
+#### Bleed Edge
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
-### Corner Weight
-This option determines where the cutting guides will be when the bleed edge is bigger than zero. If the slider is all the way to the right the cutting guides will be exactly at the card corners, if it is all the way on the left it is in the corner of the printed image of each card. Open the preview while changing this setting to get a good idea of it.
+#### Card Spacing
+With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste.
 
-### Enable Backside
+#### Enable Backside
 Adds a backside to each image, which means when printing each other page will automatically be filled with the corresponding backsides for each image. This allows for double-sided cards, different card backs, etc.
 
 The default backside is `__back.png`, if that file is not available a question mark will be shown instead. To change the default just click on the `Default` button and browse to the image you want.
@@ -98,29 +114,31 @@ To change the backside for an individual card, click on the backside for that ca
 #### Offset
 In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Offset` field.
 
-### Enable Oversized Option
-Enables option to mark cards individually as oversized. Oversized and regular sized cards will be printed on the same sheet given space. Check the preview to verify printing.
+### Global Config
 
-### Display Columns
+#### Units
+This determines what units all measurements are displayed in. The option `points` refers to the unit used in typography and is likely irrelevant for most users.
+
+#### Display Columns
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
 
-### Rendering Backend
+#### Rendering Backend
 Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files. `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software.
 
-### Allow Precropped
+#### Allow Precropped
 In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/cropped` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
 
-### Color Cube
+#### Color Cube
 Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.CUBE` files with an arbitrary resolution. Higher resolutions will not slow down application of the cube maps, trilinear interpolation is used irrespective of resolution. Ships with the following color cubes:
 - Foils Vibrance: When printing onto holographic paper/sticker/cardstock use this color cube to get a more vibrant looking result.
 
-### Preview Width
+#### Preview Width
 Determines the resolution of previews in the card grid and the page preview. Smaller numbers result in faster cropping but worse previews.
 
-### Default Page Size
+#### Default Page Size
 Dropdown to choose the default page size when creating a new project. Page sizes can be configured in config.ini, for formatting see the [Dimension Formatting](#dimension-formatting) section.
 
-### Theme
+#### Theme
 Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
 - Default (OS specific)
 - Fusion
@@ -130,7 +148,7 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 - Combinear
 
 ## Actions
-At the top of the options you can see an `Actions` section, which are all buttons do perform various actions.
+At the top of the options you can see an untitled section, which are all buttons do perform various actions.
 
 ### Render Document
 When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
