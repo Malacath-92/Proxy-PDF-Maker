@@ -283,7 +283,7 @@ void GuidesOptionsWidget::BaseUnitChanged()
 
     m_GuidesLengthSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
-    m_GuidesLengthSpin->setValue(m_Project.CardCornerRadius() / base_unit / 2.0f);
+    m_GuidesLengthSpin->setValue(m_Project.Data.GuidesLength / base_unit);
 }
 
 void GuidesOptionsWidget::SetDefaults()
@@ -318,7 +318,7 @@ void GuidesOptionsWidget::SetDefaults()
 
     m_GuidesLengthSpin->setSuffix(ToQString(CFG.BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
-    m_GuidesLengthSpin->setValue(m_Project.CardCornerRadius() / base_unit / 2.0f);
+    m_GuidesLengthSpin->setValue(m_Project.Data.GuidesLength / base_unit);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)
