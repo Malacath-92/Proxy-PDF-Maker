@@ -59,8 +59,6 @@ fs::path GeneratePdf(const Project& project)
     const auto offset{ bleed - project.Data.GuidesOffset };
     const auto spacing{ project.Data.Spacing };
 
-    const auto corner_radius{ project.CardCornerRadius() };
-
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
     auto pdf{ CreatePdfDocument(CFG.Backend, project) };
