@@ -93,6 +93,11 @@ void ImageDataBase::Write(const fs::path& path)
     }
 }
 
+bool ImageDataBase::FindEntry(const fs::path& destination) const
+{
+    return DataBase.contains(destination);
+}
+
 QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path& source, ImageParameters params) const
 {
     if (!fs::exists(source))

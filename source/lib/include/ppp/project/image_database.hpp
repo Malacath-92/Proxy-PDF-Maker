@@ -25,6 +25,10 @@ class ImageDataBase
     static ImageDataBase Read(const fs::path& path);
     void Write(const fs::path& path);
 
+    // Checks if the given file is part of the database at all, indicating that
+    // we previously touched this file
+    bool FindEntry(const fs::path& destination) const;
+
     // Tests if the mapping exists in the database and returns:
     //  - an empty hash if matches
     //  - the source hash if it mismatches

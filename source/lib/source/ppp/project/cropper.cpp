@@ -482,46 +482,51 @@ bool Cropper::DoCropWork(T* signaller)
 
             if (enable_uncrop && fs::exists(crop_file))
             {
-                QByteArray crop_file_hash{
-                    [&, this]()
-                    {
-                        std::shared_lock image_db_lock{ ImageDBMutex };
-                        return ImageDB.TestEntry(input_file, crop_file, image_params);
-                    }()
-                };
-
-                // non-empty hash indicates that the source has changed
-                if (!crop_file_hash.isEmpty())
+                // Only uncrop if there is no input-file or the input-file has
+                // previously been written by us
+                if (!fs::exists(input_file) || ImageDB.FindEntry(input_file))
                 {
-                    const auto handle_ignore{
-                        [&]
+                    QByteArray crop_file_hash{
+                        [&, this]()
                         {
-                            if (should_ignore(crop_file))
-                            {
-                                // we just wrote to this file, ignore the change and write to DB
-                                discard_ignore_notifications.push_back(crop_file);
-
-                                std::unique_lock image_db_lock{ ImageDBMutex };
-                                ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
-                                return true;
-                            }
-                            else
-                            {
-                                // we will now write to this file, we expect to get a notification on its change that we should ignore
-                                new_ignore_notifications.push_back(crop_file);
-                                return false;
-                            }
-                        }
+                            std::shared_lock image_db_lock{ ImageDBMutex };
+                            return ImageDB.TestEntry(input_file, crop_file, image_params);
+                        }()
                     };
 
-                    if (!handle_ignore())
+                    // non-empty hash indicates that the source has changed
+                    if (!crop_file_hash.isEmpty())
                     {
-                        const Image image{ Image::Read(crop_file) };
-                        const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop) };
-                        uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
+                        const auto handle_ignore{
+                            [&]
+                            {
+                                if (should_ignore(crop_file))
+                                {
+                                    // we just wrote to this file, ignore the change and write to DB
+                                    discard_ignore_notifications.push_back(crop_file);
 
-                        std::unique_lock image_db_lock{ ImageDBMutex };
-                        ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                                    std::unique_lock image_db_lock{ ImageDBMutex };
+                                    ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                                    return true;
+                                }
+                                else
+                                {
+                                    // we will now write to this file, we expect to get a notification on its change that we should ignore
+                                    new_ignore_notifications.push_back(crop_file);
+                                    return false;
+                                }
+                            }
+                        };
+
+                        if (!handle_ignore())
+                        {
+                            const Image image{ Image::Read(crop_file) };
+                            const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop) };
+                            uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
+
+                            std::unique_lock image_db_lock{ ImageDBMutex };
+                            ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
+                        }
                     }
                 }
             }
