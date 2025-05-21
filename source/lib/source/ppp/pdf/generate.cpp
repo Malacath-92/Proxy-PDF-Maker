@@ -50,6 +50,9 @@ fs::path GeneratePdf(const Project& project)
     const auto start_x{ margins.x };
     const auto start_y{ page_height - margins.y };
 
+    const auto backside_start_x{ page_width - margins.x };
+    const auto backside_start_y{ start_y };
+
     const auto bleed{ project.Data.BleedEdge };
     const auto offset{ bleed - project.Data.GuidesOffset };
     const auto spacing{ project.Data.Spacing };
@@ -70,13 +73,21 @@ fs::path GeneratePdf(const Project& project)
 #endif
 
         auto draw_image{
-            [&](PdfPage* page, const GridImage& image, size_t x, size_t y, Length dx = 0_pts, Length dy = 0_pts, bool is_backside = false)
+            [&](PdfPage* page,
+                const GridImage& image,
+                size_t x,
+                size_t y,
+                Length dx = 0_pts,
+                Length dy = 0_pts,
+                bool is_backside = false)
             {
                 const auto img_path{ output_dir / image.Image };
                 if (fs::exists(img_path))
                 {
-                    const auto real_x{ start_x + x * (card_width + spacing) + +dx };
-                    const auto real_y{ start_y - (y + 1) * card_height - y * spacing + dy };
+                    const auto orig_x{ is_backside ? backside_start_x : start_x };
+                    const auto orig_y{ is_backside ? backside_start_y : start_y };
+                    const auto real_x{ orig_x + x * (card_width + spacing) + dx };
+                    const auto real_y{ orig_y - (y + 1) * card_height - y * spacing + dy };
                     const auto real_w{ card_width };
                     const auto real_h{ card_height };
 

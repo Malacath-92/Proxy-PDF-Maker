@@ -378,7 +378,10 @@ class PrintPreview::PagePreview : public QWidget
         m_PaddingWidth = (page_width - cards_size.x) / 2.0f;
         m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
-        const auto margins{ project.ComputeMargins() };
+        const auto base_margins{ project.ComputeMargins() };
+        const auto margins{ params.m_GridParams.m_IsBackside
+                                ? -base_margins
+                                : base_margins };
         m_LeftMargins = m_PaddingWidth - margins.x;
         m_TopMargins = m_PaddingHeight - margins.y;
 
