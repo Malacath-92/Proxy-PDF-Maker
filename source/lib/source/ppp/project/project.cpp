@@ -371,6 +371,11 @@ Size Project::ComputeMargins() const
     return Data.ComputeMargins(CFG);
 }
 
+Size Project::ComputeMaxMargins() const
+{
+    return Data.ComputeMaxMargins(CFG);
+}
+
 float Project::CardRatio() const
 {
     return Data.CardRatio(CFG);
@@ -450,10 +455,15 @@ Size Project::ProjectData::ComputeMargins(const Config& config) const
         return CustomMargins.value();
     }
 
+    return ComputeMaxMargins(config) / 2.0f;
+}
+
+Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
+{
     const Size page_size{ ComputePageSize(config) };
     const Size cards_size{ ComputeCardsSize(config) };
     const Size max_margins{ page_size - cards_size };
-    return max_margins / 2.0f;
+    return max_margins;
 }
 
 float Project::ProjectData::CardRatio(const Config& config) const

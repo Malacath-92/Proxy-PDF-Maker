@@ -41,16 +41,18 @@ fs::path GeneratePdf(const Project& project)
 
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const auto page_size{ project.ComputePageSize() };
+    const auto cards_size{ project.ComputeCardsSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.Data.CardLayout.pod() };
     const auto margins{ project.ComputeMargins() };
+    const auto max_margins{ project.ComputeMaxMargins() };
 
     const auto start_x{ margins.x };
     const auto start_y{ page_height - margins.y };
 
-    const auto backside_start_x{ page_width - margins.x };
+    const auto backside_start_x{ max_margins.x - margins.x };
     const auto backside_start_y{ start_y };
 
     const auto bleed{ project.Data.BleedEdge };

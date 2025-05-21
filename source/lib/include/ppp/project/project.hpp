@@ -58,6 +58,7 @@ class Project : public QObject
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
     Size ComputeMargins() const;
+    Size ComputeMaxMargins() const;
 
     float CardRatio() const;
     Size CardSize() const;
@@ -123,6 +124,7 @@ class Project : public QObject
         Size ComputePageSize(const Config& config) const;
         Size ComputeCardsSize(const Config& config) const;
         Size ComputeMargins(const Config& config) const;
+        Size ComputeMaxMargins(const Config& config) const;
 
         float CardRatio(const Config& config) const;
         Size CardSize(const Config& config) const;

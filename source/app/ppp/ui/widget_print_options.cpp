@@ -121,23 +121,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         {
             m_Project.Data.PageSize = t.toStdString();
 
-            RefreshCardLayout();
+            RefreshSizes();
 
             const bool fit_size{ m_Project.Data.PageSize == Config::FitSize };
             const bool infer_size{ m_Project.Data.PageSize == Config::BasePDFSize };
-
-            const auto page_size{ m_Project.ComputePageSize() };
-            const auto cards_size{ m_Project.ComputeCardsSize() };
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
-            const auto max_margins{ (page_size - cards_size) / base_unit };
-
-            m_LeftMarginSpin->setRange(0, max_margins.x);
-            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
-            m_TopMarginSpin->setRange(0, max_margins.y);
-            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
-
-            paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
-            cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
 
             m_BasePdf->setEnabled(infer_size);
             m_BasePdf->setVisible(infer_size);
@@ -178,20 +165,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             m_Project.Data.BasePdf = t.toStdString();
 
-            RefreshCardLayout();
-
-            const auto page_size{ m_Project.ComputePageSize() };
-            const auto cards_size{ m_Project.ComputeCardsSize() };
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
-            const auto max_margins{ (page_size - cards_size) / base_unit };
-
-            m_LeftMarginSpin->setRange(0, max_margins.x);
-            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
-            m_TopMarginSpin->setRange(0, max_margins.y);
-            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
-
-            paper_info->GetWidget()->setText(ToQString(SizeToString(page_size)));
-            cards_info->GetWidget()->setText(ToQString(SizeToString(cards_size)));
+            RefreshSizes();
 
             PageSizeChanged();
         }
@@ -282,10 +256,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             RefreshCardLayout();
 
-            const auto page_size{ m_Project.ComputePageSize() };
-            const auto cards_size{ m_Project.ComputeCardsSize() };
             const auto base_unit{ CFG.BaseUnit.m_Unit };
-            const auto max_margins{ (page_size - cards_size) / base_unit };
+            const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
 
             m_LeftMarginSpin->setRange(0, max_margins.x);
             m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
@@ -358,17 +330,15 @@ void PrintOptionsWidget::BaseUnitChanged()
     const auto base_unit{ CFG.BaseUnit.m_Unit };
     const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
 
-    const auto page_size{ m_Project.ComputePageSize() };
-    const auto cards_size{ m_Project.ComputeCardsSize() };
-    const auto max_margins{ page_size - cards_size };
-    const auto margins{ m_Project.ComputeMargins() };
+    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+    const auto margins{ m_Project.ComputeMargins() / base_unit };
 
     m_LeftMarginSpin->setSuffix(base_unit_name);
-    m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
-    m_LeftMarginSpin->setValue(margins.x / base_unit);
+    m_LeftMarginSpin->setRange(0, max_margins.x);
+    m_LeftMarginSpin->setValue(margins.x);
     m_TopMarginSpin->setSuffix(base_unit_name);
-    m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
-    m_TopMarginSpin->setValue(margins.y / base_unit);
+    m_TopMarginSpin->setRange(0, max_margins.y);
+    m_TopMarginSpin->setValue(margins.y);
 }
 
 void PrintOptionsWidget::RenderBackendChanged()
@@ -428,19 +398,17 @@ void PrintOptionsWidget::SetDefaults()
 
     const bool custom_margins{ m_Project.Data.CustomMargins.has_value() };
     m_CustomMargins->setChecked(custom_margins);
- 
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
-    const auto page_size{ m_Project.ComputePageSize() };
-    const auto cards_size{ m_Project.ComputeCardsSize() };
-    const auto max_margins{ page_size - cards_size };
-    const auto margins{ m_Project.ComputeMargins() };
 
-    m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
-    m_LeftMarginSpin->setValue(margins.x / base_unit);
+    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+    const auto margins{ m_Project.ComputeMargins() / base_unit };
+
+    m_LeftMarginSpin->setRange(0, max_margins.x);
+    m_LeftMarginSpin->setValue(margins.x);
     m_LeftMarginSpin->setEnabled(custom_margins);
 
-    m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
-    m_TopMarginSpin->setValue(margins.y / base_unit);
+    m_TopMarginSpin->setRange(0, max_margins.y);
+    m_TopMarginSpin->setValue(margins.y);
     m_TopMarginSpin->setEnabled(custom_margins);
 }
 
@@ -451,16 +419,14 @@ void PrintOptionsWidget::RefreshSizes()
     m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
     m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
 
-    const auto page_size{ m_Project.ComputePageSize() };
-    const auto cards_size{ m_Project.ComputeCardsSize() };
-    const auto max_margins{ page_size - cards_size };
     const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
 
-    m_LeftMarginSpin->setRange(0, max_margins.x / base_unit);
-    m_LeftMarginSpin->setValue(max_margins.x / base_unit / 2.0f);
+    m_LeftMarginSpin->setRange(0, max_margins.x);
+    m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
 
-    m_TopMarginSpin->setRange(0, max_margins.y / base_unit);
-    m_TopMarginSpin->setValue(max_margins.y / base_unit / 2.0f);
+    m_TopMarginSpin->setRange(0, max_margins.y);
+    m_TopMarginSpin->setValue(max_margins.y / 2.0f);
 }
 
 void PrintOptionsWidget::RefreshCardLayout()
