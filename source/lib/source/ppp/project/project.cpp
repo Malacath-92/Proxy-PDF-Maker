@@ -64,15 +64,15 @@ void Project::Load(const fs::path& json_path)
 
         Data.CardSizeChoice = json["card_size"];
         Data.PageSize = json["page_size"];
-        if (!g_Cfg.PageSizes.contains(Data.PageSize))
+        if (!g_Cfg.m_PageSizes.contains(Data.PageSize))
         {
-            Data.PageSize = g_Cfg.DefaultPageSize;
+            Data.PageSize = g_Cfg.m_DefaultPageSize;
         }
 
         Data.BasePdf = json["base_pdf"];
         Data.Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
                                .value_or(PageOrientation::Portrait);
-        if (Data.PageSize == Config::FitSize)
+        if (Data.PageSize == Config::g_FitSize)
         {
             Data.CardLayout.x = json["card_layout"]["width"];
             Data.CardLayout.y = json["card_layout"]["height"];
@@ -201,14 +201,14 @@ void Project::InitProperties()
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        g_Cfg.EnableUncrop ? ListImageFiles(Data.ImageDir)
-                         : ListImageFiles(Data.ImageDir, Data.CropDir)
+        g_Cfg.m_EnableUncrop ? ListImageFiles(Data.ImageDir)
+                             : ListImageFiles(Data.ImageDir, Data.CropDir)
     };
 
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Data.Cards.contains(img) && img != g_Cfg.FallbackName)
+        if (!Data.Cards.contains(img) && img != g_Cfg.m_FallbackName)
         {
             Data.Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
@@ -308,7 +308,7 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 
 bool Project::CacheCardLayout()
 {
-    const bool fit_size{ Data.PageSize == Config::FitSize };
+    const bool fit_size{ Data.PageSize == Config::g_FitSize };
     if (!fit_size)
     {
         const auto previous_layout{ Data.CardLayout };
@@ -338,8 +338,8 @@ bool Project::CacheCardLayout()
 
 Size Project::ComputePageSize() const
 {
-    const bool fit_size{ Data.PageSize == Config::FitSize };
-    const bool infer_size{ Data.PageSize == Config::BasePDFSize };
+    const bool fit_size{ Data.PageSize == Config::g_FitSize };
+    const bool infer_size{ Data.PageSize == Config::g_BasePDFSize };
 
     if (fit_size)
     {
@@ -348,11 +348,11 @@ Size Project::ComputePageSize() const
     else if (infer_size)
     {
         return LoadPdfSize(Data.BasePdf + ".pdf")
-            .value_or(g_Cfg.PageSizes["A4"].Dimensions);
+            .value_or(g_Cfg.m_PageSizes["A4"].m_Dimensions);
     }
     else
     {
-        auto page_size{ g_Cfg.PageSizes[Data.PageSize].Dimensions };
+        auto page_size{ g_Cfg.m_PageSizes[Data.PageSize].m_Dimensions };
         if (Data.Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
@@ -409,7 +409,7 @@ Length Project::CardCornerRadius() const
 void Project::EnsureOutputFolder() const
 {
     const auto output_dir{
-        GetOutputDir(Data.CropDir, Data.BleedEdge, g_Cfg.ColorCube)
+        GetOutputDir(Data.CropDir, Data.BleedEdge, g_Cfg.m_ColorCube)
     };
     if (!fs::exists(output_dir))
     {
@@ -419,8 +419,8 @@ void Project::EnsureOutputFolder() const
 
 Size Project::ProjectData::ComputePageSize(const Config& config) const
 {
-    const bool fit_size{ PageSize == Config::FitSize };
-    const bool infer_size{ PageSize == Config::BasePDFSize };
+    const bool fit_size{ PageSize == Config::g_FitSize };
+    const bool infer_size{ PageSize == Config::g_BasePDFSize };
 
     if (fit_size)
     {
@@ -429,11 +429,11 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
     else if (infer_size)
     {
         return LoadPdfSize(BasePdf + ".pdf")
-            .value_or(config.PageSizes.at("A4").Dimensions);
+            .value_or(config.m_PageSizes.at("A4").m_Dimensions);
     }
     else
     {
-        auto page_size{ config.PageSizes.at(PageSize).Dimensions };
+        auto page_size{ config.m_PageSizes.at(PageSize).m_Dimensions };
         if (Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
@@ -475,51 +475,51 @@ float Project::ProjectData::CardRatio(const Config& config) const
 Size Project::ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{
-        config.CardSizes.contains(CardSizeChoice)
-            ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(g_Cfg.DefaultCardSize),
+        config.m_CardSizes.contains(CardSizeChoice)
+            ? config.m_CardSizes.at(CardSizeChoice)
+            : config.m_CardSizes.at(g_Cfg.m_DefaultCardSize),
     };
-    return card_size_info.CardSize.Dimensions * card_size_info.CardSizeScale;
+    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
 }
 
 Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.CardSizes.contains(CardSizeChoice)
-            ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(config.DefaultCardSize),
+        config.m_CardSizes.contains(CardSizeChoice)
+            ? config.m_CardSizes.at(CardSizeChoice)
+            : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
-    return card_size_info.CardSize.Dimensions * card_size_info.CardSizeScale + BleedEdge * 2;
+    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + BleedEdge * 2;
 }
 
 Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.CardSizes.contains(CardSizeChoice)
-            ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(config.DefaultCardSize),
+        config.m_CardSizes.contains(CardSizeChoice)
+            ? config.m_CardSizes.at(CardSizeChoice)
+            : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
-    return (card_size_info.CardSize.Dimensions + card_size_info.InputBleed.Dimension * 2) * card_size_info.CardSizeScale;
+    return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
 Length Project::ProjectData::CardFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.CardSizes.contains(CardSizeChoice)
-            ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(config.DefaultCardSize),
+        config.m_CardSizes.contains(CardSizeChoice)
+            ? config.m_CardSizes.at(CardSizeChoice)
+            : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
-    return card_size_info.InputBleed.Dimension * card_size_info.CardSizeScale;
+    return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
 Length Project::ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{
-        config.CardSizes.contains(CardSizeChoice)
-            ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(config.DefaultCardSize),
+        config.m_CardSizes.contains(CardSizeChoice)
+            ? config.m_CardSizes.at(CardSizeChoice)
+            : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
-    return card_size_info.CornerRadius.Dimension * card_size_info.CardSizeScale;
+    return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)

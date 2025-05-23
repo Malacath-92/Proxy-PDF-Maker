@@ -17,27 +17,27 @@ Config g_Cfg{ LoadConfig() };
 
 void Config::SetPdfBackend(PdfBackend backend)
 {
-    Backend = backend;
-    if (Backend != PdfBackend::PoDoFo)
+    m_Backend = backend;
+    if (m_Backend != PdfBackend::PoDoFo)
     {
-        PageSizes.erase(std::string{ Config::BasePDFSize });
+        m_PageSizes.erase(std::string{ Config::g_BasePDFSize });
     }
     else
     {
-        PageSizes[std::string{ Config::BasePDFSize }] = {};
+        m_PageSizes[std::string{ Config::g_BasePDFSize }] = {};
     }
 }
 
 Config LoadConfig()
 {
     Config config{};
-    if (!QFile::exists("config.ini"))
+    if (!QFile::exists("config.m_ini"))
     {
         SaveConfig(config);
         return config;
     }
 
-    QSettings settings("config.ini", QSettings::IniFormat);
+    QSettings settings("config.m_ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_ToStringViews{ std::views::transform(
@@ -152,13 +152,13 @@ Config LoadConfig()
         {
             settings.beginGroup("DEFAULT");
 
-            config.EnableUncrop = settings.value("Enable.Uncrop", false).toBool();
-            config.EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
-            config.BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
-            config.MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
-            config.DisplayColumns = settings.value("Display.Columns", 5).toInt();
-            config.DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
-            config.ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
+            config.m_EnableUncrop = settings.value("Enable.Uncrop", false).toBool();
+            config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
+            config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
+            config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
+            config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
+            config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
+            config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
             {
                 const auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString().toStdString() };
@@ -170,11 +170,11 @@ Config LoadConfig()
                 auto pdf_image_format{ settings.value("PDF.Backend.Image.Format", "Png").toString() };
                 if (pdf_image_format == "Jpg")
                 {
-                    config.PdfImageFormat = ImageFormat::Jpg;
+                    config.m_PdfImageFormat = ImageFormat::Jpg;
                 }
                 else
                 {
-                    config.PdfImageFormat = ImageFormat::Png;
+                    config.m_PdfImageFormat = ImageFormat::Png;
                 }
             }
 
@@ -182,7 +182,7 @@ Config LoadConfig()
                 auto png_compression{ settings.value("PDF.Backend.Png.Compression") };
                 if (png_compression.isValid())
                 {
-                    config.PngCompression = std::clamp(png_compression.toInt(), 0, 9);
+                    config.m_PngCompression = std::clamp(png_compression.toInt(), 0, 9);
                 }
             }
 
@@ -190,7 +190,7 @@ Config LoadConfig()
                 auto jpg_quality{ settings.value("PDF.Backend.Jpg.Quality") };
                 if (jpg_quality.isValid())
                 {
-                    config.JpgQuality = std::clamp(jpg_quality.toInt(), 0, 100);
+                    config.m_JpgQuality = std::clamp(jpg_quality.toInt(), 0, 100);
                 }
             }
 
@@ -198,8 +198,8 @@ Config LoadConfig()
                 auto base_unit{ settings.value("Base.Unit") };
                 if (base_unit.isValid())
                 {
-                    config.BaseUnit = Config::GetUnitFromName(base_unit.toString().toStdString())
-                                          .value_or(Config::c_SupportedBaseUnits[0]);
+                    config.m_BaseUnit = Config::GetUnitFromName(base_unit.toString().toStdString())
+                                            .value_or(Config::c_SupportedBaseUnits[0]);
                 }
             }
 
@@ -211,14 +211,14 @@ Config LoadConfig()
 
             for (const auto& key : settings.allKeys())
             {
-                if (config.PageSizes.contains(key.toStdString()))
+                if (config.m_PageSizes.contains(key.toStdString()))
                 {
                     continue;
                 }
 
                 if (auto info{ c_ParseSize(settings.value(key).toString().toStdString()) })
                 {
-                    config.PageSizes[key.toStdString()] = std::move(info).value();
+                    config.m_PageSizes[key.toStdString()] = std::move(info).value();
                 }
             }
 
@@ -240,10 +240,10 @@ Config LoadConfig()
                     if (card_size_info && bleed_edge_info && corner_radius_info)
                     {
                         full_card_size_info.emplace();
-                        full_card_size_info->CardSize = std::move(card_size_info).value();
-                        full_card_size_info->InputBleed = std::move(bleed_edge_info).value();
-                        full_card_size_info->CornerRadius = std::move(corner_radius_info).value();
-                        full_card_size_info->CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
+                        full_card_size_info->m_CardSize = std::move(card_size_info).value();
+                        full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
+                        full_card_size_info->m_CornerRadius = std::move(corner_radius_info).value();
+                        full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
                     };
                 }
                 return full_card_size_info;
@@ -261,7 +261,7 @@ Config LoadConfig()
                     const QStringList card_size_name_split{ group_name_split.begin() + 1, group_name_split.end() };
                     const auto card_size_name_start{ card_size_name_split.join("-") };
                     auto card_size_name{ card_size_name_start.trimmed().toStdString() };
-                    config.CardSizes[std::move(card_size_name)] = std::move(card_size_info).value();
+                    config.m_CardSizes[std::move(card_size_name)] = std::move(card_size_info).value();
                 }
                 settings.endGroup();
             }
@@ -273,7 +273,7 @@ Config LoadConfig()
 
 void SaveConfig(Config config)
 {
-    QSettings settings("config.ini", QSettings::IniFormat);
+    QSettings settings("config.m_ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_SetSize{
@@ -301,14 +301,14 @@ void SaveConfig(Config config)
         {
             settings.beginGroup("DEFAULT");
 
-            settings.setValue("Enable.Uncrop", config.EnableUncrop);
-            settings.setValue("Base.Preview.Width", config.BasePreviewWidth / 1_pix);
-            settings.setValue("Max.DPI", config.MaxDPI / 1_dpi);
-            settings.setValue("Display.Columns", config.DisplayColumns);
-            settings.setValue("Page.Size", ToQString(config.DefaultPageSize));
-            settings.setValue("Color.Cube", ToQString(config.ColorCube));
+            settings.setValue("Enable.Uncrop", config.m_EnableUncrop);
+            settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
+            settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
+            settings.setValue("Display.Columns", config.m_DisplayColumns);
+            settings.setValue("Page.Size", ToQString(config.m_DefaultPageSize));
+            settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
 
-            const std::string_view pdf_backend{ magic_enum::enum_name(config.Backend) };
+            const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
 
             const char* pdf_image_format{
@@ -322,21 +322,21 @@ void SaveConfig(Config config)
                     default:
                         return "Png";
                     }
-                }(config.PdfImageFormat),
+                }(config.m_PdfImageFormat),
             };
             settings.setValue("PDF.Backend.Image.Format", ToQString(pdf_image_format));
 
-            if (config.PngCompression.has_value())
+            if (config.m_PngCompression.has_value())
             {
-                settings.setValue("PDF.Backend.Png.Compression", config.PngCompression.value());
+                settings.setValue("PDF.Backend.Png.Compression", config.m_PngCompression.value());
             }
 
-            if (config.JpgQuality.has_value())
+            if (config.m_JpgQuality.has_value())
             {
-                settings.setValue("PDF.Backend.Jpg.Quality", config.JpgQuality.value());
+                settings.setValue("PDF.Backend.Jpg.Quality", config.m_JpgQuality.value());
             }
 
-            const auto base_unit_name{ config.BaseUnit.m_Name };
+            const auto base_unit_name{ config.m_BaseUnit.m_Name };
             settings.setValue("Base.Unit", ToQString(base_unit_name));
 
             settings.endGroup();
@@ -345,9 +345,9 @@ void SaveConfig(Config config)
         {
             settings.beginGroup("PAGE_SIZES");
 
-            for (const auto& [name, info] : config.PageSizes)
+            for (const auto& [name, info] : config.m_PageSizes)
             {
-                if (name == Config::FitSize || name == Config::BasePDFSize)
+                if (name == Config::g_FitSize || name == Config::g_BasePDFSize)
                 {
                     continue;
                 }
@@ -361,17 +361,17 @@ void SaveConfig(Config config)
         static constexpr auto c_WriteCardSizeInfo{
             [](QSettings& settings, const Config::CardSizeInfo& card_size_info)
             {
-                c_SetSize(settings, "Card.Size", card_size_info.CardSize);
-                c_SetLength(settings, "Input.Bleed", card_size_info.InputBleed);
-                c_SetLength(settings, "Corner.Radius", card_size_info.CornerRadius);
-                if (static_cast<int32_t>(card_size_info.CardSizeScale * 10000) != 10000)
+                c_SetSize(settings, "Card.Size", card_size_info.m_CardSize);
+                c_SetLength(settings, "Input.Bleed", card_size_info.m_InputBleed);
+                c_SetLength(settings, "Corner.Radius", card_size_info.m_CornerRadius);
+                if (static_cast<int32_t>(card_size_info.m_CardSizeScale * 10000) != 10000)
                 {
-                    settings.setValue("Card.Scale", card_size_info.CardSizeScale);
+                    settings.setValue("Card.Scale", card_size_info.m_CardSizeScale);
                 }
             }
         };
 
-        for (const auto& [card_name, card_size_info] : config.CardSizes)
+        for (const auto& [card_name, card_size_info] : config.m_CardSizes)
         {
             settings.beginGroup("CARD_SIZE - " + card_name);
             c_WriteCardSizeInfo(settings, card_size_info);

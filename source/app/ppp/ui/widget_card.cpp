@@ -79,7 +79,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             }
             else
             {
-                const int width{ static_cast<int>(g_Cfg.BasePreviewWidth.value) };
+                const int width{ static_cast<int>(g_Cfg.m_BasePreviewWidth.value) };
                 const int height{ static_cast<int>(width / m_CardRatio) };
                 QPixmap raw_pixmap{ width, height };
                 raw_pixmap.fill(QColor::fromRgb(0x808080));

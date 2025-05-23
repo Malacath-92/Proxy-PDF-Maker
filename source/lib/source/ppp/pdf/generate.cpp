@@ -18,7 +18,7 @@ fs::path GeneratePdf(const Project& project)
 {
     using CrossSegment = PdfPage::CrossSegment;
 
-    const auto output_dir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, g_Cfg.ColorCube) };
+    const auto output_dir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, g_Cfg.m_ColorCube) };
 
     ColorRGB32f guides_color_a{
         static_cast<float>(project.Data.GuidesColorA.r) / 255.0f,
@@ -60,7 +60,7 @@ fs::path GeneratePdf(const Project& project)
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
-    auto pdf{ CreatePdfDocument(g_Cfg.Backend, project) };
+    auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
 
 #if __cpp_lib_ranges_enumerate
     for (auto [p, page_images] : images | std::views::enumerate)
@@ -266,7 +266,7 @@ fs::path GenerateTestPdf(const Project& project)
     const auto page_eighth{ page_size / 8 };
     const auto page_sixteenth{ page_size / 16 };
 
-    auto pdf{ CreatePdfDocument(g_Cfg.Backend, project) };
+    auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
 
     PdfPage::LineStyle line_style{
         .m_Thickness = 0.2_mm,

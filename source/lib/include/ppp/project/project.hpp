@@ -101,8 +101,8 @@ class Project : public QObject
         Length BacksideOffset{ 0_mm };
 
         // PDF generation options
-        std::string CardSizeChoice{ g_Cfg.DefaultCardSize };
-        std::string PageSize{ g_Cfg.DefaultPageSize };
+        std::string CardSizeChoice{ g_Cfg.m_DefaultCardSize };
+        std::string PageSize{ g_Cfg.m_DefaultPageSize };
         std::string BasePdf{ "None" };
         std::optional<Size> CustomMargins{};
         dla::uvec2 CardLayout{ 3, 3 };

@@ -137,25 +137,25 @@ void Cropper::BleedChangedDiff(Length bleed)
 void Cropper::EnableUncropChangedDiff(bool enable_uncrop)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.EnableUncrop = enable_uncrop;
+    m_Cfg.m_EnableUncrop = enable_uncrop;
 }
 
 void Cropper::ColorCubeChangedDiff(const std::string& cube_name)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.ColorCube = cube_name;
+    m_Cfg.m_ColorCube = cube_name;
 }
 
 void Cropper::BasePreviewWidthChangedDiff(Pixel base_preview_width)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.BasePreviewWidth = base_preview_width;
+    m_Cfg.m_BasePreviewWidth = base_preview_width;
 }
 
 void Cropper::MaxDPIChangedDiff(PixelDensity dpi)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.MaxDPI = dpi;
+    m_Cfg.m_MaxDPI = dpi;
 }
 
 void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview)
@@ -168,7 +168,7 @@ void Cropper::CardRemoved(const fs::path& card_name)
     RemoveWork(card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.EnableUncrop && fs::exists(m_Data.ImageDir / card_name))
+    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.ImageDir / card_name))
     {
         CardModified(card_name);
     }
@@ -193,7 +193,7 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     RemoveWork(old_card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.EnableUncrop && fs::exists(m_Data.ImageDir / old_card_name))
+    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.ImageDir / old_card_name))
     {
         fs::rename(m_Data.ImageDir / old_card_name, m_Data.ImageDir / new_card_name);
     }
@@ -416,19 +416,19 @@ bool Cropper::DoCropWork(T* signaller)
         {
             std::shared_lock lock{ m_PropertyMutex };
             const Length bleed_edge{ m_Data.BleedEdge };
-            const PixelDensity max_density{ m_Cfg.MaxDPI };
+            const PixelDensity max_density{ m_Cfg.m_MaxDPI };
 
             const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
             const auto card_size{ m_Data.CardSize(m_Cfg) };
             const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
             const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-            const bool enable_uncrop{ m_Cfg.EnableUncrop };
-            const bool fancy_uncrop{ m_Cfg.EnableFancyUncrop };
+            const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
+            const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
-            const std::string color_cube_name{ m_Cfg.ColorCube };
+            const std::string color_cube_name{ m_Cfg.m_ColorCube };
 
-            const fs::path output_dir{ GetOutputDir(m_Data.CropDir, m_Data.BleedEdge, m_Cfg.ColorCube) };
+            const fs::path output_dir{ GetOutputDir(m_Data.CropDir, m_Data.BleedEdge, m_Cfg.m_ColorCube) };
 
             const fs::path input_file{ m_Data.ImageDir / card_name };
             const fs::path crop_file{ m_Data.CropDir / card_name };
@@ -622,14 +622,14 @@ bool Cropper::DoPreviewWork(T* signaller)
         try
         {
             std::shared_lock lock{ m_PropertyMutex };
-            const Pixel preview_width{ m_Cfg.BasePreviewWidth };
+            const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
             const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
             const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
             const Size card_size{ m_Data.CardSize(m_Cfg) };
             const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-            const bool enable_uncrop{ m_Cfg.EnableUncrop };
-            const bool fancy_uncrop{ m_Cfg.EnableFancyUncrop };
+            const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
+            const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
             const fs::path input_file{ m_Data.ImageDir / card_name };
             const fs::path crop_file{ m_Data.CropDir / card_name };

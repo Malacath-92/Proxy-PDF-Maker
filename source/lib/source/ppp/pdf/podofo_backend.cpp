@@ -162,11 +162,11 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
         return it->m_PoDoFoImage.get();
     }
 
-    const auto use_jpg{ g_Cfg.PdfImageFormat == ImageFormat::Jpg };
+    const auto use_jpg{ g_Cfg.m_PdfImageFormat == ImageFormat::Jpg };
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
             ? [](const Image& image)
-            { return image.EncodeJpg(g_Cfg.JpgQuality); }
+            { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
             : [](const Image& image)
             { return image.EncodePng(std::optional{ 0 }); }
     };
@@ -193,7 +193,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 PoDoFoDocument::PoDoFoDocument(const Project& project)
     : m_Project{ project }
     , m_BaseDocument{
-        project.Data.PageSize == Config::BasePDFSize && LoadPdfSize(project.Data.BasePdf + ".pdf")
+        project.Data.PageSize == Config::g_BasePDFSize && LoadPdfSize(project.Data.BasePdf + ".pdf")
             ? new PoDoFo::PdfMemDocument
             : nullptr
     }

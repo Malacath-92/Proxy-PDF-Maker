@@ -43,21 +43,21 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesOffsetSpin = guides_offset->GetWidget();
     m_GuidesOffsetSpin->setDecimals(3);
     m_GuidesOffsetSpin->setSingleStep(0.1);
-    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
 
     auto* guides_thickness{ new DoubleSpinBoxWithLabel{ "Guides Thic&kness" } };
     m_GuidesThicknessSpin = guides_thickness->GetWidget();
     m_GuidesThicknessSpin->setDecimals(4);
     m_GuidesThicknessSpin->setSingleStep(0.01);
-    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
 
     auto* guides_length{ new DoubleSpinBoxWithLabel{ "Guides &Length" } };
     m_GuidesLengthSpin = guides_length->GetWidget();
     m_GuidesLengthSpin->setDecimals(2);
     m_GuidesLengthSpin->setSingleStep(0.1);
-    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
 
     SetDefaults();
@@ -170,7 +170,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto change_guides_offset{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto new_guides_offset{ base_unit * static_cast<float>(v) };
             if (dla::math::abs(project.Data.GuidesOffset - new_guides_offset) < 0.001_mm)
             {
@@ -185,7 +185,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto change_guides_thickness{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             project.Data.GuidesThickness = base_unit * static_cast<float>(v);
             GuidesThicknessChanged();
         }
@@ -194,7 +194,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto change_guides_length{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             project.Data.GuidesLength = base_unit * static_cast<float>(v);
             GuidesLengthChanged();
         }
@@ -249,7 +249,7 @@ void GuidesOptionsWidget::NewProjectOpened()
 
 void GuidesOptionsWidget::CardSizeChanged()
 {
-    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto card_size{ m_Project.CardSize() };
 
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
@@ -258,7 +258,7 @@ void GuidesOptionsWidget::CardSizeChanged()
 
 void GuidesOptionsWidget::BleedChanged()
 {
-    m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / g_Cfg.BaseUnit.m_Unit);
+    m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / g_Cfg.m_BaseUnit.m_Unit);
 }
 
 void GuidesOptionsWidget::BacksideEnabledChanged()
@@ -269,19 +269,19 @@ void GuidesOptionsWidget::BacksideEnabledChanged()
 
 void GuidesOptionsWidget::BaseUnitChanged()
 {
-    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
-    const auto base_unit_name{ ToQString(g_Cfg.BaseUnit.m_ShortName) };
+    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    const auto base_unit_name{ ToQString(g_Cfg.m_BaseUnit.m_ShortName) };
     const auto card_size{ m_Project.CardSize() };
 
-    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
     m_GuidesOffsetSpin->setValue(m_Project.Data.GuidesOffset / base_unit);
 
-    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.Data.GuidesThickness / base_unit);
 
-    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
     m_GuidesLengthSpin->setValue(m_Project.Data.GuidesLength / base_unit);
 }
@@ -308,7 +308,7 @@ void GuidesOptionsWidget::SetDefaults()
     m_GuidesColorB->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.Data.GuidesColorB));
     m_GuidesColorB->setEnabled(m_Project.Data.EnableGuides);
 
-    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto card_size{ m_Project.CardSize() };
 
     m_GuidesOffsetSpin->setRange(0, m_Project.Data.BleedEdge / base_unit);
@@ -316,7 +316,7 @@ void GuidesOptionsWidget::SetDefaults()
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.Data.GuidesThickness / base_unit);
 
-    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
     m_GuidesLengthSpin->setValue(m_Project.Data.GuidesLength / base_unit);
 }

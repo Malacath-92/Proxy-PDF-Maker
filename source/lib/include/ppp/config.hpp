@@ -39,90 +39,89 @@ struct UnitInfo
     // clang-format on
 };
 
-// NOLINTBEGIN(readability-identifier-naming)
 struct Config
 {
-    bool EnableUncrop{ false };
-    bool EnableFancyUncrop{ true };
-    Pixel BasePreviewWidth{ 248_pix };
-    PixelDensity MaxDPI{ 1200_dpi };
-    uint32_t DisplayColumns{ 5 };
-    std::string DefaultCardSize{ "Magic the Gathering" };
-    std::string DefaultPageSize{ "Letter" };
-    std::string ColorCube{ "None" };
-    fs::path FallbackName{ "fallback.png"_p };
-    PdfBackend Backend{ PdfBackend::LibHaru };
-    ImageFormat PdfImageFormat{ ImageFormat::Png };
-    std::optional<int> PngCompression{ std::nullopt };
-    std::optional<int> JpgQuality{ std::nullopt };
-    UnitInfo BaseUnit{ c_SupportedBaseUnits[0] };
+    bool m_EnableUncrop{ false };
+    bool m_EnableFancyUncrop{ true };
+    Pixel m_BasePreviewWidth{ 248_pix };
+    PixelDensity m_MaxDPI{ 1200_dpi };
+    uint32_t m_DisplayColumns{ 5 };
+    std::string m_DefaultCardSize{ "Magic the Gathering" };
+    std::string m_DefaultPageSize{ "Letter" };
+    std::string m_ColorCube{ "None" };
+    fs::path m_FallbackName{ "fallback.png"_p };
+    PdfBackend m_Backend{ PdfBackend::LibHaru };
+    ImageFormat m_PdfImageFormat{ ImageFormat::Png };
+    std::optional<int> m_PngCompression{ std::nullopt };
+    std::optional<int> m_JpgQuality{ std::nullopt };
+    UnitInfo m_BaseUnit{ c_SupportedBaseUnits[0] };
 
-    static inline constexpr std::string_view FitSize{ "Fit" };
-    static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
+    static inline constexpr std::string_view g_FitSize{ "Fit" };
+    static inline constexpr std::string_view g_BasePDFSize{ "Base Pdf" };
 
     struct SizeInfo
     {
-        Size Dimensions;
-        Length BaseUnit;
-        uint32_t Decimals;
+        Size m_Dimensions;
+        Length m_BaseUnit;
+        uint32_t m_Decimals;
     };
     struct LengthInfo
     {
-        Length Dimension;
-        Length BaseUnit;
-        uint32_t Decimals;
+        Length m_Dimension;
+        Length m_BaseUnit;
+        uint32_t m_Decimals;
     };
 
     struct CardSizeInfo
     {
-        SizeInfo CardSize;
-        LengthInfo InputBleed;
-        LengthInfo CornerRadius;
-        float CardSizeScale{ 1.0f };
+        SizeInfo m_CardSize;
+        LengthInfo m_InputBleed;
+        LengthInfo m_CornerRadius;
+        float m_CardSizeScale{ 1.0f };
     };
 
-    std::map<std::string, SizeInfo> PageSizes{
+    std::map<std::string, SizeInfo> m_PageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
         { "Legal", { { 14_in, 8.5_in }, 1_in, 1u } },
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
-        { std::string{ FitSize }, {} },
-        { std::string{ BasePDFSize }, {} },
+        { std::string{ g_FitSize }, {} },
+        { std::string{ g_BasePDFSize }, {} },
     };
 
-    std::map<std::string, CardSizeInfo> CardSizes{
+    std::map<std::string, CardSizeInfo> m_CardSizes{
         {
             "Magic the Gathering",
             {
-                .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
-                .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
+                .m_InputBleed{ 0.12_in, 1_in, 2u },
+                .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
             },
         },
         {
             "MtG Oversized",
             {
-                .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
-                .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 5_mm, 1_mm, 1u },
+                .m_CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
+                .m_InputBleed{ 0.12_in, 1_in, 2u },
+                .m_CornerRadius{ 5_mm, 1_mm, 1u },
             },
         },
         {
             "MtG Novelty",
             {
-                .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
-                .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 2.5_mm, 1_mm, 1u },
-                .CardSizeScale = 0.5f,
+                .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
+                .m_InputBleed{ 0.12_in, 1_in, 2u },
+                .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_CardSizeScale = 0.5f,
             },
         },
         {
             "Yu-Gi-Oh",
             {
-                .CardSize{ { 59_mm, 86_mm }, 1_mm, 0u },
-                .InputBleed{ 2_mm, 1_mm, 0u },
-                .CornerRadius{ 1_mm, 1_mm, 0u },
+                .m_CardSize{ { 59_mm, 86_mm }, 1_mm, 0u },
+                .m_InputBleed{ 2_mm, 1_mm, 0u },
+                .m_CornerRadius{ 1_mm, 1_mm, 0u },
             },
         },
     };
@@ -175,7 +174,6 @@ struct Config
         return std::nullopt;
     }
 };
-// NOLINTEND(readability-identifier-naming)
 
 Config LoadConfig();
 void SaveConfig(Config config);
