@@ -3,6 +3,8 @@
 #include <atomic>
 #include <type_traits>
 
+// NOLINTBEGIN
+
 namespace detail
 {
 template<typename BitFieldTy>
@@ -112,3 +114,5 @@ consteval T Bit(T ith)
 {
     return static_cast<T>(1 << (ith + 1));
 }
+
+// NOLINTEND

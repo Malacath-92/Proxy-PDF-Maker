@@ -39,6 +39,7 @@ struct UnitInfo
     // clang-format on
 };
 
+// NOLINTBEGIN(readability-identifier-naming)
 struct Config
 {
     bool EnableUncrop{ false };
@@ -54,7 +55,7 @@ struct Config
     ImageFormat PdfImageFormat{ ImageFormat::Png };
     std::optional<int> PngCompression{ std::nullopt };
     std::optional<int> JpgQuality{ std::nullopt };
-    UnitInfo BaseUnit{ SupportedBaseUnits[0] };
+    UnitInfo BaseUnit{ c_SupportedBaseUnits[0] };
 
     static inline constexpr std::string_view FitSize{ "Fit" };
     static inline constexpr std::string_view BasePDFSize{ "Base Pdf" };
@@ -128,7 +129,7 @@ struct Config
 
     void SetPdfBackend(PdfBackend backend);
 
-    static inline constexpr std::array SupportedBaseUnits{
+    static inline constexpr std::array c_SupportedBaseUnits{
         UnitInfo{
             "mm",
             "mm",
@@ -153,7 +154,7 @@ struct Config
 
     static inline constexpr std::optional<UnitInfo> GetUnitFromName(std::string_view unit_name)
     {
-        for (const auto& unit_info : SupportedBaseUnits)
+        for (const auto& unit_info : c_SupportedBaseUnits)
         {
             if (unit_info.m_Name == unit_name)
             {
@@ -164,7 +165,7 @@ struct Config
     }
     static inline constexpr std::optional<UnitInfo> GetUnitFromValue(Length unit_value)
     {
-        for (const auto& unit_info : SupportedBaseUnits)
+        for (const auto& unit_info : c_SupportedBaseUnits)
         {
             if (dla::math::abs(unit_info.m_Unit - unit_value) < 0.0001_mm)
             {
@@ -174,6 +175,7 @@ struct Config
         return std::nullopt;
     }
 };
+// NOLINTEND(readability-identifier-naming)
 
 Config LoadConfig();
 void SaveConfig(Config config);

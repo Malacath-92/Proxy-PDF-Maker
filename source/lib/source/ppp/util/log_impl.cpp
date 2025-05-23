@@ -29,13 +29,13 @@ Log::LogImpl::~LogImpl()
 
 Log* Log::LogImpl::GetInstance(std::string_view log_name)
 {
-    std::shared_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
+    std::shared_lock<std::shared_mutex> write_lock(g_InstanceListMutex);
 
     // TODO: C++20 heterogenous lookup
-    // auto it = m_Instances.find(log_name);
+    // auto it = g_Instances.find(log_name);
 
-    auto it = m_Instances.find(std::string{ log_name });
-    if (it != m_Instances.end())
+    auto it = g_Instances.find(std::string{ log_name });
+    if (it != g_Instances.end())
         return it->second->m_ParentLog;
     return nullptr;
 }
@@ -46,41 +46,41 @@ void Log::LogImpl::RegisterInstance(Log* parent_log)
 
     m_ParentLog = parent_log;
 
-    std::unique_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
-    if (m_Instances.find(m_LogName) != m_Instances.end())
+    std::unique_lock<std::shared_mutex> write_lock(g_InstanceListMutex);
+    if (g_Instances.find(m_LogName) != g_Instances.end())
         throw "Log-Name Redefinition";
-    m_Instances[m_LogName] = this;
+    g_Instances[m_LogName] = this;
 }
 void Log::LogImpl::UnregisterInstance()
 {
     m_ParentLog = nullptr;
 
-    if (m_Instances.count(m_LogName) > 0)
+    if (g_Instances.count(m_LogName) > 0)
     {
-        std::unique_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
-        m_Instances.erase(m_LogName);
+        std::unique_lock<std::shared_mutex> write_lock(g_InstanceListMutex);
+        g_Instances.erase(m_LogName);
     }
 }
 
 bool Log::LogImpl::RegisterThreadName(std::string_view thread_name)
 {
-    std::unique_lock<std::shared_mutex> write_lock(m_ThreadListMutex);
+    std::unique_lock<std::shared_mutex> write_lock(g_ThreadListMutex);
 
     std::thread::id thread_id = std::this_thread::get_id();
-    auto it = m_ThreadList.find(thread_id);
-    if (it != m_ThreadList.end())
+    auto it = g_ThreadList.find(thread_id);
+    if (it != g_ThreadList.end())
         return false;
 
-    m_ThreadList[thread_id] = thread_name;
+    g_ThreadList[thread_id] = thread_name;
     return true;
 }
 
 std::string_view Log::LogImpl::GetThreadName(const std::thread::id& thread_id)
 {
-    std::shared_lock<std::shared_mutex> read_lock(m_ThreadListMutex);
+    std::shared_lock<std::shared_mutex> read_lock(g_ThreadListMutex);
 
-    auto it = m_ThreadList.find(thread_id);
-    if (it != m_ThreadList.end())
+    auto it = g_ThreadList.find(thread_id);
+    if (it != g_ThreadList.end())
         return it->second;
 
     return "Unregistered";
@@ -180,33 +180,33 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
 
         stream << "<";
         if (bool(detail_bits & LogFlags::DetailTime))
-            stream << detail_info.Time << CON_DEL(LogFlags::DetailTime);
+            stream << detail_info.m_Time << CON_DEL(LogFlags::DetailTime);
         if (bool(detail_bits & LogFlags::DetailFile))
         {
-            if (detail_info.File.starts_with(PPP_SOURCE_ROOT))
+            if (detail_info.m_File.starts_with(PPP_SOURCE_ROOT))
             {
-                stream << detail_info.File.substr(strlen(PPP_SOURCE_ROOT)) << CON_DEL(LogFlags::DetailFile);
+                stream << detail_info.m_File.substr(strlen(PPP_SOURCE_ROOT)) << CON_DEL(LogFlags::DetailFile);
             }
             else
             {
-                stream << detail_info.File << CON_DEL(LogFlags::DetailFile);
+                stream << detail_info.m_File << CON_DEL(LogFlags::DetailFile);
             }
         }
         if (bool(detail_bits & LogFlags::DetailLine))
         {
             if (bool(detail_bits & LogFlags::DetailColumn))
             {
-                stream << detail_info.Line << ":" << detail_info.Column << CON_DEL(LogFlags::DetailColumn);
+                stream << detail_info.m_Line << ":" << detail_info.m_Column << CON_DEL(LogFlags::DetailColumn);
             }
             else
             {
-                stream << detail_info.Line << CON_DEL(LogFlags::DetailLine);
+                stream << detail_info.m_Line << CON_DEL(LogFlags::DetailLine);
             }
         }
         if (bool(detail_bits & LogFlags::DetailFunction))
-            stream << detail_info.Function << CON_DEL(LogFlags::DetailFunction);
+            stream << detail_info.m_Function << CON_DEL(LogFlags::DetailFunction);
         if (bool(detail_bits & LogFlags::DetailThread))
-            stream << detail_info.Thread << CON_DEL(LogFlags::DetailThread);
+            stream << detail_info.m_Thread << CON_DEL(LogFlags::DetailThread);
         stream << ">";
 
 #undef CON_DEL
@@ -220,10 +220,10 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
     if (GetStacktraceEnabled(level))
     {
 #ifdef __cpp_lib_stacktrace
-        if (!detail_info.StackTrace.empty())
+        if (!detail_info.m_StackTrace.empty())
         {
             stream << "Stacktrace:\n";
-            for (std::string_view stack_element : detail_info.StackTrace)
+            for (std::string_view stack_element : detail_info.m_StackTrace)
             {
                 stream << stack_element << "\n";
             }

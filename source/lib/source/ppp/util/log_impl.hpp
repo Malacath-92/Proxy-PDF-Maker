@@ -26,7 +26,7 @@ class Log::LogImpl
     static bool RegisterThreadName(std::string_view thread_name);
     static std::string_view GetThreadName(const std::thread::id& thread_id);
 
-    uint32_t InstallHook(Log::LogHook hook);
+    uint32_t InstallHook(typename Log::LogHook hook);
     void UninstallHook(uint32_t hook_id);
 
     bool GetStacktraceEnabled(Log::LogLevel level) const;
@@ -46,7 +46,7 @@ class Log::LogImpl
     struct InstalledLogHook
     {
         uint32_t m_HookId;
-        Log::LogHook m_Hook;
+        typename Log::LogHook m_Hook;
     };
     std::vector<InstalledLogHook> m_LogHooks;
 
@@ -54,9 +54,9 @@ class Log::LogImpl
 
     const LogFlags m_LogFlags;
 
-    inline static std::shared_mutex m_InstanceListMutex;
-    inline static std::unordered_map<std::string, LogImpl*> m_Instances;
+    inline static std::shared_mutex g_InstanceListMutex;
+    inline static std::unordered_map<std::string, LogImpl*> g_Instances;
 
-    inline static std::shared_mutex m_ThreadListMutex;
-    inline static std::unordered_map<std::thread::id, std::string> m_ThreadList;
+    inline static std::shared_mutex g_ThreadListMutex;
+    inline static std::unordered_map<std::thread::id, std::string> g_ThreadList;
 };

@@ -14,11 +14,13 @@ using Length = dla::length_unit;
 
 namespace dla::unit_name
 {
+// NOLINTBEGIN
 struct pixel
 {
     static constexpr const char* id = "pixels";
     static constexpr const char* symbol = "pixels";
 };
+// NOLINTEND
 } // namespace dla::unit_name
 using pixel_tag = dla::unit_tag<dla::unit_name::pixel>;
 using Pixel = dla::base_unit<pixel_tag>;
@@ -60,7 +62,7 @@ struct TagT
 {
 };
 template<class T>
-inline constexpr TagT<T> Tag{};
+inline constexpr TagT<T> c_Tag{};
 // clang-format off
 
 template<class FunT>
@@ -116,7 +118,7 @@ struct AtScopeExit
 {
     ~AtScopeExit()
     {
-        Dtor();
+        m_Dtor();
     }
-    FunT Dtor;
+    FunT m_Dtor;
 };

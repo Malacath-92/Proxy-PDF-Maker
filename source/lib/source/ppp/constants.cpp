@@ -4,8 +4,8 @@
 
 fs::path cwd()
 {
-    thread_local fs::path current_working_directory{
+    thread_local fs::path s_CurrentWorkingDirectory{
         QDir::currentPath().toStdString()
     };
-    return current_working_directory;
+    return s_CurrentWorkingDirectory;
 }

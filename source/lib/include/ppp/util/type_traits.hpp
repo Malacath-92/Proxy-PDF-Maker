@@ -2,6 +2,8 @@
 
 #include <type_traits>
 
+// NOLINTBEGIN
+
 /*
         Always evaluate to true/false
 */
@@ -82,3 +84,5 @@ struct concat<tuple_t<lhs_t...>, tuple_t<rhs_t...>>
 };
 template<class tuple_lhs_t, class tuple_rhs_t>
 using concat_t = typename concat<tuple_lhs_t, tuple_rhs_t>::type;
+
+// NOLINTEND

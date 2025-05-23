@@ -199,7 +199,7 @@ Config LoadConfig()
                 if (base_unit.isValid())
                 {
                     config.BaseUnit = Config::GetUnitFromName(base_unit.toString().toStdString())
-                                          .value_or(Config::SupportedBaseUnits[0]);
+                                          .value_or(Config::c_SupportedBaseUnits[0]);
                 }
             }
 

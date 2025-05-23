@@ -44,11 +44,11 @@ class CardProvider : public QObject, public efsw::FileWatchListener
   private:
     const Project& m_Project;
 
-    fs::path ImageDir;
-    fs::path CropDir;
-    fs::path OutputDir;
+    fs::path m_ImageDir;
+    fs::path m_CropDir;
+    fs::path m_OutputDir;
 
-    efsw::FileWatcher Watcher;
+    efsw::FileWatcher m_Watcher;
 
-    bool Started{ false };
+    bool m_Started{ false };
 };

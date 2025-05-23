@@ -22,7 +22,7 @@
 
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
-    return ListFiles(path, ValidImageExtensions);
+    return ListFiles(path, g_ValidImageExtensions);
 }
 
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two)
@@ -37,7 +37,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
                 images.push_back(path.filename());
             }
         },
-        ValidImageExtensions);
+        g_ValidImageExtensions);
     return images;
 }
 
@@ -132,7 +132,7 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
             };
             const auto read_arr = [&in_file, &read]<class T>(TagT<T>) -> std::vector<T>
             {
-                const size_t size{ read(Tag<size_t>) };
+                const size_t size{ read(c_Tag<size_t>) };
                 std::vector<T> buffer(size, T{});
 
                 const size_t data_size{ size * sizeof(T) };
@@ -140,7 +140,7 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                 return buffer;
             };
 
-            const size_t version_uint64_read{ read(Tag<size_t>) };
+            const size_t version_uint64_read{ read(c_Tag<size_t>) };
             if (version_uint64_read != ImageCacheFormatVersion())
             {
                 in_file.close();
@@ -148,24 +148,24 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                 return {};
             }
 
-            const size_t num_images{ read(Tag<size_t>) };
+            const size_t num_images{ read(c_Tag<size_t>) };
 
             ImgDict img_dict{};
             for (size_t i = 0; i < num_images; ++i)
             {
-                const std::vector img_name_buf{ read_arr(Tag<char>) };
+                const std::vector img_name_buf{ read_arr(c_Tag<char>) };
                 const std::string_view img_name{ img_name_buf.data(), img_name_buf.size() };
 
                 ImagePreview img{};
 
                 {
-                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                    img.CroppedImage = Image::Decode(img_buf);
+                    const std::vector img_buf{ read_arr(c_Tag<std::byte>) };
+                    img.m_CroppedImage = Image::Decode(img_buf);
                 }
 
                 {
-                    const std::vector img_buf{ read_arr(Tag<std::byte>) };
-                    img.UncroppedImage = Image::Decode(img_buf);
+                    const std::vector img_buf{ read_arr(c_Tag<std::byte>) };
+                    img.m_UncroppedImage = Image::Decode(img_buf);
                 }
 
                 img_dict[img_name] = std::move(img);
@@ -208,11 +208,11 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             write_arr(name_str.data(), name_str.size());
 
             {
-                const auto buf{ image.CroppedImage.EncodePng() };
+                const auto buf{ image.m_CroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
             {
-                const auto buf{ image.UncroppedImage.EncodePng() };
+                const auto buf{ image.m_UncroppedImage.EncodePng() };
                 write_arr(buf.data(), buf.size());
             }
         }

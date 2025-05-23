@@ -14,16 +14,16 @@
 
 struct CardInfo
 {
-    uint32_t Num{ 1 };
-    fs::path Backside{};
-    bool BacksideShortEdge{ false };
+    uint32_t m_Num{ 1 };
+    fs::path m_Backside{};
+    bool m_BacksideShortEdge{ false };
 };
 using CardMap = std::map<fs::path, CardInfo>;
 
 struct ImagePreview
 {
-    Image UncroppedImage;
-    Image CroppedImage;
+    Image m_UncroppedImage;
+    Image m_CroppedImage;
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
@@ -78,6 +78,7 @@ class Project : public QObject
     void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
 
   public:
+    // NOLINTBEGIN(readability-identifier-naming)
     struct ProjectData
     {
         // Project options
@@ -134,6 +135,7 @@ class Project : public QObject
         Length CardCornerRadius(const Config& config) const;
     };
     ProjectData Data;
+    // NOLINTEND(readability-identifier-naming)
 
   private:
     Project(const Project&) = delete;

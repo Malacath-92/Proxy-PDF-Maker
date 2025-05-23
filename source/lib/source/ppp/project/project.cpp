@@ -50,9 +50,9 @@ void Project::Load(const fs::path& json_path)
         for (const nlohmann::json& card_json : json["cards"])
         {
             CardInfo& card{ Data.Cards[card_json["name"]] };
-            card.Num = card_json["num"];
-            card.Backside = card_json["backside"].get<std::string>();
-            card.BacksideShortEdge = card_json["backside_short_edge"];
+            card.m_Num = card_json["num"];
+            card.m_Backside = card_json["backside"].get<std::string>();
+            card.m_BacksideShortEdge = card_json["backside_short_edge"];
         }
 
         Data.BleedEdge.value = json["bleed_edge"];
@@ -136,9 +136,9 @@ void Project::Dump(const fs::path& json_path) const
         {
             nlohmann::json& card_json{ cards.emplace_back() };
             card_json["name"] = name.string();
-            card_json["num"] = card.Num;
-            card_json["backside"] = card.Backside.string();
-            card_json["backside_short_edge"] = card.BacksideShortEdge;
+            card_json["num"] = card.m_Num;
+            card_json["backside"] = card.m_Backside.string();
+            card_json["backside_short_edge"] = card.m_BacksideShortEdge;
         }
         json["cards"] = cards;
 
@@ -213,7 +213,7 @@ void Project::InitProperties()
             Data.Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
             {
-                Data.Cards[img].Num = 0;
+                Data.Cards[img].m_Num = 0;
             }
         }
     }
@@ -271,17 +271,17 @@ const Image& Project::GetCroppedPreview(const fs::path& image_name) const
 {
     if (Data.Previews.contains(image_name))
     {
-        return Data.Previews.at(image_name).CroppedImage;
+        return Data.Previews.at(image_name).m_CroppedImage;
     }
-    return Data.FallbackPreview.CroppedImage;
+    return Data.FallbackPreview.m_CroppedImage;
 }
 const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
 {
     if (Data.Previews.contains(image_name))
     {
-        return Data.Previews.at(image_name).UncroppedImage;
+        return Data.Previews.at(image_name).m_UncroppedImage;
     }
-    return Data.FallbackPreview.UncroppedImage;
+    return Data.FallbackPreview.m_UncroppedImage;
 }
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
@@ -298,9 +298,9 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
     if (Data.Cards.contains(image_name))
     {
         const CardInfo& card{ Data.Cards.at(image_name) };
-        if (!card.Backside.empty())
+        if (!card.m_Backside.empty())
         {
-            return card.Backside;
+            return card.m_Backside;
         }
     }
     return Data.BacksideDefault;

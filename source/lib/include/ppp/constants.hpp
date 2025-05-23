@@ -7,4 +7,4 @@
 
 #include <ppp/util.hpp>
 
-fs::path cwd();
+fs::path cwd(); // NOLINT

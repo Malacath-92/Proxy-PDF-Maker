@@ -40,11 +40,11 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     std::vector<TempImageData> images;
     for (const auto& [img, info] : project.Data.Cards)
     {
-        for (uint32_t i = 0; i < info.Num; i++)
+        for (uint32_t i = 0; i < info.m_Num; i++)
         {
             images.push_back({
                 img,
-                info.BacksideShortEdge,
+                info.m_BacksideShortEdge,
             });
         }
     }
@@ -52,7 +52,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     auto page_has_space{
         [=](const Page& page)
         {
-            const size_t regular_images{ page.RegularImages.size() };
+            const size_t regular_images{ page.m_Images.size() };
             const size_t single_spaces{ regular_images };
             const size_t free_single_spaces{ images_per_page - single_spaces };
             return free_single_spaces > 0;
@@ -82,7 +82,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
         }
 
         // add image to the page
-        page_with_space->RegularImages.push_back({ img, backside_short_edge });
+        page_with_space->m_Images.push_back({ img, backside_short_edge });
 
         // push full page into final list
         if (is_page_full(*page_with_space))
@@ -106,8 +106,8 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
         [&](const PageImage& image)
         {
             return PageImage{
-                project.GetBacksideImage(image.Image),
-                image.BacksideShortEdge
+                project.GetBacksideImage(image.m_Image),
+                image.m_BacksideShortEdge
             };
         }
     };
@@ -116,7 +116,7 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
     for (const Page& page : pages)
     {
         Page& backside_page{ backside_pages.emplace_back() };
-        backside_page.RegularImages = page.RegularImages | std::views::transform(backside_of_image) | std::ranges::to<std::vector>();
+        backside_page.m_Images = page.m_Images | std::views::transform(backside_of_image) | std::ranges::to<std::vector>();
     }
 
     return backside_pages;
@@ -137,7 +137,7 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
 
     {
         size_t k{ 0 };
-        for (const auto& [img, backside_short_edge] : page.RegularImages)
+        for (const auto& [img, backside_short_edge] : page.m_Images)
         {
             dla::uvec2 coord{ get_coord(k) };
             const auto& [x, y]{ coord.pod() };

@@ -16,7 +16,7 @@ namespace cv
 class Mat;
 }
 
-inline const std::array ValidImageExtensions{
+inline const std::array g_ValidImageExtensions{
     ".bmp"_p,
     ".gif"_p,
     ".jpg"_p,

@@ -4,8 +4,8 @@
 
 Log::Log(LogFlags log_flags, std::string_view log_name)
 {
-    mImpl = std::make_unique<LogImpl>(log_flags, log_name);
-    mImpl->RegisterInstance(this);
+    m_Impl = std::make_unique<LogImpl>(log_flags, log_name);
+    m_Impl->RegisterInstance(this);
 }
 
 Log::~Log() = default;
@@ -27,19 +27,19 @@ std::string_view Log::GetThreadName(const std::thread::id& thread_id)
 
 uint32_t Log::InstallHook(LogHook hook)
 {
-    return mImpl->InstallHook(std::move(hook));
+    return m_Impl->InstallHook(std::move(hook));
 }
 void Log::UninstallHook(uint32_t hook_id)
 {
-    return mImpl->UninstallHook(hook_id);
+    return m_Impl->UninstallHook(hook_id);
 }
 
 bool Log::GetStacktraceEnabled(LogLevel level) const
 {
-    return mImpl->GetStacktraceEnabled(level);
+    return m_Impl->GetStacktraceEnabled(level);
 }
 
 void Log::PrintRaw(const DetailInformation& detail_info, LogLevel level, const char* message)
 {
-    mImpl->Print(detail_info, level, message);
+    m_Impl->Print(detail_info, level, message);
 }

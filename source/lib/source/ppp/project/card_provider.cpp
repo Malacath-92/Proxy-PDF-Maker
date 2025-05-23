@@ -7,14 +7,14 @@
 
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
-    , ImageDir{ project.Data.ImageDir }
-    , CropDir{ CFG.EnableUncrop ? project.Data.CropDir : "" }
-    , OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) }
+    , m_ImageDir{ project.Data.ImageDir }
+    , m_CropDir{ CFG.EnableUncrop ? project.Data.CropDir : "" }
+    , m_OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) }
 {
-    Watcher.addWatch(ImageDir.string(), this, false);
-    if (!CropDir.empty())
+    m_Watcher.addWatch(m_ImageDir.string(), this, false);
+    if (!m_CropDir.empty())
     {
-        Watcher.addWatch(CropDir.string(), this, false);
+        m_Watcher.addWatch(m_CropDir.string(), this, false);
     }
 }
 
@@ -25,10 +25,10 @@ void CardProvider::Start()
         CardAdded(image, true, true);
     }
 
-    if (!Started)
+    if (!m_Started)
     {
-        Watcher.watch();
-        Started = true;
+        m_Watcher.watch();
+        m_Started = true;
     }
 }
 
@@ -45,15 +45,15 @@ void CardProvider::ImageDirChanged()
         CardRemoved(image);
     }
 
-    Watcher.removeWatch((ImageDir / "").string());
-    if (!CropDir.empty())
+    m_Watcher.removeWatch((m_ImageDir / "").string());
+    if (!m_CropDir.empty())
     {
-        Watcher.removeWatch((CropDir / "").string());
+        m_Watcher.removeWatch((m_CropDir / "").string());
     }
 
-    ImageDir = m_Project.Data.ImageDir;
-    CropDir = m_Project.Data.CropDir;
-    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_ImageDir = m_Project.Data.ImageDir;
+    m_CropDir = m_Project.Data.CropDir;
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // ... and add all new files ...
     Start();
@@ -68,7 +68,7 @@ void CardProvider::CardSizeChanged()
 }
 void CardProvider::BleedChanged()
 {
-    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -82,14 +82,14 @@ void CardProvider::EnableUncropChanged()
     // that are in the crop folder but not the images folder ...
 
     const auto images{
-        ListImageFiles(ImageDir)
+        ListImageFiles(m_ImageDir)
     };
-    if (!CropDir.empty())
+    if (!m_CropDir.empty())
     {
         // CFG.EnableUncrop was enabled, is not anymore, so we remove the
         // difference ...
         const auto crop_images{
-            ListImageFiles(CropDir)
+            ListImageFiles(m_CropDir)
         };
         for (const fs::path& image : crop_images)
         {
@@ -100,8 +100,8 @@ void CardProvider::EnableUncropChanged()
         }
 
         // ... and remove the old watch ...
-        CropDir.clear();
-        Watcher.removeWatch((CropDir / "").string());
+        m_CropDir.clear();
+        m_Watcher.removeWatch((m_CropDir / "").string());
     }
     else
     {
@@ -119,13 +119,13 @@ void CardProvider::EnableUncropChanged()
         }
 
         // ... and add a new watch ...
-        CropDir = m_Project.Data.CropDir;
-        Watcher.addWatch(CropDir.string(), this, false);
+        m_CropDir = m_Project.Data.CropDir;
+        m_Watcher.addWatch(m_CropDir.string(), this, false);
     }
 }
 void CardProvider::ColorCubeChanged()
 {
-    OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -165,7 +165,7 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
     }
 
     // A non-image has changed, ignore this
-    if (!std::ranges::contains(ValidImageExtensions, filepath.extension()))
+    if (!std::ranges::contains(g_ValidImageExtensions, filepath.extension()))
     {
         return;
     }
@@ -189,7 +189,7 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
 
 std::vector<fs::path> CardProvider::ListFiles()
 {
-    return !CropDir.empty()
-               ? ListImageFiles(ImageDir, CropDir)
-               : ListImageFiles(ImageDir);
+    return !m_CropDir.empty()
+               ? ListImageFiles(m_ImageDir, m_CropDir)
+               : ListImageFiles(m_ImageDir);
 }

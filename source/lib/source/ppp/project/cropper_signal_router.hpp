@@ -16,7 +16,7 @@ class CropperSignalRouter : public QObject
     template<class FunT>
     void SetWork(FunT&& work)
     {
-        Work = std::forward<FunT>(work);
+        m_Work = std::forward<FunT>(work);
     }
 
   signals:
@@ -32,9 +32,9 @@ class CropperSignalRouter : public QObject
   public slots:
     void DoWork()
     {
-        Work();
+        m_Work();
     }
 
   private:
-    std::function<void()> Work;
+    std::function<void()> m_Work;
 };

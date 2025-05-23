@@ -56,7 +56,7 @@ int main(int argc, char** argv)
         LogFlags::DetailThread |
         LogFlags::DetailStacktrace
     };
-    Log main_log{ log_flags, Log::m_MainLogName };
+    Log main_log{ log_flags, Log::c_MainLogName };
 
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());

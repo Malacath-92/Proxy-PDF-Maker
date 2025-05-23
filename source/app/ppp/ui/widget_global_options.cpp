@@ -22,7 +22,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     const auto base_unit_name{ CFG.BaseUnit.m_Name };
     auto* base_unit{ new ComboBoxWithLabel{
         "&Units",
-        CFG.SupportedBaseUnits | std::views::transform(&UnitInfo::m_Name) | std::ranges::to<std::vector>(),
+        CFG.c_SupportedBaseUnits | std::views::transform(&UnitInfo::m_Name) | std::ranges::to<std::vector>(),
         base_unit_name } };
     base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
@@ -85,7 +85,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         [this](const QString& t)
         {
             const auto base_unit{ CFG.GetUnitFromName(t.toStdString())
-                                      .value_or(Config::SupportedBaseUnits[0]) };
+                                      .value_or(Config::c_SupportedBaseUnits[0]) };
             CFG.BaseUnit = base_unit;
             SaveConfig(CFG);
             BaseUnitChanged();

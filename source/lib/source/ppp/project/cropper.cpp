@@ -667,8 +667,8 @@ bool Cropper::DoPreviewWork(T* signaller)
                 const Image image{ Image::Read(input_file).Resize(uncropped_size) };
 
                 ImagePreview image_preview{};
-                image_preview.UncroppedImage = image;
-                image_preview.CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
+                image_preview.m_UncroppedImage = image;
+                image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
 
                 {
                     std::unique_lock image_db_lock{ m_ImageDBMutex };
@@ -707,8 +707,8 @@ bool Cropper::DoPreviewWork(T* signaller)
                 const Image image{ Image::Read(crop_file).Resize(cropped_size) };
 
                 ImagePreview image_preview{};
-                image_preview.CroppedImage = image;
-                image_preview.UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
+                image_preview.m_CroppedImage = image;
+                image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
 
                 signaller->PreviewUpdated(card_name, image_preview);
             }

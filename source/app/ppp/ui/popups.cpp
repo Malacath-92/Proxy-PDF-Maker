@@ -72,8 +72,8 @@ std::optional<fs::path> OpenFileDialog(std::string_view title, const fs::path& r
 
 std::optional<fs::path> OpenImageDialog(const fs::path& root)
 {
-    std::string image_filters_str{ "Images (*" + ValidImageExtensions[0].string() };
-    for (const fs::path& valid_extension : ValidImageExtensions | std::views::drop(1))
+    std::string image_filters_str{ "Images (*" + g_ValidImageExtensions[0].string() };
+    for (const fs::path& valid_extension : g_ValidImageExtensions | std::views::drop(1))
     {
         image_filters_str.append(" *");
         image_filters_str.append(valid_extension.string());
@@ -210,7 +210,7 @@ GenericPopup::UninstallLogHookAtScopeExit GenericPopup::InstallLogHook()
         UninstallLogHook();
     }
 
-    m_LogHookId = Log::GetInstance(Log::m_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
+    m_LogHookId = Log::GetInstance(Log::c_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
                                                                     { UpdateText(message); });
 
     return UninstallLogHookAtScopeExit{ this };
@@ -220,7 +220,7 @@ void GenericPopup::UninstallLogHook()
 {
     if (m_LogHookId.has_value())
     {
-        Log::GetInstance(Log::m_MainLogName)->UninstallHook(m_LogHookId.value());
+        Log::GetInstance(Log::c_MainLogName)->UninstallHook(m_LogHookId.value());
         m_LogHookId.reset();
     }
 }

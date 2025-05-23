@@ -1,3 +1,5 @@
+HeaderFilterRegex: ppp/.*
+
 Checks:
  - -clang-analyzer-optin.core.EnumCastOutOfRange
  - readability-identifier-naming
@@ -17,6 +19,10 @@ CheckOptions:
     value:           "CamelCase"
   - key:             readability-identifier-naming.MemberPrefix
     value:           "m_"
+  - key:             readability-identifier-naming.StaticVariableCase
+    value:           "CamelCase"
+  - key:             readability-identifier-naming.StaticVariablePrefix
+    value:           "s_"
   - key:             readability-identifier-naming.ParameterCase
     value:           "lower_case"
   - key:             readability-identifier-naming.VariableCase
@@ -26,4 +32,6 @@ CheckOptions:
   - key:             readability-identifier-naming.ConstexprVariablePrefix
     value:           "c_"
   - key:             readability-identifier-naming.GlobalVariableCase
-    value:           "UPPER_CASE"
+    value:           "CamelCase"
+  - key:             readability-identifier-naming.GlobalVariablePrefix
+    value:           "g_"

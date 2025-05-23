@@ -80,7 +80,7 @@ fs::path GeneratePdf(const Project& project)
                 Length dy = 0_pts,
                 bool is_backside = false)
             {
-                const auto img_path{ output_dir / image.Image };
+                const auto img_path{ output_dir / image.m_Image };
                 if (fs::exists(img_path))
                 {
                     const auto orig_x{ is_backside ? backside_start_x : start_x };
@@ -90,7 +90,7 @@ fs::path GeneratePdf(const Project& project)
                     const auto real_w{ card_width };
                     const auto real_h{ card_height };
 
-                    const auto rotation{ GetCardRotation(is_backside, image.BacksideShortEdge) };
+                    const auto rotation{ GetCardRotation(is_backside, image.m_BacksideShortEdge) };
                     PdfPage::ImageData image_data{
                         .m_Path{ img_path },
                         .m_Pos{ real_x, real_y },
@@ -204,7 +204,7 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
@@ -234,10 +234,10 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->Image.get().string());
+                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
 
                         auto backside_card{ card.value() };
-                        backside_card.Image = project.GetBacksideImage(card->Image);
+                        backside_card.m_Image = project.GetBacksideImage(card->m_Image);
                         draw_image(back_page, backside_card, columns - x - 1, y, project.Data.BacksideOffset, 0_pts, true);
                         i++;
 

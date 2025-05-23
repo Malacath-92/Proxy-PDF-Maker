@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ctime>
+#include <functional>
 #include <memory>
 #include <source_location>
 #include <string>
@@ -57,13 +58,13 @@ class Log
     */
     struct DetailInformation
     {
-        std::time_t Time;
-        std::string_view File;
-        std::size_t Line;
-        std::size_t Column;
-        std::string_view Function;
-        std::string_view Thread;
-        std::vector<std::string> StackTrace;
+        std::time_t m_Time;
+        std::string_view m_File;
+        std::size_t m_Line;
+        std::size_t m_Column;
+        std::string_view m_Function;
+        std::string_view m_Thread;
+        std::vector<std::string> m_StackTrace;
     };
 
     /*
@@ -80,13 +81,13 @@ class Log
     struct LogMessageWrapper
     {
         consteval LogMessageWrapper(const char* message, std::source_location source_info = std::source_location::current())
-            : Message{ message }
-            , SourceInfo{ source_info }
+            : m_Message{ message }
+            , m_SourceInfo{ source_info }
         {
         }
 
-        fmt::format_string<Args...> Message{};
-        std::source_location SourceInfo{};
+        fmt::format_string<Args...> m_Message{};
+        std::source_location m_SourceInfo{};
     };
     template<class... Args>
     using LogMessage = LogMessageWrapper<identity_t<Args>...>;
@@ -116,10 +117,10 @@ class Log
             const auto required = format_result.size + 1;
             if (required > BufferSize)
             {
-                constexpr const char buffer_size_error[] = R"(
+                constexpr const char c_BufferSizeError[] = R"(
 Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but requires at least {}.
 )";
-                Print<256>(detail_info, level, buffer_size_error, BufferSize, required);
+                Print<256>(detail_info, level, c_BufferSizeError, BufferSize, required);
             }
             PrintRaw(detail_info, level, (const char*)buffer);
         }
@@ -132,17 +133,17 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
         if (log_sink)
         {
 #ifdef _WIN32
-            std::string file{ message.SourceInfo.file_name() };
+            std::string file{ message.m_SourceInfo.file_name() };
             std::ranges::replace(file, '\\', '/');
 #else
-            std::string_view file{ message.SourceInfo.file_name() };
+            std::string_view file{ message.m_SourceInfo.file_name() };
 #endif
             DetailInformation detail_info{
                 std::time(nullptr),
                 file,
-                message.SourceInfo.line(),
-                message.SourceInfo.column(),
-                message.SourceInfo.function_name(),
+                message.m_SourceInfo.line(),
+                message.m_SourceInfo.column(),
+                message.m_SourceInfo.function_name(),
                 GetThreadName(std::this_thread::get_id()),
                 {},
             };
@@ -156,7 +157,7 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
                     const std::string source_file = stack_elem.source_file();
                     if (!source_file.empty())
                     {
-                        detail_info.StackTrace.push_back(
+                        detail_info.m_StackTrace.push_back(
                             fmt::format("  {:<64} @ {}:{}",
                                         stack_elem.description(),
                                         source_file,
@@ -164,29 +165,29 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
                     }
                     else
                     {
-                        detail_info.StackTrace.push_back(
+                        detail_info.m_StackTrace.push_back(
                             fmt::format("  {}", stack_elem.description()));
                     }
                 }
 
-                if (!detail_info.StackTrace.empty())
+                if (!detail_info.m_StackTrace.empty())
                 {
-                    detail_info.StackTrace[0][0] = '>';
+                    detail_info.m_StackTrace[0][0] = '>';
                 }
             }
 #endif
-            log_sink->Print<BufferSize>(detail_info, level, message.Message, std::forward<Args>(args)...);
+            log_sink->Print<BufferSize>(detail_info, level, message.m_Message, std::forward<Args>(args)...);
         }
     }
 
     /*
             The name of the main log, globally available so one can query for the main log or create it themselves
     */
-    static constexpr std::string_view m_MainLogName{ "Main-Log" };
+    static constexpr std::string_view c_MainLogName{ "Main-Log" };
 
   private:
     class LogImpl;
-    std::unique_ptr<LogImpl> mImpl;
+    std::unique_ptr<LogImpl> m_Impl;
 };
 
 template<std::size_t BufferSize, class... Args>
@@ -218,25 +219,25 @@ void LogFatalEx(std::string_view log_name, const Log::LogMessage<Args...>& messa
 template<class... Args>
 void LogInfo(const Log::LogMessage<Args...>& message, Args&&... args)
 {
-    Log::DoLog<0>(::Log::m_MainLogName, Log::LogLevel::Information, message, std::forward<Args>(args)...);
+    Log::DoLog<0>(::Log::c_MainLogName, Log::LogLevel::Information, message, std::forward<Args>(args)...);
 }
 template<class... Args>
 void LogDebug(const Log::LogMessage<Args...>& message, Args&&... args)
 {
-    Log::DoLog<0>(::Log::m_MainLogName, Log::LogLevel::Debug, message, std::forward<Args>(args)...);
+    Log::DoLog<0>(::Log::c_MainLogName, Log::LogLevel::Debug, message, std::forward<Args>(args)...);
 }
 template<class... Args>
 void LogWarning(const Log::LogMessage<Args...>& message, Args&&... args)
 {
-    Log::DoLog<0>(::Log::m_MainLogName, Log::LogLevel::Warning, message, std::forward<Args>(args)...);
+    Log::DoLog<0>(::Log::c_MainLogName, Log::LogLevel::Warning, message, std::forward<Args>(args)...);
 }
 template<class... Args>
 void LogError(const Log::LogMessage<Args...>& message, Args&&... args)
 {
-    Log::DoLog<0>(::Log::m_MainLogName, Log::LogLevel::Error, message, std::forward<Args>(args)...);
+    Log::DoLog<0>(::Log::c_MainLogName, Log::LogLevel::Error, message, std::forward<Args>(args)...);
 }
 template<class... Args>
 void LogFatal(const Log::LogMessage<Args...>& message, Args&&... args)
 {
-    Log::DoLog<0>(::Log::m_MainLogName, Log::LogLevel::Fatal, message, std::forward<Args>(args)...);
+    Log::DoLog<0>(::Log::c_MainLogName, Log::LogLevel::Fatal, message, std::forward<Args>(args)...);
 }

@@ -146,14 +146,14 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
             {
                 if (BleedEdge > 0_mm)
                 {
-                    const Image& uncropped_image{ preview.UncroppedImage };
+                    const Image& uncropped_image{ preview.m_UncroppedImage };
                     Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
                 else
                 {
-                    const Image& image{ preview.CroppedImage };
+                    const Image& image{ preview.m_CroppedImage };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }

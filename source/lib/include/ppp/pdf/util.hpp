@@ -11,18 +11,18 @@ class Project;
 
 struct PageImage
 {
-    std::reference_wrapper<const fs::path> Image;
-    bool BacksideShortEdge;
+    std::reference_wrapper<const fs::path> m_Image;
+    bool m_BacksideShortEdge;
 };
 struct Page
 {
-    std::vector<PageImage> RegularImages;
+    std::vector<PageImage> m_Images;
 };
 
 struct GridImage
 {
-    std::reference_wrapper<const fs::path> Image;
-    bool BacksideShortEdge;
+    std::reference_wrapper<const fs::path> m_Image;
+    bool m_BacksideShortEdge;
 };
 using Grid = std::vector<std::vector<std::optional<GridImage>>>;
 
