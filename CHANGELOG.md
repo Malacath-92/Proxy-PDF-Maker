@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom margins now correctly offset backsides in the opposite direction
 - The print preview will now respect the extended guides option
 - Uncrop option will no longer override source images when settings change
+- The included crds sizes for MtG cards now have the right corner radius (requires deleting config.ini to take effect)
+- The included crds sizes for MtG novelty cards is now correct (requires deleting config.ini to take effect)
 
 ## [0.9.4] - 2025-08-05
 
