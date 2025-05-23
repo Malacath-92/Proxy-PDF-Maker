@@ -145,19 +145,19 @@ class WorkThread : public QThread
 
   public:
     WorkThread(std::function<void()> work)
-        : Work{ std::move(work) }
+        : m_Work{ std::move(work) }
     {
     }
     virtual void run() override
     {
-        Work();
+        m_Work();
     }
 
   signals:
     void Refresh(std::string text);
 
   private:
-    std::function<void()> Work;
+    std::function<void()> m_Work;
 };
 
 GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
@@ -169,7 +169,7 @@ GenericPopup::GenericPopup(QWidget* parent, std::string_view text)
     layout->addWidget(text_widget);
     setLayout(layout);
 
-    TextLabel = text_widget;
+    m_TextLabel = text_widget;
 
     UpdateTextImpl(text);
 }
@@ -189,45 +189,45 @@ void GenericPopup::ShowDuringWork(std::function<void()> work)
                      &GenericPopup::UpdateTextImpl);
     work_thread->start();
 
-    Refresh = [work_thread](std::string_view text)
+    m_Refresh = [work_thread](std::string_view text)
     {
         work_thread->Refresh(std::string{ text });
     };
-    WorkerThread.reset(work_thread);
+    m_WorkerThread.reset(work_thread);
 
     PopupBase::Show();
 
     work_thread->quit();
     work_thread->wait();
-    WorkerThread.reset();
-    Refresh = nullptr;
+    m_WorkerThread.reset();
+    m_Refresh = nullptr;
 }
 
 GenericPopup::UninstallLogHookAtScopeExit GenericPopup::InstallLogHook()
 {
-    if (LogHookId.has_value())
+    if (m_LogHookId.has_value())
     {
         UninstallLogHook();
     }
 
-    LogHookId = Log::GetInstance(Log::m_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
-                                                                  { UpdateText(message); });
+    m_LogHookId = Log::GetInstance(Log::m_MainLogName)->InstallHook([this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
+                                                                    { UpdateText(message); });
 
     return UninstallLogHookAtScopeExit{ this };
 }
 
 void GenericPopup::UninstallLogHook()
 {
-    if (LogHookId.has_value())
+    if (m_LogHookId.has_value())
     {
-        Log::GetInstance(Log::m_MainLogName)->UninstallHook(LogHookId.value());
-        LogHookId.reset();
+        Log::GetInstance(Log::m_MainLogName)->UninstallHook(m_LogHookId.value());
+        m_LogHookId.reset();
     }
 }
 
 void GenericPopup::Sleep(dla::time_unit duration)
 {
-    const auto thread{ static_pointer_cast<WorkThread>(WorkerThread) };
+    const auto thread{ static_pointer_cast<WorkThread>(m_WorkerThread) };
     if (thread.get() == QThread::currentThread())
     {
         QThread::sleep(static_cast<unsigned long>(duration / 1_s));
@@ -240,20 +240,20 @@ void GenericPopup::Sleep(dla::time_unit duration)
 
 void GenericPopup::UpdateText(std::string_view text)
 {
-    Refresh(text);
+    m_Refresh(text);
 }
 
 void GenericPopup::UpdateTextImpl(std::string_view text)
 {
     adjustSize();
-    TextLabel->setText(ToQString(text));
+    m_TextLabel->setText(ToQString(text));
     if (text.starts_with("Failure"))
     {
-        TextLabel->setStyleSheet("border: 3px solid red;");
+        m_TextLabel->setStyleSheet("border: 3px solid red;");
     }
     else
     {
-        TextLabel->setStyleSheet("border: 0px solid red;");
+        m_TextLabel->setStyleSheet("border: 0px solid red;");
     }
     adjustSize();
     Recenter();

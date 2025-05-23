@@ -17,7 +17,7 @@ class WidgetWithLabel : public QWidget
     virtual QWidget* GetWidget() const;
 
   private:
-    QWidget* Widget;
+    QWidget* m_Widget;
 };
 
 class ComboBoxWithLabel : public WidgetWithLabel

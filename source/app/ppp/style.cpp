@@ -10,7 +10,7 @@
 #include <ppp/util.hpp>
 
 using namespace std::string_view_literals;
-inline constexpr std::array BuiltInStyles{
+inline constexpr std::array c_BuiltInStyles{
     "Default"sv,
     "Fusion"sv,
 };
@@ -19,7 +19,7 @@ std::vector<std::string> GetStyles()
 {
     std::vector<std::string> styles{};
 
-    for (const auto& builtin_style : BuiltInStyles)
+    for (const auto& builtin_style : c_BuiltInStyles)
     {
         styles.push_back(std::string{ builtin_style });
     }
@@ -51,7 +51,7 @@ std::vector<std::string> GetStyles()
 
 void SetStyle(QApplication& application, std::string_view style)
 {
-    if (std::ranges::contains(BuiltInStyles, style))
+    if (std::ranges::contains(c_BuiltInStyles, style))
     {
         application.setStyleSheet("");
 

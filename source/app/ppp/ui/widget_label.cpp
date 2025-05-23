@@ -7,7 +7,7 @@
 
 WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
-    , Widget{ widget }
+    , m_Widget{ widget }
 {
     auto* label{ new QLabel(label_text.empty() ? "" : ToQString(label_text) + ":") };
     if (label_text.contains("&"))
@@ -25,7 +25,7 @@ WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
 
 QWidget* WidgetWithLabel::GetWidget() const
 {
-    return Widget;
+    return m_Widget;
 }
 
 ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const std::string> options, std::string_view default_option)
@@ -44,12 +44,12 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<cons
 {
     for (const auto& option : options)
     {
-        GetWidget()->addItem(ToQString(option));
+        ComboBoxWithLabel::GetWidget()->addItem(ToQString(option));
     }
 
     if (std::ranges::contains(options, default_option))
     {
-        GetWidget()->setCurrentText(ToQString(default_option));
+        ComboBoxWithLabel::GetWidget()->setCurrentText(ToQString(default_option));
     }
 }
 

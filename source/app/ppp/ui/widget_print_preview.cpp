@@ -486,8 +486,8 @@ void PrintPreview::Refresh()
 
     struct TempPage
     {
-        Page ThePage;
-        bool Backside;
+        Page m_Page;
+        bool m_Backside;
     };
 
     const auto raw_pages{ DistributeCardsToPages(m_Project, columns, rows) };
@@ -517,14 +517,14 @@ void PrintPreview::Refresh()
             {
                 return new PagePreview{
                     m_Project,
-                    page.ThePage,
+                    page.m_Page,
                     PagePreview::Params{
                         PageGrid::Params{
-                            page.Backside,
+                            page.m_Backside,
                         },
                         page_size,
                         columns,
-                        rows,
+                        rows, // NOLINT(clang-analyzer-core.NullDereference)
                     }
                 };
             }) |

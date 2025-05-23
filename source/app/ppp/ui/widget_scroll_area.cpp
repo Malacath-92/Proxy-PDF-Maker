@@ -23,8 +23,8 @@ class CardWidget : public QFrame
 
   public:
     CardWidget(const fs::path& card_name, Project& project)
-        : CardName{ card_name }
-        , BacksideEnabled{ project.Data.BacksideEnabled }
+        : m_CardName{ card_name }
+        , m_BacksideEnabled{ project.Data.BacksideEnabled }
     {
         const uint32_t initial_number{ card_name.empty() ? 1 : project.Data.Cards[card_name].Num };
 
@@ -52,14 +52,14 @@ class CardWidget : public QFrame
         number_area->setFixedHeight(20);
 
         QWidget* card_widget{ MakeCardWidget(project) };
-        ExtraOptions = MakeExtraOptions(project);
+        m_ExtraOptions = MakeExtraOptions(project);
 
         auto* this_layout{ new QVBoxLayout };
         this_layout->addWidget(card_widget);
         this_layout->addWidget(number_area);
-        if (ExtraOptions != nullptr)
+        if (m_ExtraOptions != nullptr)
         {
-            this_layout->addWidget(ExtraOptions);
+            this_layout->addWidget(m_ExtraOptions);
         }
         setLayout(this_layout);
 
@@ -76,14 +76,14 @@ class CardWidget : public QFrame
                          this,
                          std::bind_front(&CardWidget::IncrementNumber, this, std::ref(project)));
 
-        ImageWidget = card_widget;
-        NumberEdit = number_edit;
-        NumberArea = number_area;
+        m_ImageWidget = card_widget;
+        m_NumberEdit = number_edit;
+        m_NumberArea = number_area;
 
         const auto margins{ layout()->contentsMargins() };
         const auto minimum_img_width{ card_widget->minimumWidth() };
         const auto minimum_width{ minimum_img_width + margins.left() + margins.right() };
-        setMinimumSize(minimum_width, heightForWidth(minimum_width));
+        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
 
         setFrameShape(Shape::Box);
         setFrameShadow(Shadow::Raised);
@@ -100,12 +100,12 @@ class CardWidget : public QFrame
         const auto spacing{ layout()->spacing() };
 
         const auto img_width{ width - margins.left() - margins.right() };
-        const auto img_height{ ImageWidget->heightForWidth(img_width) };
+        const auto img_height{ m_ImageWidget->heightForWidth(img_width) };
 
-        auto additional_widgets{ NumberArea->height() + spacing };
-        if (ExtraOptions != nullptr)
+        auto additional_widgets{ m_NumberArea->height() + spacing };
+        if (m_ExtraOptions != nullptr)
         {
-            additional_widgets += ExtraOptions->height() + spacing;
+            additional_widgets += m_ExtraOptions->height() + spacing;
         }
 
         const auto height{ img_height + additional_widgets + margins.top() + margins.bottom() };
@@ -114,39 +114,39 @@ class CardWidget : public QFrame
 
     void ApplyNumber(Project& project, int64_t number)
     {
-        project.Data.Cards[CardName].Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
-        NumberEdit->setText(QString{}.setNum(project.Data.Cards[CardName].Num));
+        project.Data.Cards[m_CardName].Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
+        m_NumberEdit->setText(QString{}.setNum(project.Data.Cards[m_CardName].Num));
     }
 
     virtual void Refresh(Project& project)
     {
-        const bool backside_changed{ BacksideEnabled != project.Data.BacksideEnabled };
+        const bool backside_changed{ m_BacksideEnabled != project.Data.BacksideEnabled };
 
-        BacksideEnabled = project.Data.BacksideEnabled;
+        m_BacksideEnabled = project.Data.BacksideEnabled;
 
         if (backside_changed)
         {
             auto* card_widget{ MakeCardWidget(project) };
-            layout()->replaceWidget(ImageWidget, card_widget);
-            std::swap(card_widget, ImageWidget);
+            layout()->replaceWidget(m_ImageWidget, card_widget);
+            std::swap(card_widget, m_ImageWidget);
             delete card_widget;
 
             auto* extra_options{ MakeExtraOptions(project) };
-            if (ExtraOptions == nullptr)
+            if (m_ExtraOptions == nullptr)
             {
                 static_cast<QVBoxLayout*>(layout())->addWidget(extra_options);
-                ExtraOptions = extra_options;
+                m_ExtraOptions = extra_options;
             }
             else if (extra_options == nullptr)
             {
-                layout()->removeWidget(ExtraOptions);
-                delete ExtraOptions;
-                ExtraOptions = nullptr;
+                layout()->removeWidget(m_ExtraOptions);
+                delete m_ExtraOptions;
+                m_ExtraOptions = nullptr;
             }
             else
             {
-                layout()->replaceWidget(ExtraOptions, extra_options);
-                std::swap(extra_options, ExtraOptions);
+                layout()->replaceWidget(m_ExtraOptions, extra_options);
+                std::swap(extra_options, m_ExtraOptions);
                 delete extra_options;
             }
         }
@@ -155,19 +155,19 @@ class CardWidget : public QFrame
   private:
     QWidget* MakeCardWidget(Project& project)
     {
-        auto* card_image{ new CardImage{ CardName, project, CardImage::Params{} } };
+        auto* card_image{ new CardImage{ m_CardName, project, CardImage::Params{} } };
 
-        if (BacksideEnabled)
+        if (m_BacksideEnabled)
         {
-            BacksideImage* backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
+            BacksideImage* backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
 
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
             auto backside_reset{
                 [=, this, &project]()
                 {
-                    project.Data.Cards[CardName].Backside.clear();
-                    auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(CardName), project } };
+                    project.Data.Cards[m_CardName].Backside.clear();
+                    auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
                 }
             };
@@ -177,9 +177,9 @@ class CardWidget : public QFrame
                 {
                     if (const auto backside_choice{ OpenImageDialog(project.Data.ImageDir) })
                     {
-                        if (backside_choice.value() != project.Data.Cards[CardName].Backside)
+                        if (backside_choice.value() != project.Data.Cards[m_CardName].Backside)
                         {
-                            project.Data.Cards[CardName].Backside = backside_choice.value();
+                            project.Data.Cards[m_CardName].Backside = backside_choice.value();
                             auto* new_backside_image{ new BacksideImage{ backside_choice.value(), project } };
                             stacked_widget->RefreshBackside(new_backside_image);
                         }
@@ -187,7 +187,7 @@ class CardWidget : public QFrame
                 }
             };
 
-            if (!CardName.empty())
+            if (!m_CardName.empty())
             {
                 QObject::connect(stacked_widget,
                                  &StackedCardBacksideView::BacksideReset,
@@ -209,16 +209,16 @@ class CardWidget : public QFrame
 
     QWidget* MakeExtraOptions(Project& project)
     {
-        if (!BacksideEnabled)
+        if (!m_BacksideEnabled)
         {
             return nullptr;
         }
 
         std::vector<QWidget*> extra_options{};
 
-        if (BacksideEnabled)
+        if (m_BacksideEnabled)
         {
-            const bool is_short_edge{ CardName.empty() ? false : project.Data.Cards[CardName].BacksideShortEdge };
+            const bool is_short_edge{ m_CardName.empty() ? false : project.Data.Cards[m_CardName].BacksideShortEdge };
 
             auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
             short_edge_checkbox->setChecked(is_short_edge);
@@ -251,37 +251,37 @@ class CardWidget : public QFrame
   public slots:
     virtual void EditNumber(Project& project)
     {
-        ApplyNumber(project, NumberEdit->text().toLongLong());
+        ApplyNumber(project, m_NumberEdit->text().toLongLong());
     }
 
     virtual void IncrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.Data.Cards[CardName].Num) + 1 };
+        const auto number{ static_cast<int64_t>(project.Data.Cards[m_CardName].Num) + 1 };
         ApplyNumber(project, number);
     }
 
     virtual void DecrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.Data.Cards[CardName].Num) - 1 };
+        const auto number{ static_cast<int64_t>(project.Data.Cards[m_CardName].Num) - 1 };
         ApplyNumber(project, number);
     }
 
     virtual void SetShortEdge(Project& project, Qt::CheckState s)
     {
-        auto& card{ project.Data.Cards[CardName] };
+        auto& card{ project.Data.Cards[m_CardName] };
         card.BacksideShortEdge = s == Qt::CheckState::Checked;
     }
 
   protected:
-    fs::path CardName;
+    fs::path m_CardName;
 
   private:
-    bool BacksideEnabled{ false };
+    bool m_BacksideEnabled{ false };
 
-    QWidget* ImageWidget{ nullptr };
-    QLineEdit* NumberEdit{ nullptr };
-    QWidget* NumberArea{ nullptr };
-    QWidget* ExtraOptions{ nullptr };
+    QWidget* m_ImageWidget{ nullptr };
+    QLineEdit* m_NumberEdit{ nullptr };
+    QWidget* m_NumberArea{ nullptr };
+    QWidget* m_ExtraOptions{ nullptr };
 };
 
 class DummyCardWidget : public CardWidget
@@ -292,7 +292,7 @@ class DummyCardWidget : public CardWidget
     DummyCardWidget(const fs::path& card_name, Project& project)
         : CardWidget{ "", project }
     {
-        CardName = card_name;
+        m_CardName = card_name;
 
         auto sp_retain{ sizePolicy() };
         sp_retain.setRetainSizeWhenHidden(true);
@@ -327,7 +327,7 @@ class CardScrollArea::CardGrid : public QWidget
         const auto margins{ layout()->contentsMargins() };
         const auto spacing{ layout()->spacing() };
 
-        return item_width * Columns + margins.left() + margins.right() + spacing * (Columns - 1);
+        return item_width * m_Columns + margins.left() + margins.right() + spacing * (m_Columns - 1);
     }
 
     virtual bool hasHeightForWidth() const override
@@ -340,10 +340,10 @@ class CardScrollArea::CardGrid : public QWidget
         const auto margins{ layout()->contentsMargins() };
         const auto spacing{ layout()->spacing() };
 
-        const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (Columns - 1)) / Columns };
-        const auto item_height{ FirstItem->heightForWidth(static_cast<int>(item_width)) };
+        const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (m_Columns - 1)) / m_Columns };
+        const auto item_height{ m_FirstItem->heightForWidth(static_cast<int>(item_width)) };
 
-        const auto height{ item_height * Rows + margins.top() + margins.bottom() + spacing * (Rows - 1) };
+        const auto height{ item_height * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1) };
         return static_cast<int>(height);
     }
 
@@ -363,7 +363,7 @@ class CardScrollArea::CardGrid : public QWidget
 
     void BacksideDefaultChanged()
     {
-        for (const auto& [card_name, card_widget] : Cards)
+        for (const auto& [card_name, card_widget] : m_Cards)
         {
             card_widget->Refresh(m_Project);
         }
@@ -377,8 +377,9 @@ class CardScrollArea::CardGrid : public QWidget
     void FullRefresh()
     {
         std::unordered_map<fs::path, CardWidget*> old_cards{
-            std::move(Cards)
+            std::move(m_Cards)
         };
+        m_Cards = {};
 
         if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
         {
@@ -433,7 +434,7 @@ class CardScrollArea::CardGrid : public QWidget
             }
 
             auto* card_widget{ eat_or_make_real_card(card_name) };
-            Cards[card_name] = card_widget;
+            m_Cards[card_name] = card_widget;
 
             const auto x{ static_cast<int>(i / cols) };
             const auto y{ static_cast<int>(i % cols) };
@@ -445,7 +446,7 @@ class CardScrollArea::CardGrid : public QWidget
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
             auto* card_widget{ eat_or_make_dummy_card(card_name) };
-            Cards[std::move(card_name)] = card_widget;
+            m_Cards[std::move(card_name)] = card_widget;
             this_layout->addWidget(card_widget, 0, static_cast<int>(j));
             ++i;
         }
@@ -460,28 +461,28 @@ class CardScrollArea::CardGrid : public QWidget
             delete card;
         }
 
-        FirstItem = Cards.begin()->second;
-        Columns = cols;
-        Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / Columns));
+        m_FirstItem = m_Cards.begin()->second;
+        m_Columns = cols;
+        m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / m_Columns));
 
-        setMinimumWidth(TotalWidthFromItemWidth(FirstItem->minimumWidth()));
+        setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
         setMinimumHeight(heightForWidth(minimumWidth()));
         adjustSize();
     }
 
     std::unordered_map<fs::path, CardWidget*>& GetCards()
     {
-        return Cards;
+        return m_Cards;
     }
 
   private:
     Project& m_Project;
 
-    std::unordered_map<fs::path, CardWidget*> Cards;
-    CardWidget* FirstItem;
+    std::unordered_map<fs::path, CardWidget*> m_Cards;
+    CardWidget* m_FirstItem;
 
-    uint32_t Columns;
-    uint32_t Rows;
+    uint32_t m_Columns;
+    uint32_t m_Rows;
 };
 
 CardScrollArea::CardScrollArea(Project& project)

@@ -70,10 +70,10 @@ class GenericPopup : public PopupBase
     void UpdateTextImpl(std::string_view text);
 
   private:
-    QLabel* TextLabel;
-    std::shared_ptr<void> WorkerThread;
-    std::function<void(std::string_view)> Refresh;
-    std::optional<uint32_t> LogHookId;
+    QLabel* m_TextLabel;
+    std::shared_ptr<void> m_WorkerThread;
+    std::function<void(std::string_view)> m_Refresh;
+    std::optional<uint32_t> m_LogHookId;
 };
 
 class AboutPopup : public PopupBase

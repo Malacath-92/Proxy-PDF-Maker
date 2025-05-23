@@ -38,9 +38,9 @@ int main(int argc, char** argv)
 {
 #ifdef WIN32
     {
-        static constexpr char locale_name[]{ ".utf-8" };
-        std::setlocale(LC_ALL, locale_name);
-        std::locale::global(std::locale(locale_name));
+        static constexpr char c_LocaleName[]{ ".utf-8" };
+        std::setlocale(LC_ALL, c_LocaleName);
+        std::locale::global(std::locale(c_LocaleName));
     }
 #endif
 
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* guides_options{ new GuidesOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
-    auto* global_options{ new GlobalOptionsWidget{ app, project } };
+    auto* global_options{ new GlobalOptionsWidget{ app } };
 
     auto* options_area{
         new OptionsAreaWidget{
