@@ -7,9 +7,9 @@
 
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
-    , m_ImageDir{ project.Data.ImageDir }
-    , m_CropDir{ g_Cfg.m_EnableUncrop ? project.Data.CropDir : "" }
-    , m_OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, g_Cfg.m_ColorCube) }
+    , m_ImageDir{ project.m_Data.m_ImageDir }
+    , m_CropDir{ g_Cfg.m_EnableUncrop ? project.m_Data.m_CropDir : "" }
+    , m_OutputDir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) }
 {
     m_Watcher.addWatch(m_ImageDir.string(), this, false);
     if (!m_CropDir.empty())
@@ -51,9 +51,9 @@ void CardProvider::ImageDirChanged()
         m_Watcher.removeWatch((m_CropDir / "").string());
     }
 
-    m_ImageDir = m_Project.Data.ImageDir;
-    m_CropDir = m_Project.Data.CropDir;
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.m_ColorCube);
+    m_ImageDir = m_Project.m_Data.m_ImageDir;
+    m_CropDir = m_Project.m_Data.m_CropDir;
+    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
 
     // ... and add all new files ...
     Start();
@@ -68,7 +68,7 @@ void CardProvider::CardSizeChanged()
 }
 void CardProvider::BleedChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.m_ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -108,7 +108,7 @@ void CardProvider::EnableUncropChanged()
         // g_Cfg.m_EnableUncrop was not enabled, now it is, so we add the
         // difference ... ...
         const auto crop_images{
-            ListImageFiles(m_Project.Data.CropDir)
+            ListImageFiles(m_Project.m_Data.m_CropDir)
         };
         for (const fs::path& image : crop_images)
         {
@@ -119,13 +119,13 @@ void CardProvider::EnableUncropChanged()
         }
 
         // ... and add a new watch ...
-        m_CropDir = m_Project.Data.CropDir;
+        m_CropDir = m_Project.m_Data.m_CropDir;
         m_Watcher.addWatch(m_CropDir.string(), this, false);
     }
 }
 void CardProvider::ColorCubeChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.m_ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())

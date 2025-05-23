@@ -9,24 +9,24 @@ CropperThreadRouter::CropperThreadRouter(const Project& project)
 
 void CropperThreadRouter::NewProjectOpened()
 {
-    NewProjectOpenedDiff(m_Project.Data);
+    NewProjectOpenedDiff(m_Project.m_Data);
 }
 
 void CropperThreadRouter::ImageDirChanged()
 {
-    ImageDirChangedDiff(m_Project.Data.ImageDir,
-                        m_Project.Data.CropDir,
-                        m_Project.Data.Previews | std::views::keys | std::ranges::to<std::vector>());
+    ImageDirChangedDiff(m_Project.m_Data.m_ImageDir,
+                        m_Project.m_Data.m_CropDir,
+                        m_Project.m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>());
 }
 
 void CropperThreadRouter::CardSizeChanged()
 {
-    CardSizeChangedDiff(m_Project.Data.CardSizeChoice);
+    CardSizeChangedDiff(m_Project.m_Data.m_CardSizeChoice);
 }
 
 void CropperThreadRouter::BleedChanged()
 {
-    BleedChangedDiff(m_Project.Data.BleedEdge);
+    BleedChangedDiff(m_Project.m_Data.m_BleedEdge);
 }
 
 void CropperThreadRouter::EnableUncropChanged()

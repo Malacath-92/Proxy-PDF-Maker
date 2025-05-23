@@ -78,48 +78,47 @@ class Project : public QObject
     void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
 
   public:
-    // NOLINTBEGIN(readability-identifier-naming)
     struct ProjectData
     {
         // Project options
-        fs::path ImageDir{ "images" };
-        fs::path CropDir{ "images/crop" };
-        fs::path ImageCache{ "images/crop/preview.cache" };
+        fs::path m_ImageDir{ "images" };
+        fs::path m_CropDir{ "images/crop" };
+        fs::path m_ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards
-        CardMap Cards{};
-        ImgDict Previews{};
-        ImagePreview FallbackPreview{};
+        CardMap m_Cards{};
+        ImgDict m_Previews{};
+        ImagePreview m_FallbackPreview{};
 
         // Card options
-        Length BleedEdge{ 0_mm };
-        Length Spacing{ 0_mm };
+        Length m_BleedEdge{ 0_mm };
+        Length m_Spacing{ 0_mm };
 
         // Backside options
-        bool BacksideEnabled{ false };
-        fs::path BacksideDefault{ "__back.png" };
-        Length BacksideOffset{ 0_mm };
+        bool m_BacksideEnabled{ false };
+        fs::path m_BacksideDefault{ "__back.png" };
+        Length m_BacksideOffset{ 0_mm };
 
         // PDF generation options
-        std::string CardSizeChoice{ g_Cfg.m_DefaultCardSize };
-        std::string PageSize{ g_Cfg.m_DefaultPageSize };
-        std::string BasePdf{ "None" };
-        std::optional<Size> CustomMargins{};
-        dla::uvec2 CardLayout{ 3, 3 };
-        PageOrientation Orientation{ PageOrientation::Portrait };
-        fs::path FileName{ "_printme" };
+        std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
+        std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
+        std::string m_BasePdf{ "None" };
+        std::optional<Size> m_CustomMargins{};
+        dla::uvec2 m_CardLayout{ 3, 3 };
+        PageOrientation m_Orientation{ PageOrientation::Portrait };
+        fs::path m_FileName{ "_printme" };
 
         // Guides options
-        bool ExportExactGuides{ false };
-        bool EnableGuides{ true };
-        bool BacksideEnableGuides{ false };
-        bool ExtendedGuides{ false };
-        bool CrossGuides{ false };
-        ColorRGB8 GuidesColorA{ 0, 0, 0 };
-        ColorRGB8 GuidesColorB{ 190, 190, 190 };
-        Length GuidesOffset{ 0_mm };
-        Length GuidesThickness{ 1_pts };
-        Length GuidesLength{ 1.5_mm };
+        bool m_ExportExactGuides{ false };
+        bool m_EnableGuides{ true };
+        bool m_BacksideEnableGuides{ false };
+        bool m_ExtendedGuides{ false };
+        bool m_CrossGuides{ false };
+        ColorRGB8 m_GuidesColorA{ 0, 0, 0 };
+        ColorRGB8 m_GuidesColorB{ 190, 190, 190 };
+        Length m_GuidesOffset{ 0_mm };
+        Length m_GuidesThickness{ 1_pts };
+        Length m_GuidesLength{ 1.5_mm };
 
         // Utility functions
         Size ComputePageSize(const Config& config) const;
@@ -134,8 +133,7 @@ class Project : public QObject
         Length CardFullBleed(const Config& config) const;
         Length CardCornerRadius(const Config& config) const;
     };
-    ProjectData Data;
-    // NOLINTEND(readability-identifier-naming)
+    ProjectData m_Data;
 
   private:
     Project(const Project&) = delete;

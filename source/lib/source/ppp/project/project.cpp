@@ -17,12 +17,12 @@
 Project::~Project()
 {
     // Save preview cache, in case we didn't finish generating previews we want some partial work saved
-    WritePreviews(Data.ImageCache, Data.Previews);
+    WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
 
 void Project::Load(const fs::path& json_path)
 {
-    Data = ProjectData{};
+    m_Data = ProjectData{};
 
     LogInfo("Initializing project...");
 
@@ -43,39 +43,39 @@ void Project::Load(const fs::path& json_path)
             throw std::logic_error{ "Project version not compatible with App version..." };
         }
 
-        Data.ImageDir = json["image_dir"].get<std::string>();
-        Data.CropDir = Data.ImageDir / "crop";
-        Data.ImageCache = Data.CropDir / "preview.cache";
+        m_Data.m_ImageDir = json["image_dir"].get<std::string>();
+        m_Data.m_CropDir = m_Data.m_ImageDir / "crop";
+        m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
         for (const nlohmann::json& card_json : json["cards"])
         {
-            CardInfo& card{ Data.Cards[card_json["name"]] };
+            CardInfo& card{ m_Data.m_Cards[card_json["name"]] };
             card.m_Num = card_json["num"];
             card.m_Backside = card_json["backside"].get<std::string>();
             card.m_BacksideShortEdge = card_json["backside_short_edge"];
         }
 
-        Data.BleedEdge.value = json["bleed_edge"];
-        Data.Spacing.value = json["spacing"];
+        m_Data.m_BleedEdge.value = json["bleed_edge"];
+        m_Data.m_Spacing.value = json["spacing"];
 
-        Data.BacksideEnabled = json["backside_enabled"];
-        Data.BacksideDefault = json["backside_default"].get<std::string>();
-        Data.BacksideOffset.value = json["backside_offset"];
+        m_Data.m_BacksideEnabled = json["backside_enabled"];
+        m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
+        m_Data.m_BacksideOffset.value = json["backside_offset"];
 
-        Data.CardSizeChoice = json["card_size"];
-        Data.PageSize = json["page_size"];
-        if (!g_Cfg.m_PageSizes.contains(Data.PageSize))
+        m_Data.m_CardSizeChoice = json["card_size"];
+        m_Data.m_PageSize = json["page_size"];
+        if (!g_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
         {
-            Data.PageSize = g_Cfg.m_DefaultPageSize;
+            m_Data.m_PageSize = g_Cfg.m_DefaultPageSize;
         }
 
-        Data.BasePdf = json["base_pdf"];
-        Data.Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
-                               .value_or(PageOrientation::Portrait);
-        if (Data.PageSize == Config::g_FitSize)
+        m_Data.m_BasePdf = json["base_pdf"];
+        m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
+                                   .value_or(PageOrientation::Portrait);
+        if (m_Data.m_PageSize == Config::c_FitSize)
         {
-            Data.CardLayout.x = json["card_layout"]["width"];
-            Data.CardLayout.y = json["card_layout"]["height"];
+            m_Data.m_CardLayout.x = json["card_layout"]["width"];
+            m_Data.m_CardLayout.y = json["card_layout"]["height"];
         }
         else
         {
@@ -84,32 +84,32 @@ void Project::Load(const fs::path& json_path)
 
         if (json.contains("custom_margins"))
         {
-            Data.CustomMargins = Size{
+            m_Data.m_CustomMargins = Size{
                 json["custom_margins"]["width"].get<float>() * 1_cm,
                 json["custom_margins"]["height"].get<float>() * 1_cm,
             };
         }
         else
         {
-            Data.CustomMargins.reset();
+            m_Data.m_CustomMargins.reset();
         }
 
-        Data.FileName = json["file_name"].get<std::string>();
+        m_Data.m_FileName = json["file_name"].get<std::string>();
 
-        Data.ExportExactGuides = json["export_exact_guides"];
-        Data.EnableGuides = json["enable_guides"];
-        Data.BacksideEnableGuides = json["enable_backside_guides"];
-        Data.ExtendedGuides = json["extended_guides"];
-        Data.CrossGuides = json["cross_guides"];
-        Data.GuidesColorA.r = json["guides_color_a"][0];
-        Data.GuidesColorA.g = json["guides_color_a"][1];
-        Data.GuidesColorA.b = json["guides_color_a"][2];
-        Data.GuidesColorB.r = json["guides_color_b"][0];
-        Data.GuidesColorB.g = json["guides_color_b"][1];
-        Data.GuidesColorB.b = json["guides_color_b"][2];
-        Data.GuidesOffset.value = json["guides_offset"];
-        Data.GuidesThickness.value = json["guides_thickness"];
-        Data.GuidesLength.value = json["guides_length"];
+        m_Data.m_ExportExactGuides = json["export_exact_guides"];
+        m_Data.m_EnableGuides = json["enable_guides"];
+        m_Data.m_BacksideEnableGuides = json["enable_backside_guides"];
+        m_Data.m_ExtendedGuides = json["extended_guides"];
+        m_Data.m_CrossGuides = json["cross_guides"];
+        m_Data.m_GuidesColorA.r = json["guides_color_a"][0];
+        m_Data.m_GuidesColorA.g = json["guides_color_a"][1];
+        m_Data.m_GuidesColorA.b = json["guides_color_a"][2];
+        m_Data.m_GuidesColorB.r = json["guides_color_b"][0];
+        m_Data.m_GuidesColorB.g = json["guides_color_b"][1];
+        m_Data.m_GuidesColorB.b = json["guides_color_b"][2];
+        m_Data.m_GuidesOffset.value = json["guides_offset"];
+        m_Data.m_GuidesThickness.value = json["guides_thickness"];
+        m_Data.m_GuidesLength.value = json["guides_length"];
     }
     catch (const std::exception& e)
     {
@@ -128,11 +128,11 @@ void Project::Dump(const fs::path& json_path) const
         nlohmann::json json{};
         json["version"] = JsonFormatVersion();
 
-        json["image_dir"] = Data.ImageDir.string();
-        json["img_cache"] = Data.ImageCache.string();
+        json["image_dir"] = m_Data.m_ImageDir.string();
+        json["img_cache"] = m_Data.m_ImageCache.string();
 
         std::vector<nlohmann::json> cards;
-        for (const auto& [name, card] : Data.Cards)
+        for (const auto& [name, card] : m_Data.m_Cards)
         {
             nlohmann::json& card_json{ cards.emplace_back() };
             card_json["name"] = name.string();
@@ -142,40 +142,40 @@ void Project::Dump(const fs::path& json_path) const
         }
         json["cards"] = cards;
 
-        json["bleed_edge"] = Data.BleedEdge.value;
-        json["spacing"] = Data.Spacing.value;
+        json["bleed_edge"] = m_Data.m_BleedEdge.value;
+        json["spacing"] = m_Data.m_Spacing.value;
 
-        json["backside_enabled"] = Data.BacksideEnabled;
-        json["backside_default"] = Data.BacksideDefault.string();
-        json["backside_offset"] = Data.BacksideOffset.value;
+        json["backside_enabled"] = m_Data.m_BacksideEnabled;
+        json["backside_default"] = m_Data.m_BacksideDefault.string();
+        json["backside_offset"] = m_Data.m_BacksideOffset.value;
 
-        json["card_size"] = Data.CardSizeChoice;
-        json["page_size"] = Data.PageSize;
-        json["base_pdf"] = Data.BasePdf;
-        if (Data.CustomMargins.has_value())
+        json["card_size"] = m_Data.m_CardSizeChoice;
+        json["page_size"] = m_Data.m_PageSize;
+        json["base_pdf"] = m_Data.m_BasePdf;
+        if (m_Data.m_CustomMargins.has_value())
         {
             json["custom_margins"] = nlohmann::json{
-                { "width", Data.CustomMargins->x / 1_cm },
-                { "height", Data.CustomMargins->y / 1_cm },
+                { "width", m_Data.m_CustomMargins->x / 1_cm },
+                { "height", m_Data.m_CustomMargins->y / 1_cm },
             };
         }
         json["card_layout"] = nlohmann::json{
-            { "width", Data.CardLayout.x },
-            { "height", Data.CardLayout.y },
+            { "width", m_Data.m_CardLayout.x },
+            { "height", m_Data.m_CardLayout.y },
         };
-        json["orientation"] = magic_enum::enum_name(Data.Orientation);
-        json["file_name"] = Data.FileName.string();
+        json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
+        json["file_name"] = m_Data.m_FileName.string();
 
-        json["export_exact_guides"] = Data.ExportExactGuides;
-        json["enable_guides"] = Data.EnableGuides;
-        json["enable_backside_guides"] = Data.BacksideEnableGuides;
-        json["extended_guides"] = Data.ExtendedGuides;
-        json["cross_guides"] = Data.CrossGuides;
-        json["guides_color_a"] = std::array{ Data.GuidesColorA.r, Data.GuidesColorA.g, Data.GuidesColorA.b };
-        json["guides_color_b"] = std::array{ Data.GuidesColorB.r, Data.GuidesColorB.g, Data.GuidesColorB.b };
-        json["guides_offset"] = Data.GuidesOffset.value;
-        json["guides_thickness"] = Data.GuidesThickness.value;
-        json["guides_length"] = Data.GuidesLength.value;
+        json["export_exact_guides"] = m_Data.m_ExportExactGuides;
+        json["enable_guides"] = m_Data.m_EnableGuides;
+        json["enable_backside_guides"] = m_Data.m_BacksideEnableGuides;
+        json["extended_guides"] = m_Data.m_ExtendedGuides;
+        json["cross_guides"] = m_Data.m_CrossGuides;
+        json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
+        json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
+        json["guides_offset"] = m_Data.m_GuidesOffset.value;
+        json["guides_thickness"] = m_Data.m_GuidesThickness.value;
+        json["guides_length"] = m_Data.m_GuidesLength.value;
 
         file << json;
         file.close();
@@ -189,7 +189,7 @@ void Project::Dump(const fs::path& json_path) const
 void Project::Init()
 {
     LogInfo("Loading preview cache...");
-    Data.Previews = ReadPreviews(Data.ImageCache);
+    m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache);
 
     InitProperties();
     EnsureOutputFolder();
@@ -201,26 +201,26 @@ void Project::InitProperties()
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        g_Cfg.m_EnableUncrop ? ListImageFiles(Data.ImageDir)
-                             : ListImageFiles(Data.ImageDir, Data.CropDir)
+        g_Cfg.m_EnableUncrop ? ListImageFiles(m_Data.m_ImageDir)
+                             : ListImageFiles(m_Data.m_ImageDir, m_Data.m_CropDir)
     };
 
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Data.Cards.contains(img) && img != g_Cfg.m_FallbackName)
+        if (!m_Data.m_Cards.contains(img) && img != g_Cfg.m_FallbackName)
         {
-            Data.Cards[img] = CardInfo{};
+            m_Data.m_Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
             {
-                Data.Cards[img].m_Num = 0;
+                m_Data.m_Cards[img].m_Num = 0;
             }
         }
     }
 
     // And also check we don't have stale cards in here
     const auto stale_images{
-        Data.Cards |
+        m_Data.m_Cards |
             std::views::transform([](const auto& item)
                                   { return std::ref(item.first); }) |
             std::views::filter([&](const auto& img)
@@ -229,59 +229,59 @@ void Project::InitProperties()
     };
     for (const fs::path& img : stale_images)
     {
-        Data.Cards.erase(img);
+        m_Data.m_Cards.erase(img);
     }
 }
 
 void Project::CardAdded(const fs::path& card_name)
 {
-    if (!Data.Cards.contains(card_name) && !card_name.string().starts_with("__"))
+    if (!m_Data.m_Cards.contains(card_name) && !card_name.string().starts_with("__"))
     {
-        Data.Cards[card_name] = CardInfo{ 1 };
+        m_Data.m_Cards[card_name] = CardInfo{ 1 };
     }
 }
 
 void Project::CardRemoved(const fs::path& card_name)
 {
-    Data.Cards.erase(card_name);
-    Data.Previews.erase(card_name);
+    m_Data.m_Cards.erase(card_name);
+    m_Data.m_Previews.erase(card_name);
 }
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
 {
-    if (Data.Cards.contains(old_card_name))
+    if (m_Data.m_Cards.contains(old_card_name))
     {
-        Data.Cards[new_card_name] = std::move(Data.Cards.at(old_card_name));
-        Data.Cards.erase(old_card_name);
+        m_Data.m_Cards[new_card_name] = std::move(m_Data.m_Cards.at(old_card_name));
+        m_Data.m_Cards.erase(old_card_name);
     }
 
-    if (Data.Previews.contains(old_card_name))
+    if (m_Data.m_Previews.contains(old_card_name))
     {
-        Data.Previews[new_card_name] = std::move(Data.Previews.at(old_card_name));
-        Data.Previews.erase(old_card_name);
+        m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
+        m_Data.m_Previews.erase(old_card_name);
     }
 }
 
 bool Project::HasPreview(const fs::path& image_name) const
 {
-    return Data.Previews.contains(image_name);
+    return m_Data.m_Previews.contains(image_name);
 }
 
 const Image& Project::GetCroppedPreview(const fs::path& image_name) const
 {
-    if (Data.Previews.contains(image_name))
+    if (m_Data.m_Previews.contains(image_name))
     {
-        return Data.Previews.at(image_name).m_CroppedImage;
+        return m_Data.m_Previews.at(image_name).m_CroppedImage;
     }
-    return Data.FallbackPreview.m_CroppedImage;
+    return m_Data.m_FallbackPreview.m_CroppedImage;
 }
 const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
 {
-    if (Data.Previews.contains(image_name))
+    if (m_Data.m_Previews.contains(image_name))
     {
-        return Data.Previews.at(image_name).m_UncroppedImage;
+        return m_Data.m_Previews.at(image_name).m_UncroppedImage;
     }
-    return Data.FallbackPreview.m_UncroppedImage;
+    return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
@@ -295,42 +295,42 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) co
 
 const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 {
-    if (Data.Cards.contains(image_name))
+    if (m_Data.m_Cards.contains(image_name))
     {
-        const CardInfo& card{ Data.Cards.at(image_name) };
+        const CardInfo& card{ m_Data.m_Cards.at(image_name) };
         if (!card.m_Backside.empty())
         {
             return card.m_Backside;
         }
     }
-    return Data.BacksideDefault;
+    return m_Data.m_BacksideDefault;
 }
 
 bool Project::CacheCardLayout()
 {
-    const bool fit_size{ Data.PageSize == Config::g_FitSize };
+    const bool fit_size{ m_Data.m_PageSize == Config::c_FitSize };
     if (!fit_size)
     {
-        const auto previous_layout{ Data.CardLayout };
+        const auto previous_layout{ m_Data.m_CardLayout };
 
         const Size page_size{ ComputePageSize() };
         const Size card_size_with_bleed{ CardSizeWithBleed() };
-        Data.CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
-        if (Data.Spacing > 0_mm)
+        if (m_Data.m_Spacing > 0_mm)
         {
             const Size cards_size{ ComputeCardsSize() };
             if (cards_size.x > page_size.x)
             {
-                Data.CardLayout.x--;
+                m_Data.m_CardLayout.x--;
             }
             if (cards_size.y > page_size.y)
             {
-                Data.CardLayout.y--;
+                m_Data.m_CardLayout.y--;
             }
         }
 
-        return previous_layout != Data.CardLayout;
+        return previous_layout != m_Data.m_CardLayout;
     }
 
     return false;
@@ -338,8 +338,8 @@ bool Project::CacheCardLayout()
 
 Size Project::ComputePageSize() const
 {
-    const bool fit_size{ Data.PageSize == Config::g_FitSize };
-    const bool infer_size{ Data.PageSize == Config::g_BasePDFSize };
+    const bool fit_size{ m_Data.m_PageSize == Config::c_FitSize };
+    const bool infer_size{ m_Data.m_PageSize == Config::c_BasePDFSize };
 
     if (fit_size)
     {
@@ -347,13 +347,13 @@ Size Project::ComputePageSize() const
     }
     else if (infer_size)
     {
-        return LoadPdfSize(Data.BasePdf + ".pdf")
+        return LoadPdfSize(m_Data.m_BasePdf + ".pdf")
             .value_or(g_Cfg.m_PageSizes["A4"].m_Dimensions);
     }
     else
     {
-        auto page_size{ g_Cfg.m_PageSizes[Data.PageSize].m_Dimensions };
-        if (Data.Orientation == PageOrientation::Landscape)
+        auto page_size{ g_Cfg.m_PageSizes[m_Data.m_PageSize].m_Dimensions };
+        if (m_Data.m_Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
         }
@@ -363,53 +363,53 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeCardsSize() const
 {
-    return Data.ComputeCardsSize(g_Cfg);
+    return m_Data.ComputeCardsSize(g_Cfg);
 }
 
 Size Project::ComputeMargins() const
 {
-    return Data.ComputeMargins(g_Cfg);
+    return m_Data.ComputeMargins(g_Cfg);
 }
 
 Size Project::ComputeMaxMargins() const
 {
-    return Data.ComputeMaxMargins(g_Cfg);
+    return m_Data.ComputeMaxMargins(g_Cfg);
 }
 
 float Project::CardRatio() const
 {
-    return Data.CardRatio(g_Cfg);
+    return m_Data.CardRatio(g_Cfg);
 }
 
 Size Project::CardSize() const
 {
-    return Data.CardSize(g_Cfg);
+    return m_Data.CardSize(g_Cfg);
 }
 
 Size Project::CardSizeWithBleed() const
 {
-    return Data.CardSizeWithBleed(g_Cfg);
+    return m_Data.CardSizeWithBleed(g_Cfg);
 }
 
 Size Project::CardSizeWithFullBleed() const
 {
-    return Data.CardSizeWithFullBleed(g_Cfg);
+    return m_Data.CardSizeWithFullBleed(g_Cfg);
 }
 
 Length Project::CardFullBleed() const
 {
-    return Data.CardFullBleed(g_Cfg);
+    return m_Data.CardFullBleed(g_Cfg);
 }
 
 Length Project::CardCornerRadius() const
 {
-    return Data.CardCornerRadius(g_Cfg);
+    return m_Data.CardCornerRadius(g_Cfg);
 }
 
 void Project::EnsureOutputFolder() const
 {
     const auto output_dir{
-        GetOutputDir(Data.CropDir, Data.BleedEdge, g_Cfg.m_ColorCube)
+        GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
     };
     if (!fs::exists(output_dir))
     {
@@ -419,8 +419,8 @@ void Project::EnsureOutputFolder() const
 
 Size Project::ProjectData::ComputePageSize(const Config& config) const
 {
-    const bool fit_size{ PageSize == Config::g_FitSize };
-    const bool infer_size{ PageSize == Config::g_BasePDFSize };
+    const bool fit_size{ m_PageSize == Config::c_FitSize };
+    const bool infer_size{ m_PageSize == Config::c_BasePDFSize };
 
     if (fit_size)
     {
@@ -428,13 +428,13 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
     }
     else if (infer_size)
     {
-        return LoadPdfSize(BasePdf + ".pdf")
+        return LoadPdfSize(m_BasePdf + ".pdf")
             .value_or(config.m_PageSizes.at("A4").m_Dimensions);
     }
     else
     {
-        auto page_size{ config.m_PageSizes.at(PageSize).m_Dimensions };
-        if (Orientation == PageOrientation::Landscape)
+        auto page_size{ config.m_PageSizes.at(m_PageSize).m_Dimensions };
+        if (m_Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
         }
@@ -444,15 +444,15 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
 
 Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
-    const Size card_size_with_bleed{ CardSize(config) + 2 * BleedEdge };
-    return CardLayout * card_size_with_bleed + (CardLayout - 1) * Spacing;
+    const Size card_size_with_bleed{ CardSize(config) + 2 * m_BleedEdge };
+    return m_CardLayout * card_size_with_bleed + (m_CardLayout - 1) * m_Spacing;
 }
 
 Size Project::ProjectData::ComputeMargins(const Config& config) const
 {
-    if (CustomMargins.has_value())
+    if (m_CustomMargins.has_value())
     {
-        return CustomMargins.value();
+        return m_CustomMargins.value();
     }
 
     return ComputeMaxMargins(config) / 2.0f;
@@ -475,8 +475,8 @@ float Project::ProjectData::CardRatio(const Config& config) const
 Size Project::ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{
-        config.m_CardSizes.contains(CardSizeChoice)
-            ? config.m_CardSizes.at(CardSizeChoice)
+        config.m_CardSizes.contains(m_CardSizeChoice)
+            ? config.m_CardSizes.at(m_CardSizeChoice)
             : config.m_CardSizes.at(g_Cfg.m_DefaultCardSize),
     };
     return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
@@ -485,18 +485,18 @@ Size Project::ProjectData::CardSize(const Config& config) const
 Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.m_CardSizes.contains(CardSizeChoice)
-            ? config.m_CardSizes.at(CardSizeChoice)
+        config.m_CardSizes.contains(m_CardSizeChoice)
+            ? config.m_CardSizes.at(m_CardSizeChoice)
             : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
-    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + BleedEdge * 2;
+    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
 Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.m_CardSizes.contains(CardSizeChoice)
-            ? config.m_CardSizes.at(CardSizeChoice)
+        config.m_CardSizes.contains(m_CardSizeChoice)
+            ? config.m_CardSizes.at(m_CardSizeChoice)
             : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
     return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
@@ -505,8 +505,8 @@ Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
 Length Project::ProjectData::CardFullBleed(const Config& config) const
 {
     const auto& card_size_info{
-        config.m_CardSizes.contains(CardSizeChoice)
-            ? config.m_CardSizes.at(CardSizeChoice)
+        config.m_CardSizes.contains(m_CardSizeChoice)
+            ? config.m_CardSizes.at(m_CardSizeChoice)
             : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
@@ -515,8 +515,8 @@ Length Project::ProjectData::CardFullBleed(const Config& config) const
 Length Project::ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{
-        config.m_CardSizes.contains(CardSizeChoice)
-            ? config.m_CardSizes.at(CardSizeChoice)
+        config.m_CardSizes.contains(m_CardSizeChoice)
+            ? config.m_CardSizes.at(m_CardSizeChoice)
             : config.m_CardSizes.at(config.m_DefaultCardSize),
     };
     return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
@@ -525,10 +525,10 @@ Length Project::ProjectData::CardCornerRadius(const Config& config) const
 void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
 {
     PreviewUpdated(image_name, preview);
-    Data.Previews[image_name] = std::move(preview);
+    m_Data.m_Previews[image_name] = std::move(preview);
 }
 
 void Project::CropperDone()
 {
-    WritePreviews(Data.ImageCache, Data.Previews);
+    WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }

@@ -20,11 +20,11 @@ void Config::SetPdfBackend(PdfBackend backend)
     m_Backend = backend;
     if (m_Backend != PdfBackend::PoDoFo)
     {
-        m_PageSizes.erase(std::string{ Config::g_BasePDFSize });
+        m_PageSizes.erase(std::string{ Config::c_BasePDFSize });
     }
     else
     {
-        m_PageSizes[std::string{ Config::g_BasePDFSize }] = {};
+        m_PageSizes[std::string{ Config::c_BasePDFSize }] = {};
     }
 }
 
@@ -347,7 +347,7 @@ void SaveConfig(Config config)
 
             for (const auto& [name, info] : config.m_PageSizes)
             {
-                if (name == Config::g_FitSize || name == Config::g_BasePDFSize)
+                if (name == Config::c_FitSize || name == Config::c_BasePDFSize)
                 {
                     continue;
                 }

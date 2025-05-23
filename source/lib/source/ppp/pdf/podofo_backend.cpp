@@ -193,7 +193,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 PoDoFoDocument::PoDoFoDocument(const Project& project)
     : m_Project{ project }
     , m_BaseDocument{
-        project.Data.PageSize == Config::g_BasePDFSize && LoadPdfSize(project.Data.BasePdf + ".pdf")
+        project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf")
             ? new PoDoFo::PdfMemDocument
             : nullptr
     }
@@ -201,7 +201,7 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
 {
     if (m_BaseDocument != nullptr)
     {
-        const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.Data.BasePdf + ".pdf" } };
+        const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.m_Data.m_BasePdf + ".pdf" } };
         m_BaseDocument->Load(full_path.c_str());
 
         {

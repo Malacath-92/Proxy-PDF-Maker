@@ -168,7 +168,7 @@ PngDocument::PngDocument(const Project& project)
         static_cast<float>(card_size_pixels.y) * 1_pix,
     };
 
-    const auto page_size_pixels{ card_size_pixels * m_Project.Data.CardLayout };
+    const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
     m_PrecomputedPageSize = PixelSize{
         static_cast<float>(page_size_pixels.x) * 1_pix,
         static_cast<float>(page_size_pixels.y) * 1_pix,
@@ -187,7 +187,7 @@ PngPage* PngDocument::NextPage()
     auto& new_page{ m_Pages.emplace_back() };
     new_page.m_Project = &m_Project;
     new_page.m_Document = this;
-    new_page.m_PerfectFit = m_Project.Data.PageSize == Config::g_FitSize;
+    new_page.m_PerfectFit = m_Project.m_Data.m_PageSize == Config::c_FitSize;
     new_page.m_CardSize = m_PrecomputedCardSize;
     new_page.m_PageSize = m_PrecomputedPageSize;
     new_page.m_Page = cv::Mat::zeros(cv::Size{

@@ -76,7 +76,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                         const auto file_path{ GeneratePdf(project) };
                         OpenFile(file_path);
 
-                        if (project.Data.ExportExactGuides)
+                        if (project.m_Data.m_ExportExactGuides)
                         {
                             GenerateCardsSvg(project);
                         }
@@ -138,11 +138,11 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
         {
             if (const auto new_image_dir{ OpenFolderDialog(".") })
             {
-                if (new_image_dir != project.Data.ImageDir)
+                if (new_image_dir != project.m_Data.m_ImageDir)
                 {
-                    project.Data.ImageDir = new_image_dir.value();
-                    project.Data.CropDir = project.Data.ImageDir / "crop";
-                    project.Data.ImageCache = project.Data.CropDir / "preview.cache";
+                    project.m_Data.m_ImageDir = new_image_dir.value();
+                    project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
+                    project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
 
                     project.Init();
 
@@ -155,7 +155,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     const auto open_images_folder{
         [=, &project]()
         {
-            OpenFolder(project.Data.ImageDir);
+            OpenFolder(project.m_Data.m_ImageDir);
         }
     };
 

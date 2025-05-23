@@ -56,8 +56,8 @@ struct Config
     std::optional<int> m_JpgQuality{ std::nullopt };
     UnitInfo m_BaseUnit{ c_SupportedBaseUnits[0] };
 
-    static inline constexpr std::string_view g_FitSize{ "Fit" };
-    static inline constexpr std::string_view g_BasePDFSize{ "Base Pdf" };
+    static inline constexpr std::string_view c_FitSize{ "Fit" };
+    static inline constexpr std::string_view c_BasePDFSize{ "Base Pdf" };
 
     struct SizeInfo
     {
@@ -86,8 +86,8 @@ struct Config
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
-        { std::string{ g_FitSize }, {} },
-        { std::string{ g_BasePDFSize }, {} },
+        { std::string{ c_FitSize }, {} },
+        { std::string{ c_BasePDFSize }, {} },
     };
 
     std::map<std::string, CardSizeInfo> m_CardSizes{

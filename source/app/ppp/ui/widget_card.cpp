@@ -66,7 +66,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 if (has_bleed_edge)
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, project.Data.BleedEdge, 6800_dpi) };
+                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, project.m_Data.m_BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }

@@ -38,7 +38,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
         bool m_BacksideShortEdge;
     };
     std::vector<TempImageData> images;
-    for (const auto& [img, info] : project.Data.Cards)
+    for (const auto& [img, info] : project.m_Data.m_Cards)
     {
         for (uint32_t i = 0; i < info.m_Num; i++)
         {

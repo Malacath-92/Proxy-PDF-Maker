@@ -17,10 +17,10 @@
 
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
     : m_GetColorCube{ std::move(get_color_cube) }
-    , m_ImageDB{ ImageDataBase::Read(project.Data.CropDir / ".image.db") }
-    , m_Data{ project.Data }
+    , m_ImageDB{ ImageDataBase::Read(project.m_Data.m_CropDir / ".image.db") }
+    , m_Data{ project.m_Data }
     , m_Cfg{ g_Cfg }
-    , m_LoadedPreviews{ project.Data.Previews | std::views::keys | std::ranges::to<std::vector>() }
+    , m_LoadedPreviews{ project.m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>() }
 {
 }
 Cropper::~Cropper()
@@ -43,7 +43,7 @@ Cropper::~Cropper()
 
     delete m_Router;
 
-    m_ImageDB.Write(m_Data.CropDir / ".image.db");
+    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
 }
 
 void Cropper::Start()
@@ -99,39 +99,39 @@ void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
 {
     {
         std::unique_lock lock{ m_ImageDBMutex };
-        m_ImageDB.Write(m_Data.CropDir / ".image.db");
-        m_ImageDB = ImageDataBase::Read(data.CropDir / ".image.db");
+        m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
+        m_ImageDB = ImageDataBase::Read(data.m_CropDir / ".image.db");
     }
 
     std::unique_lock lock{ m_PropertyMutex };
     m_Data = data;
-    m_LoadedPreviews = m_Data.Previews | std::views::keys | std::ranges::to<std::vector>();
+    m_LoadedPreviews = m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>();
 }
 
 void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews)
 {
     {
         std::unique_lock lock{ m_ImageDBMutex };
-        m_ImageDB.Write(m_Data.CropDir / ".image.db");
+        m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
         m_ImageDB = ImageDataBase::Read(crop_dir / ".image.db");
     }
 
     std::unique_lock lock{ m_PropertyMutex };
-    m_Data.ImageDir = image_dir;
-    m_Data.CropDir = crop_dir;
+    m_Data.m_ImageDir = image_dir;
+    m_Data.m_CropDir = crop_dir;
     m_LoadedPreviews = loaded_previews;
 }
 
 void Cropper::CardSizeChangedDiff(std::string card_size)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Data.CardSizeChoice = std::move(card_size);
+    m_Data.m_CardSizeChoice = std::move(card_size);
 }
 
 void Cropper::BleedChangedDiff(Length bleed)
 {
     std::unique_lock lock{ m_PropertyMutex };
-    m_Data.BleedEdge = bleed;
+    m_Data.m_BleedEdge = bleed;
 }
 
 void Cropper::EnableUncropChangedDiff(bool enable_uncrop)
@@ -168,15 +168,15 @@ void Cropper::CardRemoved(const fs::path& card_name)
     RemoveWork(card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.ImageDir / card_name))
+    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.m_ImageDir / card_name))
     {
         CardModified(card_name);
     }
-    else if (fs::exists(m_Data.CropDir / card_name))
+    else if (fs::exists(m_Data.m_CropDir / card_name))
     {
-        fs::remove(m_Data.CropDir / card_name);
+        fs::remove(m_Data.m_CropDir / card_name);
 
-        for (const auto& entry : fs::recursive_directory_iterator(m_Data.CropDir))
+        for (const auto& entry : fs::recursive_directory_iterator(m_Data.m_CropDir))
         {
             if (entry.is_directory() && fs::exists(entry.path() / card_name))
             {
@@ -193,16 +193,16 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     RemoveWork(old_card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.ImageDir / old_card_name))
+    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.m_ImageDir / old_card_name))
     {
-        fs::rename(m_Data.ImageDir / old_card_name, m_Data.ImageDir / new_card_name);
+        fs::rename(m_Data.m_ImageDir / old_card_name, m_Data.m_ImageDir / new_card_name);
     }
-    else if (fs::exists(m_Data.CropDir / old_card_name))
+    else if (fs::exists(m_Data.m_CropDir / old_card_name))
     {
-        fs::rename(m_Data.CropDir / old_card_name, m_Data.CropDir / new_card_name);
+        fs::rename(m_Data.m_CropDir / old_card_name, m_Data.m_CropDir / new_card_name);
     }
 
-    for (const auto& entry : fs::recursive_directory_iterator(m_Data.CropDir))
+    for (const auto& entry : fs::recursive_directory_iterator(m_Data.m_CropDir))
     {
         if (entry.is_directory() && fs::exists(entry.path() / old_card_name))
         {
@@ -304,7 +304,7 @@ void Cropper::CropWork()
                 {
                     std::shared_lock image_db_lock{ m_ImageDBMutex };
                     std::shared_lock property_lock{ m_PropertyMutex };
-                    m_ImageDB.Write(m_Data.CropDir / ".image.db");
+                    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
                 }
 
                 const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
@@ -359,7 +359,7 @@ void Cropper::PreviewWork()
                 {
                     std::shared_lock image_db_lock{ m_ImageDBMutex };
                     std::shared_lock property_lock{ m_PropertyMutex };
-                    m_ImageDB.Write(m_Data.CropDir / ".image.db");
+                    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
                 }
             }
         }
@@ -415,7 +415,7 @@ bool Cropper::DoCropWork(T* signaller)
         try
         {
             std::shared_lock lock{ m_PropertyMutex };
-            const Length bleed_edge{ m_Data.BleedEdge };
+            const Length bleed_edge{ m_Data.m_BleedEdge };
             const PixelDensity max_density{ m_Cfg.m_MaxDPI };
 
             const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
@@ -428,10 +428,10 @@ bool Cropper::DoCropWork(T* signaller)
 
             const std::string color_cube_name{ m_Cfg.m_ColorCube };
 
-            const fs::path output_dir{ GetOutputDir(m_Data.CropDir, m_Data.BleedEdge, m_Cfg.m_ColorCube) };
+            const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
 
-            const fs::path input_file{ m_Data.ImageDir / card_name };
-            const fs::path crop_file{ m_Data.CropDir / card_name };
+            const fs::path input_file{ m_Data.m_ImageDir / card_name };
+            const fs::path crop_file{ m_Data.m_CropDir / card_name };
             const fs::path output_file{ output_dir / card_name };
             lock.unlock();
 
@@ -631,8 +631,8 @@ bool Cropper::DoPreviewWork(T* signaller)
             const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
             const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
-            const fs::path input_file{ m_Data.ImageDir / card_name };
-            const fs::path crop_file{ m_Data.CropDir / card_name };
+            const fs::path input_file{ m_Data.m_ImageDir / card_name };
+            const fs::path crop_file{ m_Data.m_CropDir / card_name };
 
             const bool has_preview{ std::ranges::contains(m_LoadedPreviews, card_name) };
             lock.unlock();

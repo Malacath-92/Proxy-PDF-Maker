@@ -36,10 +36,10 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 {
     return GenerateCardsPath(origin,
                              size,
-                             project.Data.CardLayout,
+                             project.m_Data.m_CardLayout,
                              project.CardSize(),
-                             project.Data.BleedEdge,
-                             project.Data.Spacing,
+                             project.m_Data.m_BleedEdge,
+                             project.m_Data.m_Spacing,
                              project.CardCornerRadius());
 }
 
@@ -98,7 +98,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 
 void GenerateCardsSvg(const Project& project)
 {
-    const auto svg_path{ fs::path{ project.Data.FileName }.replace_extension(".svg") };
+    const auto svg_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
 
     LogInfo("Generating card path...");
     QPainterPath path{ GenerateCardsPath(project) };

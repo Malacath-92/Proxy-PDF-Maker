@@ -18,22 +18,22 @@ fs::path GeneratePdf(const Project& project)
 {
     using CrossSegment = PdfPage::CrossSegment;
 
-    const auto output_dir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, g_Cfg.m_ColorCube) };
+    const auto output_dir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) };
 
     ColorRGB32f guides_color_a{
-        static_cast<float>(project.Data.GuidesColorA.r) / 255.0f,
-        static_cast<float>(project.Data.GuidesColorA.g) / 255.0f,
-        static_cast<float>(project.Data.GuidesColorA.b) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorA.r) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorA.g) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorA.b) / 255.0f,
     };
     ColorRGB32f guides_color_b{
-        static_cast<float>(project.Data.GuidesColorB.r) / 255.0f,
-        static_cast<float>(project.Data.GuidesColorB.g) / 255.0f,
-        static_cast<float>(project.Data.GuidesColorB.b) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorB.r) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorB.g) / 255.0f,
+        static_cast<float>(project.m_Data.m_GuidesColorB.b) / 255.0f,
     };
 
     PdfPage::DashedLineStyle line_style{
         {
-            project.Data.GuidesThickness,
+            project.m_Data.m_GuidesThickness,
             guides_color_a,
         },
         guides_color_b,
@@ -44,7 +44,7 @@ fs::path GeneratePdf(const Project& project)
 
     const auto [page_width, page_height]{ page_size.pod() };
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
-    const auto [columns, rows]{ project.Data.CardLayout.pod() };
+    const auto [columns, rows]{ project.m_Data.m_CardLayout.pod() };
     const auto margins{ project.ComputeMargins() };
     const auto max_margins{ project.ComputeMaxMargins() };
 
@@ -54,9 +54,9 @@ fs::path GeneratePdf(const Project& project)
     const auto backside_start_x{ max_margins.x - margins.x };
     const auto backside_start_y{ start_y };
 
-    const auto bleed{ project.Data.BleedEdge };
-    const auto offset{ bleed - project.Data.GuidesOffset };
-    const auto spacing{ project.Data.Spacing };
+    const auto bleed{ project.m_Data.m_BleedEdge };
+    const auto offset{ bleed - project.m_Data.m_GuidesOffset };
+    const auto spacing{ project.m_Data.m_Spacing };
 
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
@@ -117,12 +117,12 @@ fs::path GeneratePdf(const Project& project)
                                 real_x,
                                 real_y,
                             },
-                            .m_Length{ project.Data.GuidesLength },
-                            .m_Segment = project.Data.CrossGuides ? CrossSegment::FullCross : s,
+                            .m_Length{ project.m_Data.m_GuidesLength },
+                            .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
                         };
                         page->DrawDashedCross(cross, line_style);
 
-                        if (project.Data.ExtendedGuides)
+                        if (project.m_Data.m_ExtendedGuides)
                         {
                             if (x == 0)
                             {
@@ -208,7 +208,7 @@ fs::path GeneratePdf(const Project& project)
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
-                        if (project.Data.EnableGuides)
+                        if (project.m_Data.m_EnableGuides)
                         {
                             draw_guides(front_page, x, y);
                         }
@@ -219,7 +219,7 @@ fs::path GeneratePdf(const Project& project)
             front_page->Finish();
         }
 
-        if (project.Data.BacksideEnabled)
+        if (project.m_Data.m_BacksideEnabled)
         {
             static constexpr const char c_RenderFmt[]{
                 "Rendering backside for page {}...\nImage number {} - {}"
@@ -238,10 +238,10 @@ fs::path GeneratePdf(const Project& project)
 
                         auto backside_card{ card.value() };
                         backside_card.m_Image = project.GetBacksideImage(card->m_Image);
-                        draw_image(back_page, backside_card, columns - x - 1, y, project.Data.BacksideOffset, 0_pts, true);
+                        draw_image(back_page, backside_card, columns - x - 1, y, project.m_Data.m_BacksideOffset, 0_pts, true);
                         i++;
 
-                        if (project.Data.EnableGuides && project.Data.BacksideEnableGuides)
+                        if (project.m_Data.m_EnableGuides && project.m_Data.m_BacksideEnableGuides)
                         {
                             draw_guides(back_page, x, y);
                         }
@@ -253,7 +253,7 @@ fs::path GeneratePdf(const Project& project)
         }
     }
 
-    return pdf->Write(project.Data.FileName);
+    return pdf->Write(project.m_Data.m_FileName);
 }
 
 fs::path GenerateTestPdf(const Project& project)
@@ -291,7 +291,7 @@ fs::path GenerateTestPdf(const Project& project)
             };
             front_page->DrawSolidLine(left_line, line_style);
 
-            if (project.Data.BacksideEnabled)
+            if (project.m_Data.m_BacksideEnabled)
             {
                 const Size backside_text_top_left{ left_line_x, page_height - page_eighth.y };
                 const Size backside_text_bottom_right{ page_width, page_half.y };
@@ -314,11 +314,11 @@ fs::path GenerateTestPdf(const Project& project)
         }
     }
 
-    if (project.Data.BacksideEnabled)
+    if (project.m_Data.m_BacksideEnabled)
     {
         auto* back_page{ pdf->NextPage() };
 
-        const auto backside_left_line_x{ page_width - page_fourth.x + project.Data.BacksideOffset };
+        const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset };
         const PdfPage::LineData line{
             .m_From{ backside_left_line_x, 0_mm },
             .m_To{ backside_left_line_x, page_height },

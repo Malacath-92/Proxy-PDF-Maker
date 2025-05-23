@@ -20,7 +20,7 @@ class DefaultBacksidePreview : public QWidget
     DefaultBacksidePreview(const Project& project)
         : m_Project{ project }
     {
-        const fs::path& backside_name{ project.Data.BacksideDefault };
+        const fs::path& backside_name{ project.m_Data.m_BacksideDefault };
 
         auto* backside_default_image{ new BacksideImage{ backside_name, c_MinimumWidth, project } };
 
@@ -47,7 +47,7 @@ class DefaultBacksidePreview : public QWidget
 
     void Refresh()
     {
-        const fs::path& backside_name{ m_Project.Data.BacksideDefault };
+        const fs::path& backside_name{ m_Project.m_Data.m_BacksideDefault };
         m_DefaultImage->Refresh(backside_name, c_MinimumWidth, m_Project);
         m_DefaultLabel->setText(ToQString(backside_name.c_str()));
     }
@@ -111,12 +111,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.Data.BleedEdge - new_bleed_edge) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_BleedEdge - new_bleed_edge) < 0.001_mm)
             {
                 return;
             }
 
-            project.Data.BleedEdge = new_bleed_edge;
+            project.m_Data.m_BleedEdge = new_bleed_edge;
             BleedChanged();
         }
     };
@@ -126,12 +126,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto new_spacing{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.Data.Spacing - new_spacing) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_Spacing - new_spacing) < 0.001_mm)
             {
                 return;
             }
 
-            project.Data.Spacing = new_spacing;
+            project.m_Data.m_Spacing = new_spacing;
             SpacingChanged();
         }
     };
@@ -139,12 +139,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto switch_backside_enabled{
         [this, &project](Qt::CheckState s)
         {
-            project.Data.BacksideEnabled = s == Qt::CheckState::Checked;
-            m_BacksideDefaultButton->setEnabled(project.Data.BacksideEnabled);
-            m_BacksideDefaultButton->setVisible(project.Data.BacksideEnabled);
-            m_BacksideDefaultPreview->setVisible(project.Data.BacksideEnabled);
-            m_BacksideOffset->setEnabled(project.Data.BacksideEnabled);
-            m_BacksideOffset->setVisible(project.Data.BacksideEnabled);
+            project.m_Data.m_BacksideEnabled = s == Qt::CheckState::Checked;
+            m_BacksideDefaultButton->setEnabled(project.m_Data.m_BacksideEnabled);
+            m_BacksideDefaultButton->setVisible(project.m_Data.m_BacksideEnabled);
+            m_BacksideDefaultPreview->setVisible(project.m_Data.m_BacksideEnabled);
+            m_BacksideOffset->setEnabled(project.m_Data.m_BacksideEnabled);
+            m_BacksideOffset->setVisible(project.m_Data.m_BacksideEnabled);
             BacksideEnabledChanged();
         }
     };
@@ -152,9 +152,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto pick_backside{
         [this, &project]()
         {
-            if (const auto default_backside_choice{ OpenImageDialog(project.Data.ImageDir) })
+            if (const auto default_backside_choice{ OpenImageDialog(project.m_Data.m_ImageDir) })
             {
-                project.Data.BacksideDefault = default_backside_choice.value();
+                project.m_Data.m_BacksideDefault = default_backside_choice.value();
                 BacksideDefaultChanged();
             }
         }
@@ -164,7 +164,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         [this, &project](double v)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            project.Data.BacksideOffset = base_unit * static_cast<float>(v);
+            project.m_Data.m_BacksideOffset = base_unit * static_cast<float>(v);
             BacksideOffsetChanged();
         }
     };
@@ -207,15 +207,15 @@ void CardOptionsWidget::BaseUnitChanged()
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto base_unit_name{ g_Cfg.m_BaseUnit.m_ShortName };
     const auto full_bleed{ m_Project.CardFullBleed() };
-    const auto backside_offset{ m_Project.Data.BacksideOffset };
+    const auto backside_offset{ m_Project.m_Data.m_BacksideOffset };
 
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
-    m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
+    m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
 
     m_SpacingSpin->setRange(0, 1_cm / base_unit);
     m_SpacingSpin->setSuffix(ToQString(base_unit_name));
-    m_SpacingSpin->setValue(m_Project.Data.Spacing / base_unit);
+    m_SpacingSpin->setValue(m_Project.m_Data.m_Spacing / base_unit);
 
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
@@ -228,21 +228,21 @@ void CardOptionsWidget::SetDefaults()
     const auto full_bleed{ m_Project.CardFullBleed() };
 
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
-    m_BleedEdgeSpin->setValue(m_Project.Data.BleedEdge / base_unit);
+    m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
 
     m_SpacingSpin->setRange(0, 1_cm / base_unit);
-    m_SpacingSpin->setValue(m_Project.Data.Spacing / base_unit);
+    m_SpacingSpin->setValue(m_Project.m_Data.m_Spacing / base_unit);
 
-    m_BacksideCheckbox->setChecked(m_Project.Data.BacksideEnabled);
+    m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideDefaultButton->setEnabled(m_Project.Data.BacksideEnabled);
-    m_BacksideDefaultButton->setVisible(m_Project.Data.BacksideEnabled);
+    m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideDefaultPreview->setVisible(m_Project.Data.BacksideEnabled);
+    m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetSpin->setValue(m_Project.Data.BacksideOffset / base_unit);
+    m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
 
-    m_BacksideOffset->setEnabled(m_Project.Data.BacksideEnabled);
-    m_BacksideOffset->setVisible(m_Project.Data.BacksideEnabled);
+    m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
