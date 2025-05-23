@@ -11,51 +11,53 @@
 
 bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
 {
-    return static_cast<int32_t>(std::floor(lhs.DPI.value)) != static_cast<int32_t>(std::floor(rhs.DPI.value)) ||
-           static_cast<int32_t>(std::floor(lhs.Width.value)) != static_cast<int32_t>(std::floor(rhs.Width.value)) ||
-           static_cast<int32_t>(std::floor(lhs.CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.CardSize.x / 0.001_mm)) ||
-           static_cast<int32_t>(std::floor(lhs.CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.CardSize.y / 0.001_mm)) ||
-           static_cast<int32_t>(std::floor(lhs.FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.FullBleedEdge / 0.001_mm));
+    return static_cast<int32_t>(std::floor(lhs.m_DPI.value)) != static_cast<int32_t>(std::floor(rhs.m_DPI.value)) ||
+           static_cast<int32_t>(std::floor(lhs.m_Width.value)) != static_cast<int32_t>(std::floor(rhs.m_Width.value)) ||
+           static_cast<int32_t>(std::floor(lhs.m_CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.x / 0.001_mm)) ||
+           static_cast<int32_t>(std::floor(lhs.m_CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.y / 0.001_mm)) ||
+           static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm));
 }
 
+// NOLINTNEXTLINE
 void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
 {
     // Should look something like this, but the lib never sets the object as binary on load
     // const std::vector<uint8_t>& hash{ json["hash"].get_binary() };
 
     const auto& hash{ json["hash"]["bytes"].get<std::vector<uint8_t>>() };
-    entry.SourceHash = QByteArray{
+    entry.m_SourceHash = QByteArray{
         reinterpret_cast<const char*>(hash.data()),
         static_cast<qsizetype>(hash.size()),
     };
-    entry.Params.DPI.value = json["dpi"].get<int32_t>();
-    entry.Params.Width = json["width"].get<int32_t>() * 1_pix;
-    entry.Params.CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
-    entry.Params.CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
-    entry.Params.FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
+    entry.m_Params.m_DPI.value = json["dpi"].get<int32_t>();
+    entry.m_Params.m_Width = json["width"].get<int32_t>() * 1_pix;
+    entry.m_Params.m_CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
+    entry.m_Params.m_CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
+    entry.m_Params.m_FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
 }
 
+// NOLINTNEXTLINE
 void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
 {
     json["hash"] = nlohmann::json::binary_t{
         std::vector<uint8_t>{
-            entry.SourceHash.begin(),
-            entry.SourceHash.end(),
+            entry.m_SourceHash.begin(),
+            entry.m_SourceHash.end(),
         },
     };
-    json["dpi"] = static_cast<int32_t>(entry.Params.DPI.value),
-    json["width"] = static_cast<int32_t>(entry.Params.Width.value),
+    json["dpi"] = static_cast<int32_t>(entry.m_Params.m_DPI.value),
+    json["width"] = static_cast<int32_t>(entry.m_Params.m_Width.value),
     json["card_size"] = nlohmann::json{
         {
             "width",
-            static_cast<int32_t>(entry.Params.CardSize.x / 0.001_mm),
+            static_cast<int32_t>(entry.m_Params.m_CardSize.x / 0.001_mm),
         },
         {
             "height",
-            static_cast<int32_t>(entry.Params.CardSize.y / 0.001_mm),
+            static_cast<int32_t>(entry.m_Params.m_CardSize.y / 0.001_mm),
         },
     };
-    json["card_input_bleed"] = static_cast<int32_t>(entry.Params.FullBleedEdge / 0.001_mm);
+    json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
 }
 
 ImageDataBase ImageDataBase::Read(const fs::path& path)
@@ -69,7 +71,7 @@ ImageDataBase ImageDataBase::Read(const fs::path& path)
         }
 
         ImageDataBase image_db{};
-        image_db.DataBase = json["db"].get<decltype(image_db.DataBase)>();
+        image_db.m_DataBase = json["db"].get<decltype(image_db.m_DataBase)>();
         return image_db;
     }
     catch (const std::exception& e)
@@ -86,7 +88,7 @@ void ImageDataBase::Write(const fs::path& path)
     {
         nlohmann::json json{};
         json["version"] = ImageDbFormatVersion();
-        json["db"] = DataBase;
+        json["db"] = m_DataBase;
 
         file << json;
         file.close();
@@ -95,7 +97,7 @@ void ImageDataBase::Write(const fs::path& path)
 
 bool ImageDataBase::FindEntry(const fs::path& destination) const
 {
-    return DataBase.contains(destination);
+    return m_DataBase.contains(destination);
 }
 
 QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path& source, ImageParameters params) const
@@ -115,20 +117,20 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
     };
     QByteArray cur_hash{ QCryptographicHash::hash(get_source_data(), QCryptographicHash::Md5) };
 
-    if (params.WillWriteOutput && !fs::exists(destination))
+    if (params.m_WillWriteOutput && !fs::exists(destination))
     {
         return cur_hash;
     }
 
-    auto it{ DataBase.find(destination) };
-    if (it != DataBase.end())
+    auto it{ m_DataBase.find(destination) };
+    if (it != m_DataBase.end())
     {
-        if (it->second.Params != params)
+        if (it->second.m_Params != params)
         {
             return cur_hash;
         }
 
-        QByteArrayView hash{ it->second.SourceHash };
+        QByteArrayView hash{ it->second.m_SourceHash };
         if (hash != cur_hash)
         {
             return cur_hash;
@@ -141,8 +143,8 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
 
 void ImageDataBase::PutEntry(const fs::path& destination, QByteArray source_hash, ImageParameters params)
 {
-    DataBase[destination] = ImageDataBaseEntry{
-        .SourceHash{ std::move(source_hash) },
-        .Params{ params },
+    m_DataBase[destination] = ImageDataBaseEntry{
+        .m_SourceHash{ std::move(source_hash) },
+        .m_Params{ params },
     };
 }

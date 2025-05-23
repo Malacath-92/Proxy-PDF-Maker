@@ -210,14 +210,14 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
             // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
             PoDoFo::PdfPage* page{ m_BaseDocument->GetPage(0) };
 
-            PoDoFo::PdfObject* q = page->GetObject()->GetOwner()->CreateObject();
-            q->GetStream()->Set("q");
-            PoDoFo::PdfObject* Q = page->GetObject()->GetOwner()->CreateObject();
-            Q->GetStream()->Set("Q");
+            PoDoFo::PdfObject* save_graphics_state = page->GetObject()->GetOwner()->CreateObject();
+            save_graphics_state->GetStream()->Set("q");
+            PoDoFo::PdfObject* restore_graphics_state = page->GetObject()->GetOwner()->CreateObject();
+            restore_graphics_state->GetStream()->Set("Q");
 
             auto contents{ page->GetContents() };
-            contents->GetArray().insert(contents->GetArray().begin(), q->Reference());
-            contents->GetArray().push_back(Q->Reference());
+            contents->GetArray().insert(contents->GetArray().begin(), save_graphics_state->Reference());
+            contents->GetArray().push_back(restore_graphics_state->Reference());
         }
     }
 }

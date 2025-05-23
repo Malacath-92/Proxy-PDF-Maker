@@ -225,17 +225,17 @@ cv::Mat LoadColorCube(const fs::path& file_path)
     color_cube_file.open(QFile::ReadOnly);
     const std::string color_cube_raw{ QLatin1String{ color_cube_file.readAll() }.toString().toStdString() };
 
-    static constexpr auto to_string_views{ std::views::transform(
+    static constexpr auto c_ToStringViews{ std::views::transform(
         [](auto str)
         { return std::string_view(str.data(), str.size()); }) };
-    static constexpr auto to_int{ std::views::transform(
+    static constexpr auto c_ToInt{ std::views::transform(
         [](std::string_view str)
         {
             int val;
             std::from_chars(str.data(), str.data() + str.size(), val);
             return val;
         }) };
-    static constexpr auto to_float{ std::views::transform(
+    static constexpr auto c_ToFloat{ std::views::transform(
         [](std::string_view str)
         {
             float val;
@@ -247,16 +247,16 @@ cv::Mat LoadColorCube(const fs::path& file_path)
 #endif
             return val;
         }) };
-    static constexpr auto float_color_to_byte{ std::views::transform(
+    static constexpr auto c_FloatColorToInt{ std::views::transform(
         [](float val)
         { return static_cast<uint8_t>(val * 255); }) };
-    static constexpr auto to_color{ std::views::transform(
+    static constexpr auto c_ToColor{ std::views::transform(
         [](std::string_view str)
         {
             return std::views::split(str, ' ') |
-                   to_string_views |
-                   to_float |
-                   float_color_to_byte |
+                   c_ToStringViews |
+                   c_ToFloat |
+                   c_FloatColorToInt |
                    std::ranges::to<std::vector>();
         }) };
     const int color_cube_size{
@@ -264,13 +264,13 @@ cv::Mat LoadColorCube(const fs::path& file_path)
           std::views::split('\n') |
           std::views::drop(4) |
           std::views::take(1) |
-          to_string_views |
+          c_ToStringViews |
           std::ranges::to<std::vector>())
              .front() |
          std::views::split(' ') |
          std::views::drop(1) |
-         to_string_views |
-         to_int |
+         c_ToStringViews |
+         c_ToInt |
          std::ranges::to<std::vector>())
             .front()
     };
@@ -278,8 +278,8 @@ cv::Mat LoadColorCube(const fs::path& file_path)
         color_cube_raw |
         std::views::split('\n') |
         std::views::drop(11) |
-        to_string_views |
-        to_color |
+        c_ToStringViews |
+        c_ToColor |
         std::views::join |
         std::ranges::to<std::vector>()
     };

@@ -41,7 +41,6 @@ fs::path GeneratePdf(const Project& project)
 
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const auto page_size{ project.ComputePageSize() };
-    const auto cards_size{ project.ComputeCardsSize() };
 
     const auto [page_width, page_height]{ page_size.pod() };
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
@@ -106,10 +105,11 @@ fs::path GeneratePdf(const Project& project)
         const auto draw_guides{
             [&](PdfPage* page, size_t x, size_t y)
             {
-                auto draw_cross_at_grid{
+                const auto draw_cross_at_grid{
                     [&](PdfPage* page, size_t x, size_t y, CrossSegment s, Length dx, Length dy)
                     {
                         const auto real_x{ start_x + x * (card_width + spacing) + dx };
+                        // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
                         const auto real_y{ start_y - y * (card_height + spacing) + dy };
 
                         PdfPage::CrossData cross{
@@ -164,7 +164,7 @@ fs::path GeneratePdf(const Project& project)
                                    x + 1,
                                    y + 0,
                                    CrossSegment::TopRight,
-                                   -offset - spacing,
+                                   -offset - spacing, // NOLINT(clang-analyzer-core.NonNullParamChecker)
                                    -offset);
                 draw_cross_at_grid(page,
                                    x + 1,

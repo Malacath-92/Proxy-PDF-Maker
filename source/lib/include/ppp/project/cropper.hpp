@@ -69,47 +69,47 @@ class Cropper : public QObject
     template<class T>
     bool DoPreviewWork(T* signaller);
 
-    std::function<const cv::Mat*(std::string_view)> GetColorCube;
+    std::function<const cv::Mat*(std::string_view)> m_GetColorCube;
 
-    std::shared_mutex ImageDBMutex;
-    ImageDataBase ImageDB;
+    std::shared_mutex m_ImageDBMutex;
+    ImageDataBase m_ImageDB;
 
-    std::mutex PendingCropWorkMutex;
-    std::vector<fs::path> PendingCropWork;
-    std::atomic_uint32_t TotalWorkDone{};
+    std::mutex m_PendingCropWorkMutex;
+    std::vector<fs::path> m_PendingCropWork;
+    std::atomic_uint32_t m_TotalWorkDone{};
 
-    std::mutex PendingPreviewWorkMutex;
-    std::vector<fs::path> PendingPreviewWork;
+    std::mutex m_PendingPreviewWorkMutex;
+    std::vector<fs::path> m_PendingPreviewWork;
 
-    std::shared_mutex PropertyMutex;
-    Project::ProjectData Data;
-    Config Cfg;
-    std::vector<fs::path> LoadedPreviews;
+    std::shared_mutex m_PropertyMutex;
+    Project::ProjectData m_Data;
+    Config m_Cfg;
+    std::vector<fs::path> m_LoadedPreviews;
 
-    std::shared_mutex IgnoreMutex;
-    std::vector<fs::path> IgnoreNotification;
+    std::shared_mutex m_IgnoreMutex;
+    std::vector<fs::path> m_IgnoreNotification;
 
     using time_point = decltype(std::chrono::high_resolution_clock::now());
-    time_point CropWorkStartPoint;
+    time_point m_CropWorkStartPoint;
 
-    class CropperSignalRouter* Router;
+    class CropperSignalRouter* m_Router;
 
     // We give the cropper a few updates before triggering done
     // so we don't ping-pong start<->done when we work fast
-    static inline constexpr uint32_t UpdatesBeforeDoneTrigger{ 6 };
+    static inline constexpr uint32_t c_UpdatesBeforeDoneTrigger{ 6 };
 
-    QThread* CropThread;
-    std::atomic_uint32_t CropDone{ 0 };
+    QThread* m_CropThread;
+    std::atomic_uint32_t m_CropDone{ 0 };
 
-    QThread* PreviewThread;
-    std::atomic_uint32_t PreviewDone{ 0 };
+    QThread* m_PreviewThread;
+    std::atomic_uint32_t m_PreviewDone{ 0 };
 
-    std::atomic_bool Pause{ false };
-    std::atomic_uint32_t ThreadsPaused{ 0 };
+    std::atomic_bool m_Pause{ false };
+    std::atomic_uint32_t m_ThreadsPaused{ 0 };
 
-    std::atomic_bool Quit{ false };
-    std::atomic_uint32_t ThreadsDone{ 0 };
+    std::atomic_bool m_Quit{ false };
+    std::atomic_uint32_t m_ThreadsDone{ 0 };
 
-    QTimer* CropTimer;
-    QTimer* PreviewTimer;
+    QTimer* m_CropTimer;
+    QTimer* m_PreviewTimer;
 };

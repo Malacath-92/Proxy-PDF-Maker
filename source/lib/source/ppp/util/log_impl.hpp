@@ -1,6 +1,5 @@
 #pragma once
 
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -39,21 +38,21 @@ class Log::LogImpl
 
     void CreateLogFile();
 
-    Log* mParentLog{ nullptr };
+    Log* m_ParentLog{ nullptr };
 
-    const std::string mLogName;
-    std::mutex mMutex;
+    const std::string m_LogName;
+    std::mutex m_Mutex;
 
     struct InstalledLogHook
     {
-        uint32_t mHookId;
-        Log::LogHook mHook;
+        uint32_t m_HookId;
+        Log::LogHook m_Hook;
     };
-    std::vector<InstalledLogHook> mLogHooks;
+    std::vector<InstalledLogHook> m_LogHooks;
 
-    std::ofstream mFileStream;
+    std::ofstream m_FileStream;
 
-    const LogFlags mLogFlags;
+    const LogFlags m_LogFlags;
 
     inline static std::shared_mutex m_InstanceListMutex;
     inline static std::unordered_map<std::string, LogImpl*> m_Instances;

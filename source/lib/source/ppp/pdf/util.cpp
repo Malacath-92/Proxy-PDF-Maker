@@ -34,8 +34,8 @@ std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t column
     // throw all images N times into a list
     struct TempImageData
     {
-        std::reference_wrapper<const fs::path> Image;
-        bool BacksideShortEdge;
+        std::reference_wrapper<const fs::path> m_Image;
+        bool m_BacksideShortEdge;
     };
     std::vector<TempImageData> images;
     for (const auto& [img, info] : project.Data.Cards)
@@ -156,7 +156,7 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
     Grid clean_card_grid{};
     for (size_t x = 0; x < rows; x++)
     {
-        static constexpr auto collapse_to_optional{
+        static constexpr auto c_CollapseToOptional{
             [](const TempGridImage& tmp_img)
             {
                 struct Visitor
@@ -173,7 +173,9 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
                 return std::visit(Visitor{}, tmp_img);
             }
         };
-        clean_card_grid.push_back(card_grid[x] | std::views::transform(collapse_to_optional) | std::ranges::to<std::vector>());
+        clean_card_grid.push_back(card_grid[x] |
+                                  std::views::transform(c_CollapseToOptional) |
+                                  std::ranges::to<std::vector>());
     }
 
     return clean_card_grid;

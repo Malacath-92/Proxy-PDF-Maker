@@ -15,12 +15,12 @@
 
 namespace pngcrc
 {
-uint32_t crc(const uchar* buf, int len)
+static uint32_t CRC(const uchar* buf, int len)
 {
-    static constexpr auto crc_table{
+    static constexpr auto c_CrcTable{
         []()
         {
-            std::array<uint32_t, 256> crc_table_bld;
+            std::array<uint32_t, 256> crc_table_bld{};
             for (int32_t n = 0; n < 256; n++)
             {
                 uint32_t c{ static_cast<uint32_t>(n) };
@@ -40,18 +40,18 @@ uint32_t crc(const uchar* buf, int len)
             return crc_table_bld;
         }()
     };
-    static constexpr auto crc_impl{
+    static constexpr auto c_CrcImpl{
         [](uint32_t crc, const uchar* buf, int len)
         {
             uint32_t c{ crc };
             for (int32_t n = 0; n < len; n++)
             {
-                c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
+                c = c_CrcTable[(c ^ buf[n]) & 0xff] ^ (c >> 8);
             }
             return c;
         }
     };
-    return crc_impl(0xffffffffL, buf, len) ^ 0xffffffffL;
+    return c_CrcImpl(0xffffffffL, buf, len) ^ 0xffffffffL;
 }
 } // namespace pngcrc
 
@@ -166,12 +166,12 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 // Create pHYs chunk...
                 struct
                 {
-                    uint32_t size;
-                    std::array<char, 4> name;
-                    uint32_t dots_per_meter_x;
-                    uint32_t dots_per_meter_y;
-                    uint8_t unit;
-                } const pHYs_chunk{
+                    uint32_t m_Size;
+                    std::array<char, 4> m_Name;
+                    uint32_t m_DotsPerMeterX;
+                    uint32_t m_DotsPerMeterY;
+                    uint8_t m_Unit;
+                } const phys_chunk{
                     std::byteswap(9u),
                     { 'p', 'H', 'Y', 's' },
                     std::byteswap(static_cast<uint32_t>(density.value)),
@@ -180,22 +180,22 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 };
 
                 // size + name + data + padding
-                static constexpr uint32_t pHYs_chunk_size{ 4 + 4 + 9 };
+                static constexpr uint32_t c_PhysChunkSize{ 4 + 4 + 9 };
                 // chunk + padding
-                static_assert(sizeof(pHYs_chunk) == pHYs_chunk_size + 3);
+                static_assert(sizeof(phys_chunk) == c_PhysChunkSize + 3);
                 // verify padding is at the end ...
-                static_assert(offsetof(decltype(pHYs_chunk), unit) == pHYs_chunk_size - 1);
+                static_assert(offsetof(decltype(phys_chunk), m_Unit) == c_PhysChunkSize - 1);
 
                 // only the name and data
-                const auto* crc_data{ reinterpret_cast<const uchar*>(&pHYs_chunk) + 4 };
-                const auto crc_data_size{ pHYs_chunk_size - 4 };
-                const uint32_t crc{ std::byteswap(pngcrc::crc(crc_data, crc_data_size)) };
+                const auto* crc_data{ reinterpret_cast<const uchar*>(&phys_chunk) + 4 };
+                const auto crc_data_size{ c_PhysChunkSize - 4 };
+                const uint32_t crc{ std::byteswap(pngcrc::CRC(crc_data, crc_data_size)) };
 
                 // chunk + crc
-                std::array<uchar, pHYs_chunk_size + 4> pHYs_buf;
-                std::memcpy(pHYs_buf.data(), &pHYs_chunk, pHYs_chunk_size);
-                std::memcpy(pHYs_buf.data() + pHYs_chunk_size, &crc, 4);
-                buf.insert(buf.begin() + idat_idx, pHYs_buf.begin(), pHYs_buf.end());
+                std::array<uchar, c_PhysChunkSize + 4> phys_buf;
+                std::memcpy(phys_buf.data(), &phys_chunk, c_PhysChunkSize);
+                std::memcpy(phys_buf.data() + c_PhysChunkSize, &crc, 4);
+                buf.insert(buf.begin() + idat_idx, phys_buf.begin(), phys_buf.end());
             }
 
             if (FILE * file{ fopen(path.string().c_str(), "wb") })
@@ -418,32 +418,32 @@ Image Image::ApplyColorCube(const cv::Mat& color_cube) const
                       const int b_hi{ static_cast<int>(std::ceil(b)) };
                       const float b_frac{ b - static_cast<float>(b_lo) };
 
-                      static constexpr auto linear_interpolate{
+                      static constexpr auto c_LnearInterpolate{
                           [](std::array<ColorRGB32f, 2> values, float alpha)
                           {
                               return values[0] * (1 - alpha) + values[1] * alpha;
                           },
                       };
 
-                      static constexpr auto bilinear_interpolate{
+                      static constexpr auto c_BilinearInterpolate{
                           [](std::array<ColorRGB32f, 4> values, std::array<float, 2> alphas)
                           {
                               const std::array interim_values{
-                                  linear_interpolate(std::array{ values[0], values[1] }, alphas[0]),
-                                  linear_interpolate(std::array{ values[2], values[3] }, alphas[0]),
+                                  c_LnearInterpolate(std::array{ values[0], values[1] }, alphas[0]),
+                                  c_LnearInterpolate(std::array{ values[2], values[3] }, alphas[0]),
                               };
-                              return linear_interpolate(interim_values, alphas[1]);
+                              return c_LnearInterpolate(interim_values, alphas[1]);
                           },
                       };
 
-                      static constexpr auto trilinear_interpolate{
+                      static constexpr auto c_TrilinearInterpolate{
                           [](std::array<ColorRGB32f, 8> values, std::array<float, 3> alphas)
                           {
                               const std::array interim_values{
-                                  bilinear_interpolate(std::array{ values[0], values[1], values[2], values[3] }, std::array{ alphas[0], alphas[1] }),
-                                  bilinear_interpolate(std::array{ values[4], values[5], values[6], values[7] }, std::array{ alphas[0], alphas[1] }),
+                                  c_BilinearInterpolate(std::array{ values[0], values[1], values[2], values[3] }, std::array{ alphas[0], alphas[1] }),
+                                  c_BilinearInterpolate(std::array{ values[4], values[5], values[6], values[7] }, std::array{ alphas[0], alphas[1] }),
                               };
-                              return linear_interpolate(interim_values, alphas[2]);
+                              return c_LnearInterpolate(interim_values, alphas[2]);
                           },
                       };
 
@@ -473,7 +473,7 @@ Image Image::ApplyColorCube(const cv::Mat& color_cube) const
                           color_at(r_hi, g_hi, b_hi),
                       };
 
-                      const ColorRGB32f interpolated{ trilinear_interpolate(corners, { r_frac, g_frac, b_frac }) };
+                      const ColorRGB32f interpolated{ c_TrilinearInterpolate(corners, { r_frac, g_frac, b_frac }) };
                       filtered.m_Impl.at<cv::Vec3b>(x, y) = cv::Vec3b{
                           static_cast<uchar>(interpolated.r),
                           static_cast<uchar>(interpolated.g),

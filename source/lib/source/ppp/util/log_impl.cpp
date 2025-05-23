@@ -3,6 +3,7 @@
 #ifdef __cpp_lib_stacktrace
 #include <stacktrace>
 #endif
+#include <filesystem>
 #include <sstream>
 
 #include <QDebug>
@@ -10,32 +11,32 @@
 #include <fmt/chrono.h>
 
 Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
-    : mLogName(log_name)
-    , mLogFlags(log_flags)
+    : m_LogName(log_name)
+    , m_LogFlags(log_flags)
 {
-    LogInfo("Constructing log sink '{}'!", mLogName);
+    LogInfo("Constructing log sink '{}'!", m_LogName);
 
-    if (bool(mLogFlags & LogFlags::File))
+    if (bool(m_LogFlags & LogFlags::File))
         CreateLogFile();
 }
 
 Log::LogImpl::~LogImpl()
 {
-    LogInfo("Destroying log sink '{}'!", mLogName);
+    LogInfo("Destroying log sink '{}'!", m_LogName);
 
     UnregisterInstance();
 }
 
 Log* Log::LogImpl::GetInstance(std::string_view log_name)
 {
-    std::shared_lock<std::shared_mutex> writeLock(m_InstanceListMutex);
+    std::shared_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
 
     // TODO: C++20 heterogenous lookup
     // auto it = m_Instances.find(log_name);
 
     auto it = m_Instances.find(std::string{ log_name });
     if (it != m_Instances.end())
-        return it->second->mParentLog;
+        return it->second->m_ParentLog;
     return nullptr;
 }
 
@@ -43,27 +44,27 @@ void Log::LogImpl::RegisterInstance(Log* parent_log)
 {
     UnregisterInstance();
 
-    mParentLog = parent_log;
+    m_ParentLog = parent_log;
 
-    std::unique_lock<std::shared_mutex> writeLock(m_InstanceListMutex);
-    if (m_Instances.find(mLogName) != m_Instances.end())
+    std::unique_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
+    if (m_Instances.find(m_LogName) != m_Instances.end())
         throw "Log-Name Redefinition";
-    m_Instances[mLogName] = this;
+    m_Instances[m_LogName] = this;
 }
 void Log::LogImpl::UnregisterInstance()
 {
-    mParentLog = nullptr;
+    m_ParentLog = nullptr;
 
-    if (m_Instances.count(mLogName) > 0)
+    if (m_Instances.count(m_LogName) > 0)
     {
-        std::unique_lock<std::shared_mutex> writeLock(m_InstanceListMutex);
-        m_Instances.erase(mLogName);
+        std::unique_lock<std::shared_mutex> write_lock(m_InstanceListMutex);
+        m_Instances.erase(m_LogName);
     }
 }
 
 bool Log::LogImpl::RegisterThreadName(std::string_view thread_name)
 {
-    std::unique_lock<std::shared_mutex> writeLock(m_ThreadListMutex);
+    std::unique_lock<std::shared_mutex> write_lock(m_ThreadListMutex);
 
     std::thread::id thread_id = std::this_thread::get_id();
     auto it = m_ThreadList.find(thread_id);
@@ -76,7 +77,7 @@ bool Log::LogImpl::RegisterThreadName(std::string_view thread_name)
 
 std::string_view Log::LogImpl::GetThreadName(const std::thread::id& thread_id)
 {
-    std::shared_lock<std::shared_mutex> readLock(m_ThreadListMutex);
+    std::shared_lock<std::shared_mutex> read_lock(m_ThreadListMutex);
 
     auto it = m_ThreadList.find(thread_id);
     if (it != m_ThreadList.end())
@@ -87,19 +88,19 @@ std::string_view Log::LogImpl::GetThreadName(const std::thread::id& thread_id)
 
 uint32_t Log::LogImpl::InstallHook(Log::LogHook hook)
 {
-    std::lock_guard lock{ mMutex };
-    mLogHooks.push_back({ static_cast<uint32_t>(mLogHooks.size() + 1), std::move(hook) });
-    return mLogHooks.back().mHookId;
+    std::lock_guard lock{ m_Mutex };
+    m_LogHooks.push_back({ static_cast<uint32_t>(m_LogHooks.size() + 1), std::move(hook) });
+    return m_LogHooks.back().m_HookId;
 }
 
 void Log::LogImpl::UninstallHook(uint32_t hook_id)
 {
-    std::lock_guard lock{ mMutex };
-    for (auto it = mLogHooks.begin(); it != mLogHooks.end(); ++it)
+    std::lock_guard lock{ m_Mutex };
+    for (auto it = m_LogHooks.begin(); it != m_LogHooks.end(); ++it)
     {
-        if (it->mHookId == hook_id)
+        if (it->m_HookId == hook_id)
         {
-            mLogHooks.erase(it);
+            m_LogHooks.erase(it);
             return;
         }
     }
@@ -107,15 +108,15 @@ void Log::LogImpl::UninstallHook(uint32_t hook_id)
 
 bool Log::LogImpl::GetStacktraceEnabled(LogLevel level) const
 {
-    LogFlags stacktraceBits = mLogFlags & LogFlags::DetailStacktrace;
-    return (level == LogLevel::Error && bool(stacktraceBits & LogFlags::DetailErrorStacktrace)) || (level == LogLevel::Fatal && bool(stacktraceBits & LogFlags::DetailFatalStacktrace));
+    LogFlags stacktrace_bits = m_LogFlags & LogFlags::DetailStacktrace;
+    return (level == LogLevel::Error && bool(stacktrace_bits & LogFlags::DetailErrorStacktrace)) || (level == LogLevel::Fatal && bool(stacktrace_bits & LogFlags::DetailFatalStacktrace));
 }
 
 void Log::LogImpl::Print(const Log::DetailInformation& detail_info, Log::LogLevel level, const char* message)
 {
     Flush(detail_info, level, message);
 
-    if (bool(mLogFlags & LogFlags::FatalQuit) && level == LogLevel::Fatal)
+    if (bool(m_LogFlags & LogFlags::FatalQuit) && level == LogLevel::Fatal)
     {
         exit(-1);
     }
@@ -154,33 +155,33 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
     stream << prefix;
 
     // Detailed information, e.g. time, file, line...
-    LogFlags detailBits = mLogFlags & LogFlags::DetailAll;
-    if (bool(detailBits))
+    LogFlags detail_bits = m_LogFlags & LogFlags::DetailAll;
+    if (bool(detail_bits))
     {
         const auto get_highest_order_bit{
             [](LogFlags flags)
             {
                 using underlying_t = std::underlying_type_t<LogFlags>;
-                underlying_t castFlags = static_cast<underlying_t>(flags);
+                underlying_t cast_flags = static_cast<underlying_t>(flags);
                 underlying_t max = 0x0;
 
                 for (size_t i = 1; i < sizeof(underlying_t) * 8; i++)
                 {
-                    max = std::max(max, (0x1 << i) & castFlags);
+                    max = std::max(max, (0x1 << i) & cast_flags);
                 }
 
                 return static_cast<LogFlags>(max);
             }
         };
-        LogFlags highestBit = get_highest_order_bit(detailBits);
+        LogFlags highest_bit = get_highest_order_bit(detail_bits);
 
         // Conditional delimiter
-#define CON_DEL(bit) (bool(bit & highestBit) ? "" : "; ")
+#define CON_DEL(bit) (bool(bit & highest_bit) ? "" : "; ")
 
         stream << "<";
-        if (bool(detailBits & LogFlags::DetailTime))
+        if (bool(detail_bits & LogFlags::DetailTime))
             stream << detail_info.Time << CON_DEL(LogFlags::DetailTime);
-        if (bool(detailBits & LogFlags::DetailFile))
+        if (bool(detail_bits & LogFlags::DetailFile))
         {
             if (detail_info.File.starts_with(PPP_SOURCE_ROOT))
             {
@@ -191,9 +192,9 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
                 stream << detail_info.File << CON_DEL(LogFlags::DetailFile);
             }
         }
-        if (bool(detailBits & LogFlags::DetailLine))
+        if (bool(detail_bits & LogFlags::DetailLine))
         {
-            if (bool(detailBits & LogFlags::DetailColumn))
+            if (bool(detail_bits & LogFlags::DetailColumn))
             {
                 stream << detail_info.Line << ":" << detail_info.Column << CON_DEL(LogFlags::DetailColumn);
             }
@@ -202,9 +203,9 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
                 stream << detail_info.Line << CON_DEL(LogFlags::DetailLine);
             }
         }
-        if (bool(detailBits & LogFlags::DetailFunction))
+        if (bool(detail_bits & LogFlags::DetailFunction))
             stream << detail_info.Function << CON_DEL(LogFlags::DetailFunction);
-        if (bool(detailBits & LogFlags::DetailThread))
+        if (bool(detail_bits & LogFlags::DetailThread))
             stream << detail_info.Thread << CON_DEL(LogFlags::DetailThread);
         stream << ">";
 
@@ -235,22 +236,22 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
     }
 
     const std::string full_message_str{ stream.str() };
-    std::lock_guard lock{ mMutex };
+    std::lock_guard lock{ m_Mutex };
 
     // Print the log
-    if (bool(mLogFlags & LogFlags::Console))
+    if (bool(m_LogFlags & LogFlags::Console))
         qDebug() << full_message_str;
-    if (mFileStream.is_open())
-        mFileStream << full_message_str;
+    if (m_FileStream.is_open())
+        m_FileStream << full_message_str;
 
     // Flush the streams
-    if (mFileStream.is_open())
-        mFileStream << std::flush;
+    if (m_FileStream.is_open())
+        m_FileStream << std::flush;
 
     // Forward to hooks
-    for (const InstalledLogHook& hook : mLogHooks)
+    for (const InstalledLogHook& hook : m_LogHooks)
     {
-        hook.mHook(detail_info, level, message);
+        hook.m_Hook(detail_info, level, message);
     }
 }
 
@@ -293,6 +294,6 @@ void Log::LogImpl::CreateLogFile()
         }
     }
 
-    std::lock_guard lock{ mMutex };
-    mFileStream.open(file_name_buffer);
+    std::lock_guard lock{ m_Mutex };
+    m_FileStream.open(file_name_buffer);
 }
