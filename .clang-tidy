@@ -1,4 +1,5 @@
 Checks:
+ - -clang-analyzer-optin.core.EnumCastOutOfRange
  - readability-identifier-naming
  
 CheckOptions:
