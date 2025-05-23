@@ -96,7 +96,7 @@ struct Config
             {
                 .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
                 .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 1_in / 8, 1_in, 3u },
+                .CornerRadius{ 2.5_mm, 1_mm, 1u },
             },
         },
         {
@@ -104,15 +104,15 @@ struct Config
             {
                 .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
                 .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 1_in / 4, 1_in, 2u },
+                .CornerRadius{ 5_mm, 1_mm, 1u },
             },
         },
         {
             "MtG Novelty",
             {
-                .CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
+                .CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
                 .InputBleed{ 0.12_in, 1_in, 2u },
-                .CornerRadius{ 1_in / 4, 1_in, 2u },
+                .CornerRadius{ 2.5_mm, 1_mm, 1u },
                 .CardSizeScale = 0.5f,
             },
         },
