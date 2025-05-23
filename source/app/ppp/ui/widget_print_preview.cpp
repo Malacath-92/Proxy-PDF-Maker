@@ -56,9 +56,9 @@ class PageGrid : public QWidget
                             image_name,
                             project,
                             CardImage::Params{
-                                .RoundedCorners = false,
-                                .Rotation = rotation,
-                                .BleedEdge{ project.Data.BleedEdge },
+                                .m_RoundedCorners = false,
+                                .m_Rotation = rotation,
+                                .m_BleedEdge{ project.Data.BleedEdge },
                             },
                         },
                     };
@@ -77,11 +77,11 @@ class PageGrid : public QWidget
                 const Image::Rotation rotation{ GetCardRotation(params.m_IsBackside, false) };
                 auto* image_widget{
                     new CardImage{
-                        CFG.FallbackName,
+                        g_Cfg.FallbackName,
                         project,
                         CardImage::Params{
-                            .Rotation = rotation,
-                            .BleedEdge{ project.Data.BleedEdge },
+                            .m_Rotation = rotation,
+                            .m_BleedEdge{ project.Data.BleedEdge },
                         },
                     },
                 };
@@ -543,7 +543,7 @@ void PrintPreview::Refresh()
         header_layout->addWidget(bleed_info);
     }
 
-    if (CFG.ColorCube != "None")
+    if (g_Cfg.ColorCube != "None")
     {
         auto* vibrance_info{ new QLabel{ "Preview does not respect 'Vibrance Bump' setting" } };
         vibrance_info->setStyleSheet("QLabel { color : red; }");

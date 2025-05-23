@@ -8,8 +8,8 @@
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
     , m_ImageDir{ project.Data.ImageDir }
-    , m_CropDir{ CFG.EnableUncrop ? project.Data.CropDir : "" }
-    , m_OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, CFG.ColorCube) }
+    , m_CropDir{ g_Cfg.EnableUncrop ? project.Data.CropDir : "" }
+    , m_OutputDir{ GetOutputDir(project.Data.CropDir, project.Data.BleedEdge, g_Cfg.ColorCube) }
 {
     m_Watcher.addWatch(m_ImageDir.string(), this, false);
     if (!m_CropDir.empty())
@@ -53,7 +53,7 @@ void CardProvider::ImageDirChanged()
 
     m_ImageDir = m_Project.Data.ImageDir;
     m_CropDir = m_Project.Data.CropDir;
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.ColorCube);
 
     // ... and add all new files ...
     Start();
@@ -68,7 +68,7 @@ void CardProvider::CardSizeChanged()
 }
 void CardProvider::BleedChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
@@ -78,7 +78,7 @@ void CardProvider::BleedChanged()
 }
 void CardProvider::EnableUncropChanged()
 {
-    // CFG.EnableUncrop option has changed, so we need to add/remove cards
+    // g_Cfg.EnableUncrop option has changed, so we need to add/remove cards
     // that are in the crop folder but not the images folder ...
 
     const auto images{
@@ -86,7 +86,7 @@ void CardProvider::EnableUncropChanged()
     };
     if (!m_CropDir.empty())
     {
-        // CFG.EnableUncrop was enabled, is not anymore, so we remove the
+        // g_Cfg.EnableUncrop was enabled, is not anymore, so we remove the
         // difference ...
         const auto crop_images{
             ListImageFiles(m_CropDir)
@@ -105,7 +105,7 @@ void CardProvider::EnableUncropChanged()
     }
     else
     {
-        // CFG.EnableUncrop was not enabled, now it is, so we add the
+        // g_Cfg.EnableUncrop was not enabled, now it is, so we add the
         // difference ... ...
         const auto crop_images{
             ListImageFiles(m_Project.Data.CropDir)
@@ -125,7 +125,7 @@ void CardProvider::EnableUncropChanged()
 }
 void CardProvider::ColorCubeChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, CFG.ColorCube);
+    m_OutputDir = GetOutputDir(m_Project.Data.CropDir, m_Project.Data.BleedEdge, g_Cfg.ColorCube);
 
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())

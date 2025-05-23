@@ -8,7 +8,7 @@
 
 inline int32_t ToPixels(Length l)
 {
-    return static_cast<int32_t>(std::ceil(l * CFG.MaxDPI / 1_pix));
+    return static_cast<int32_t>(std::ceil(l * g_Cfg.MaxDPI / 1_pix));
 }
 
 void PngPage::DrawSolidLine(LineData data, LineStyle style)
@@ -160,8 +160,8 @@ PngDocument::PngDocument(const Project& project)
 {
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const dla::ivec2 card_size_pixels{
-        static_cast<int32_t>(card_size_with_bleed.x * CFG.MaxDPI / 1_pix),
-        static_cast<int32_t>(card_size_with_bleed.y * CFG.MaxDPI / 1_pix),
+        static_cast<int32_t>(card_size_with_bleed.x * g_Cfg.MaxDPI / 1_pix),
+        static_cast<int32_t>(card_size_with_bleed.y * g_Cfg.MaxDPI / 1_pix),
     };
     m_PrecomputedCardSize = PixelSize{
         static_cast<float>(card_size_pixels.x) * 1_pix,
@@ -230,7 +230,7 @@ fs::path PngDocument::Write(fs::path path)
             fs::remove(png_path);
         }
 
-        Image{ std::move(page.m_Page) }.Write(png_path, CFG.PngCompression.value_or(5), std::nullopt, m_PageSize);
+        Image{ std::move(page.m_Page) }.Write(png_path, g_Cfg.PngCompression.value_or(5), std::nullopt, m_PageSize);
     }
 
     return png_folder;

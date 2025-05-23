@@ -64,9 +64,9 @@ void Project::Load(const fs::path& json_path)
 
         Data.CardSizeChoice = json["card_size"];
         Data.PageSize = json["page_size"];
-        if (!CFG.PageSizes.contains(Data.PageSize))
+        if (!g_Cfg.PageSizes.contains(Data.PageSize))
         {
-            Data.PageSize = CFG.DefaultPageSize;
+            Data.PageSize = g_Cfg.DefaultPageSize;
         }
 
         Data.BasePdf = json["base_pdf"];
@@ -201,14 +201,14 @@ void Project::InitProperties()
 
     // Get all image files in the crop directory or the previews
     const std::vector crop_list{
-        CFG.EnableUncrop ? ListImageFiles(Data.ImageDir)
+        g_Cfg.EnableUncrop ? ListImageFiles(Data.ImageDir)
                          : ListImageFiles(Data.ImageDir, Data.CropDir)
     };
 
     // Check that we have all our cards accounted for
     for (const auto& img : crop_list)
     {
-        if (!Data.Cards.contains(img) && img != CFG.FallbackName)
+        if (!Data.Cards.contains(img) && img != g_Cfg.FallbackName)
         {
             Data.Cards[img] = CardInfo{};
             if (img.string().starts_with("__"))
@@ -348,11 +348,11 @@ Size Project::ComputePageSize() const
     else if (infer_size)
     {
         return LoadPdfSize(Data.BasePdf + ".pdf")
-            .value_or(CFG.PageSizes["A4"].Dimensions);
+            .value_or(g_Cfg.PageSizes["A4"].Dimensions);
     }
     else
     {
-        auto page_size{ CFG.PageSizes[Data.PageSize].Dimensions };
+        auto page_size{ g_Cfg.PageSizes[Data.PageSize].Dimensions };
         if (Data.Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
@@ -363,53 +363,53 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeCardsSize() const
 {
-    return Data.ComputeCardsSize(CFG);
+    return Data.ComputeCardsSize(g_Cfg);
 }
 
 Size Project::ComputeMargins() const
 {
-    return Data.ComputeMargins(CFG);
+    return Data.ComputeMargins(g_Cfg);
 }
 
 Size Project::ComputeMaxMargins() const
 {
-    return Data.ComputeMaxMargins(CFG);
+    return Data.ComputeMaxMargins(g_Cfg);
 }
 
 float Project::CardRatio() const
 {
-    return Data.CardRatio(CFG);
+    return Data.CardRatio(g_Cfg);
 }
 
 Size Project::CardSize() const
 {
-    return Data.CardSize(CFG);
+    return Data.CardSize(g_Cfg);
 }
 
 Size Project::CardSizeWithBleed() const
 {
-    return Data.CardSizeWithBleed(CFG);
+    return Data.CardSizeWithBleed(g_Cfg);
 }
 
 Size Project::CardSizeWithFullBleed() const
 {
-    return Data.CardSizeWithFullBleed(CFG);
+    return Data.CardSizeWithFullBleed(g_Cfg);
 }
 
 Length Project::CardFullBleed() const
 {
-    return Data.CardFullBleed(CFG);
+    return Data.CardFullBleed(g_Cfg);
 }
 
 Length Project::CardCornerRadius() const
 {
-    return Data.CardCornerRadius(CFG);
+    return Data.CardCornerRadius(g_Cfg);
 }
 
 void Project::EnsureOutputFolder() const
 {
     const auto output_dir{
-        GetOutputDir(Data.CropDir, Data.BleedEdge, CFG.ColorCube)
+        GetOutputDir(Data.CropDir, Data.BleedEdge, g_Cfg.ColorCube)
     };
     if (!fs::exists(output_dir))
     {
@@ -477,7 +477,7 @@ Size Project::ProjectData::CardSize(const Config& config) const
     const auto& card_size_info{
         config.CardSizes.contains(CardSizeChoice)
             ? config.CardSizes.at(CardSizeChoice)
-            : config.CardSizes.at(CFG.DefaultCardSize),
+            : config.CardSizes.at(g_Cfg.DefaultCardSize),
     };
     return card_size_info.CardSize.Dimensions * card_size_info.CardSizeScale;
 }

@@ -16,10 +16,10 @@ class CardImage : public QLabel
   public:
     struct Params
     {
-        bool RoundedCorners{ true };
-        Image::Rotation Rotation{ Image::Rotation::None };
-        Length BleedEdge{ 0_mm };
-        Pixel MinimumWidth{ 130_pix };
+        bool m_RoundedCorners{ true };
+        Image::Rotation m_Rotation{ Image::Rotation::None };
+        Length m_BleedEdge{ 0_mm };
+        Pixel m_MinimumWidth{ 130_pix };
     };
 
     CardImage(const fs::path& image_name, const Project& project, Params params);
@@ -38,17 +38,17 @@ class CardImage : public QLabel
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
 
-    fs::path ImageName;
-    Params OriginalParams;
+    fs::path m_ImageName;
+    Params m_OriginalParams;
 
-    bool Rotated;
-    Size CardSize;
-    Length FullBleed;
-    float CardRatio;
-    Length BleedEdge;
-    Length CornerRadius;
+    bool m_Rotated;
+    Size m_CardSize;
+    Length m_FullBleed;
+    float m_CardRatio;
+    Length m_BleedEdge;
+    Length m_CornerRadius;
 
-    QWidget* Spinner{ nullptr };
+    QWidget* m_Spinner{ nullptr };
 };
 
 class BacksideImage : public CardImage
@@ -88,7 +88,7 @@ class StackedCardBacksideView : public QStackedWidget
     virtual void leaveEvent(QEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
 
-    QWidget* Image;
-    QWidget* Backside;
-    QWidget* BacksideContainer;
+    QWidget* m_Image;
+    QWidget* m_Backside;
+    QWidget* m_BacksideContainer;
 };

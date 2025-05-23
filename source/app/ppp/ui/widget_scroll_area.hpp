@@ -29,5 +29,5 @@ class CardScrollArea : public QScrollArea
     Project& m_Project;
 
     class CardGrid;
-    CardGrid* Grid;
+    CardGrid* m_Grid;
 };

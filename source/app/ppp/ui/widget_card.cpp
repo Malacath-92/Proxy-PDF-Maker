@@ -45,18 +45,18 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
 {
     delete layout();
 
-    ImageName = image_name;
-    OriginalParams = params;
+    m_ImageName = image_name;
+    m_OriginalParams = params;
 
-    Rotated = params.Rotation == Image::Rotation::Degree90 or params.Rotation == Image::Rotation::Degree270;
-    CardSize = project.CardSize();
-    FullBleed = project.CardFullBleed();
-    CardRatio = CardSize.x / CardSize.y;
-    BleedEdge = params.BleedEdge;
-    CornerRadius = project.CardCornerRadius();
+    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 or params.m_Rotation == Image::Rotation::Degree270;
+    m_CardSize = project.CardSize();
+    m_FullBleed = project.CardFullBleed();
+    m_CardRatio = m_CardSize.x / m_CardSize.y;
+    m_BleedEdge = params.m_BleedEdge;
+    m_CornerRadius = project.CardCornerRadius();
 
     const bool has_image{ project.HasPreview(image_name) };
-    const bool has_bleed_edge{ params.BleedEdge > 0_mm };
+    const bool has_bleed_edge{ params.m_BleedEdge > 0_mm };
 
     QPixmap pixmap{
         [&]()
@@ -66,7 +66,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
                 if (has_bleed_edge)
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, project.Data.BleedEdge, 6800_dpi) };
+                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, project.Data.BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -79,8 +79,8 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             }
             else
             {
-                const int width{ static_cast<int>(CFG.BasePreviewWidth.value) };
-                const int height{ static_cast<int>(width / CardRatio) };
+                const int width{ static_cast<int>(g_Cfg.BasePreviewWidth.value) };
+                const int height{ static_cast<int>(width / m_CardRatio) };
                 QPixmap raw_pixmap{ width, height };
                 raw_pixmap.fill(QColor::fromRgb(0x808080));
                 return raw_pixmap;
@@ -92,11 +92,11 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
 
-    setMinimumWidth(params.MinimumWidth.value);
+    setMinimumWidth(params.m_MinimumWidth.value);
 
     if (has_image)
     {
-        Spinner = nullptr;
+        m_Spinner = nullptr;
     }
     else
     {
@@ -106,7 +106,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
         layout->addWidget(spinner, 0, Qt::AlignCenter);
         setLayout(layout);
 
-        Spinner = spinner;
+        m_Spinner = spinner;
     }
 
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
@@ -114,14 +114,14 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
 
 int CardImage::heightForWidth(int width) const
 {
-    float card_ratio{ CardRatio };
-    if (BleedEdge > 0_mm)
+    float card_ratio{ m_CardRatio };
+    if (m_BleedEdge > 0_mm)
     {
-        const auto card_size{ CardSize + 2.0f * BleedEdge };
+        const auto card_size{ m_CardSize + 2.0f * m_BleedEdge };
         card_ratio = card_size.x / card_size.y;
     }
 
-    if (Rotated)
+    if (m_Rotated)
     {
         return int(std::round(width * card_ratio));
     }
@@ -133,21 +133,21 @@ int CardImage::heightForWidth(int width) const
 
 void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& preview)
 {
-    if (ImageName == image_name)
+    if (m_ImageName == image_name)
     {
-        if (Spinner != nullptr)
+        if (m_Spinner != nullptr)
         {
-            delete Spinner;
-            Spinner = nullptr;
+            delete m_Spinner;
+            m_Spinner = nullptr;
         }
 
         QPixmap pixmap{
             [&, this]()
             {
-                if (BleedEdge > 0_mm)
+                if (m_BleedEdge > 0_mm)
                 {
                     const Image& uncropped_image{ preview.m_UncroppedImage };
-                    Image image{ CropImage(uncropped_image, image_name, CardSize, FullBleed, BleedEdge, 6800_dpi) };
+                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -167,9 +167,9 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 {
     QPixmap finalized_pixmap{ pixmap };
 
-    if (OriginalParams.RoundedCorners)
+    if (m_OriginalParams.m_RoundedCorners)
     {
-        const Pixel card_corner_radius_pixels{ CornerRadius * pixmap.width() / CardSize.x };
+        const Pixel card_corner_radius_pixels{ m_CornerRadius * pixmap.width() / m_CardSize.x };
 
         QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
@@ -189,11 +189,11 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
         finalized_pixmap = clipped_pixmap;
     }
 
-    if (OriginalParams.Rotation != Image::Rotation::None)
+    if (m_OriginalParams.m_Rotation != Image::Rotation::None)
     {
         QTransform transform{};
 
-        switch (OriginalParams.Rotation)
+        switch (m_OriginalParams.m_Rotation)
         {
         case Image::Rotation::Degree90:
             transform.rotate(90);
@@ -214,28 +214,28 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
-    : BacksideImage{ backside_name, CardImage::Params{}.MinimumWidth, project }
+    : BacksideImage{ backside_name, CardImage::Params{}.m_MinimumWidth, project }
 {
 }
 BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project)
     : CardImage{
         backside_name,
         project,
-        CardImage::Params{ .MinimumWidth{ minimum_width } }
+        CardImage::Params{ .m_MinimumWidth{ minimum_width } }
     }
 {
 }
 
 void BacksideImage::Refresh(const fs::path& backside_name, const Project& project)
 {
-    Refresh(backside_name, CardImage::Params{}.MinimumWidth, project);
+    Refresh(backside_name, CardImage::Params{}.m_MinimumWidth, project);
 }
 void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
 {
     CardImage::Refresh(
         backside_name,
         project,
-        CardImage::Params{ .MinimumWidth{ minimum_width } });
+        CardImage::Params{ .m_MinimumWidth{ minimum_width } });
 }
 
 StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backside)
@@ -277,27 +277,27 @@ StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backsi
     this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
     this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
 
-    Image = image;
-    Backside = backside;
-    BacksideContainer = backside_container;
+    m_Image = image;
+    m_Backside = backside;
+    m_BacksideContainer = backside_container;
 }
 
 void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
 {
     new_backside->setMouseTracking(true);
 
-    auto* backside_layout{ static_cast<QHBoxLayout*>(BacksideContainer->layout()) };
-    Backside->setParent(nullptr);
+    auto* backside_layout{ static_cast<QHBoxLayout*>(m_BacksideContainer->layout()) };
+    m_Backside->setParent(nullptr);
     backside_layout->addWidget(new_backside);
     backside_layout->addWidget(new_backside, 0, Qt::AlignmentFlag::AlignBottom);
-    Backside = new_backside;
+    m_Backside = new_backside;
 
     RefreshSizes(rect().size());
 }
 
 int StackedCardBacksideView::heightForWidth(int width) const
 {
-    return Image->heightForWidth(width);
+    return m_Image->heightForWidth(width);
 }
 
 void StackedCardBacksideView::RefreshSizes(QSize size)
@@ -311,10 +311,10 @@ void StackedCardBacksideView::RefreshSizes(QSize size)
     const auto backside_width{ int(width * 0.45) };
     const auto backside_height{ int(height * 0.45) };
 
-    Image->setFixedWidth(img_width);
-    Image->setFixedHeight(img_height);
-    Backside->setFixedWidth(backside_width);
-    Backside->setFixedHeight(backside_height);
+    m_Image->setFixedWidth(img_width);
+    m_Image->setFixedHeight(img_height);
+    m_Backside->setFixedWidth(backside_width);
+    m_Backside->setFixedHeight(backside_height);
 }
 
 void StackedCardBacksideView::resizeEvent(QResizeEvent* event)
@@ -331,16 +331,16 @@ void StackedCardBacksideView::mouseMoveEvent(QMouseEvent* event)
     const auto x{ event->pos().x() };
     const auto y{ event->pos().y() };
 
-    const auto neg_backside_width{ rect().width() - Backside->rect().size().width() };
-    const auto neg_backside_height{ rect().height() - Backside->rect().size().height() };
+    const auto neg_backside_width{ rect().width() - m_Backside->rect().size().width() };
+    const auto neg_backside_height{ rect().height() - m_Backside->rect().size().height() };
 
     if (x >= neg_backside_width && y >= neg_backside_height)
     {
-        setCurrentWidget(BacksideContainer);
+        setCurrentWidget(m_BacksideContainer);
     }
     else
     {
-        setCurrentWidget(Image);
+        setCurrentWidget(m_Image);
     }
 }
 
@@ -348,14 +348,14 @@ void StackedCardBacksideView::leaveEvent(QEvent* event)
 {
     QStackedWidget::leaveEvent(event);
 
-    setCurrentWidget(Image);
+    setCurrentWidget(m_Image);
 }
 
 void StackedCardBacksideView::mouseReleaseEvent(QMouseEvent* event)
 {
     QStackedWidget::mouseReleaseEvent(event);
 
-    if (currentWidget() == BacksideContainer)
+    if (currentWidget() == m_BacksideContainer)
     {
         BacksideClicked();
     }

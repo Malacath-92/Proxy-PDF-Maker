@@ -31,20 +31,20 @@ void CropperThreadRouter::BleedChanged()
 
 void CropperThreadRouter::EnableUncropChanged()
 {
-    EnableUncropChangedDiff(CFG.EnableUncrop);
+    EnableUncropChangedDiff(g_Cfg.EnableUncrop);
 }
 
 void CropperThreadRouter::ColorCubeChanged()
 {
-    ColorCubeChangedDiff(CFG.ColorCube);
+    ColorCubeChangedDiff(g_Cfg.ColorCube);
 }
 
 void CropperThreadRouter::BasePreviewWidthChanged()
 {
-    BasePreviewWidthChangedDiff(CFG.BasePreviewWidth);
+    BasePreviewWidthChangedDiff(g_Cfg.BasePreviewWidth);
 }
 
 void CropperThreadRouter::MaxDPIChanged()
 {
-    MaxDPIChangedDiff(CFG.MaxDPI);
+    MaxDPIChangedDiff(g_Cfg.MaxDPI);
 }

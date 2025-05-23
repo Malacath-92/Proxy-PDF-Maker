@@ -180,4 +180,4 @@ struct Config
 Config LoadConfig();
 void SaveConfig(Config config);
 
-extern Config CFG;
+extern Config g_Cfg;

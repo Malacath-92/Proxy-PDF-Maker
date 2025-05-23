@@ -13,7 +13,7 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
-Config CFG{ LoadConfig() };
+Config g_Cfg{ LoadConfig() };
 
 void Config::SetPdfBackend(PdfBackend backend)
 {

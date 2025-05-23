@@ -54,9 +54,9 @@ class GenericPopup : public PopupBase
     {
         ~UninstallLogHookAtScopeExit()
         {
-            self->UninstallLogHook();
+            m_Self->UninstallLogHook();
         }
-        GenericPopup* self;
+        GenericPopup* m_Self;
     };
     UninstallLogHookAtScopeExit InstallLogHook();
     void UninstallLogHook();

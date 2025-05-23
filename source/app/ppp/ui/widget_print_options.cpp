@@ -21,7 +21,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 {
     setObjectName("Print Options");
 
-    const auto initial_base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
+    const auto initial_base_unit_name{ ToQString(g_Cfg.BaseUnit.m_ShortName) };
 
     const bool initial_fit_size{ project.Data.PageSize == Config::FitSize };
     const bool initial_infer_size{ project.Data.PageSize == Config::BasePDFSize };
@@ -34,12 +34,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_PrintOutput = print_output->GetWidget();
 
     auto* card_size{ new ComboBoxWithLabel{
-        "&Card Size", std::views::keys(CFG.CardSizes) | std::ranges::to<std::vector>(), project.Data.CardSizeChoice } };
+        "&Card Size", std::views::keys(g_Cfg.CardSizes) | std::ranges::to<std::vector>(), project.Data.CardSizeChoice } };
     card_size->setToolTip("Additional card sizes can be defined in config.ini");
     m_CardSize = card_size->GetWidget();
 
     auto* paper_size{ new ComboBoxWithLabel{
-        "&Paper Size", std::views::keys(CFG.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
+        "&Paper Size", std::views::keys(g_Cfg.PageSizes) | std::ranges::to<std::vector>(), project.Data.PageSize } };
     paper_size->setToolTip("Additional card sizes can be defined in config.ini");
     m_PaperSize = paper_size->GetWidget();
 
@@ -176,7 +176,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         {
             const bool custom_margins{ s == Qt::CheckState::Checked };
 
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
 
             if (custom_margins)
             {
@@ -205,7 +205,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
             m_Project.Data.CustomMargins.value().x = static_cast<float>(v) * base_unit;
             MarginsChanged();
         }
@@ -219,7 +219,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
             m_Project.Data.CustomMargins.value().y = static_cast<float>(v) * base_unit;
             MarginsChanged();
         }
@@ -256,7 +256,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             RefreshCardLayout();
 
-            const auto base_unit{ CFG.BaseUnit.m_Unit };
+            const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
             const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
 
             m_LeftMarginSpin->setRange(0, max_margins.x);
@@ -327,8 +327,8 @@ void PrintOptionsWidget::SpacingChanged()
 
 void PrintOptionsWidget::BaseUnitChanged()
 {
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
-    const auto base_unit_name{ ToQString(CFG.BaseUnit.m_ShortName) };
+    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+    const auto base_unit_name{ ToQString(g_Cfg.BaseUnit.m_ShortName) };
 
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
@@ -357,7 +357,7 @@ void PrintOptionsWidget::RenderBackendChanged()
         }()
     };
     const bool has_base_pdf_option{ base_pdf_size_idx >= 0 };
-    const bool has_base_pdf_confg{ CFG.PageSizes.contains(std::string{ Config::BasePDFSize }) };
+    const bool has_base_pdf_confg{ g_Cfg.PageSizes.contains(std::string{ Config::BasePDFSize }) };
     const bool need_add_base_pdf_option{ !has_base_pdf_option && has_base_pdf_confg };
     const bool need_remove_base_pdf_option{ has_base_pdf_option && !has_base_pdf_confg };
 
@@ -374,10 +374,10 @@ void PrintOptionsWidget::RenderBackendChanged()
         m_PaperSize->setCurrentText(ToQString(m_Project.Data.PageSize));
     }
 
-    if (CFG.Backend != PdfBackend::PoDoFo && m_Project.Data.PageSize == Config::BasePDFSize)
+    if (g_Cfg.Backend != PdfBackend::PoDoFo && m_Project.Data.PageSize == Config::BasePDFSize)
     {
-        m_PaperSize->setCurrentText(ToQString(CFG.DefaultPageSize));
-        m_Project.Data.PageSize = CFG.DefaultPageSize;
+        m_PaperSize->setCurrentText(ToQString(g_Cfg.DefaultPageSize));
+        m_Project.Data.PageSize = g_Cfg.DefaultPageSize;
         PageSizeChanged();
     }
 }
@@ -399,7 +399,7 @@ void PrintOptionsWidget::SetDefaults()
     const bool custom_margins{ m_Project.Data.CustomMargins.has_value() };
     m_CustomMargins->setChecked(custom_margins);
 
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
 
@@ -419,7 +419,7 @@ void PrintOptionsWidget::RefreshSizes()
     m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
     m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
 
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
+    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
 
     m_LeftMarginSpin->setRange(0, max_margins.x);
@@ -465,7 +465,7 @@ std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()
 
 std::string PrintOptionsWidget::SizeToString(Size size)
 {
-    const auto base_unit{ CFG.BaseUnit.m_Unit };
-    const auto base_unit_name{ CFG.BaseUnit.m_ShortName };
+    const auto base_unit{ g_Cfg.BaseUnit.m_Unit };
+    const auto base_unit_name{ g_Cfg.BaseUnit.m_ShortName };
     return fmt::format("{:.1f} x {:.1f} {}", size.x / base_unit, size.y / base_unit, base_unit_name);
 }

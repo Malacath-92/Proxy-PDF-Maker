@@ -425,7 +425,7 @@ class CardScrollArea::CardGrid : public QWidget
         };
 
         size_t i{ 0 };
-        const auto cols{ CFG.DisplayColumns };
+        const auto cols{ g_Cfg.DisplayColumns };
         for (auto& [card_name, _] : m_Project.Data.Cards)
         {
             if (ToQString(card_name).startsWith("__"))
@@ -568,7 +568,7 @@ CardScrollArea::CardScrollArea(Project& project)
                      this,
                      reset_number);
 
-    Grid = card_grid;
+    m_Grid = card_grid;
 }
 
 void CardScrollArea::NewProjectOpened()
@@ -582,17 +582,17 @@ void CardScrollArea::ImageDirChanged()
 
 void CardScrollArea::BacksideEnabledChanged()
 {
-    Grid->BacksideEnabledChanged();
+    m_Grid->BacksideEnabledChanged();
 }
 
 void CardScrollArea::BacksideDefaultChanged()
 {
-    Grid->BacksideDefaultChanged();
+    m_Grid->BacksideDefaultChanged();
 }
 
 void CardScrollArea::DisplayColumnsChanged()
 {
-    Grid->DisplayColumnsChanged();
+    m_Grid->DisplayColumnsChanged();
 }
 
 void CardScrollArea::CardAdded()
@@ -612,14 +612,14 @@ void CardScrollArea::CardRenamed()
 
 void CardScrollArea::FullRefresh()
 {
-    Grid->FullRefresh();
+    m_Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
 }
 
 int CardScrollArea::ComputeMinimumWidth()
 {
     const auto margins{ widget()->layout()->contentsMargins() };
-    return Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
+    return m_Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
 }
 
 void CardScrollArea::showEvent(QShowEvent* event)

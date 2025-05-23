@@ -118,11 +118,11 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
         return it->m_HaruImage;
     }
 
-    const auto use_jpg{ CFG.PdfImageFormat == ImageFormat::Jpg };
+    const auto use_jpg{ g_Cfg.PdfImageFormat == ImageFormat::Jpg };
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_jpg
             ? [](const Image& image)
-            { return image.EncodeJpg(CFG.JpgQuality); }
+            { return image.EncodeJpg(g_Cfg.JpgQuality); }
             : [](const Image& image)
             { return image.EncodePng(std::optional{ 0 }); }
     };

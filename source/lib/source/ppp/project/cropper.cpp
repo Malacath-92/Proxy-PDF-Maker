@@ -19,7 +19,7 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
     : m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ ImageDataBase::Read(project.Data.CropDir / ".image.db") }
     , m_Data{ project.Data }
-    , m_Cfg{ CFG }
+    , m_Cfg{ g_Cfg }
     , m_LoadedPreviews{ project.Data.Previews | std::views::keys | std::ranges::to<std::vector>() }
 {
 }
@@ -168,7 +168,7 @@ void Cropper::CardRemoved(const fs::path& card_name)
     RemoveWork(card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (CFG.EnableUncrop && fs::exists(m_Data.ImageDir / card_name))
+    if (g_Cfg.EnableUncrop && fs::exists(m_Data.ImageDir / card_name))
     {
         CardModified(card_name);
     }
@@ -193,7 +193,7 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     RemoveWork(old_card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (CFG.EnableUncrop && fs::exists(m_Data.ImageDir / old_card_name))
+    if (g_Cfg.EnableUncrop && fs::exists(m_Data.ImageDir / old_card_name))
     {
         fs::rename(m_Data.ImageDir / old_card_name, m_Data.ImageDir / new_card_name);
     }
