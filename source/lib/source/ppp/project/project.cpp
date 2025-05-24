@@ -51,6 +51,7 @@ void Project::Load(const fs::path& json_path)
         {
             CardInfo& card{ m_Data.m_Cards[card_json["name"]] };
             card.m_Num = card_json["num"];
+            card.m_Hidden = card_json["hidden"];
             card.m_Backside = card_json["backside"].get<std::string>();
             card.m_BacksideShortEdge = card_json["backside_short_edge"];
         }
@@ -137,6 +138,7 @@ void Project::Dump(const fs::path& json_path) const
             nlohmann::json& card_json{ cards.emplace_back() };
             card_json["name"] = name.string();
             card_json["num"] = card.m_Num;
+            card_json["hidden"] = card.m_Hidden;
             card_json["backside"] = card.m_Backside.string();
             card_json["backside_short_edge"] = card.m_BacksideShortEdge;
         }
@@ -214,6 +216,7 @@ void Project::InitProperties()
             if (img.string().starts_with("__"))
             {
                 m_Data.m_Cards[img].m_Num = 0;
+                m_Data.m_Cards[img].m_Hidden = 1;
             }
         }
     }
@@ -237,7 +240,10 @@ void Project::CardAdded(const fs::path& card_name)
 {
     if (!m_Data.m_Cards.contains(card_name) && !card_name.string().starts_with("__"))
     {
-        m_Data.m_Cards[card_name] = CardInfo{ 1 };
+        m_Data.m_Cards[card_name] = CardInfo{
+            .m_Num = 1,
+            .m_Hidden = 1,
+        };
     }
 }
 

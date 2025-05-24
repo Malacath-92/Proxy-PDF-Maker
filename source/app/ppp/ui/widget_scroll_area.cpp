@@ -152,6 +152,10 @@ class CardWidget : public QFrame
         }
     }
 
+  signals:
+    void CardHidden();
+    void CardShown();
+
   private:
     QWidget* MakeCardWidget(Project& project)
     {
@@ -166,9 +170,21 @@ class CardWidget : public QFrame
             auto backside_reset{
                 [=, this, &project]()
                 {
+                    const auto old_backside{ project.m_Data.m_Cards[m_CardName].m_Backside };
                     project.m_Data.m_Cards[m_CardName].m_Backside.clear();
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
+
+                    auto it{ project.m_Data.m_Cards.find(old_backside) };
+                    if (it != project.m_Data.m_Cards.end())
+                    {
+                        it->second.m_Hidden--;
+                        const bool is_shown{ it->second.m_Hidden == 0 };
+                        if (is_shown)
+                        {
+                            CardShown();
+                        }
+                    }
                 }
             };
 
@@ -177,11 +193,23 @@ class CardWidget : public QFrame
                 {
                     if (const auto backside_choice{ OpenImageDialog(project.m_Data.m_ImageDir) })
                     {
-                        if (backside_choice.value() != project.m_Data.m_Cards[m_CardName].m_Backside)
+                        const auto& backside{ backside_choice.value() };
+                        if (backside != project.m_Data.m_Cards[m_CardName].m_Backside && backside != m_CardName)
                         {
-                            project.m_Data.m_Cards[m_CardName].m_Backside = backside_choice.value();
-                            auto* new_backside_image{ new BacksideImage{ backside_choice.value(), project } };
+                            project.m_Data.m_Cards[m_CardName].m_Backside = backside;
+                            auto* new_backside_image{ new BacksideImage{ backside, project } };
                             stacked_widget->RefreshBackside(new_backside_image);
+
+                            auto it{ project.m_Data.m_Cards.find(backside) };
+                            if (it != project.m_Data.m_Cards.end())
+                            {
+                                const bool was_visible{ it->second.m_Hidden == 0 };
+                                it->second.m_Hidden++;
+                                if (was_visible)
+                                {
+                                    CardHidden();
+                                }
+                            }
                         }
                     }
                 }
@@ -400,7 +428,16 @@ class CardScrollArea::CardGrid : public QWidget
                 auto it{ old_cards.find(card_name) };
                 if (it == old_cards.end())
                 {
-                    return ctor(card_name, m_Project);
+                    CardWidget* new_card{ ctor(card_name, m_Project) };
+                    QObject::connect(new_card,
+                                     &CardWidget::CardShown,
+                                     this,
+                                     &CardGrid::FullRefresh);
+                    QObject::connect(new_card,
+                                     &CardWidget::CardHidden,
+                                     this,
+                                     &CardGrid::FullRefresh);
+                    return new_card;
                 }
 
                 CardWidget* card{ it->second };
@@ -426,9 +463,9 @@ class CardScrollArea::CardGrid : public QWidget
 
         size_t i{ 0 };
         const auto cols{ g_Cfg.m_DisplayColumns };
-        for (auto& [card_name, _] : m_Project.m_Data.m_Cards)
+        for (auto& [card_name, card_info] : m_Project.m_Data.m_Cards)
         {
-            if (ToQString(card_name).startsWith("__"))
+            if (card_info.m_Hidden > 0)
             {
                 continue;
             }
