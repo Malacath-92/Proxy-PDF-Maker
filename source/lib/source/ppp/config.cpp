@@ -31,13 +31,13 @@ void Config::SetPdfBackend(PdfBackend backend)
 Config LoadConfig()
 {
     Config config{};
-    if (!QFile::exists("config.m_ini"))
+    if (!QFile::exists("config.ini"))
     {
         SaveConfig(config);
         return config;
     }
 
-    QSettings settings("config.m_ini", QSettings::IniFormat);
+    QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_ToStringViews{ std::views::transform(
