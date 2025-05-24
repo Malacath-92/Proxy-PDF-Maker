@@ -6,7 +6,7 @@
 TEST_CASE("Generate empty pdf", "[pdf_empty]")
 {
     Project empty_project{};
-    empty_project.Data.FileName = "empty.pdf";
+    empty_project.m_Data.m_FileName = "empty.pdf";
     (void)GeneratePdf(empty_project);
     REQUIRE(fs::exists("empty.pdf"));
 

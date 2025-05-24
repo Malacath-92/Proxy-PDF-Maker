@@ -22,9 +22,9 @@ TEST_CASE("Setup folders for tests", "[project_setup_fs]")
 TEST_CASE("Empty project", "[project_empty]")
 {
     Project empty_project{};
-    empty_project.Data.ImageDir = "no_images";
-    empty_project.Data.CropDir = "no_images/crop";
-    empty_project.Data.ImageCache = "empty_project.cache";
+    empty_project.m_Data.m_ImageDir = "no_images";
+    empty_project.m_Data.m_CropDir = "no_images/crop";
+    empty_project.m_Data.m_ImageCache = "empty_project.cache";
     REQUIRE_NOTHROW(empty_project.Init());
     empty_project.CropperDone();
     REQUIRE(fs::exists("empty_project.cache"));
@@ -39,9 +39,9 @@ TEST_CASE("Empty project", "[project_empty]")
 TEST_CASE("Empty project can be saved", "[project_save_empty]")
 {
     Project empty_project{};
-    empty_project.Data.ImageDir = "no_images";
-    empty_project.Data.CropDir = "no_images/crop";
-    empty_project.Data.ImageCache = "empty_project.cache";
+    empty_project.m_Data.m_ImageDir = "no_images";
+    empty_project.m_Data.m_CropDir = "no_images/crop";
+    empty_project.m_Data.m_ImageCache = "empty_project.cache";
     REQUIRE_NOTHROW(empty_project.Dump("empty_project.json"));
     REQUIRE(fs::exists("empty_project.json"));
     REQUIRE(fs::exists("empty_project.cache"));
@@ -62,9 +62,9 @@ TEST_CASE("Empty project can be loaded", "[project_load_empty]")
 TEST_CASE("Non-empty project", "[project_non_empty]")
 {
     Project project{};
-    project.Data.ImageDir = "some_images";
-    project.Data.CropDir = "some_images/crop";
-    project.Data.ImageCache = "non_empty_project.cache";
+    project.m_Data.m_ImageDir = "some_images";
+    project.m_Data.m_CropDir = "some_images/crop";
+    project.m_Data.m_ImageCache = "non_empty_project.cache";
     REQUIRE_NOTHROW(project.Init());
     project.CropperDone();
 
@@ -78,9 +78,9 @@ TEST_CASE("Non-empty project", "[project_non_empty]")
 TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 {
     Project project{};
-    project.Data.ImageDir = "some_images";
-    project.Data.CropDir = "some_images/crop";
-    project.Data.ImageCache = "non_empty_project.cache";
+    project.m_Data.m_ImageDir = "some_images";
+    project.m_Data.m_CropDir = "some_images/crop";
+    project.m_Data.m_ImageCache = "non_empty_project.cache";
     project.Init();
     project.CropperDone();
     REQUIRE_NOTHROW(project.Dump("non_empty_project.json"));
