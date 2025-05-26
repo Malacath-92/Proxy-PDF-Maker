@@ -273,7 +273,7 @@ Config LoadConfig()
 
 void SaveConfig(Config config)
 {
-    QSettings settings("config.m_ini", QSettings::IniFormat);
+    QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_SetSize{

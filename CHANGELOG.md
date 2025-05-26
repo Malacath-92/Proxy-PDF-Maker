@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2025-26-05
+
+### Fixed
+- The config is saved with the correct filename.
+
 ## [0.10.1] - 2025-26-05
 
 ### Fixed
