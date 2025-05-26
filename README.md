@@ -125,6 +125,12 @@ Determines how many columns are displayed in the card grid on the left. Smaller 
 #### Rendering Backend
 Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files. `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software.
 
+#### Image Format
+This determines whether images are encoded to `.png` or `.jpg` before writing them to the PDF. Use `Jpg` to reduce file size.
+
+#### Jpg Quality
+This lets you change the quality of jpg files embedded in the PDF. Lower numbers will reduce file size at the cost of image artifacts appearing. Even at `100` the file size will be significantly smaller than encoding to `.png` files.
+
 #### Allow Precropped
 In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/cropped` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
 
@@ -187,25 +193,6 @@ Corner.Radius = 2,68478e-19 light years # comma as decimal separator,
                                         # scientific notation
                                         # unsupported unit
 ```
-
-## Png Generation
-An advanced feature that is still experimental is png generation. This may be useful for some software that assembles printouts in some other way, for example some cutting machines layout software. To enable this option open `config.ini` and set the following option:
-```ini
-PDF.Backend=Png
-```
-You may also optionally add the following option, with `N` being a value between `0` and `9`, where higher values result in slower rendering and smaller files:
-```ini
-PDF.Backend.Png.Compression=N
-```
-The files will now be output one page at a time into a folder specified by the `PDF Filename` option. These files contain information about the DPI, which is forced to the `Max DPI` option.
-
-## Reducing PDF Size
-With a lot of images a pdf file generated from this app can easily reach hundreds of MB in size, even a GB for a full commander deck. You can reduce this by embedding jpg images instead of png images in the pdf. Currently this is only available from `config.ini`. Add these two lines to get it working:
-```
-PDF.Backend.Image.Format=Jpg
-PDF.Backend.Jpg.Quality=95
-```
-Here the quality value is a whole number between `1` and `100`, defaulting to `95`. Lower numbers will reduce file size at the cost of image artifacts appearing.
 
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.

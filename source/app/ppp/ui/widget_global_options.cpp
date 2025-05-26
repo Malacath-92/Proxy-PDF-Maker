@@ -38,6 +38,20 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         "&Rendering Backend", magic_enum::enum_names<PdfBackend>(), magic_enum::enum_name(g_Cfg.m_Backend) } };
     backend->GetWidget()->setToolTip("Determines how the backend used for rendering and the output format.");
 
+    auto* image_format{ new ComboBoxWithLabel{
+        "Image &Format", magic_enum::enum_names<ImageFormat>(), magic_enum::enum_name(g_Cfg.m_PdfImageFormat) } };
+    image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Jpg to reduce output size.");
+    image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
+
+    auto* jpg_quality_spin_box{ new QDoubleSpinBox };
+    jpg_quality_spin_box->setDecimals(0);
+    jpg_quality_spin_box->setRange(1, 100);
+    jpg_quality_spin_box->setSingleStep(1);
+    jpg_quality_spin_box->setValue(g_Cfg.m_JpgQuality.value_or(100));
+    auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Qality", jpg_quality_spin_box } };
+    jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
+    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+
     auto* precropped_checkbox{ new QCheckBox{ "Allow Precropped" } };
     precropped_checkbox->setChecked(g_Cfg.m_EnableUncrop);
     precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
@@ -73,6 +87,8 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     layout->addWidget(base_unit);
     layout->addWidget(display_columns);
     layout->addWidget(backend);
+    layout->addWidget(image_format);
+    layout->addWidget(jpg_quality);
     layout->addWidget(precropped_checkbox);
     layout->addWidget(color_cube);
     layout->addWidget(preview_width);
@@ -102,12 +118,36 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     };
 
     auto change_render_backend{
-        [this](const QString& t)
+        [this, image_format, jpg_quality](const QString& t)
         {
             g_Cfg.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
                                     .value_or(PdfBackend::LibHaru));
             SaveConfig(g_Cfg);
             RenderBackendChanged();
+
+            image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
+            jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+        }
+    };
+
+    auto change_image_format{
+        [this, jpg_quality](const QString& t)
+        {
+            g_Cfg.m_PdfImageFormat = magic_enum::enum_cast<ImageFormat>(t.toStdString())
+                                         .value_or(ImageFormat::Jpg);
+            SaveConfig(g_Cfg);
+            ImageFormatChanged();
+
+            jpg_quality->setVisible(g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+        }
+    };
+
+    auto change_jpg_quality{
+        [this](double v)
+        {
+            g_Cfg.m_JpgQuality = static_cast<int>(v);
+            SaveConfig(g_Cfg);
+            JpgQualityChanged();
         }
     };
 
@@ -176,6 +216,14 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
                      &QComboBox::currentTextChanged,
                      this,
                      change_render_backend);
+    QObject::connect(image_format->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_image_format);
+    QObject::connect(jpg_quality_spin_box,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_jpg_quality);
     QObject::connect(precropped_checkbox,
                      &QCheckBox::checkStateChanged,
                      this,
