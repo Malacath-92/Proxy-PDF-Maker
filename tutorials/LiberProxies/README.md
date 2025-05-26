@@ -61,7 +61,9 @@ To start us off, expand the bottom section. Here we want to make sure to:
 
 All other options are irrelevant for us.
 
-![Global Config](./images/options_global.png)
+<p align="center">
+    <img src="./images/options_global.png" alt="Global Config"/>
+</p>
 
 You can now collapse this section again.
 
@@ -73,7 +75,9 @@ Extend this section and set the following options:
 - tick `Enable Backside` and
 - `Offset` to `0mm`.
 
-![Card Options](./images/options_card.png)
+<p align="center">
+    <img src="./images/options_card.png" alt="Card Options"/>
+</p>
 
 Note the spinner above `__back.png`, this just means that the app currently can not find the image. We will fix that once we select the image folder. For now, collapse the section.
 
@@ -90,7 +94,9 @@ Expand the section and set the following:
 - set `Guides Thickness` to `0.1mm`,
 - set `Guides Length` to `1mm`.
 
-![Guides Options](./images/options_guides.png)
+<p align="center">
+    <img src="./images/options_guides.png" alt="Guides Options"/>
+</p>
 
 Now collapse this section.
 
@@ -103,7 +109,9 @@ Expand the section and set the following:
 - untick `Custom Margins`,
 - set `Orientation` to `Portrait`.
 
-![Print Options](./images/options_print.png)
+<p align="center">
+    <img src="./images/options_print.png" alt="Print Options"/>
+</p>
 
 ### Load Images
 
@@ -131,7 +139,9 @@ For each card in this grid, locate the card that represents the front-side of a 
 
 Lets say we want to order three copies of the `Plains` card. Simply use the `+` and `-` buttons below the card to increase or decrease the amount per card.
 
-![More Cards](./images/more_cards.png)
+<p align="center">
+    <img src="./images/more_cards.png" alt="More Cards"/>
+</p>
 
 ### Generating the PDF
 
