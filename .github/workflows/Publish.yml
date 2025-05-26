@@ -152,22 +152,3 @@ jobs:
           tag: ${{ github.ref }}
           body: ${{ steps.extract_release_notes.outputs.release_notes }}
           draft: false
-
-      - name: Build README.pdf
-        if: ${{ matrix.os == 'Ubuntu' }}
-        uses: baileyjm02/markdown-to-pdf@v1
-        with:
-          input_path: README.md
-          output_dir: .
-
-      - name: Upload Readme
-        if: ${{ matrix.os == 'Ubuntu' }}
-        uses: svenstaro/upload-release-action@2.9.0
-        with:
-          release_name: Release ${{ github.ref_name }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: README.pdf
-          asset_name: README.pdf
-          tag: ${{ github.ref }}
-          body: ${{ steps.extract_release_notes.outputs.release_notes }}
-          draft: false
