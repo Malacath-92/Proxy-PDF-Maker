@@ -205,6 +205,7 @@ class CardWidget : public QFrame
                             {
                                 const bool was_visible{ it->second.m_Hidden == 0 };
                                 it->second.m_Hidden++;
+                                it->second.m_Num = 0;
                                 if (was_visible)
                                 {
                                     CardHidden();
