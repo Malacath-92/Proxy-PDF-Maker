@@ -48,7 +48,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     jpg_quality_spin_box->setRange(1, 100);
     jpg_quality_spin_box->setSingleStep(1);
     jpg_quality_spin_box->setValue(g_Cfg.m_JpgQuality.value_or(100));
-    auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Qality", jpg_quality_spin_box } };
+    auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Quality", jpg_quality_spin_box } };
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
     jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
 
