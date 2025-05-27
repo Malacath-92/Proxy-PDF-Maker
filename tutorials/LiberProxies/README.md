@@ -93,7 +93,7 @@ Expand the section and set the following:
 - untick `Enable Backside Guides`,
 - untick `Extended Guides`,
 - tick `Cross Guides`,
-- set both colors to pure white,
+- set both colors to pure white (in reality you should adjust these to make sure the guides are well visible for the cards you have),
 - set `Guides Offset` to `0mm`,
 - set `Guides Thickness` to `0.1mm`,
 - set `Guides Length` to `1mm`.
