@@ -55,6 +55,8 @@ We will now go through all the settings to adjust them to exactly what LiberProx
 To start us off, expand the bottom section. Here we want to make sure to:
 - set `Units` to `mm`,
 - set `Rendering Backend` to either `LibHaru` or `PoDoFo`,
+- set `Image Format` to `Jpg`,
+- set `Jpg Quality` to `100`,
 - tick `Allow Precropped` (technically only necessary if you have images without 3mm Bleed Edge),
 - set `Color Cube` to `None` and
 - set `Max DPI` to `800`.
@@ -70,7 +72,7 @@ You can now collapse this section again.
 ### Card Options
 
 Extend this section and set the following options:
-- `Bleed Edge` to `2mm`,
+- `Bleed Edge` to `1.5mm`,
 - `Spacing` to `1mm`,
 - tick `Enable Backside` and
 - `Offset` to `0mm`.
