@@ -12,7 +12,7 @@ Make sure you downloaded the latest version of [Proxy-PDF-Maker](https://github.
 
 Additionally you will have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
-Then collect all images of cards you want to order and a backside you like. Rename the backside image to `__back` in order to simplify later steps.
+Then collect all images of cards you want to order and a back-side you like. Rename the back-side image to `__back` in order to simplify later steps.
 
 If you want to follow along this tutorial exactly, download the images in the folder `cards` right next to this document.
 
@@ -127,11 +127,11 @@ Now press `Set Image Folder` at the top and select the `liberproxies` folder. No
     Some images have already loaded, while some are still waiting
 </p>
 
-Each tile in this grid represents on card. The small image behind the card represents its backside. If you did not name your backside to `__back` then these may not load. If so, go back to the `Card Options` segement and press `Choose Default`, then navigate to the backside you want to use by default.
+Each tile in this grid represents one card. The small image behind the card represents its back-side. If you did not name your back-side to `__back` then these may not load. If so, go back to the `Card Options` segement and press `Choose Default`, then navigate to the back-side you want to use by default.
 
 ### Choosing Double-Sided Cards
 
-For each card in this grid, locate the card that represents the front-side of a DFC. Click on the little image for its backside and choose the image representing its back-side. The tile representing the back-side should now disappear. If you made a mistake and want to reset a back-side just press on the little broom icon below the card image.
+For each card in this grid, locate the card that represents the front-side of a DFC. Click on the little image for its back-side and choose the image representing its back-side. The tile representing the back-side should now disappear. If you made a mistake and want to reset a back-side just press on the little broom icon below the card image.
 
 <p align="center">
     <img src="./images/backsides_selected.png" alt="Backsides Selected"/>
@@ -149,7 +149,7 @@ Lets say we want to order three copies of the `Plains` card. Simply use the `+` 
 
 ### Generating the PDF
 
-Finally we just have to press `Render Document` button in the top-right and wait for rendering to finish.
+Finally we just have to press the `Render Document` button in the top-right and wait for rendering to finish.
 
 <p align="center">
     <img src="./images/generated_pdf.png" alt="Generated Pdf"/>
