@@ -10,6 +10,8 @@ This tutorial focuses on creating such print-ready documents.
 ## Prerequisites
 Make sure you downloaded the latest version of [Proxy-PDF-Maker](https://github.com/Malacath-92/Proxy-PDF-Maker/releases).
 
+Additionally you will have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
+
 Then collect all images of cards you want to order and a backside you like. Rename the backside image to `__back` in order to simplify later steps.
 
 If you want to follow along this tutorial exactly, download the images in the folder `cards` right next to this document.
