@@ -30,6 +30,10 @@ run_conan(
 project(ProxyPDF CXX C)
 
 # --------------------------------------------------
+# Include utility
+include(cmake/group_files.cmake)
+
+# --------------------------------------------------
 # Add submodules
 add_subdirectory("submodules/dla")
 
@@ -234,39 +238,10 @@ endif()
 
 # --------------------------------------------------
 # Merge files from source and include in the IDE
-function(group_files sources)
-	foreach(FILE ${sources})
-		# Get the directory of the source file
-		get_filename_component(PARENT_DIR "${FILE}" DIRECTORY)
-
-		# Remove common directory prefix to make the group
-		string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "" GROUP "${PARENT_DIR}")
-
-		# Make sure we are using windows slashes
-		string(REPLACE "/" "\\" GROUP "${GROUP}")
-
-		# Strip the root parts for each possible component
-		if("${FILE}" MATCHES "source/app/.*")
-			string(LENGTH "source/app/." STR_LEN)
-			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
-		elseif("${FILE}" MATCHES "source/version/.*")
-			string(LENGTH "source/version/." STR_LEN)
-			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
-		elseif("${FILE}" MATCHES "source/lib/include/.*")
-			string(LENGTH "source/lib/include/." STR_LEN)
-			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
-		elseif("${FILE}" MATCHES "source/lib/source/.*")
-			string(LENGTH "source/lib/source/." STR_LEN)
-			string(SUBSTRING ${GROUP} ${STR_LEN} -1 GROUP)
-		endif()
-
-		# Do the grouping
-		source_group("${GROUP}" FILES "${FILE}")
-	endforeach()
-endfunction()
-
 group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sources};${proxy_pdf_headers};${proxy_pdf_version_sources};${proxy_pdf_version_headers}")
 
+# --------------------------------------------------
+# Set startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 
 # --------------------------------------------------
