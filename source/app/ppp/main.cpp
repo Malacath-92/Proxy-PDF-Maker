@@ -93,6 +93,7 @@ int main(int argc, char** argv)
     auto* options_area{
         new OptionsAreaWidget{
             app,
+            project,
             actions,
             print_options,
             guides_options,
@@ -221,6 +222,11 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
+    }
+
+    {
+        QObject::connect(global_options, &GlobalOptionsWidget::PluginEnabled, options_area, &OptionsAreaWidget::PluginEnabled);
+        QObject::connect(global_options, &GlobalOptionsWidget::PluginDisabled, options_area, &OptionsAreaWidget::PluginDisabled);
     }
 
     app.SetMainWindow(main_window);

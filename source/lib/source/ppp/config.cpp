@@ -207,6 +207,17 @@ Config LoadConfig()
         }
 
         {
+            settings.beginGroup("PLUGINS");
+
+            for (const auto& key : settings.allKeys())
+            {
+                config.m_PluginsState[key.toStdString()] = true;
+            }
+
+            settings.endGroup();
+        }
+
+        {
             settings.beginGroup("PAGE_SIZES");
 
             for (const auto& key : settings.allKeys())
@@ -274,6 +285,8 @@ Config LoadConfig()
 void SaveConfig(Config config)
 {
     QSettings settings("config.ini", QSettings::IniFormat);
+    settings.clear();
+
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_SetSize{
@@ -338,6 +351,21 @@ void SaveConfig(Config config)
 
             const auto base_unit_name{ config.m_BaseUnit.m_Name };
             settings.setValue("Base.Unit", ToQString(base_unit_name));
+
+            settings.endGroup();
+        }
+
+        if (std::ranges::contains(config.m_PluginsState | std::views::values, true))
+        {
+            settings.beginGroup("PLUGINS");
+
+            for (const auto& [plugin_name, plugin_state] : config.m_PluginsState)
+            {
+                if (plugin_state)
+                {
+                    settings.setValue(ToQString(plugin_name), true);
+                }
+            }
 
             settings.endGroup();
         }

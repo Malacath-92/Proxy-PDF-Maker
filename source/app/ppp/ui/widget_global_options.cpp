@@ -4,6 +4,8 @@
 
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QGroupBox>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 #include <magic_enum/magic_enum.hpp>
@@ -11,9 +13,80 @@
 #include <ppp/app.hpp>
 #include <ppp/config.hpp>
 #include <ppp/cubes.hpp>
+#include <ppp/plugins.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/style.hpp>
 
+#include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_label.hpp>
+
+class PluginsPopup : public PopupBase
+{
+    Q_OBJECT
+
+  public:
+    PluginsPopup(QWidget* parent)
+        : PopupBase{ parent }
+    {
+        auto* plugins{ new QGroupBox{} };
+        {
+            auto* layout{ new QVBoxLayout };
+            for (const auto& plugin_name : GetPluginNames())
+            {
+                auto* plugin_checkbox{ new QCheckBox{ ToQString(plugin_name) } };
+                plugin_checkbox->setChecked(g_Cfg.m_PluginsState[plugin_name]);
+                layout->addWidget(plugin_checkbox);
+
+                auto change_plugin_enabled{
+                    [this, plugin_name](Qt::CheckState s)
+                    {
+                        const bool enabled{ s == Qt::CheckState::Checked };
+                        g_Cfg.m_PluginsState[plugin_name] = enabled;
+                        SaveConfig(g_Cfg);
+
+                        if (enabled)
+                        {
+                            PluginEnabled(plugin_name);
+                        }
+                        else
+                        {
+                            PluginDisabled(plugin_name);
+                        }
+                    }
+                };
+
+                QObject::connect(plugin_checkbox,
+                                 &QCheckBox::checkStateChanged,
+                                 this,
+                                 change_plugin_enabled);
+            }
+            plugins->setLayout(layout);
+        }
+
+        auto* buttons{ new QWidget{} };
+        {
+            auto* okay_button{ new QPushButton{ "OK" } };
+
+            auto* layout{ new QHBoxLayout };
+            layout->addWidget(okay_button);
+            buttons->setLayout(layout);
+
+            QObject::connect(okay_button,
+                             &QPushButton::clicked,
+                             this,
+                             &AboutPopup::close);
+        }
+
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(plugins);
+        layout->addWidget(buttons);
+        setLayout(layout);
+    }
+
+  signals:
+    void PluginEnabled(std::string_view plugin_name);
+    void PluginDisabled(std::string_view plugin_name);
+};
 
 GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
 {
@@ -83,6 +156,8 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto* themes{ new ComboBoxWithLabel{
         "&Theme", GetStyles(), application.GetTheme() } };
 
+    auto* plugins{ new QPushButton{ "Plugins" } };
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(base_unit);
     layout->addWidget(display_columns);
@@ -95,6 +170,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     layout->addWidget(max_dpi);
     layout->addWidget(paper_sizes);
     layout->addWidget(themes);
+    layout->addWidget(plugins);
     setLayout(layout);
 
     auto change_base_units{
@@ -204,6 +280,26 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         }
     };
 
+    const auto open_plugins_popup{
+        [this]()
+        {
+            PluginsPopup plugins{ nullptr };
+
+            QObject::connect(&plugins,
+                             &PluginsPopup::PluginEnabled,
+                             this,
+                             &GlobalOptionsWidget::PluginEnabled);
+            QObject::connect(&plugins,
+                             &PluginsPopup::PluginDisabled,
+                             this,
+                             &GlobalOptionsWidget::PluginDisabled);
+
+            window()->setEnabled(false);
+            plugins.Show();
+            window()->setEnabled(true);
+        }
+    };
+
     QObject::connect(base_unit->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
@@ -248,4 +344,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
                      &QComboBox::currentTextChanged,
                      this,
                      change_theme);
+    QObject::connect(plugins,
+                     &QPushButton::clicked,
+                     this,
+                     open_plugins_popup);
 }
+
+#include <widget_global_options.moc>

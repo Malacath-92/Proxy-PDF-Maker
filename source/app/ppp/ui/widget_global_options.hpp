@@ -22,4 +22,7 @@ class GlobalOptionsWidget : public QWidget
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();
+
+    void PluginEnabled(std::string_view plugin_name);
+    void PluginDisabled(std::string_view plugin_name);
 };

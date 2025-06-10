@@ -7,40 +7,37 @@
 #include <QVBoxLayout>
 
 #include <ppp/app.hpp>
+#include <ppp/config.hpp>
+#include <ppp/plugins.hpp>
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/collapse_button.hpp>
 
 OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
+                                     Project& project,
                                      QWidget* actions,
                                      QWidget* print_options,
                                      QWidget* guides_options,
                                      QWidget* card_options,
                                      QWidget* global_options)
+    : m_App{ app }
+    , m_Project{ project }
 {
-    const auto add_collapsable{
-        [this, &app](QVBoxLayout* layout, QWidget* widget)
-        {
-            auto* collapse_button{ new CollapseButton{ widget, !app.GetObjectVisibility(widget->objectName()) } };
-            layout->addWidget(collapse_button);
-            layout->addWidget(widget);
-
-            QObject::connect(collapse_button,
-                             &CollapseButton::SetObjectVisibility,
-                             this,
-                             [this, widget](bool visible)
-                             {
-                                 SetObjectVisibility(widget->objectName(), visible);
-                             });
-        }
-    };
-
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions);
-    add_collapsable(layout, print_options);
-    add_collapsable(layout, guides_options);
-    add_collapsable(layout, card_options);
-    add_collapsable(layout, global_options);
+    AddCollapsible(layout, print_options);
+    AddCollapsible(layout, guides_options);
+    AddCollapsible(layout, card_options);
+    AddCollapsible(layout, global_options);
+    for (const auto& plugin_name : GetPluginNames())
+    {
+        if (g_Cfg.m_PluginsState[plugin_name])
+        {
+            auto* plugin_widget{ InitPlugin(plugin_name, project) };
+            m_PluginWidgets[plugin_name] = plugin_widget;
+            AddCollapsible(layout, plugin_widget);
+        }
+    }
     layout->addStretch();
 
     auto* widget{ new QWidget };
@@ -52,4 +49,54 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
     setMinimumHeight(400);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
     setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
+}
+
+void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
+{
+    if (!m_PluginWidgets.contains(plugin_name))
+    {
+        auto* plugin_widget{ InitPlugin(plugin_name, m_Project) };
+        m_PluginWidgets[plugin_name] = plugin_widget;
+
+        auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
+        AddCollapsible(layout, plugin_widget);
+    }
+}
+
+void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
+{
+    if (m_PluginWidgets.contains(plugin_name))
+    {
+        auto* plugin_widget{ m_PluginWidgets[plugin_name] };
+
+        auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
+        const auto plugin_widget_index{ layout->indexOf(plugin_widget) };
+        if (plugin_widget_index >= 0)
+        {
+            if (auto* collapse_button{ layout->itemAt(plugin_widget_index - 1)->widget() })
+            {
+                layout->removeWidget(collapse_button);
+                delete collapse_button;
+            }
+            layout->removeWidget(plugin_widget);
+        }
+
+        m_PluginWidgets.erase(plugin_name);
+        DestroyPlugin(plugin_name, plugin_widget);
+    }
+}
+
+void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
+{
+    auto* collapse_button{ new CollapseButton{ widget, !m_App.GetObjectVisibility(widget->objectName()) } };
+    layout->addWidget(collapse_button);
+    layout->addWidget(widget);
+
+    QObject::connect(collapse_button,
+                     &CollapseButton::SetObjectVisibility,
+                     this,
+                     [this, widget](bool visible)
+                     {
+                         SetObjectVisibility(widget->objectName(), visible);
+                     });
 }

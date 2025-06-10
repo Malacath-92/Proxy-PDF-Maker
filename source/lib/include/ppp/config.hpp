@@ -56,6 +56,8 @@ struct Config
     std::optional<int> m_JpgQuality{ std::nullopt };
     UnitInfo m_BaseUnit{ c_SupportedBaseUnits[0] };
 
+    std::unordered_map<std::string_view, bool> m_PluginsState;
+
     static inline constexpr std::string_view c_FitSize{ "Fit" };
     static inline constexpr std::string_view c_BasePDFSize{ "Base Pdf" };
 
