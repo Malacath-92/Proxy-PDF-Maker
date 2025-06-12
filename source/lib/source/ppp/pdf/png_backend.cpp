@@ -168,13 +168,26 @@ PngDocument::PngDocument(const Project& project)
         static_cast<float>(card_size_pixels.y) * 1_pix,
     };
 
-    const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
-    m_PrecomputedPageSize = PixelSize{
-        static_cast<float>(page_size_pixels.x) * 1_pix,
-        static_cast<float>(page_size_pixels.y) * 1_pix,
-    };
-
     m_PageSize = project.ComputePageSize();
+    if (m_Project.m_Data.m_PageSize == Config::c_FitSize)
+    {
+        const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
+        m_PrecomputedPageSize = PixelSize{
+            static_cast<float>(page_size_pixels.x) * 1_pix,
+            static_cast<float>(page_size_pixels.y) * 1_pix,
+        };
+    }
+    else
+    {
+        const dla::ivec2 page_size_pixels{
+            static_cast<int32_t>(m_PageSize.x * g_Cfg.m_MaxDPI / 1_pix),
+            static_cast<int32_t>(m_PageSize.y * g_Cfg.m_MaxDPI / 1_pix),
+        };
+        m_PrecomputedPageSize = PixelSize{
+            static_cast<float>(page_size_pixels.x) * 1_pix,
+            static_cast<float>(page_size_pixels.y) * 1_pix,
+        };
+    }
 
     m_ImageCache = std::make_unique<PngImageCache>();
 }

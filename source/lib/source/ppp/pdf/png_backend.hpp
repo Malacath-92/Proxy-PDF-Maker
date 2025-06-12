@@ -24,7 +24,7 @@ class PngPage final : public PdfPage
 
     virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     const Project* m_Project;
@@ -67,9 +67,9 @@ class PngDocument final : public PdfDocument
     const Project& m_Project;
 
     PixelSize m_PrecomputedCardSize;
-    PixelSize m_PrecomputedPageSize;
 
     Size m_PageSize;
+    PixelSize m_PrecomputedPageSize;
 
     std::vector<PngPage> m_Pages;
 
