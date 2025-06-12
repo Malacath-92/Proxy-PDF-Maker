@@ -254,7 +254,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            RefreshCardLayout();
+            RefreshSizes();
 
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
