@@ -14,7 +14,7 @@ Additionally you will have to install Visual Studio Redistributable: https://aka
 
 Then collect all images of cards you want to order and a back-side you like. Rename the back-side image to `__back` in order to simplify later steps.
 
-If you want to follow along this tutorial exactly, download the images in the folder `cards` right next to this document.
+If you want to follow along this tutorial exactly, download the images in the folder `tutorial_cards` folder.
 
 ### Notes on Bleed Edge
 Ideally your input images should have a 3mm bleed edge, which means they should be 3mm bigger than a printed card. To find out if they do you can check the dimensions of the image, divide the width by the height:
