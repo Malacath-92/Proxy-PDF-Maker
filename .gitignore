@@ -5,6 +5,7 @@ publish
 # Files generated during testing
 logs
 images*/*
+tutorial_cards/*
 config.ini
 *.cache
 *.json
