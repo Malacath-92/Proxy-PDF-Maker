@@ -25,11 +25,13 @@ class ProxyPDF(ConanFile):
         self.options["qt"].shared = False
         self.options["qt"].qtsvg = True
         self.options["qt"].opengl = "no"
-        self.options["qt"].openssl = False
+        self.options["qt"].openssl = True
         self.options["qt"].with_md4c = False
         self.options["qt"].with_odbc = False
         self.options["qt"].with_mysql = False
         self.options["qt"].with_sqlite3 = False
+
+        self.options["openssl"].shared = False
 
         self.options["opencv"].img_hash = True
 

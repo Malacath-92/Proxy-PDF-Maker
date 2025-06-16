@@ -75,6 +75,39 @@ find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
 
 # --------------------------------------------------
+# Workaround for conan not exposing this plugin
+if (NOT TARGET Qt6::TlsBackendOpenSSLPlugin)
+	set(QT_TLS_BACKEND_OPENSSL_PLUGIN_DEBUG
+		${qt_PACKAGE_FOLDER_DEBUG}/plugins/tls/qopensslbackendd${CMAKE_STATIC_LIBRARY_SUFFIX})
+	set(QT_TLS_BACKEND_OPENSSL_PLUGIN_RELEASE
+		${qt_PACKAGE_FOLDER_RELEASE}/plugins/tls/qopensslbackend${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+	add_library(qt_tls_backend_open_ssl_plugin STATIC IMPORTED GLOBAL)
+
+	if (DEFINED CMAKE_CONFIGURATION_TYPES)
+		set(BUILD_TYPES_UPPER "")
+		foreach(BUILD_TYPE ${CMAKE_CONFIGURATION_TYPES})
+			string(TOUPPER "${BUILD_TYPE}" BUILD_TYPE_UPPER)
+			list(APPEND BUILD_TYPES_UPPER ${BUILD_TYPE_UPPER})
+		endforeach()
+	else()
+		string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPES_UPPER)
+	endif()
+	
+	foreach(BUILD_TYPE_UPPER ${BUILD_TYPES_UPPER})
+		if (BUILD_TYPE_UPPER STREQUAL "DEBUG")
+			set_target_properties(qt_tls_backend_open_ssl_plugin
+				PROPERTIES IMPORTED_LOCATION_DEBUG ${QT_TLS_BACKEND_OPENSSL_PLUGIN_DEBUG})
+		else()
+			set_target_properties(qt_tls_backend_open_ssl_plugin
+				PROPERTIES IMPORTED_LOCATION_${BUILD_TYPE_UPPER} ${QT_TLS_BACKEND_OPENSSL_PLUGIN_RELEASE})
+		endif()
+	endforeach()
+
+	add_library(Qt6::TlsBackendOpenSSLPlugin ALIAS qt_tls_backend_open_ssl_plugin)
+endif()
+
+# --------------------------------------------------
 # Create interface libs
 add_library(proxy_pdf_warnings INTERFACE)
 if(MSVC)
@@ -120,10 +153,15 @@ add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
 	dla
 	fmt::fmt
+	OpenSSL::SSL
+	OpenSSL::Crypto
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Widgets
 	Qt6::SvgWidgets
+	Qt6::Xml
+	Qt6::Network
+	Qt6::TlsBackendOpenSSLPlugin
 	opencv::opencv
 	libharu::libharu
 	podofo::podofo

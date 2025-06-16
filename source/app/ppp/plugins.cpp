@@ -7,9 +7,15 @@
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader.hpp>
 
 inline constexpr std::array c_Plugins{
+    Plugin{
+        "MtG Card Downloader",
+        &InitMtGCardDownloaderPlugin,
+        &DestroyMtGCardDownloaderPlugin,
+    },
 };
 
-std::vector<std::string_view> GetPluginNames(){
+std::vector<std::string_view> GetPluginNames()
+{
     return c_Plugins |
            std::views::transform(&Plugin::m_Name) |
            std::ranges::to<std::vector>();

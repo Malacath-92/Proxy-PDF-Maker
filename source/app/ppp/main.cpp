@@ -12,6 +12,8 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 #endif
 
+Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
+
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/cropper_thread_router.hpp>
