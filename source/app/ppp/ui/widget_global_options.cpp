@@ -28,20 +28,23 @@ class PluginsPopup : public PopupBase
     PluginsPopup(QWidget* parent)
         : PopupBase{ parent }
     {
+        m_AutoCenter = false;
+        setWindowFlags(Qt::WindowType::Dialog);
+
         auto* plugins{ new QGroupBox{} };
         {
             auto* layout{ new QVBoxLayout };
             for (const auto& plugin_name : GetPluginNames())
             {
                 auto* plugin_checkbox{ new QCheckBox{ ToQString(plugin_name) } };
-                plugin_checkbox->setChecked(g_Cfg.m_PluginsState[plugin_name]);
+                plugin_checkbox->setChecked(g_Cfg.m_PluginsState[std::string{ plugin_name }]);
                 layout->addWidget(plugin_checkbox);
 
                 auto change_plugin_enabled{
                     [this, plugin_name](Qt::CheckState s)
                     {
                         const bool enabled{ s == Qt::CheckState::Checked };
-                        g_Cfg.m_PluginsState[plugin_name] = enabled;
+                        g_Cfg.m_PluginsState[std::string{ plugin_name }] = enabled;
                         SaveConfig(g_Cfg);
 
                         if (enabled)

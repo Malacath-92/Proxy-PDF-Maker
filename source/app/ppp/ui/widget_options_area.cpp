@@ -25,20 +25,20 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
 {
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions);
+    layout->addStretch();
     AddCollapsible(layout, print_options);
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);
     AddCollapsible(layout, global_options);
     for (const auto& plugin_name : GetPluginNames())
     {
-        if (g_Cfg.m_PluginsState[plugin_name])
+        if (g_Cfg.m_PluginsState[std::string{ plugin_name }])
         {
             auto* plugin_widget{ InitPlugin(plugin_name, project) };
             m_PluginWidgets[plugin_name] = plugin_widget;
             AddCollapsible(layout, plugin_widget);
         }
     }
-    layout->addStretch();
 
     auto* widget{ new QWidget };
     widget->setLayout(layout);
@@ -89,8 +89,8 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
 {
     auto* collapse_button{ new CollapseButton{ widget, !m_App.GetObjectVisibility(widget->objectName()) } };
-    layout->addWidget(collapse_button);
-    layout->addWidget(widget);
+    layout->insertWidget(layout->count() - 1, collapse_button);
+    layout->insertWidget(layout->count() - 1, widget);
 
     QObject::connect(collapse_button,
                      &CollapseButton::SetObjectVisibility,

@@ -121,10 +121,13 @@ void PopupBase::resizeEvent(QResizeEvent* event)
 {
     QDialog::resizeEvent(event);
 
-    // Three times???
-    Recenter();
-    Recenter();
-    Recenter();
+    if (m_AutoCenter)
+    {
+        // Three times???
+        Recenter();
+        Recenter();
+        Recenter();
+    }
 }
 
 void PopupBase::Recenter()

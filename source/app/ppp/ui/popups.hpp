@@ -39,6 +39,8 @@ class PopupBase : public QDialog
 
   protected:
     void Recenter();
+
+    bool m_AutoCenter{ true };
 };
 
 class GenericPopup : public PopupBase
