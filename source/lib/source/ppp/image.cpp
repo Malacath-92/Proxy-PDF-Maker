@@ -263,8 +263,14 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
 
 Image Image::Decode(const EncodedImage& buffer)
 {
+    return Decode(EncodedImageView{ buffer });
+}
+
+Image Image::Decode(EncodedImageView buffer)
+{
     Image img{};
-    cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()), static_cast<int>(buffer.size()) };
+    cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()),
+                              static_cast<int>(buffer.size()) };
     img.m_Impl = cv::imdecode(cv_buffer, cv::IMREAD_COLOR);
     return img;
 }

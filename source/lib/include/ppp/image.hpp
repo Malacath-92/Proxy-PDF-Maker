@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <span>
 #include <vector>
 
 #include <opencv2/core/mat.hpp>
@@ -10,6 +11,7 @@
 class QPixmap;
 
 using EncodedImage = std::vector<std::byte>;
+using EncodedImageView = std::span<const std::byte>;
 
 class [[nodiscard]] Image
 {
@@ -29,6 +31,7 @@ class [[nodiscard]] Image
     bool Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality, Size dimensions) const;
 
     static Image Decode(const EncodedImage& buffer);
+    static Image Decode(EncodedImageView buffer);
 
     EncodedImage EncodePng(std::optional<int32_t> compression = std::nullopt) const;
     EncodedImage EncodeJpg(std::optional<int32_t> quality = std::nullopt) const;
