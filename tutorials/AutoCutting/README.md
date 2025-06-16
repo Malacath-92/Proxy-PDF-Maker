@@ -69,7 +69,7 @@ Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown whic
 <p align="center">
     <img src="./images/base_pdf.png" alt="Base Pdf"/>
     <br>
-    Setting up the `Base Pdf` option
+    Setting up the Base Pdf option
 </p>
 
 Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to check `Custom Margins` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Right Margin`).
