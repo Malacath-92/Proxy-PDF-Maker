@@ -78,9 +78,9 @@ find_package(magic_enum REQUIRED)
 # Workaround for conan not exposing this plugin
 if (NOT TARGET Qt6::TlsBackendOpenSSLPlugin)
 	set(QT_TLS_BACKEND_OPENSSL_PLUGIN_DEBUG
-		${qt_PACKAGE_FOLDER_DEBUG}/plugins/tls/qopensslbackendd${CMAKE_STATIC_LIBRARY_SUFFIX})
+		${qt_PACKAGE_FOLDER_DEBUG}/plugins/tls/${CMAKE_STATIC_LIBRARY_PREFIX}qopensslbackendd${CMAKE_STATIC_LIBRARY_SUFFIX})
 	set(QT_TLS_BACKEND_OPENSSL_PLUGIN_RELEASE
-		${qt_PACKAGE_FOLDER_RELEASE}/plugins/tls/qopensslbackend${CMAKE_STATIC_LIBRARY_SUFFIX})
+		${qt_PACKAGE_FOLDER_RELEASE}/plugins/tls/${CMAKE_STATIC_LIBRARY_PREFIX}qopensslbackend${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 	add_library(qt_tls_backend_open_ssl_plugin STATIC IMPORTED GLOBAL)
 
