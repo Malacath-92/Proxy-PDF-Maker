@@ -8,8 +8,6 @@
 
 class QNetworkAccessManager;
 
-class Image;
-
 struct MPCFillBackside
 {
     QString m_Name;
@@ -38,4 +36,3 @@ uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
 QString MPCFillIdFromUrl(const QString& url);
 
 QByteArray ImageDataFromReply(const QByteArray& reply);
-Image ImageFromReply(const QByteArray& reply);

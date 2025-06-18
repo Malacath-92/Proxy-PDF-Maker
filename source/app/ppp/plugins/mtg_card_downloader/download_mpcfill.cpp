@@ -5,7 +5,6 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 
-#include <ppp/image.hpp>
 #include <ppp/util/log.hpp>
 
 struct CardParseResult
@@ -217,13 +216,4 @@ QString MPCFillIdFromUrl(const QString& url)
 QByteArray ImageDataFromReply(const QByteArray& reply)
 {
     return QByteArray::fromBase64(reply);
-}
-
-Image ImageFromReply(const QByteArray& reply)
-{
-    const auto decoded_data{ ImageDataFromReply(reply) };
-    return Image::Decode(EncodedImageView{
-        reinterpret_cast<const std::byte*>(decoded_data.data()),
-        static_cast<size_t>(decoded_data.size()),
-    });
 }
