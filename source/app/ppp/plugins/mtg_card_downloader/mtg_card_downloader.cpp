@@ -12,19 +12,11 @@ QWidget* InitMtGCardDownloaderPlugin(Project& project)
     const auto open_downloader_popup{
         [widget, &project]()
         {
-            MtgDownloaderPopup downloader{ nullptr, project };
-
-            // QObject::connect(&downloader,
-            //                  &PluginsPopup::PluginEnabled,
-            //                  this,
-            //                  &GlobalOptionsWidget::PluginEnabled);
-            // QObject::connect(&downloader,
-            //                  &PluginsPopup::PluginDisabled,
-            //                  this,
-            //                  &GlobalOptionsWidget::PluginDisabled);
-
             widget->window()->setEnabled(false);
-            downloader.Show();
+            {
+                MtgDownloaderPopup downloader{ nullptr, project };
+                downloader.Show();
+            }
             widget->window()->setEnabled(true);
         }
     };
