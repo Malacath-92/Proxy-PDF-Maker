@@ -4,8 +4,8 @@
 #include <memory>
 #include <optional>
 
-#include <QRegularExpression>
 #include <QTemporaryDir>
+#include <QTimer>
 
 #include <ppp/ui/popups.hpp>
 
@@ -34,6 +34,8 @@ class MtgDownloaderPopup : public PopupBase
   private slots:
     void MPCFillRequestFinished(QNetworkReply* reply);
 
+    void ScryfallRequestFinished(QNetworkReply* reply);
+
   private:
     void DoDownload();
     void FinalizeDownload();
@@ -42,10 +44,6 @@ class MtgDownloaderPopup : public PopupBase
     void UninstallLogHook();
 
     static InputType StupidInferSource(const QString& text);
-
-    inline static const QRegularExpression g_DecklistRegex{
-        R"'((\d+)x? "?(.*)"? \(([^ ]+)\) ((.*-)?\d+))'"
-    };
 
     Project& m_Project;
 
@@ -62,6 +60,10 @@ class MtgDownloaderPopup : public PopupBase
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
 
     std::any m_CardsData;
+
+    std::unique_ptr<struct ScryfallState> m_ScryfallState;
+    QTimer m_ScryfallTimer; // for padding requests on Scryfall's request
+
     size_t m_NumRequests{ 0 };
     size_t m_NumReplies{ 0 };
 

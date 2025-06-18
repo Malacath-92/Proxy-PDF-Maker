@@ -187,7 +187,7 @@ uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
                              [reply](QNetworkReply::NetworkError error)
                              {
                                  LogError("Error during request {}: {}",
-                                          reply->url().toString().toStdString(),
+                                          reply->request().url().toString().toStdString(),
                                           QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
                              });
 

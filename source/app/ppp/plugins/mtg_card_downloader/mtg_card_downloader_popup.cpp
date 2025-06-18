@@ -22,6 +22,7 @@
 
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
@@ -32,7 +33,6 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
     setWindowFlags(Qt::WindowType::Dialog);
 
     m_TextInput = new QTextEdit;
-    m_TextInput->setLineWrapMode(QTextEdit::LineWrapMode::FixedColumnWidth);
     m_TextInput->setPlaceholderText("Paste decklist or MPC Autofill xml");
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
@@ -182,6 +182,20 @@ void MtgDownloaderPopup::MPCFillRequestFinished(QNetworkReply* reply)
     reply->deleteLater();
 }
 
+void MtgDownloaderPopup::ScryfallRequestFinished(QNetworkReply* reply)
+{
+    if (ScryfallHandleReply(*m_ScryfallState, *reply))
+    {
+        m_ScryfallTimer.start();
+        m_ProgressBar->setValue(m_ProgressBar->value() + 1);
+        m_ProgressBar->setMaximum(static_cast<int>(m_ScryfallState->m_NumRequests));
+    }
+    else
+    {
+        LogError("Failed handling reply from Scryfall, download cancelled...");
+    }
+}
+
 void MtgDownloaderPopup::DoDownload()
 {
     if (m_InputType == InputType::None)
@@ -219,6 +233,41 @@ void MtgDownloaderPopup::DoDownload()
     {
     default:
     case InputType::Decklist:
+        LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
+        if (std::optional deck{ ParseDecklist(m_TextInput->toPlainText()) })
+        {
+            m_CardsData = std::move(deck).value();
+            connect(m_NetworkManager.get(),
+                    &QNetworkAccessManager::finished,
+                    this,
+                    &MtgDownloaderPopup::ScryfallRequestFinished);
+
+            m_ScryfallState = InitScryfall(*m_NetworkManager, *std::any_cast<Decklist>(&m_CardsData));
+            if (ScryfallNextRequest(*m_ScryfallState))
+            {
+                m_ScryfallTimer.setInterval(100);
+                m_ScryfallTimer.setSingleShot(true);
+                QObject::connect(&m_ScryfallTimer,
+                                 &QTimer::timeout,
+                                 this,
+                                 [this]()
+                                 {
+                                     if (!ScryfallNextRequest(*m_ScryfallState))
+                                     {
+                                         LogInfo("Finished downloading from Scryfall...");
+                                         FinalizeDownload();
+                                     }
+                                 });
+
+                m_ProgressBar->setMaximum(static_cast<int>(m_ScryfallState->m_NumRequests) * 2);
+                m_ProgressBar->setValue(0);
+                m_ProgressBar->setVisible(true);
+            }
+            else
+            {
+                LogError("Decklist could not be downloaded...");
+            }
+        }
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
@@ -229,7 +278,7 @@ void MtgDownloaderPopup::DoDownload()
                     &QNetworkAccessManager::finished,
                     this,
                     &MtgDownloaderPopup::MPCFillRequestFinished);
-            m_NumRequests = BeginDownloadMPCFill(*m_NetworkManager, std::any_cast<MPCFillSet>(m_CardsData));
+            m_NumRequests = BeginDownloadMPCFill(*m_NetworkManager, *std::any_cast<MPCFillSet>(&m_CardsData));
 
             m_ProgressBar->setMaximum(static_cast<int>(m_NumRequests));
             m_ProgressBar->setValue(0);
@@ -245,7 +294,8 @@ void MtgDownloaderPopup::FinalizeDownload()
 {
     if (const auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
     {
-        if (m_ClearCheckbox->isChecked())
+        const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
+        if (clear_image_folder)
         {
             const auto images{
                 ListImageFiles(m_Project.m_Data.m_ImageDir)
@@ -272,7 +322,7 @@ void MtgDownloaderPopup::FinalizeDownload()
                 };
                 if (m_Project.m_Data.m_Cards.contains(backside_name))
                 {
-                    backside_card_info.m_ForceKeep = 1;
+                    backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
                 }
                 m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
                 card_info.m_Backside = backside_name;
@@ -281,7 +331,7 @@ void MtgDownloaderPopup::FinalizeDownload()
             const fs::path card_name{ card.m_Name.toStdString() };
             if (m_Project.m_Data.m_Cards.contains(card_name))
             {
-                card_info.m_ForceKeep = 1;
+                card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
             }
             m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
         }
@@ -328,6 +378,7 @@ InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
         return InputType::MPCAutofill;
     }
 
+    const auto decklist_regex{ GetDecklistRegex() };
     const auto is_decklist{
         [&]()
         {
@@ -341,7 +392,7 @@ InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
                     continue;
                 }
 
-                if (!g_DecklistRegex.match(line).hasMatch())
+                if (!decklist_regex.match(line).hasMatch())
                 {
                     return false;
                 }
