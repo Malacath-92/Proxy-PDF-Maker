@@ -238,17 +238,36 @@ void Project::InitProperties()
 
 void Project::CardAdded(const fs::path& card_name)
 {
-    if (!m_Data.m_Cards.contains(card_name) && !card_name.string().starts_with("__"))
+    if (!m_Data.m_Cards.contains(card_name))
     {
-        m_Data.m_Cards[card_name] = CardInfo{
-            .m_Num = 1,
-            .m_Hidden = 1,
-        };
+        if (card_name.string().starts_with("__"))
+        {
+            m_Data.m_Cards[card_name] = CardInfo{
+                .m_Num = 0,
+                .m_Hidden = 1,
+            };
+        }
+        else
+        {
+            m_Data.m_Cards[card_name] = CardInfo{
+                .m_Num = 1,
+                .m_Hidden = 0,
+            };
+        }
     }
 }
 
 void Project::CardRemoved(const fs::path& card_name)
 {
+    {
+        auto it{ m_Data.m_Cards.find(card_name) };
+        if (it != m_Data.m_Cards.end() && it->second.m_ForceKeep > 0)
+        {
+            --it->second.m_ForceKeep;
+            return;
+        }
+    }
+
     m_Data.m_Cards.erase(card_name);
     m_Data.m_Previews.erase(card_name);
 }

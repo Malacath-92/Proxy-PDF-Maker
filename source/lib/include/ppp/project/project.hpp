@@ -18,6 +18,8 @@ struct CardInfo
     uint32_t m_Hidden{ 0 };
     fs::path m_Backside{};
     bool m_BacksideShortEdge{ false };
+
+    uint32_t m_ForceKeep{ 0 };
 };
 using CardMap = std::map<fs::path, CardInfo>;
 
