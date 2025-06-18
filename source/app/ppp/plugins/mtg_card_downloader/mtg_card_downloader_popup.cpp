@@ -6,6 +6,7 @@
 
 #include <fmt/ranges.h>
 
+#include <QCheckBox>
 #include <QLabel>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -15,15 +16,17 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 
-#include <ppp/image.hpp>
+#include <ppp/project/image_ops.hpp>
+#include <ppp/project/project.hpp>
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 
-MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent)
+MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
     : PopupBase{ parent }
+    , m_Project{ project }
 {
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
@@ -31,6 +34,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent)
     m_TextInput = new QTextEdit;
     m_TextInput->setLineWrapMode(QTextEdit::LineWrapMode::FixedColumnWidth);
     m_TextInput->setPlaceholderText("Paste decklist or MPC Autofill xml");
+
+    m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
+    m_ClearCheckbox->setChecked(true);
 
     m_Hint = new QLabel;
     m_Hint->setVisible(false);
@@ -61,6 +67,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent)
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
+    layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_Hint);
     layout->addWidget(m_ProgressBar);
     layout->addWidget(buttons);
@@ -165,6 +172,11 @@ void MtgDownloaderPopup::MPCFillRequestFinished(QNetworkReply* reply)
 
         ++m_NumReplies;
         m_ProgressBar->setValue(static_cast<int>(m_NumReplies));
+
+        if (m_NumReplies == m_NumRequests)
+        {
+            FinalizeDownload();
+        }
     }
 
     reply->deleteLater();
@@ -227,7 +239,64 @@ void MtgDownloaderPopup::DoDownload()
     }
 
     m_DownloadButton->setDisabled(true);
-    m_DownloadButton->setEnabled(false);
+}
+
+void MtgDownloaderPopup::FinalizeDownload()
+{
+    if (const auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
+    {
+        if (m_ClearCheckbox->isChecked())
+        {
+            const auto images{
+                ListImageFiles(m_Project.m_Data.m_ImageDir)
+            };
+            for (const auto& img : images)
+            {
+                fs::remove(m_Project.m_Data.m_ImageDir / img);
+            }
+        }
+
+        for (const auto& card : set->m_Frontsides)
+        {
+            CardInfo card_info{
+                .m_Num = card.m_Amount,
+                .m_Hidden = 0,
+            };
+
+            if (card.m_Backside.has_value())
+            {
+                const fs::path backside_name{ card.m_Backside.value().m_Name.toStdString() };
+                CardInfo backside_card_info{
+                    .m_Num = 0,
+                    .m_Hidden = 1,
+                };
+                if (m_Project.m_Data.m_Cards.contains(backside_name))
+                {
+                    backside_card_info.m_ForceKeep = 1;
+                }
+                m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
+                card_info.m_Backside = backside_name;
+            }
+
+            const fs::path card_name{ card.m_Name.toStdString() };
+            if (m_Project.m_Data.m_Cards.contains(card_name))
+            {
+                card_info.m_ForceKeep = 1;
+            }
+            m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
+        }
+
+        const fs::path output_dir{
+            m_OutputDir.path().toStdString()
+        };
+        const auto new_images{
+            ListImageFiles(output_dir)
+        };
+        for (const auto& img : new_images)
+        {
+            fs::rename(output_dir / img, m_Project.m_Data.m_ImageDir / img);
+        }
+    }
 }
 
 void MtgDownloaderPopup::InstallLogHook()

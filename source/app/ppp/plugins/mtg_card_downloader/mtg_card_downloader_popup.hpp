@@ -9,11 +9,14 @@
 
 #include <ppp/ui/popups.hpp>
 
+class QCheckBox;
 class QTextEdit;
 class QProgressBar;
 class QPushButton;
 class QNetworkAccessManager;
 class QNetworkReply;
+
+class Project;
 
 enum class InputType
 {
@@ -25,7 +28,7 @@ enum class InputType
 class MtgDownloaderPopup : public PopupBase
 {
   public:
-    MtgDownloaderPopup(QWidget* parent);
+    MtgDownloaderPopup(QWidget* parent, Project& project);
     ~MtgDownloaderPopup();
 
   private slots:
@@ -33,6 +36,7 @@ class MtgDownloaderPopup : public PopupBase
 
   private:
     void DoDownload();
+    void FinalizeDownload();
 
     void InstallLogHook();
     void UninstallLogHook();
@@ -43,9 +47,12 @@ class MtgDownloaderPopup : public PopupBase
         R"'((\d+)x? "?(.*)"? \(([^ ]+)\) ((.*-)?\d+))'"
     };
 
+    Project& m_Project;
+
     InputType m_InputType{ InputType::None };
 
     QTextEdit* m_TextInput{ nullptr };
+    QCheckBox* m_ClearCheckbox{ nullptr };
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
     QPushButton* m_DownloadButton{ nullptr };
@@ -55,7 +62,8 @@ class MtgDownloaderPopup : public PopupBase
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
 
     std::any m_CardsData;
-    size_t m_NumDownloads{ 0 };
+    size_t m_NumRequests{ 0 };
+    size_t m_NumReplies{ 0 };
 
     std::unique_ptr<QNetworkAccessManager> m_NetworkManager;
 };

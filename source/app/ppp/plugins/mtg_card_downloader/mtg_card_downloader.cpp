@@ -4,15 +4,15 @@
 
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
 
-QWidget* InitMtGCardDownloaderPlugin(Project&)
+QWidget* InitMtGCardDownloaderPlugin(Project& project)
 {
     auto* widget{ new QPushButton{ "Open" } };
     widget->setObjectName("MtG Card Downloader");
 
     const auto open_downloader_popup{
-        [widget]()
+        [widget, &project]()
         {
-            MtgDownloaderPopup downloader{ nullptr };
+            MtgDownloaderPopup downloader{ nullptr, project };
 
             // QObject::connect(&downloader,
             //                  &PluginsPopup::PluginEnabled,
