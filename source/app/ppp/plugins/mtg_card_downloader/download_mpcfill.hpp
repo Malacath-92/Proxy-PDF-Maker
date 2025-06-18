@@ -10,11 +10,19 @@ class QNetworkAccessManager;
 
 class Image;
 
+struct MPCFillBackside
+{
+    QString m_Name;
+    QString m_Id;
+};
+
 struct MPCFillCard
 {
     QString m_Name;
     QString m_Id;
     uint32_t m_Amount;
+
+    std::optional<MPCFillBackside> m_Backside;
 };
 
 struct MPCFillSet
@@ -25,7 +33,7 @@ struct MPCFillSet
 
 std::optional<MPCFillSet> ParseMPCFill(const QString& xml);
 
-bool BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
+uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
                           const MPCFillSet& set);
 QString MPCFillIdFromUrl(const QString& url);
 

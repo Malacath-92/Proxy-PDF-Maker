@@ -11,6 +11,7 @@
 #include <QNetworkReply>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -103,26 +104,67 @@ MtgDownloaderPopup::~MtgDownloaderPopup()
 
 void MtgDownloaderPopup::MPCFillRequestFinished(QNetworkReply* reply)
 {
-    if (const auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
+    if (auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
     {
-        const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
-        const auto card{ std::ranges::find(set->m_Frontsides, id, &MPCFillCard::m_Id) };
-        const QString file_name{
-            card != set->m_Frontsides.end()
-                ? card->m_Name
-                : "__back.png"
+        const auto file_name{
+            [&]()
+            {
+                const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
+                for (const auto& card : set->m_Frontsides)
+                {
+                    if (card.m_Id == id)
+                    {
+                        return card.m_Name;
+                    }
+
+                    if (card.m_Backside.has_value() && card.m_Backside.value().m_Id == id)
+                    {
+                        return card.m_Backside.value().m_Name;
+                    }
+                }
+
+                return QString{ "__back.png" };
+            }()
         };
 
         LogInfo("Received data for card {}", file_name.toStdString());
         const auto downloaded_data{ ImageDataFromReply(reply->readAll()) };
 
-        QFile file(m_OutputDir.filePath(file_name));
-        file.open(QIODevice::WriteOnly);
-        file.write(downloaded_data);
-        file.close();
+        {
+            QFile file(m_OutputDir.filePath(file_name));
+            file.open(QIODevice::WriteOnly);
+            file.write(downloaded_data);
+        }
 
-        ++m_NumDownloads;
-        m_ProgressBar->setValue(static_cast<int>(m_NumDownloads));
+        {
+            // Handle same frontsides with different backsides
+            auto duplicates{
+                set->m_Frontsides |
+                    std::views::filter([&file_name](const auto& card)
+                                       { return card.m_Name == file_name; }) |
+                    std::views::drop(1),
+            };
+#if __cpp_lib_ranges_enumerate
+            for (auto [i, card] : duplicates | std::views::enumerate)
+            {
+#else
+            size_t i{ 0 };
+            for (auto& card : duplicates)
+            {
+#endif
+                card.m_Name = card.m_Name.replace(QRegularExpression{ "(\\.\\w+)" }, QString{ " - Copy %1\\1" }.arg(i));
+
+                QFile file(m_OutputDir.filePath(card.m_Name));
+                file.open(QIODevice::WriteOnly);
+                file.write(downloaded_data);
+#if not __cpp_lib_ranges_enumerate
+                ++i;
+#endif
+            }
+        }
+
+        ++m_NumReplies;
+        m_ProgressBar->setValue(static_cast<int>(m_NumReplies));
     }
 
     reply->deleteLater();
@@ -170,20 +212,21 @@ void MtgDownloaderPopup::DoDownload()
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
         if (std::optional set{ ParseMPCFill(m_TextInput->toPlainText()) })
         {
-            m_ProgressBar->setMaximum(static_cast<int>(set->m_Frontsides.size() + 1));
-            m_ProgressBar->setValue(0);
-            m_ProgressBar->setVisible(true);
-
             m_CardsData = std::move(set).value();
             connect(m_NetworkManager.get(),
                     &QNetworkAccessManager::finished,
                     this,
                     &MtgDownloaderPopup::MPCFillRequestFinished);
-            BeginDownloadMPCFill(*m_NetworkManager, std::any_cast<MPCFillSet>(m_CardsData));
+            m_NumRequests = BeginDownloadMPCFill(*m_NetworkManager, std::any_cast<MPCFillSet>(m_CardsData));
+
+            m_ProgressBar->setMaximum(static_cast<int>(m_NumRequests));
+            m_ProgressBar->setValue(0);
+            m_ProgressBar->setVisible(true);
         }
         break;
     }
 
+    m_DownloadButton->setDisabled(true);
     m_DownloadButton->setEnabled(false);
 }
 
