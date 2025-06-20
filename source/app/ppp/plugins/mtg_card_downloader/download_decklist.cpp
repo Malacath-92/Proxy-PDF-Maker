@@ -1,5 +1,6 @@
 #include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 
+#include <QFile>
 #include <QJsonDocument>
 #include <QMetaEnum>
 #include <QNetworkAccessManager>
@@ -33,11 +34,11 @@ DecklistCard ParseDeckline(const QRegularExpressionMatch& deckline)
         .m_Amount = deckline.capturedView(1).toUInt(),
 
         .m_Set{ deckline.captured(3) },
-        .m_CollectorNumber = deckline.capturedView(4).toUInt(),
+        .m_CollectorNumber = deckline.captured(4),
     };
 }
 
-QString DecklistCardToFilename(const DecklistCard& card)
+QString DecklistCardFilename(const DecklistCard& card)
 {
     if (card.m_Set.has_value())
     {
@@ -46,14 +47,22 @@ QString DecklistCardToFilename(const DecklistCard& card)
             return QString{ "%1 (%2) %3.png" }
                 .arg(card.m_Name)
                 .arg(card.m_Set.value())
-                .arg(card.m_CollectorNumber.value());
+                .arg(card.m_CollectorNumber.value())
+                .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
         }
         return QString{ "%1 (%2).png" }
             .arg(card.m_Name)
-            .arg(card.m_Set.value());
+            .arg(card.m_Set.value())
+            .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
     }
     return QString{ "%1.png" }
-        .arg(card.m_Name);
+        .arg(card.m_Name)
+        .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
+}
+
+QString DecklistCardBacksideFilename(const DecklistCard& card)
+{
+    return "__back_" + DecklistCardFilename(card);
 }
 
 std::optional<Decklist> ParseDecklist(const QString& decklist)
@@ -81,17 +90,17 @@ ScryfallState::~ScryfallState() = default;
 struct BacksideRequest
 {
     QString m_Uri;
-    QString m_Name;
+    DecklistCard m_Front;
 };
 struct ScryfallState::ScryfallStateImpl
 {
     QNetworkAccessManager& m_NetworkManager;
     const Decklist& m_Decklist;
 
-    std::vector<QJsonDocument> m_CardInfos;
+    std::vector<QJsonDocument> m_CardInfos{};
     uint32_t m_CardArts{ 0 };
 
-    std::vector<BacksideRequest> m_Backsides;
+    std::vector<BacksideRequest> m_Backsides{};
 };
 
 std::unique_ptr<ScryfallState> InitScryfall(QNetworkAccessManager& network_manager,
@@ -173,7 +182,12 @@ bool ScryfallNextRequest(ScryfallState& state)
         const auto& card_info{ state.m_Impl->m_CardInfos[state.m_Impl->m_CardArts] };
         const auto layout{ card_info["layout"].toString() };
 
-        static constexpr std::array c_DoubleSidedLayouts{ "transform", "modal_dfc", "double_faced_token", "reversible_card" };
+        static constexpr std::array c_DoubleSidedLayouts{
+            "transform",
+            "modal_dfc",
+            "double_faced_token",
+            "reversible_card",
+        };
         if (std::ranges::contains(c_DoubleSidedLayouts, layout))
         {
             const auto card_faces{ card_info["card_faces"] };
@@ -181,10 +195,11 @@ bool ScryfallNextRequest(ScryfallState& state)
 
             state.m_Impl->m_Backsides.push_back(BacksideRequest{
                 .m_Uri{ back_face_uri.toString() },
-                .m_Name{ card.m_Name },
+                .m_Front{ card },
             });
             ++state.m_NumRequests;
         }
+
         // TODO: meld layout
 
         return true;
@@ -192,12 +207,13 @@ bool ScryfallNextRequest(ScryfallState& state)
     else if (want_more_back_arts)
     {
         const auto& backside_card{ state.m_Impl->m_Backsides[state.m_Impl->m_CardArts - cards_in_deck] };
-        LogInfo("Requesting backside artwork for card  {}", backside_card.m_Name.toStdString());
+        LogInfo("Requesting backside artwork for card  {}", backside_card.m_Front.m_Name.toStdString());
         do_request(backside_card.m_Uri);
     }
     return false;
 }
-bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply)
+
+bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply, const QString& output_dir)
 {
     const auto cards_in_deck{ state.m_Impl->m_Decklist.m_Cards.size() };
     const bool waiting_for_infos{ state.m_Impl->m_CardInfos.size() < cards_in_deck };
@@ -210,14 +226,32 @@ bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply)
     }
     else if (waiting_for_arts)
     {
+        const auto& card{ state.m_Impl->m_Decklist.m_Cards[state.m_Impl->m_CardArts] };
+        const auto file_name{ DecklistCardFilename(card) };
+
+        LogInfo("Received data of {}", card.m_Name.toStdString());
+        {
+            QFile file(output_dir + "/" + file_name);
+            file.open(QIODevice::WriteOnly);
+            file.write(reply.readAll());
+        }
+
         ++state.m_Impl->m_CardArts;
-        // TODO
         return true;
     }
     else if (waiting_for_back_arts)
     {
+        const auto& backside_card{ state.m_Impl->m_Backsides[state.m_Impl->m_CardArts - cards_in_deck] };
+        const auto file_name{ DecklistCardBacksideFilename(backside_card.m_Front) };
+
+        LogInfo("Received data for backside of {}", backside_card.m_Front.m_Name.toStdString());
+        {
+            QFile file(output_dir + "/" + file_name);
+            file.open(QIODevice::WriteOnly);
+            file.write(reply.readAll());
+        }
+
         ++state.m_Impl->m_CardArts;
-        // TODO
         return true;
     }
     return false;

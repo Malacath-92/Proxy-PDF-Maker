@@ -161,7 +161,7 @@ std::optional<MPCFillSet> ParseMPCFill(const QString& xml)
 }
 
 uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
-                          const MPCFillSet& set)
+                              const MPCFillSet& set)
 {
     std::vector<QString> requested_ids{};
     auto do_download{

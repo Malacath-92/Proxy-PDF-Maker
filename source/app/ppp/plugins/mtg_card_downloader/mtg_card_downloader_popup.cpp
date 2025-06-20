@@ -184,16 +184,25 @@ void MtgDownloaderPopup::MPCFillRequestFinished(QNetworkReply* reply)
 
 void MtgDownloaderPopup::ScryfallRequestFinished(QNetworkReply* reply)
 {
-    if (ScryfallHandleReply(*m_ScryfallState, *reply))
+    if (ScryfallHandleReply(*m_ScryfallState, *reply, m_OutputDir.path()))
     {
         m_ScryfallTimer.start();
-        m_ProgressBar->setValue(m_ProgressBar->value() + 1);
+
+        ++m_NumReplies;
+        m_ProgressBar->setValue(static_cast<int>(m_NumReplies));
         m_ProgressBar->setMaximum(static_cast<int>(m_ScryfallState->m_NumRequests));
+
+        if (m_NumReplies == m_ScryfallState->m_NumRequests)
+        {
+            FinalizeDownload();
+        }
     }
     else
     {
         LogError("Failed handling reply from Scryfall, download cancelled...");
     }
+
+    reply->deleteLater();
 }
 
 void MtgDownloaderPopup::DoDownload()
@@ -292,20 +301,22 @@ void MtgDownloaderPopup::DoDownload()
 
 void MtgDownloaderPopup::FinalizeDownload()
 {
+    const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
+    if (clear_image_folder)
+    {
+        const auto images{
+            ListImageFiles(m_Project.m_Data.m_ImageDir)
+        };
+        for (const auto& img : images)
+        {
+            fs::remove(m_Project.m_Data.m_ImageDir / img);
+            fs::remove(m_Project.m_Data.m_CropDir / img);
+        }
+    }
+
+    fs::path target_folder{ m_Project.m_Data.m_ImageDir };
     if (const auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
     {
-        const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
-        if (clear_image_folder)
-        {
-            const auto images{
-                ListImageFiles(m_Project.m_Data.m_ImageDir)
-            };
-            for (const auto& img : images)
-            {
-                fs::remove(m_Project.m_Data.m_ImageDir / img);
-            }
-        }
-
         for (const auto& card : set->m_Frontsides)
         {
             CardInfo card_info{
@@ -335,17 +346,51 @@ void MtgDownloaderPopup::FinalizeDownload()
             }
             m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
         }
+    }
+    else if (const auto* decklist{ std::any_cast<Decklist>(&m_CardsData) })
+    {
+        target_folder = m_Project.m_Data.m_CropDir;
 
-        const fs::path output_dir{
-            m_OutputDir.path().toStdString()
-        };
-        const auto new_images{
-            ListImageFiles(output_dir)
-        };
-        for (const auto& img : new_images)
+        for (const auto& card : decklist->m_Cards)
         {
-            fs::rename(output_dir / img, m_Project.m_Data.m_ImageDir / img);
+            CardInfo card_info{
+                .m_Num = card.m_Amount,
+                .m_Hidden = 0,
+            };
+
+            const fs::path backside_name{ DecklistCardBacksideFilename(card).toStdString() };
+            if (fs::exists(backside_name))
+            {
+                CardInfo backside_card_info{
+                    .m_Num = 0,
+                    .m_Hidden = 1,
+                };
+                if (m_Project.m_Data.m_Cards.contains(backside_name))
+                {
+                    backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
+                }
+                m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
+                card_info.m_Backside = backside_name;
+            }
+
+            const fs::path card_name{ DecklistCardFilename(card).toStdString() };
+            if (m_Project.m_Data.m_Cards.contains(card_name))
+            {
+                card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
+            }
+            m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
         }
+    }
+
+    const fs::path output_dir{
+        m_OutputDir.path().toStdString()
+    };
+    const auto new_images{
+        ListImageFiles(output_dir)
+    };
+    for (const auto& img : new_images)
+    {
+        fs::rename(output_dir / img, target_folder / img);
     }
 }
 

@@ -16,7 +16,7 @@ struct DecklistCard
     uint32_t m_Amount;
 
     std::optional<QString> m_Set;
-    std::optional<uint32_t> m_CollectorNumber;
+    std::optional<QString> m_CollectorNumber;
 };
 
 struct Decklist
@@ -26,7 +26,8 @@ struct Decklist
 
 QRegularExpression GetDecklistRegex();
 
-QString DecklistCardToFilename(const DecklistCard& card);
+QString DecklistCardFilename(const DecklistCard& card);
+QString DecklistCardBacksideFilename(const DecklistCard& card);
 
 std::optional<Decklist> ParseDecklist(const QString& decklist);
 
@@ -43,4 +44,4 @@ std::unique_ptr<ScryfallState> InitScryfall(QNetworkAccessManager& network_manag
                                             const Decklist& decklist);
 
 bool ScryfallNextRequest(ScryfallState& state);
-bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply);
+bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply, const QString& output_dir);

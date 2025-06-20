@@ -32,7 +32,7 @@ struct MPCFillSet
 std::optional<MPCFillSet> ParseMPCFill(const QString& xml);
 
 uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
-                          const MPCFillSet& set);
+                              const MPCFillSet& set);
 QString MPCFillIdFromUrl(const QString& url);
 
 QByteArray ImageDataFromReply(const QByteArray& reply);
