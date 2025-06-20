@@ -109,100 +109,33 @@ MtgDownloaderPopup::~MtgDownloaderPopup()
     UninstallLogHook();
 }
 
-void MtgDownloaderPopup::MPCFillRequestFinished(QNetworkReply* reply)
+void MtgDownloaderPopup::DownloadProgress(int progress, int target)
 {
-    if (auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
+    m_ProgressBar->setValue(progress);
+    m_ProgressBar->setMaximum(target);
+
+    if (progress == target)
     {
-        const auto file_name{
-            [&]()
-            {
-                const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
-                for (const auto& card : set->m_Frontsides)
-                {
-                    if (card.m_Id == id)
-                    {
-                        return card.m_Name;
-                    }
-
-                    if (card.m_Backside.has_value() && card.m_Backside.value().m_Id == id)
-                    {
-                        return card.m_Backside.value().m_Name;
-                    }
-                }
-
-                return QString{ "__back.png" };
-            }()
-        };
-
-        LogInfo("Received data for card {}", file_name.toStdString());
-        const auto downloaded_data{ ImageDataFromReply(reply->readAll()) };
-
-        {
-            QFile file(m_OutputDir.filePath(file_name));
-            file.open(QIODevice::WriteOnly);
-            file.write(downloaded_data);
-        }
-
-        {
-            // Handle same frontsides with different backsides
-            auto duplicates{
-                set->m_Frontsides |
-                    std::views::filter([&file_name](const auto& card)
-                                       { return card.m_Name == file_name; }) |
-                    std::views::drop(1),
-            };
-#if __cpp_lib_ranges_enumerate
-            for (auto [i, card] : duplicates | std::views::enumerate)
-            {
-#else
-            size_t i{ 0 };
-            for (auto& card : duplicates)
-            {
-#endif
-                card.m_Name = card.m_Name.replace(QRegularExpression{ "(\\.\\w+)" }, QString{ " - Copy %1\\1" }.arg(i));
-
-                QFile file(m_OutputDir.filePath(card.m_Name));
-                file.open(QIODevice::WriteOnly);
-                file.write(downloaded_data);
-#if not __cpp_lib_ranges_enumerate
-                ++i;
-#endif
-            }
-        }
-
-        ++m_NumReplies;
-        m_ProgressBar->setValue(static_cast<int>(m_NumReplies));
-
-        if (m_NumReplies == m_NumRequests)
-        {
-            FinalizeDownload();
-        }
+        FinalizeDownload();
     }
-
-    reply->deleteLater();
 }
 
-void MtgDownloaderPopup::ScryfallRequestFinished(QNetworkReply* reply)
+void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QString& file_name)
 {
-    if (ScryfallHandleReply(*m_ScryfallState, *reply, m_OutputDir.path()))
-    {
-        m_ScryfallTimer.start();
+    LogInfo("Received data for card {}", file_name.toStdString());
 
-        ++m_NumReplies;
-        m_ProgressBar->setValue(static_cast<int>(m_NumReplies));
-        m_ProgressBar->setMaximum(static_cast<int>(m_ScryfallState->m_NumRequests));
-
-        if (m_NumReplies == m_ScryfallState->m_NumRequests)
-        {
-            FinalizeDownload();
-        }
-    }
-    else
     {
-        LogError("Failed handling reply from Scryfall, download cancelled...");
+        QFile file(m_OutputDir.filePath(file_name));
+        file.open(QIODevice::WriteOnly);
+        file.write(image_data);
     }
 
-    reply->deleteLater();
+    for (const QString& dupe_file_name : m_Downloader->GetDuplicates(file_name))
+    {
+        QFile file(m_OutputDir.filePath(dupe_file_name));
+        file.open(QIODevice::WriteOnly);
+        file.write(image_data);
+    }
 }
 
 void MtgDownloaderPopup::DoDownload()
@@ -243,57 +176,42 @@ void MtgDownloaderPopup::DoDownload()
     default:
     case InputType::Decklist:
         LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
-        if (std::optional deck{ ParseDecklist(m_TextInput->toPlainText()) })
-        {
-            m_CardsData = std::move(deck).value();
-            connect(m_NetworkManager.get(),
-                    &QNetworkAccessManager::finished,
-                    this,
-                    &MtgDownloaderPopup::ScryfallRequestFinished);
-
-            m_ScryfallState = InitScryfall(*m_NetworkManager, *std::any_cast<Decklist>(&m_CardsData));
-            if (ScryfallNextRequest(*m_ScryfallState))
-            {
-                m_ScryfallTimer.setInterval(100);
-                m_ScryfallTimer.setSingleShot(true);
-                QObject::connect(&m_ScryfallTimer,
-                                 &QTimer::timeout,
-                                 this,
-                                 [this]()
-                                 {
-                                     if (!ScryfallNextRequest(*m_ScryfallState))
-                                     {
-                                         LogInfo("Finished downloading from Scryfall...");
-                                         FinalizeDownload();
-                                     }
-                                 });
-
-                m_ProgressBar->setMaximum(static_cast<int>(m_ScryfallState->m_NumRequests) * 2);
-                m_ProgressBar->setValue(0);
-                m_ProgressBar->setVisible(true);
-            }
-            else
-            {
-                LogError("Decklist could not be downloaded...");
-            }
-        }
+        m_Downloader = std::make_unique<ScryfallDownloader>();
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
-        if (std::optional set{ ParseMPCFill(m_TextInput->toPlainText()) })
-        {
-            m_CardsData = std::move(set).value();
-            connect(m_NetworkManager.get(),
-                    &QNetworkAccessManager::finished,
-                    this,
-                    &MtgDownloaderPopup::MPCFillRequestFinished);
-            m_NumRequests = BeginDownloadMPCFill(*m_NetworkManager, *std::any_cast<MPCFillSet>(&m_CardsData));
+        m_Downloader = std::make_unique<MPCFillDownloader>();
+        break;
+    }
 
-            m_ProgressBar->setMaximum(static_cast<int>(m_NumRequests));
-            m_ProgressBar->setValue(0);
+    if (m_Downloader->ParseInput(m_TextInput->toPlainText()))
+    {
+        connect(m_NetworkManager.get(),
+                &QNetworkAccessManager::finished,
+                m_Downloader.get(),
+                &CardArtDownloader::HandleReply);
+
+        connect(m_Downloader.get(),
+                &CardArtDownloader::Progress,
+                this,
+                &MtgDownloaderPopup::DownloadProgress);
+        connect(m_Downloader.get(),
+                &CardArtDownloader::ImageAvailable,
+                this,
+                &MtgDownloaderPopup::ImageAvailable);
+
+        if (m_Downloader->BeginDownload(*m_NetworkManager))
+        {
             m_ProgressBar->setVisible(true);
         }
-        break;
+        else
+        {
+            LogError("Failed initializing download...");
+        }
+    }
+    else
+    {
+        LogError("Failed parsing input file...");
     }
 
     m_DownloadButton->setDisabled(true);
@@ -310,76 +228,42 @@ void MtgDownloaderPopup::FinalizeDownload()
         for (const auto& img : images)
         {
             fs::remove(m_Project.m_Data.m_ImageDir / img);
-            fs::remove(m_Project.m_Data.m_CropDir / img);
+
+            if (fs::exists(m_Project.m_Data.m_CropDir / img))
+            {
+                fs::remove(m_Project.m_Data.m_CropDir / img);
+            }
         }
     }
 
-    fs::path target_folder{ m_Project.m_Data.m_ImageDir };
-    if (const auto* set{ std::any_cast<MPCFillSet>(&m_CardsData) })
+    for (const auto& card : m_Downloader->GetFiles())
     {
-        for (const auto& card : set->m_Frontsides)
+        CardInfo card_info{
+            .m_Num = m_Downloader->GetAmount(card),
+            .m_Hidden = (card.startsWith("__") ? 1u : 0u),
+        };
+
+        if (const std::optional backside{ m_Downloader->GetBackside(card) })
         {
-            CardInfo card_info{
-                .m_Num = card.m_Amount,
-                .m_Hidden = 0,
+            const fs::path backside_name{ backside.value().toStdString() };
+            CardInfo backside_card_info{
+                .m_Num = 0,
+                .m_Hidden = 1,
             };
-
-            if (card.m_Backside.has_value())
+            if (m_Project.m_Data.m_Cards.contains(backside_name))
             {
-                const fs::path backside_name{ card.m_Backside.value().m_Name.toStdString() };
-                CardInfo backside_card_info{
-                    .m_Num = 0,
-                    .m_Hidden = 1,
-                };
-                if (m_Project.m_Data.m_Cards.contains(backside_name))
-                {
-                    backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-                }
-                m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
-                card_info.m_Backside = backside_name;
+                backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
             }
-
-            const fs::path card_name{ card.m_Name.toStdString() };
-            if (m_Project.m_Data.m_Cards.contains(card_name))
-            {
-                card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-            }
-            m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
+            m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
+            card_info.m_Backside = backside_name;
         }
-    }
-    else if (const auto* decklist{ std::any_cast<Decklist>(&m_CardsData) })
-    {
-        target_folder = m_Project.m_Data.m_CropDir;
 
-        for (const auto& card : decklist->m_Cards)
+        const fs::path card_name{ card.toStdString() };
+        if (m_Project.m_Data.m_Cards.contains(card_name))
         {
-            CardInfo card_info{
-                .m_Num = card.m_Amount,
-                .m_Hidden = 0,
-            };
-
-            const fs::path backside_name{ DecklistCardBacksideFilename(card).toStdString() };
-            if (fs::exists(backside_name))
-            {
-                CardInfo backside_card_info{
-                    .m_Num = 0,
-                    .m_Hidden = 1,
-                };
-                if (m_Project.m_Data.m_Cards.contains(backside_name))
-                {
-                    backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-                }
-                m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
-                card_info.m_Backside = backside_name;
-            }
-
-            const fs::path card_name{ DecklistCardFilename(card).toStdString() };
-            if (m_Project.m_Data.m_Cards.contains(card_name))
-            {
-                card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-            }
-            m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
+            card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
         }
+        m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
     }
 
     const fs::path output_dir{
@@ -387,6 +271,11 @@ void MtgDownloaderPopup::FinalizeDownload()
     };
     const auto new_images{
         ListImageFiles(output_dir)
+    };
+    const auto& target_folder{
+        m_Downloader->ProvidesBleedEdge()
+            ? m_Project.m_Data.m_ImageDir
+            : m_Project.m_Data.m_CropDir,
     };
     for (const auto& img : new_images)
     {
@@ -423,7 +312,7 @@ InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
         return InputType::MPCAutofill;
     }
 
-    const auto decklist_regex{ GetDecklistRegex() };
+    const auto decklist_regex{ ScryfallDownloader::GetDecklistRegex() };
     const auto is_decklist{
         [&]()
         {

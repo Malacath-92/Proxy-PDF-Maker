@@ -1,43 +1,16 @@
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 
+#include <ranges>
+
 #include <QDomDocument>
 #include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QRegularExpression>
 
 #include <ppp/util/log.hpp>
 
-struct CardParseResult
-{
-    MPCFillCard m_Card;
-    QList<uint32_t> m_Slots;
-};
-CardParseResult ParseMPCFillCard(const QDomElement& element)
-{
-    auto name{ element.firstChildElement("name").text() };
-    auto id{ element.firstChildElement("id").text() };
-    auto slots_str{ element.firstChildElement("slots").text().split(",") };
-    auto amount{ slots_str.size() };
-
-    auto slots_uint{ QList<uint32_t>{} };
-    for (const auto& slot_str : slots_str)
-    {
-        slots_uint.push_back(slot_str.toUInt());
-    }
-
-    return CardParseResult{
-        .m_Card{
-            .m_Name{ std::move(name) },
-            .m_Id{ std::move(id) },
-            .m_Amount = static_cast<uint32_t>(amount),
-
-            .m_Backside{ std::nullopt },
-        },
-        .m_Slots = std::move(slots_uint),
-    };
-}
-
-std::optional<MPCFillSet> ParseMPCFill(const QString& xml)
+bool MPCFillDownloader::ParseInput(const QString& xml)
 {
     QDomDocument document;
     QDomDocument::ParseResult result{ document.setContent(xml) };
@@ -47,20 +20,20 @@ std::optional<MPCFillSet> ParseMPCFill(const QString& xml)
                  result.errorLine,
                  result.errorColumn,
                  result.errorMessage.toStdString());
-        return std::nullopt;
+        return false;
     }
 
     if (!document.hasChildNodes())
     {
         LogError("MPCFill xml root has no children");
-        return std::nullopt;
+        return false;
     }
 
     QDomElement order{ document.firstChildElement("order") };
     if (order.isNull())
     {
         LogError("No order is defined in MPCFill xml");
-        return std::nullopt;
+        return false;
     }
 
     MPCFillSet set;
@@ -72,7 +45,7 @@ std::optional<MPCFillSet> ParseMPCFill(const QString& xml)
             if (fronts.isNull())
             {
                 LogError("No fronts are defined in MPCFill xml");
-                return std::nullopt;
+                return false;
             }
 
             const auto cards{ fronts.childNodes() };
@@ -152,20 +125,61 @@ std::optional<MPCFillSet> ParseMPCFill(const QString& xml)
         if (backside.isNull())
         {
             LogError("No cardback is defined in MPCFill xml");
-            return std::nullopt;
+            return false;
         }
         set.m_BacksideId = backside.text();
     }
 
-    return set;
+    m_Set = std::move(set);
+
+    // Handle duplicates, for cards that have the same front with different backs
+    for (const auto& card : m_Set.m_Frontsides)
+    {
+        std::vector<QString> duplicate_file_names;
+
+        auto duplicates{
+            m_Set.m_Frontsides |
+                std::views::filter([&card](const auto& other_card)
+                                   { return other_card.m_Name == card.m_Name; }) |
+                std::views::drop(1),
+        };
+#if __cpp_lib_ranges_enumerate
+        for (auto [i, dupe] : duplicates | std::views::enumerate)
+        {
+#else
+        size_t i{ 0 };
+        for (auto& dupe : duplicates)
+        {
+#endif
+            static const QRegularExpression c_ExtRegex{ "(\\.\\w+)" };
+            const auto replace_to{ QString{ " - Copy %1\\1" }.arg(i) };
+            dupe.m_Name = QString{ dupe.m_Name }.replace(c_ExtRegex, replace_to);
+            duplicate_file_names.push_back(dupe.m_Name);
+
+#if not __cpp_lib_ranges_enumerate
+            ++i;
+#endif
+        }
+
+        if (!duplicate_file_names.empty())
+        {
+            m_Duplicates[card.m_Name] = std::move(duplicate_file_names);
+        }
+    }
+
+    return true;
 }
 
-uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
-                              const MPCFillSet& set)
+bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
+    if (m_Set.m_Frontsides.empty())
+    {
+        return false;
+    }
+
     std::vector<QString> requested_ids{};
     auto do_download{
-        [&network_manager, &requested_ids](const QString& name, const QString& id)
+        [this, &network_manager, &requested_ids](const QString& name, const QString& id)
         {
             if (std::ranges::contains(requested_ids, id))
             {
@@ -192,10 +206,11 @@ uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
                              });
 
             requested_ids.push_back(id);
+            m_Requests.push_back(reply);
         }
     };
 
-    for (const auto& card : set.m_Frontsides)
+    for (const auto& card : m_Set.m_Frontsides)
     {
         do_download(card.m_Name, card.m_Id);
         if (card.m_Backside.has_value())
@@ -203,17 +218,114 @@ uint32_t BeginDownloadMPCFill(QNetworkAccessManager& network_manager,
             do_download(card.m_Backside.value().m_Name, card.m_Backside.value().m_Id);
         }
     }
-    do_download("__back.png", set.m_BacksideId);
+    do_download("__back.png", m_Set.m_BacksideId);
 
-    return static_cast<uint32_t>(requested_ids.size());
+    m_TotalRequests = m_Requests.size();
+    Progress(0, static_cast<int>(m_TotalRequests));
+
+    return true;
 }
 
-QString MPCFillIdFromUrl(const QString& url)
+void MPCFillDownloader::HandleReply(QNetworkReply* reply)
+{
+    const auto file_name{
+        [this, reply]()
+        {
+            const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
+            for (const auto& card : m_Set.m_Frontsides)
+            {
+                if (card.m_Id == id)
+                {
+                    return card.m_Name;
+                }
+
+                if (card.m_Backside.has_value() && card.m_Backside.value().m_Id == id)
+                {
+                    return card.m_Backside.value().m_Name;
+                }
+            }
+
+            return QString{ "__back.png" };
+        }()
+    };
+
+    ImageAvailable(QByteArray::fromBase64(reply->readAll()), file_name);
+
+    std::erase(m_Requests, reply);
+    Progress(static_cast<int>(m_TotalRequests - m_Requests.size()),
+             static_cast<int>(m_TotalRequests));
+
+    reply->deleteLater();
+}
+
+std::vector<QString> MPCFillDownloader::GetFiles() const
+{
+    return m_Set.m_Frontsides |
+           std::views::transform(&MPCFillCard::m_Name) |
+           std::ranges::to<std::vector>();
+}
+
+uint32_t MPCFillDownloader::GetAmount(const QString& file_name) const
+{
+    auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
+    if (card != m_Set.m_Frontsides.end())
+    {
+        return card->m_Amount;
+    }
+    return 0;
+}
+
+std::optional<QString> MPCFillDownloader::GetBackside(const QString& file_name) const
+{
+    auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
+    if (card != m_Set.m_Frontsides.end() && card->m_Backside.has_value())
+    {
+        return card->m_Backside.value().m_Name;
+    }
+    return std::nullopt;
+}
+
+std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) const
+{
+    auto it{ m_Duplicates.find(file_name) };
+    if (it != m_Duplicates.end())
+    {
+        return it->second;
+    }
+    return {};
+}
+
+bool MPCFillDownloader::ProvidesBleedEdge() const
+{
+    return true;
+}
+
+QString MPCFillDownloader::MPCFillIdFromUrl(const QString& url)
 {
     return url.split("id=").back();
 }
 
-QByteArray ImageDataFromReply(const QByteArray& reply)
+MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDomElement& element)
 {
-    return QByteArray::fromBase64(reply);
+    auto name{ element.firstChildElement("name").text() };
+    auto id{ element.firstChildElement("id").text() };
+    auto slots_str{ element.firstChildElement("slots").text().split(",") };
+    auto amount{ slots_str.size() };
+
+    auto slots_uint{ QList<uint32_t>{} };
+    for (const auto& slot_str : slots_str)
+    {
+        slots_uint.push_back(slot_str.toUInt());
+    }
+
+    return CardParseResult{
+        .m_Card{
+            .m_Name{ std::move(name) },
+            .m_Id{ std::move(id) },
+            .m_Amount = static_cast<uint32_t>(amount),
+
+            .m_Backside{ std::nullopt },
+        },
+        .m_Slots = std::move(slots_uint),
+    };
 }

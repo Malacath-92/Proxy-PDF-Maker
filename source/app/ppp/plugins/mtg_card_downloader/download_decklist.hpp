@@ -4,44 +4,56 @@
 
 #include <QRegularExpression>
 #include <QString>
+#include <QTimer>
 
-#include <ppp/util.hpp>
+#include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
 
 class QNetworkAccessManager;
 class QNetworkReply;
+class QJsonDocument;
 
-struct DecklistCard
+class ScryfallDownloader : public CardArtDownloader
 {
-    QString m_Name;
-    uint32_t m_Amount;
+    Q_OBJECT
 
-    std::optional<QString> m_Set;
-    std::optional<QString> m_CollectorNumber;
-};
+  public:
+    ScryfallDownloader();
+    virtual ~ScryfallDownloader() override;
 
-struct Decklist
-{
+    virtual bool ParseInput(const QString& decklist) override;
+    virtual bool BeginDownload(QNetworkAccessManager& network_manager) override;
+    virtual void HandleReply(QNetworkReply* reply) override;
+
+    virtual std::vector<QString> GetFiles() const override;
+
+    virtual uint32_t GetAmount(const QString& file_name) const override;
+    virtual std::optional<QString> GetBackside(const QString& file_name) const override;
+    virtual std::vector<QString> GetDuplicates(const QString& file_name) const override;
+
+    virtual bool ProvidesBleedEdge() const override;
+
+    static QRegularExpression GetDecklistRegex();
+
+  private:
+    struct DecklistCard;
+    struct BacksideRequest;
+
+    static DecklistCard ParseDeckline(const QRegularExpressionMatch& deckline);
+
+    static bool HasBackside(const QJsonDocument& card_info);
+    static QString BacksideFilename(const QString& file_name);
+
+    bool NextRequest();
+
     std::vector<DecklistCard> m_Cards;
+    std::unordered_map<QString, size_t> m_FileNameIndexMap;
+
+    std::vector<QJsonDocument> m_CardInfos;
+    std::vector<BacksideRequest> m_Backsides;
+    uint32_t m_Downloads{ 0 };
+
+    size_t m_TotalRequests{};
+    std::vector<QNetworkReply*> m_Requests{};
+    QTimer m_ScryfallTimer;
+    QNetworkAccessManager* m_NetworkManager{ nullptr };
 };
-
-QRegularExpression GetDecklistRegex();
-
-QString DecklistCardFilename(const DecklistCard& card);
-QString DecklistCardBacksideFilename(const DecklistCard& card);
-
-std::optional<Decklist> ParseDecklist(const QString& decklist);
-
-struct ScryfallState
-{
-    ~ScryfallState();
-
-    uint32_t m_NumRequests;
-
-    struct ScryfallStateImpl;
-    std::unique_ptr<ScryfallStateImpl> m_Impl;
-};
-std::unique_ptr<ScryfallState> InitScryfall(QNetworkAccessManager& network_manager,
-                                            const Decklist& decklist);
-
-bool ScryfallNextRequest(ScryfallState& state);
-bool ScryfallHandleReply(ScryfallState& state, QNetworkReply& reply, const QString& output_dir);

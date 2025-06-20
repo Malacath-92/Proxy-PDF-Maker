@@ -5,8 +5,8 @@
 #include <optional>
 
 #include <QTemporaryDir>
-#include <QTimer>
 
+#include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
 #include <ppp/ui/popups.hpp>
 
 class QCheckBox;
@@ -32,9 +32,8 @@ class MtgDownloaderPopup : public PopupBase
     ~MtgDownloaderPopup();
 
   private slots:
-    void MPCFillRequestFinished(QNetworkReply* reply);
-
-    void ScryfallRequestFinished(QNetworkReply* reply);
+    void DownloadProgress(int progress, int target);
+    void ImageAvailable(const QByteArray& image_data, const QString& file_name);
 
   private:
     void DoDownload();
@@ -59,14 +58,7 @@ class MtgDownloaderPopup : public PopupBase
 
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
 
-    std::any m_CardsData;
-
-    std::unique_ptr<struct ScryfallState> m_ScryfallState;
-    QTimer m_ScryfallTimer; // for padding requests on Scryfall's request
-
-    size_t m_NumRequests{ 0 };
-    size_t m_NumReplies{ 0 };
-
+    std::unique_ptr<CardArtDownloader> m_Downloader;
     std::unique_ptr<QNetworkAccessManager> m_NetworkManager;
 };
 
