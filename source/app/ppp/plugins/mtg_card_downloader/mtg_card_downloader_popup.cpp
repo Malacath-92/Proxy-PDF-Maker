@@ -18,6 +18,8 @@
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
+
+#include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/widget_label.hpp>
@@ -102,6 +104,8 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
                      text_changed);
 
     m_OutputDir.setAutoRemove(true);
+
+    ValidateSettings();
 }
 
 MtgDownloaderPopup::~MtgDownloaderPopup()
@@ -149,7 +153,10 @@ void MtgDownloaderPopup::DoDownload()
         setEnabled(true);
 
         m_InputType = type_selector.GetInputType();
-        DoDownload();
+        if (ValidateSettings())
+        {
+            DoDownload();
+        }
         return;
     }
 
@@ -303,6 +310,27 @@ void MtgDownloaderPopup::UninstallLogHook()
     {
         Log::GetInstance(Log::c_MainLogName)->UninstallHook(m_LogHookId.value());
     }
+}
+
+bool MtgDownloaderPopup::ValidateSettings()
+{
+    QStringList error;
+    if (m_Project.m_Data.m_CardSizeChoice != "Magic the Gathering")
+    {
+        error += "Be sure to card size to \"Standard\" when downloading MtG cards!";
+    }
+    if (m_InputType == InputType::Decklist && !g_Cfg.m_EnableUncrop)
+    {
+        error += "Be sure to set the \"Allow Precropped\" option when downloading from Scryfall!");
+    }
+
+    if (!error.isEmpty())
+    {
+        m_Hint->setText(error.join("\n"));
+        return false;
+    }
+
+    return true;
 }
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)

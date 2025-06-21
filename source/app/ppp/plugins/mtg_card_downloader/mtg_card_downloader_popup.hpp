@@ -42,6 +42,8 @@ class MtgDownloaderPopup : public PopupBase
     void InstallLogHook();
     void UninstallLogHook();
 
+    bool ValidateSettings();
+
     static InputType StupidInferSource(const QString& text);
 
     Project& m_Project;
