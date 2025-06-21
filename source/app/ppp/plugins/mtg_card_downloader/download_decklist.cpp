@@ -175,6 +175,7 @@ ScryfallDownloader::DecklistCard ScryfallDownloader::ParseDeckline(const QRegula
 {
     DecklistCard card{
         .m_Name{ deckline.captured(2) },
+        .m_FileName{},
         .m_Amount = deckline.capturedView(1).toUInt(),
 
         .m_Set{ deckline.captured(3) },
