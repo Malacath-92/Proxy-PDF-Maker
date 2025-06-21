@@ -33,6 +33,24 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<cons
 {
 }
 
+ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
+                                     std::span<const std::string> options,
+                                     std::span<const std::string> tooltips,
+                                     std::string_view default_option)
+    : ComboBoxWithLabel(label_text, options, default_option, DelegatingTag{})
+{
+    for (size_t i = 0; i < tooltips.size(); i++)
+    {
+        if (!tooltips[i].empty())
+        {
+            ComboBoxWithLabel::GetWidget()->setItemData(
+                static_cast<int>(i),
+                ToQString(tooltips[i]),
+                Qt::ToolTipRole);
+        }
+    }
+}
+
 ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const std::string_view> options, std::string_view default_option)
     : ComboBoxWithLabel(label_text, options, default_option, DelegatingTag{})
 {

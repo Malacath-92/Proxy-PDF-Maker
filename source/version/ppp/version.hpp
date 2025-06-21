@@ -22,3 +22,8 @@ consteval std::string_view ImageDbFormatVersion()
 {
     return "PPP00002";
 }
+
+consteval std::string_view ConfigFormatVersion()
+{
+    return "PPP00001";
+}

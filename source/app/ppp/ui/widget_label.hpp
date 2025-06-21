@@ -24,6 +24,10 @@ class ComboBoxWithLabel : public WidgetWithLabel
 {
   public:
     ComboBoxWithLabel(std::string_view label_text, std::span<const std::string> options, std::string_view default_option);
+    ComboBoxWithLabel(std::string_view label_text,
+                      std::span<const std::string> options,
+                      std::span<const std::string> tooltips,
+                      std::string_view default_option);
     ComboBoxWithLabel(std::string_view label_text, std::span<const std::string_view> options, std::string_view default_option);
 
     virtual QComboBox* GetWidget() const override;

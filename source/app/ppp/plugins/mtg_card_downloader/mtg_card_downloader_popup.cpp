@@ -315,13 +315,13 @@ void MtgDownloaderPopup::UninstallLogHook()
 bool MtgDownloaderPopup::ValidateSettings()
 {
     QStringList error;
-    if (m_Project.m_Data.m_CardSizeChoice != "Magic the Gathering")
+    if (m_Project.m_Data.m_CardSizeChoice != "Standard")
     {
         error += "Be sure to card size to \"Standard\" when downloading MtG cards!";
     }
     if (m_InputType == InputType::Decklist && !g_Cfg.m_EnableUncrop)
     {
-        error += "Be sure to set the \"Allow Precropped\" option when downloading from Scryfall!");
+        error += "Be sure to set the \"Allow Precropped\" option when downloading from Scryfall!";
     }
 
     if (!error.isEmpty())

@@ -64,6 +64,11 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_BacksideOffset.value = json["backside_offset"];
 
         m_Data.m_CardSizeChoice = json["card_size"];
+        if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
+        {
+            m_Data.m_CardSizeChoice = g_Cfg.m_DefaultCardSize;
+        }
+
         m_Data.m_PageSize = json["page_size"];
         if (!g_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
         {

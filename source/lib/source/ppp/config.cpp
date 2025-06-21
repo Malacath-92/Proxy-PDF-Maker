@@ -12,6 +12,8 @@
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
+#include <ppp/util/log.hpp>
+#include <ppp/version.hpp>
 
 Config g_Cfg{ LoadConfig() };
 
@@ -40,6 +42,12 @@ Config LoadConfig()
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
+        if (!settings.value("version").isValid())
+        {
+            SaveConfig(config);
+            return config;
+        }
+
         static constexpr auto c_ToStringViews{ std::views::transform(
             [](auto str)
             { return std::string_view(str.data(), str.size()); }) };
@@ -255,8 +263,15 @@ Config LoadConfig()
                         full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
                         full_card_size_info->m_CornerRadius = std::move(corner_radius_info).value();
                         full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
+
+                        auto hint{ settings.value("Usage.Hint") };
+                        if (hint.isValid())
+                        {
+                            full_card_size_info->m_Hint = hint.toString().toStdString();
+                        }
                     };
                 }
+
                 return full_card_size_info;
             }
         };
@@ -314,6 +329,7 @@ void SaveConfig(Config config)
         {
             settings.beginGroup("DEFAULT");
 
+            settings.setValue("Config.Version", ToQString(ConfigFormatVersion()));
             settings.setValue("Enable.Uncrop", config.m_EnableUncrop);
             settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
@@ -395,6 +411,10 @@ void SaveConfig(Config config)
                 if (static_cast<int32_t>(card_size_info.m_CardSizeScale * 10000) != 10000)
                 {
                     settings.setValue("Card.Scale", card_size_info.m_CardSizeScale);
+                }
+                if (!card_size_info.m_Hint.empty())
+                {
+                    settings.setValue("Usage.Hint", ToQString(card_size_info.m_Hint));
                 }
             }
         };

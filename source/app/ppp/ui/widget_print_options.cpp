@@ -33,8 +33,17 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.m_Data.m_FileName.string() } };
     m_PrintOutput = print_output->GetWidget();
 
-    auto* card_size{ new ComboBoxWithLabel{
-        "&Card Size", std::views::keys(g_Cfg.m_CardSizes) | std::ranges::to<std::vector>(), project.m_Data.m_CardSizeChoice } };
+    auto* card_size{
+        new ComboBoxWithLabel{
+            "&Card Size",
+            g_Cfg.m_CardSizes | std::views::keys | std::ranges::to<std::vector>(),
+            g_Cfg.m_CardSizes |
+                std::views::values |
+                std::views::transform(&Config::CardSizeInfo::m_Hint) |
+                std::ranges::to<std::vector>(),
+            project.m_Data.m_CardSizeChoice,
+        },
+    };
     card_size->setToolTip("Additional card sizes can be defined in config.ini");
     m_CardSize = card_size->GetWidget();
 

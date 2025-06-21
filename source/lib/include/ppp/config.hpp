@@ -46,7 +46,7 @@ struct Config
     Pixel m_BasePreviewWidth{ 248_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
     uint32_t m_DisplayColumns{ 5 };
-    std::string m_DefaultCardSize{ "Magic the Gathering" };
+    std::string m_DefaultCardSize{ "Standard" };
     std::string m_DefaultPageSize{ "Letter" };
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
@@ -79,6 +79,7 @@ struct Config
         SizeInfo m_CardSize;
         LengthInfo m_InputBleed;
         LengthInfo m_CornerRadius;
+        std::string m_Hint;
         float m_CardSizeScale{ 1.0f };
     };
 
@@ -94,36 +95,48 @@ struct Config
 
     std::map<std::string, CardSizeInfo> m_CardSizes{
         {
-            "Magic the Gathering",
+            "Standard",
             {
                 .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
                 .m_InputBleed{ 0.12_in, 1_in, 2u },
                 .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_Hint{ ".e.g. Magic the Gathering, Pokemon, and other TCGs" },
             },
         },
         {
-            "MtG Oversized",
+            "Standard x2",
             {
                 .m_CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
                 .m_InputBleed{ 0.12_in, 1_in, 2u },
                 .m_CornerRadius{ 5_mm, 1_mm, 1u },
+                .m_Hint{ ".e.g. oversized Magic the Gathering" },
             },
         },
         {
-            "MtG Novelty",
+            "Standard Novelty",
             {
                 .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
                 .m_InputBleed{ 0.12_in, 1_in, 2u },
                 .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_Hint{ ".e.g. novelty-sized Magic the Gathering" },
                 .m_CardSizeScale = 0.5f,
             },
         },
         {
-            "Yu-Gi-Oh",
+            "Japanese",
             {
                 .m_CardSize{ { 59_mm, 86_mm }, 1_mm, 0u },
                 .m_InputBleed{ 2_mm, 1_mm, 0u },
                 .m_CornerRadius{ 1_mm, 1_mm, 0u },
+                .m_Hint{ ".e.g. Yu-Gi-Oh!" },
+            },
+        },
+        {
+            "Poker",
+            {
+                .m_CardSize{ { 2.5_in, 3.5_mm }, 1_in, 1u },
+                .m_InputBleed{ 2_mm, 1_mm, 0u },
+                .m_CornerRadius{ 3_cm, 1_mm, 0u },
             },
         },
     };

@@ -38,6 +38,7 @@ Card.Size=44 x 68 mm
 Input.Bleed=2 mm
 Corner.Radius=1 mm
 Card.Scale=1.0
+Usage.Hint="only for Carcassone"
 ```
 Every group that starts with exactly `CARD_SIZE -` will be added to the drop-down. For formatting see [Dimension Formatting](#dimension-formatting). These numbers have the typical meaning for printing, but here is a somewhat superficial explanation for them.
 
@@ -61,6 +62,9 @@ input_bleed = input_bleed_in_pixels / pixels_per_mm =  40 / 20 = 2
 
 #### Corner.Radius
 This is the radius of the corners, not that this affects the size of the cutting guides to avoid the guides overlapping the image once corners are clipped.
+
+#### Usage.Hint
+Tooltip shown to user when they hover the option, mainly useful for options that are valid for multiple games.
 
 ### Paper Size: Fit
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
