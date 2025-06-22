@@ -137,6 +137,7 @@ struct Config
                 .m_CardSize{ { 2.5_in, 3.5_mm }, 1_in, 1u },
                 .m_InputBleed{ 2_mm, 1_mm, 0u },
                 .m_CornerRadius{ 3_cm, 1_mm, 0u },
+                .m_Hint{},
             },
         },
     };
