@@ -42,10 +42,14 @@ Config LoadConfig()
     QSettings settings("config.ini", QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
-        if (!settings.value("version").isValid())
         {
-            SaveConfig(config);
-            return config;
+            settings.beginGroup("DEFAULT");
+            if (!settings.value("Config.Version").isValid())
+            {
+                SaveConfig(config);
+                return config;
+            }
+            settings.endGroup();
         }
 
         static constexpr auto c_ToStringViews{ std::views::transform(
