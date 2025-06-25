@@ -128,7 +128,11 @@ This determines what units all measurements are displayed in. The option `points
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
 
 #### Rendering Backend
-Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files. `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software.
+Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files.
+- `LibHaru` and `PoDoFo` are largely the same however
+    - The two could have each their own bugs, so if you experience a crash during rendering try switching to the other
+    - `PoDoFo` is required if you want to render images on top of an existing `.pdf` file via the `Base PDF` page size  
+- `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software
 
 #### Image Format
 This determines whether images are encoded to `.png` or `.jpg` before writing them to the PDF. Use `Jpg` to reduce file size.
