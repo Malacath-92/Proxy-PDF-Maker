@@ -197,6 +197,7 @@ int main(int argc, char** argv)
 
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::CornersChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);

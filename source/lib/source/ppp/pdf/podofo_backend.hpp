@@ -36,12 +36,13 @@ class PoDoFoPage final : public PdfPage
 class PoDoFoImageCache
 {
   public:
-    PoDoFoImageCache(PoDoFo::PdfMemDocument* document);
+    PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project);
 
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
     PoDoFo::PdfMemDocument* m_Document;
+    const Project& m_Project;
 
     struct ImageCacheEntry
     {

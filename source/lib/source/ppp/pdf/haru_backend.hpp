@@ -35,12 +35,13 @@ class HaruPdfPage final : public PdfPage
 class HaruPdfImageCache
 {
   public:
-    HaruPdfImageCache(HPDF_Doc document);
+    HaruPdfImageCache(HPDF_Doc document, const Project& project);
 
     HPDF_Image GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
     HPDF_Doc m_Document;
+    const Project& m_Project;
 
     struct ImageCacheEntry
     {

@@ -42,6 +42,11 @@ class PageGrid : public QWidget
         const auto rows{ card_grid.front().size() };
         const auto columns{ card_grid.size() };
 
+        const bool rounded_corners{
+            project.m_Data.m_Corners == CardCorners::Rounded &&
+            project.m_Data.m_BleedEdge == 0_mm
+        };
+
         for (uint32_t x = 0; x < columns; x++)
         {
             for (uint32_t y = 0; y < rows; y++)
@@ -56,7 +61,7 @@ class PageGrid : public QWidget
                             image_name,
                             project,
                             CardImage::Params{
-                                .m_RoundedCorners = false,
+                                .m_RoundedCorners = rounded_corners,
                                 .m_Rotation = rotation,
                                 .m_BleedEdge{ project.m_Data.m_BleedEdge },
                             },

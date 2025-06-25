@@ -58,6 +58,11 @@ void Project::Load(const fs::path& json_path)
 
         m_Data.m_BleedEdge.value = json["bleed_edge"];
         m_Data.m_Spacing.value = json["spacing"];
+        if (json.contains("corners"))
+        {
+            m_Data.m_Corners = magic_enum::enum_cast<CardCorners>(json["corners"].get_ref<const std::string&>())
+                                   .value_or(CardCorners::Square);
+        }
 
         m_Data.m_BacksideEnabled = json["backside_enabled"];
         m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
@@ -151,6 +156,7 @@ void Project::Dump(const fs::path& json_path) const
 
         json["bleed_edge"] = m_Data.m_BleedEdge.value;
         json["spacing"] = m_Data.m_Spacing.value;
+        json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
 
         json["backside_enabled"] = m_Data.m_BacksideEnabled;
         json["backside_default"] = m_Data.m_BacksideDefault.string();

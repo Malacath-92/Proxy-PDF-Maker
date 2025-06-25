@@ -119,6 +119,12 @@ void PngPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
     cv::putText(m_Page, cv::String{ text.data(), text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
 }
 
+PngImageCache::PngImageCache(const Project& project)
+    : m_Project{ project }
+{
+
+}
+
 const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
 {
     // clang-format off
@@ -136,11 +142,23 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h
         return it->m_PngImage;
     }
 
+    const bool rounded_corners{
+        m_Project.m_Data.m_Corners == CardCorners::Rounded &&
+        m_Project.m_Data.m_BleedEdge == 0_mm
+    };
+    const auto card_size{ m_Project.CardSize() };
+    const auto corner_radius{
+        rounded_corners
+            ? m_Project.CardCornerRadius()
+            : 0_mm,
+    };
     const Image loaded_image{
         Image::Read(image_path)
+            .RoundCorners(card_size, corner_radius)
             .Rotate(rotation)
             .Resize({ w * 1_pix, h * 1_pix }),
     };
+
     const cv::Mat& three_channel_image{ loaded_image.GetUnderlying() };
     cv::Mat four_channel_image{};
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
@@ -189,7 +207,7 @@ PngDocument::PngDocument(const Project& project)
         };
     }
 
-    m_ImageCache = std::make_unique<PngImageCache>();
+    m_ImageCache = std::make_unique<PngImageCache>(project);
 }
 PngDocument::~PngDocument()
 {

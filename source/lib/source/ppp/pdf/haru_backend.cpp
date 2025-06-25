@@ -102,8 +102,9 @@ void HaruPdfPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
     HPDF_Page_EndText(m_Page);
 }
 
-HaruPdfImageCache::HaruPdfImageCache(HPDF_Doc document)
+HaruPdfImageCache::HaruPdfImageCache(HPDF_Doc document, const Project& project)
     : m_Document{ document }
+    , m_Project{ project }
 {
 }
 
@@ -132,7 +133,22 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
             : &HPDF_LoadPngImageFromMem
     };
 
-    const Image loaded_image{ Image::Read(image_path).Rotate(rotation) };
+    const bool rounded_corners{
+        m_Project.m_Data.m_Corners == CardCorners::Rounded &&
+        m_Project.m_Data.m_BleedEdge == 0_mm
+    };
+    const auto card_size{ m_Project.CardSize() };
+    const auto corner_radius{
+        rounded_corners
+            ? m_Project.CardCornerRadius()
+            : 0_mm,
+    };
+    const Image loaded_image{
+        Image::Read(image_path)
+            .RoundCorners(card_size, corner_radius)
+            .Rotate(rotation)
+    };
+
     const auto encoded_image{ encoder(loaded_image) };
     const auto libharu_image{
         loader(m_Document,
@@ -162,7 +178,7 @@ HaruPdfDocument::HaruPdfDocument(const Project& project)
     m_Document = HPDF_New(c_ErrorHandler, nullptr);
     HPDF_SetCompressionMode(m_Document, HPDF_COMP_ALL);
 
-    m_ImageCache = std::make_unique<HaruPdfImageCache>(m_Document);
+    m_ImageCache = std::make_unique<HaruPdfImageCache>(m_Document, project);
 }
 HaruPdfDocument::~HaruPdfDocument()
 {

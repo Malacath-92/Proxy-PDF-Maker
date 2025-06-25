@@ -146,8 +146,9 @@ void PoDoFoPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
     painter.FinishPage();
 }
 
-PoDoFoImageCache::PoDoFoImageCache(PoDoFo::PdfMemDocument* document)
+PoDoFoImageCache::PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project)
     : m_Document{ document }
+    , m_Project{ project }
 {
 }
 
@@ -176,7 +177,22 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
             : &PoDoFo::PdfImage::LoadFromPngData
     };
 
-    const Image loaded_image{ Image::Read(image_path).Rotate(rotation) };
+    const bool rounded_corners{
+        m_Project.m_Data.m_Corners == CardCorners::Rounded &&
+        m_Project.m_Data.m_BleedEdge == 0_mm
+    };
+    const auto card_size{ m_Project.CardSize() };
+    const auto corner_radius{
+        rounded_corners
+            ? m_Project.CardCornerRadius()
+            : 0_mm,
+    };
+    const Image loaded_image{
+        Image::Read(image_path)
+            .RoundCorners(card_size, corner_radius)
+            .Rotate(rotation)
+    };
+
     const auto encoded_image{ encoder(loaded_image) };
 
     std::unique_ptr podofo_image{ std::make_unique<PoDoFo::PdfImage>(m_Document) };
@@ -197,8 +213,9 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
             ? new PoDoFo::PdfMemDocument
             : nullptr
     }
-    , m_ImageCache{ std::make_unique<PoDoFoImageCache>(&m_Document) }
 {
+    m_ImageCache = std::make_unique<PoDoFoImageCache>(&m_Document, project);
+
     if (m_BaseDocument != nullptr)
     {
         const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.m_Data.m_BasePdf + ".pdf" } };

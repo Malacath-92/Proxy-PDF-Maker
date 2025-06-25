@@ -392,6 +392,66 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     return img;
 }
 
+Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
+{
+    if (corner_radius == 1_mm)
+    {
+        return *this;
+    }
+
+    const auto corner_radius_pixels{ static_cast<int>(dla::math::floor(Density(real_size) * corner_radius) / 1_pix) };
+    if (corner_radius_pixels == 0)
+    {
+        return *this;
+    }
+
+    cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
+    {
+        const cv::Point top_left_wide{ 0, corner_radius_pixels };
+        const cv::Point bottom_right_wide{ m_Impl.cols, m_Impl.rows - corner_radius_pixels };
+        const cv::Point top_left_tall{ corner_radius_pixels, 0 };
+        const cv::Point bottom_right_tall{ m_Impl.cols - corner_radius_pixels, m_Impl.rows };
+        const auto draw_rect{
+            [&](const cv::Point& top_left, const cv::Point& bottom_right)
+            {
+                cv::rectangle(mask, top_left, bottom_right, cv::Scalar(255), cv::FILLED);
+            },
+        };
+        draw_rect(top_left_wide, bottom_right_wide);
+        draw_rect(top_left_tall, bottom_right_tall);
+
+        const cv::Point top_left{ corner_radius_pixels, corner_radius_pixels };
+        const cv::Point bottom_left{ m_Impl.cols-1 - corner_radius_pixels, corner_radius_pixels };
+        const cv::Point bottom_right{ m_Impl.cols-1 - corner_radius_pixels, m_Impl.rows-1 - corner_radius_pixels };
+        const cv::Point top_right{ corner_radius_pixels, m_Impl.rows-1 - corner_radius_pixels };
+        const auto draw_arc{
+            [&](const cv::Point& pos)
+            {
+                cv::circle(mask, pos, corner_radius_pixels, cv::Scalar(255), cv::FILLED, cv::LINE_AA);
+            },
+        };
+        draw_arc(top_left);
+        draw_arc(bottom_left);
+        draw_arc(bottom_right);
+        draw_arc(top_right);
+    }
+
+    std::vector<cv::Mat> out_channels;
+    cv::split(m_Impl, out_channels);
+    if (out_channels.size() != 4)
+    {
+        out_channels.push_back(std::move(mask));
+    }
+    else
+    {
+        cv::multiply(mask, out_channels[4], out_channels[4]);
+    }
+
+    cv::Mat out_impl;
+    cv::merge(out_channels, out_impl);
+    return Image{ out_impl };
+}
+
 Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
     const int cube_size_minus_one{ color_cube.cols - 1 };

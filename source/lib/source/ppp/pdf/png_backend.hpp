@@ -39,9 +39,13 @@ class PngPage final : public PdfPage
 class PngImageCache
 {
   public:
+    PngImageCache(const Project& project);
+
     const cv::Mat& GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
 
   private:
+    const Project& m_Project;
+
     struct ImageCacheEntry
     {
         fs::path m_ImagePath;

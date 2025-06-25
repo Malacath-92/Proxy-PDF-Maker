@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QCheckBox;
+class QComboBox;
 class QDoubleSpinBox;
 class QPushButton;
 class QSlider;
@@ -20,6 +21,7 @@ class CardOptionsWidget : public QWidget
   signals:
     void BleedChanged();
     void SpacingChanged();
+    void CornersChanged();
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
@@ -36,6 +38,7 @@ class CardOptionsWidget : public QWidget
 
     QDoubleSpinBox* m_BleedEdgeSpin{ nullptr };
     QDoubleSpinBox* m_SpacingSpin{ nullptr };
+    QComboBox* m_Corners{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };

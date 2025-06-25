@@ -30,6 +30,12 @@ struct ImagePreview
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
+enum class CardCorners
+{
+    Square,
+    Rounded,
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -96,6 +102,7 @@ class Project : public QObject
         // Card options
         Length m_BleedEdge{ 0_mm };
         Length m_Spacing{ 0_mm };
+        CardCorners m_Corners{ CardCorners::Square };
 
         // Backside options
         bool m_BacksideEnabled{ false };

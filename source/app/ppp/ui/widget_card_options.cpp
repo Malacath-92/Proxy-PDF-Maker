@@ -5,6 +5,8 @@
 #include <QSlider>
 #include <QVBoxLayout>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
@@ -80,6 +82,13 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_SpacingSpin->setSingleStep(0.1);
     m_SpacingSpin->setSuffix(base_unit_name);
 
+    auto* corners{ new ComboBoxWithLabel{ "Cor&ners",
+                                          magic_enum::enum_names<CardCorners>(),
+                                          magic_enum::enum_name(project.m_Data.m_Corners) } };
+    corners->setEnabled(project.m_Data.m_BleedEdge == 0_mm);
+    m_Corners = corners->GetWidget();
+    m_Corners->setToolTip("Determines if corners in the rendered pdf are square or rounded, only available if bleed edge is zero.");
+
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
 
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
@@ -98,6 +107,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
     layout->addWidget(spacing);
+    layout->addWidget(corners);
     layout->addWidget(m_BacksideCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
@@ -107,7 +117,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     setLayout(layout);
 
     auto change_bleed_edge{
-        [this, &project](double v)
+        [this, &project, corners](double v)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
@@ -118,6 +128,16 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
             project.m_Data.m_BleedEdge = new_bleed_edge;
             BleedChanged();
+
+            const bool has_no_bleed_edge{ project.m_Data.m_BleedEdge == 0_mm };
+            if (corners->isEnabled() != has_no_bleed_edge)
+            {
+                corners->setEnabled(has_no_bleed_edge);
+                if (project.m_Data.m_Corners == CardCorners::Rounded)
+                {
+                    CornersChanged();
+                }
+            }
         }
     };
 
@@ -133,6 +153,19 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
             project.m_Data.m_Spacing = new_spacing;
             SpacingChanged();
+        }
+    };
+
+    auto change_corners{
+        [this](const QString& t)
+        {
+            const auto new_corners{ magic_enum::enum_cast<CardCorners>(t.toStdString())
+                                        .value_or(CardCorners::Square) };
+            if (new_corners != m_Project.m_Data.m_Corners)
+            {
+                m_Project.m_Data.m_Corners = new_corners;
+                CornersChanged();
+            }
         }
     };
 
@@ -177,6 +210,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_spacing);
+    QObject::connect(m_Corners,
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_corners);
     QObject::connect(m_BacksideCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -232,6 +269,8 @@ void CardOptionsWidget::SetDefaults()
 
     m_SpacingSpin->setRange(0, 1_cm / base_unit);
     m_SpacingSpin->setValue(m_Project.m_Data.m_Spacing / base_unit);
+
+    m_Corners->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Corners)));
 
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
 

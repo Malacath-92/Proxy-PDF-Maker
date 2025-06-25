@@ -54,6 +54,8 @@ class [[nodiscard]] Image
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
+    Image RoundCorners(::Size real_size, ::Length corner_radius) const;
+
     Image ApplyColorCube(const cv::Mat& color_cube) const;
 
     Image Resize(PixelSize size) const;
