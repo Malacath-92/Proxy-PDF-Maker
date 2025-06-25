@@ -82,18 +82,21 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
             m_InputType = StupidInferSource(text);
 
             m_Hint->setVisible(true);
-            switch (m_InputType)
+            if (ValidateSettings())
             {
-            case InputType::Decklist:
-                m_Hint->setText("Input inferred as Moxfield or Archidekt list...");
-                break;
-            case InputType::MPCAutofill:
-                m_Hint->setText("Input inferred as MPC Autofill xml...");
-                break;
-            case InputType::None:
-            default:
-                m_Hint->setText("Can't infer input type...");
-                break;
+                switch (m_InputType)
+                {
+                case InputType::Decklist:
+                    m_Hint->setText("Input inferred as Moxfield or Archidekt list...");
+                    break;
+                case InputType::MPCAutofill:
+                    m_Hint->setText("Input inferred as MPC Autofill xml...");
+                    break;
+                case InputType::None:
+                default:
+                    m_Hint->setText("Can't infer input type...");
+                    break;
+                }
             }
         }
     };
