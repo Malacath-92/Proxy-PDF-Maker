@@ -88,7 +88,11 @@ Image& Image::operator=(const Image& rhs)
 Image Image::Read(const fs::path& path)
 {
     Image img{};
-    img.m_Impl = cv::imread(path.string().c_str());
+    img.m_Impl = cv::imread(path.string().c_str(), cv::IMREAD_UNCHANGED);
+    if (img.m_Impl.channels() == 4)
+    {
+        cv::cvtColor(img.m_Impl, img.m_Impl, cv::COLOR_BGR2RGBA);
+    }
     return img;
 }
 
@@ -204,7 +208,7 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
                 fclose(file);
             }
 
-            cv::imdecode(buf, cv::IMREAD_COLOR);
+            cv::imdecode(buf, cv::IMREAD_UNCHANGED);
 
             return true;
         }
@@ -271,7 +275,7 @@ Image Image::Decode(EncodedImageView buffer)
     Image img{};
     cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()),
                               static_cast<int>(buffer.size()) };
-    img.m_Impl = cv::imdecode(cv_buffer, cv::IMREAD_COLOR);
+    img.m_Impl = cv::imdecode(cv_buffer, cv::IMREAD_UNCHANGED);
     return img;
 }
 
@@ -321,7 +325,17 @@ EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
 
 QPixmap Image::StoreIntoQtPixmap() const
 {
-    return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
+    switch (m_Impl.channels())
+    {
+    case 1:
+        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_Grayscale8));
+    case 3:
+        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
+    case 4:
+        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_RGBA8888));
+    default:
+        return QPixmap{ static_cast<int>(Width() / 1_pix), static_cast<int>(Height() / 1_pix) };
+    }
 }
 
 Image::operator bool() const
