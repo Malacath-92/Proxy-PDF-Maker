@@ -280,15 +280,11 @@ bool ScryfallDownloader::NextRequest()
     else if (want_more_arts)
     {
         const auto& card{ m_Cards[m_Downloads] };
-        auto request_uri{
-            QString("https://api.scryfall.com/cards/%1/%2?format=image&version=png")
-                .arg(card.m_Set.value())
-                .arg(card.m_CollectorNumber.value()),
-        };
-        LogInfo("Requesting artwork for card  {}", card.m_Name.toStdString());
-        do_request(std::move(request_uri));
-
         const auto& card_info{ m_CardInfos[m_Downloads] };
+
+        LogInfo("Requesting artwork for card  {}", card.m_Name.toStdString());
+        auto request_uri{ card_info["image_uris"]["png"].toString() };
+        do_request(std::move(request_uri));
 
         if (HasBackside(card_info))
         {
