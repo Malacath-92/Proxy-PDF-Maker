@@ -89,10 +89,6 @@ Image Image::Read(const fs::path& path)
 {
     Image img{};
     img.m_Impl = cv::imread(path.string().c_str(), cv::IMREAD_UNCHANGED);
-    if (img.m_Impl.channels() == 4)
-    {
-        cv::cvtColor(img.m_Impl, img.m_Impl, cv::COLOR_BGR2RGBA);
-    }
     return img;
 }
 
@@ -466,106 +462,133 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
     return Image{ out_impl };
 }
 
+template<int Channels>
+struct CubeFilter
+{
+    const cv::Mat& m_ColorCube;
+    const cv::Mat& m_InputImg;
+    cv::Mat& m_OutputImg;
+
+    using element_t = std::conditional_t<Channels == 3, cv::Vec3b, cv::Vec4b>;
+
+    void operator()(int idx)
+    {
+        const int x{ idx % m_InputImg.rows };
+        const int y{ idx / m_InputImg.rows };
+        const auto& col{ m_InputImg.at<element_t>(x, y) };
+
+        auto& out_element{ m_OutputImg.at<element_t>(x, y) };
+        out_element = col;
+
+        const int cube_size_minus_one{ m_ColorCube.cols - 1 };
+        const float r{ (static_cast<float>(col[2]) / 255) * cube_size_minus_one };
+        const float g{ (static_cast<float>(col[1]) / 255) * cube_size_minus_one };
+        const float b{ (static_cast<float>(col[0]) / 255) * cube_size_minus_one };
+
+#ifdef NDEBUG
+        // In Release we interpolate between the eight cube-elements
+
+        const int r_lo{ static_cast<int>(std::floor(r)) };
+        const int r_hi{ static_cast<int>(std::ceil(r)) };
+        const float r_frac{ r - static_cast<float>(r_lo) };
+
+        const int g_lo{ static_cast<int>(std::floor(g)) };
+        const int g_hi{ static_cast<int>(std::ceil(g)) };
+        const float g_frac{ g - static_cast<float>(g_lo) };
+
+        const int b_lo{ static_cast<int>(std::floor(b)) };
+        const int b_hi{ static_cast<int>(std::ceil(b)) };
+        const float b_frac{ b - static_cast<float>(b_lo) };
+
+        static constexpr auto c_LinearInterpolate{
+            [](std::array<ColorRGB32f, 2> values, float alpha)
+            {
+                return values[0] * (1 - alpha) + values[1] * alpha;
+            },
+        };
+
+        static constexpr auto c_BilinearInterpolate{
+            [](std::array<ColorRGB32f, 4> values, std::array<float, 2> alphas)
+            {
+                const std::array interim_values{
+                    c_LinearInterpolate(std::array{ values[0], values[1] }, alphas[0]),
+                    c_LinearInterpolate(std::array{ values[2], values[3] }, alphas[0]),
+                };
+                return c_LinearInterpolate(interim_values, alphas[1]);
+            },
+        };
+
+        static constexpr auto c_TrilinearInterpolate{
+            [](std::array<ColorRGB32f, 8> values, std::array<float, 3> alphas)
+            {
+                const std::array interim_values{
+                    c_BilinearInterpolate(std::array{ values[0], values[1], values[2], values[3] }, std::array{ alphas[0], alphas[1] }),
+                    c_BilinearInterpolate(std::array{ values[4], values[5], values[6], values[7] }, std::array{ alphas[0], alphas[1] }),
+                };
+                return c_LinearInterpolate(interim_values, alphas[2]);
+            },
+        };
+
+        auto color_at{
+            [&](int r, int g, int b)
+            {
+                const auto v{ m_ColorCube.at<cv::Vec3b>(r, g, b) };
+                return ColorRGB32f{
+                    static_cast<float>(v[0]),
+                    static_cast<float>(v[1]),
+                    static_cast<float>(v[2]),
+                };
+            },
+        };
+
+        std::array corners{
+            color_at(r_lo, g_lo, b_lo),
+            color_at(r_hi, g_lo, b_lo),
+
+            color_at(r_lo, g_hi, b_lo),
+            color_at(r_hi, g_hi, b_lo),
+
+            color_at(r_lo, g_lo, b_hi),
+            color_at(r_hi, g_lo, b_hi),
+
+            color_at(r_lo, g_hi, b_hi),
+            color_at(r_hi, g_hi, b_hi),
+        };
+
+        const ColorRGB32f interpolated{ c_TrilinearInterpolate(corners, { r_frac, g_frac, b_frac }) };
+        out_element[0] = static_cast<uchar>(interpolated.r);
+        out_element[1] = static_cast<uchar>(interpolated.g);
+        out_element[2] = static_cast<uchar>(interpolated.b);
+#else
+        // In Debug we just get the nearest element
+        const auto res{ m_ColorCube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
+        out_element[0] = static_cast<uchar>(res[0]);
+        out_element[1] = static_cast<uchar>(res[1]);
+        out_element[2] = static_cast<uchar>(res[2]);
+#endif
+    }
+};
+
 Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
-    const int cube_size_minus_one{ color_cube.cols - 1 };
+    if (m_Impl.channels() == 1)
+    {
+        return *this;
+    }
 
     Image filtered{ *this };
     auto flat_range{ std::views::iota(0, m_Impl.rows * m_Impl.cols) };
-    std::for_each(flat_range.begin(), flat_range.end(), [&](int i)
-                  {
-                      const int x{ i % m_Impl.rows };
-                      const int y{ i / m_Impl.rows };
-                      const auto& col{ m_Impl.at<cv::Vec3b>(x, y) };
-
-                      const float r{ (static_cast<float>(col[2]) / 255) * cube_size_minus_one };
-                      const float g{ (static_cast<float>(col[1]) / 255) * cube_size_minus_one };
-                      const float b{ (static_cast<float>(col[0]) / 255) * cube_size_minus_one };
-
-        // clang-format off
-#ifdef NDEBUG
-                      // In Release we interpolate between the eight cube-elements
-
-                      const int r_lo{ static_cast<int>(std::floor(r)) };
-                      const int r_hi{ static_cast<int>(std::ceil(r)) };
-                      const float r_frac{ r - static_cast<float>(r_lo) };
-
-                      const int g_lo{ static_cast<int>(std::floor(g)) };
-                      const int g_hi{ static_cast<int>(std::ceil(g)) };
-                      const float g_frac{ g - static_cast<float>(g_lo) };
-
-                      const int b_lo{ static_cast<int>(std::floor(b)) };
-                      const int b_hi{ static_cast<int>(std::ceil(b)) };
-                      const float b_frac{ b - static_cast<float>(b_lo) };
-
-                      static constexpr auto c_LnearInterpolate{
-                          [](std::array<ColorRGB32f, 2> values, float alpha)
-                          {
-                              return values[0] * (1 - alpha) + values[1] * alpha;
-                          },
-                      };
-
-                      static constexpr auto c_BilinearInterpolate{
-                          [](std::array<ColorRGB32f, 4> values, std::array<float, 2> alphas)
-                          {
-                              const std::array interim_values{
-                                  c_LnearInterpolate(std::array{ values[0], values[1] }, alphas[0]),
-                                  c_LnearInterpolate(std::array{ values[2], values[3] }, alphas[0]),
-                              };
-                              return c_LnearInterpolate(interim_values, alphas[1]);
-                          },
-                      };
-
-                      static constexpr auto c_TrilinearInterpolate{
-                          [](std::array<ColorRGB32f, 8> values, std::array<float, 3> alphas)
-                          {
-                              const std::array interim_values{
-                                  c_BilinearInterpolate(std::array{ values[0], values[1], values[2], values[3] }, std::array{ alphas[0], alphas[1] }),
-                                  c_BilinearInterpolate(std::array{ values[4], values[5], values[6], values[7] }, std::array{ alphas[0], alphas[1] }),
-                              };
-                              return c_LnearInterpolate(interim_values, alphas[2]);
-                          },
-                      };
-
-                      auto color_at{
-                          [&](int r, int g, int b)
-                          {
-                              const auto v{ color_cube.at<cv::Vec3b>(r, g, b) };
-                              return ColorRGB32f{
-                                  static_cast<float>(v[0]),
-                                  static_cast<float>(v[1]),
-                                  static_cast<float>(v[2]),
-                              };
-                          },
-                      };
-
-                      std::array corners{
-                          color_at(r_lo, g_lo, b_lo),
-                          color_at(r_hi, g_lo, b_lo),
-
-                          color_at(r_lo, g_hi, b_lo),
-                          color_at(r_hi, g_hi, b_lo),
-
-                          color_at(r_lo, g_lo, b_hi),
-                          color_at(r_hi, g_lo, b_hi),
-
-                          color_at(r_lo, g_hi, b_hi),
-                          color_at(r_hi, g_hi, b_hi),
-                      };
-
-                      const ColorRGB32f interpolated{ c_TrilinearInterpolate(corners, { r_frac, g_frac, b_frac }) };
-                      filtered.m_Impl.at<cv::Vec3b>(x, y) = cv::Vec3b{
-                          static_cast<uchar>(interpolated.r),
-                          static_cast<uchar>(interpolated.g),
-                          static_cast<uchar>(interpolated.b),
-                      };
-#else
-                      // In Debug we just get the nearest element
-                      const auto res{ color_cube.at<cv::Vec3b>((int)r, (int)g, (int)b) };
-                      filtered.m_Impl.at<cv::Vec3b>(x, y) = res;
-#endif
-                      // clang-format on
-                  });
+    switch (m_Impl.channels())
+    {
+    case 3:
+        std::for_each(flat_range.begin(), flat_range.end(), CubeFilter<3>{ color_cube, m_Impl, filtered.m_Impl });
+        break;
+    case 4:
+        std::for_each(flat_range.begin(), flat_range.end(), CubeFilter<4>{ color_cube, m_Impl, filtered.m_Impl });
+        break;
+    default:
+        break;
+    }
     return filtered;
 }
 
