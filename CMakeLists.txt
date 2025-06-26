@@ -72,6 +72,7 @@ find_package(libharu REQUIRED)
 find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
+find_package(libdxfrw REQUIRED)
 find_package(magic_enum REQUIRED)
 
 # --------------------------------------------------
@@ -187,6 +188,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	podofo::podofo
 	nlohmann_json::nlohmann_json
 	efsw::efsw
+	libdxfrw::libdxfrw
 	magic_enum::magic_enum)
 
 if(WIN32)

@@ -22,3 +22,4 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                Length corner_radius);
 
 void GenerateCardsSvg(const Project& project);
+void GenerateCardsDxf(const Project& project);

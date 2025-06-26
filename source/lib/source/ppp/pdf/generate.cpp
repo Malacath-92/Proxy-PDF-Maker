@@ -2,8 +2,6 @@
 
 #include <ranges>
 
-#include <hpdf.h>
-
 #include <dla/scalar_math.h>
 
 #include <ppp/util/log.hpp>
