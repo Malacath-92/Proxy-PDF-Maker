@@ -435,9 +435,9 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
         draw_rect(top_left_tall, bottom_right_tall);
 
         const cv::Point top_left{ corner_radius_pixels, corner_radius_pixels };
-        const cv::Point bottom_left{ m_Impl.cols-1 - corner_radius_pixels, corner_radius_pixels };
-        const cv::Point bottom_right{ m_Impl.cols-1 - corner_radius_pixels, m_Impl.rows-1 - corner_radius_pixels };
-        const cv::Point top_right{ corner_radius_pixels, m_Impl.rows-1 - corner_radius_pixels };
+        const cv::Point bottom_left{ m_Impl.cols - 1 - corner_radius_pixels, corner_radius_pixels };
+        const cv::Point bottom_right{ m_Impl.cols - 1 - corner_radius_pixels, m_Impl.rows - 1 - corner_radius_pixels };
+        const cv::Point top_right{ corner_radius_pixels, m_Impl.rows - 1 - corner_radius_pixels };
         const auto draw_arc{
             [&](const cv::Point& pos)
             {
