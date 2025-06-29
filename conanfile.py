@@ -15,7 +15,6 @@ class ProxyPDF(ConanFile):
         self.requires("catch2/3.7.1")
         self.requires("efsw/1.4.1")
         self.requires("magic_enum/0.9.7")
-        self.requires("libdxfrw/2.2.0")
 
         # Conflict Resolution
         self.requires("zstd/1.5.7", override=True)
@@ -53,5 +52,3 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pfm = False
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
-
-        self.options["libdxfrw"].shared = False

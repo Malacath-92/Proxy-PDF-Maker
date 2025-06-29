@@ -73,12 +73,13 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
 
                     try
                     {
-                        const auto file_path{ GeneratePdf(project) };
-                        OpenFile(file_path);
+                        //const auto file_path{ GeneratePdf(project) };
+                        //OpenFile(file_path);
 
                         if (project.m_Data.m_ExportExactGuides)
                         {
                             GenerateCardsSvg(project);
+                            GenerateCardsDxf(project);
                         }
                     }
                     catch (const std::exception& e)
