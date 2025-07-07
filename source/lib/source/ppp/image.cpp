@@ -328,7 +328,11 @@ QPixmap Image::StoreIntoQtPixmap() const
     case 3:
         return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
     case 4:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_RGBA8888));
+    {
+        cv::Mat img;
+        cv::cvtColor(m_Impl, img, cv::COLOR_BGR2RGBA);
+        return QPixmap::fromImage(QImage(img.ptr(), img.cols, img.rows, img.step, QImage::Format_RGBA8888));
+    }
     default:
         return QPixmap{ static_cast<int>(Width() / 1_pix), static_cast<int>(Height() / 1_pix) };
     }
