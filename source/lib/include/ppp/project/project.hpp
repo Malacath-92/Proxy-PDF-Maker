@@ -30,6 +30,12 @@ struct ImagePreview
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
+enum class FlipPageOn
+{
+    LeftEdge,
+    TopEdge,
+};
+
 enum class CardCorners
 {
     Square,
@@ -116,6 +122,7 @@ class Project : public QObject
         std::optional<Size> m_CustomMargins{};
         dla::uvec2 m_CardLayout{ 3, 3 };
         PageOrientation m_Orientation{ PageOrientation::Portrait };
+        FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
         fs::path m_FileName{ "_printme" };
 
         // Guides options

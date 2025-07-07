@@ -186,7 +186,7 @@ fs::path GeneratePdf(const Project& project)
             }
         };
 
-        const auto card_grid{ DistributeCardsToGrid(page_images, true, columns, rows) };
+        const auto card_grid{ DistributeCardsToGrid(page_images, GridOrientation::Default, columns, rows) };
 
         {
             static constexpr const char c_RenderFmt[]{
@@ -236,7 +236,13 @@ fs::path GeneratePdf(const Project& project)
 
                         auto backside_card{ card.value() };
                         backside_card.m_Image = project.GetBacksideImage(card->m_Image);
-                        draw_image(back_page, backside_card, columns - x - 1, y, project.m_Data.m_BacksideOffset, 0_pts, true);
+
+                        const auto flip_x{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
+                        const auto flip_y{ !flip_x };
+                        const auto bx{ flip_x ? columns - x - 1 : x };
+                        const auto by{ flip_y ? rows - y - 1 : y };
+
+                        draw_image(back_page, backside_card, bx, by, project.m_Data.m_BacksideOffset, 0_pts, true);
                         i++;
 
                         if (project.m_Data.m_EnableGuides && project.m_Data.m_BacksideEnableGuides)

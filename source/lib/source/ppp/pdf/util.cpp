@@ -122,12 +122,12 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
     return backside_pages;
 }
 
-Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t columns, uint32_t rows)
+Grid DistributeCardsToGrid(const Page& page, GridOrientation orientation, uint32_t columns, uint32_t rows)
 {
     auto get_coord{
         [=](size_t i)
         {
-            return GetGridCords(static_cast<uint32_t>(i), columns, left_to_right);
+            return GetGridCords(static_cast<uint32_t>(i), columns, rows, orientation);
         }
     };
 
@@ -143,13 +143,13 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
             const auto& [x, y]{ coord.pod() };
 
             // find an empty slot
-            while (!std::holds_alternative<std::monostate>(card_grid[x][y]))
+            while (!std::holds_alternative<std::monostate>(card_grid[y][x]))
             {
                 ++k;
                 coord = get_coord(k);
             }
 
-            card_grid[x][y] = GridImage{ img, backside_short_edge };
+            card_grid[y][x] = GridImage{ img, backside_short_edge };
         }
     }
 
@@ -181,13 +181,20 @@ Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t column
     return clean_card_grid;
 }
 
-dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, bool left_to_right)
+dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, uint32_t rows, GridOrientation orientation)
 {
-    const uint32_t x{ idx / columns };
-    uint32_t y{ idx % columns };
-    if (!left_to_right)
+    uint32_t x{ idx % columns };
+    uint32_t y{ idx / columns };
+    switch (orientation)
     {
-        y = columns - y - 1;
+    case GridOrientation::Default:
+        break;
+    case GridOrientation::FlippedHorizontally:
+        x = columns - x - 1;
+        break;
+    case GridOrientation::FlippedVertically:
+        y = rows - y - 1;
+        break;
     }
     return { x, y };
 }

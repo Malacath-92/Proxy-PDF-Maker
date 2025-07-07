@@ -83,6 +83,11 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_BasePdf = json["base_pdf"];
         m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
                                    .value_or(PageOrientation::Portrait);
+        if (json.contains("flip_page_on"))
+        {
+            m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(json["flip_page_on"].get_ref<const std::string&>())
+                                  .value_or(FlipPageOn::LeftEdge);
+        }
         if (m_Data.m_PageSize == Config::c_FitSize)
         {
             m_Data.m_CardLayout.x = json["card_layout"]["width"];
@@ -177,6 +182,7 @@ void Project::Dump(const fs::path& json_path) const
             { "height", m_Data.m_CardLayout.y },
         };
         json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
+        json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
         json["file_name"] = m_Data.m_FileName.string();
 
         json["export_exact_guides"] = m_Data.m_ExportExactGuides;

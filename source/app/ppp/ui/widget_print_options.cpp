@@ -102,6 +102,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     orientation->setVisible(!initial_fit_size && !initial_infer_size);
     m_Orientation = orientation->GetWidget();
 
+    auto* flip_on{ new ComboBoxWithLabel{
+        "Fli&pOn", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
+    m_FlipOn = flip_on->GetWidget();
+
     SetDefaults();
 
     auto* layout{ new QVBoxLayout };
@@ -116,6 +120,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(top_margin);
     layout->addWidget(cards_layout);
     layout->addWidget(orientation);
+    layout->addWidget(flip_on);
     setLayout(layout);
 
     auto change_output{
@@ -277,6 +282,15 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
+    auto change_flip_on{
+        [=, this](QString t)
+        {
+            m_Project.m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(t.toStdString())
+                                                 .value_or(FlipPageOn::LeftEdge);
+            FlipOnChanged();
+        }
+    };
+
     QObject::connect(print_output->GetWidget(),
                      &QLineEdit::textChanged,
                      this,
@@ -317,6 +331,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_orientation);
+    QObject::connect(flip_on->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_flip_on);
 }
 
 void PrintOptionsWidget::NewProjectOpened()
@@ -399,6 +417,7 @@ void PrintOptionsWidget::SetDefaults()
     m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
     m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
     m_Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Orientation)));
+    m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_FlipOn)));
 
     const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
     m_BasePdf->GetWidget()->setCurrentText(ToQString(m_Project.m_Data.m_BasePdf));

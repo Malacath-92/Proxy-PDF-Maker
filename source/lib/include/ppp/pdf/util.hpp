@@ -26,14 +26,21 @@ struct GridImage
 };
 using Grid = std::vector<std::vector<std::optional<GridImage>>>;
 
+enum class GridOrientation
+{
+    Default,
+    FlippedHorizontally,
+    FlippedVertically,
+};
+
 std::optional<Size> LoadPdfSize(const fs::path& pdf_path);
 
 std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows);
 
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);
 
-Grid DistributeCardsToGrid(const Page& page, bool left_to_right, uint32_t columns, uint32_t rows);
+Grid DistributeCardsToGrid(const Page& page, GridOrientation orientation, uint32_t columns, uint32_t rows);
 
-dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, bool left_to_right);
+dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, uint32_t rows, GridOrientation orientation);
 
 Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge);

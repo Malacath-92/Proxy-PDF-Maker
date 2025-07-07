@@ -39,8 +39,8 @@ class PageGrid : public QWidget
 
         m_HasMissingPreviews = false;
 
-        const auto rows{ card_grid.front().size() };
-        const auto columns{ card_grid.size() };
+        const auto rows{ card_grid.size() };
+        const auto columns{ card_grid.front().size() };
 
         const bool rounded_corners{
             project.m_Data.m_Corners == CardCorners::Rounded &&
@@ -51,7 +51,7 @@ class PageGrid : public QWidget
         {
             for (uint32_t y = 0; y < rows; y++)
             {
-                if (auto& card{ card_grid[x][y] })
+                if (auto& card{ card_grid[y][x] })
                 {
                     const auto& [image_name, backside_short_edge]{ card.value() };
 
@@ -68,23 +68,26 @@ class PageGrid : public QWidget
                         },
                     };
 
-                    grid->addWidget(image_widget, x, y);
+                    grid->addWidget(image_widget, y, x);
                 }
             }
         }
 
-        // pad with dummy images
-        for (uint32_t i = 0; i < rows; i++)
-        {
-            const auto [x, y]{ GetGridCords(i, static_cast<uint32_t>(rows), params.m_IsBackside).pod() };
-            if (grid->itemAtPosition(x, y) == nullptr)
+        auto try_add_dummy{
+            [&grid, &params, &project](int x, int y)
             {
+                if (grid->itemAtPosition(y, x) != nullptr)
+                {
+                    return;
+                }
+
                 const Image::Rotation rotation{ GetCardRotation(params.m_IsBackside, false) };
                 auto* image_widget{
                     new CardImage{
                         g_Cfg.m_FallbackName,
                         project,
                         CardImage::Params{
+                        .m_RoundedCorners=false,
                             .m_Rotation = rotation,
                             .m_BleedEdge{ project.m_Data.m_BleedEdge },
                         },
@@ -96,8 +99,18 @@ class PageGrid : public QWidget
                 image_widget->setSizePolicy(sp_retain);
                 image_widget->hide();
 
-                grid->addWidget(image_widget, x, y);
+                grid->addWidget(image_widget, y, x);
             }
+        };
+
+        // pad with dummy images
+        for (uint32_t x = 0; x < columns; x++)
+        {
+            try_add_dummy(x, 0);
+        }
+        for (uint32_t y = 0; y < rows; y++)
+        {
+            try_add_dummy(0, y);
         }
 
         for (int i = 0; i < grid->columnCount(); i++)
@@ -341,8 +354,15 @@ class PrintPreview::PagePreview : public QWidget
     };
     PagePreview(const Project& project, const Page& page, Params params)
     {
-        const bool left_to_right{ !params.m_GridParams.m_IsBackside };
-        const ::Grid card_grid{ DistributeCardsToGrid(page, left_to_right, params.m_Columns, params.m_Rows) };
+        const auto flip_left_edge{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
+        // clang-format off
+        const auto orientation{
+            !params.m_GridParams.m_IsBackside ? GridOrientation::Default :
+                               flip_left_edge ? GridOrientation::FlippedHorizontally
+                                              : GridOrientation::FlippedVertically
+        };
+        // clang-format on
+        const ::Grid card_grid{ DistributeCardsToGrid(page, orientation, params.m_Columns, params.m_Rows) };
 
         auto* grid{ new PageGrid{ project, card_grid, params.m_GridParams } };
 

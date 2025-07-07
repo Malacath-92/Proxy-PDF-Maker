@@ -26,6 +26,7 @@ class PrintOptionsWidget : public QWidget
     void MarginsChanged();
     void CardLayoutChanged();
     void OrientationChanged();
+    void FlipOnChanged();
 
   public slots:
     void NewProjectOpened();
@@ -51,6 +52,7 @@ class PrintOptionsWidget : public QWidget
     QDoubleSpinBox* m_CardsWidth{ nullptr };
     QDoubleSpinBox* m_CardsHeight{ nullptr };
     QComboBox* m_Orientation{ nullptr };
+    QComboBox* m_FlipOn{ nullptr };
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };
     ComboBoxWithLabel* m_BasePdf{ nullptr };

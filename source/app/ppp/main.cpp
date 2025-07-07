@@ -185,6 +185,7 @@ int main(int argc, char** argv)
         QObject::connect(print_options, &PrintOptionsWidget::MarginsChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(print_options, &PrintOptionsWidget::CardLayoutChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(print_options, &PrintOptionsWidget::OrientationChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(print_options, &PrintOptionsWidget::FlipOnChanged, print_preview, &PrintPreview::Refresh);
 
         QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
