@@ -204,8 +204,8 @@ ENTITIES
 
             const auto draw_quarter_circle{
                 [&](const dla::vec2 center,
-                   const float radius,
-                   const float start_angle)
+                    const float radius,
+                    const float start_angle)
                 {
                     static constexpr auto c_Resolution{ 32 };
                     for (size_t i = 1; i < c_Resolution; i++)

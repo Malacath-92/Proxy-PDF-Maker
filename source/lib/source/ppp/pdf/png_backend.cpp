@@ -122,7 +122,6 @@ void PngPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
 PngImageCache::PngImageCache(const Project& project)
     : m_Project{ project }
 {
-
 }
 
 const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)

@@ -87,7 +87,7 @@ class PageGrid : public QWidget
                         g_Cfg.m_FallbackName,
                         project,
                         CardImage::Params{
-                        .m_RoundedCorners=false,
+                            .m_RoundedCorners = false,
                             .m_Rotation = rotation,
                             .m_BleedEdge{ project.m_Data.m_BleedEdge },
                         },

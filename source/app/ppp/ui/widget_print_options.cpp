@@ -286,7 +286,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         [=, this](QString t)
         {
             m_Project.m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(t.toStdString())
-                                                 .value_or(FlipPageOn::LeftEdge);
+                                            .value_or(FlipPageOn::LeftEdge);
             FlipOnChanged();
         }
     };
