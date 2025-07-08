@@ -208,7 +208,9 @@ class GuidesOverlay : public QWidget
         const auto pixel_ratio{ grid_size.x / m_Project.ComputeCardsSize().x };
         const auto card_size{ m_Project.CardSizeWithBleed() * pixel_ratio };
         const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
-        const auto offset{ (m_Project.m_Data.m_BleedEdge - m_Project.m_Data.m_GuidesOffset) * pixel_ratio };
+        const auto bleed{ m_Project.m_Data.m_BleedEdge * pixel_ratio };
+        const auto extended_off{ bleed + 1_mm * pixel_ratio };
+        const auto offset{ bleed - m_Project.m_Data.m_GuidesOffset * pixel_ratio };
         const auto spacing{ m_Project.m_Data.m_Spacing * pixel_ratio };
 
         m_Lines.clear();
@@ -285,25 +287,49 @@ class GuidesOverlay : public QWidget
                 const auto [x, y]{ idx.pod() };
                 if (x == 0)
                 {
-                    draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, 0, top_left_pos.y });
-                    draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, 0, bottom_left_pos.y });
+                    draw_guide(QLineF{ top_left_pos.x - extended_off,
+                                       top_left_pos.y,
+                                       0,
+                                       top_left_pos.y });
+                    draw_guide(QLineF{ bottom_left_pos.x - extended_off,
+                                       bottom_left_pos.y,
+                                       0,
+                                       bottom_left_pos.y });
                 }
                 if (x + 1 == columns)
                 {
                     const auto page_width{ static_cast<float>(width()) };
-                    draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, page_width, top_right_pos.y });
-                    draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, page_width, bottom_right_pos.y });
+                    draw_guide(QLineF{ top_right_pos.x + extended_off,
+                                       top_right_pos.y,
+                                       page_width,
+                                       top_right_pos.y });
+                    draw_guide(QLineF{ bottom_right_pos.x + extended_off,
+                                       bottom_right_pos.y,
+                                       page_width,
+                                       bottom_right_pos.y });
                 }
                 if (y == 0)
                 {
-                    draw_guide(QLineF{ top_left_pos.x, top_left_pos.y, top_left_pos.x, 0 });
-                    draw_guide(QLineF{ top_right_pos.x, top_right_pos.y, top_right_pos.x, 0 });
+                    draw_guide(QLineF{ top_left_pos.x,
+                                       top_left_pos.y - extended_off,
+                                       top_left_pos.x,
+                                       0 });
+                    draw_guide(QLineF{ top_right_pos.x,
+                                       top_right_pos.y - extended_off,
+                                       top_right_pos.x,
+                                       0 });
                 }
                 if (y + 1 == rows)
                 {
                     const auto page_height{ static_cast<float>(height()) };
-                    draw_guide(QLineF{ bottom_left_pos.x, bottom_left_pos.y, bottom_left_pos.x, page_height });
-                    draw_guide(QLineF{ bottom_right_pos.x, bottom_right_pos.y, bottom_right_pos.x, page_height });
+                    draw_guide(QLineF{ bottom_left_pos.x,
+                                       bottom_left_pos.y + extended_off,
+                                       bottom_left_pos.x,
+                                       page_height });
+                    draw_guide(QLineF{ bottom_right_pos.x,
+                                       bottom_right_pos.y + extended_off,
+                                       bottom_right_pos.x,
+                                       page_height });
                 }
             }
         }
