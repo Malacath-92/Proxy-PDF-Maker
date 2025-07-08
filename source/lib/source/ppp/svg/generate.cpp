@@ -210,11 +210,11 @@ ENTITIES
                     static constexpr auto c_Resolution{ 32 };
                     for (size_t i = 1; i < c_Resolution; i++)
                     {
-                        static constexpr auto pi_over_2{ std::numbers::pi_v<float> / 2 };
-                        static constexpr auto deg_to_rad{ std::numbers::pi_v<float> / 180 };
-                        const auto alpha{ start_angle * deg_to_rad + i * pi_over_2 / c_Resolution };
-                        const auto sin_i{ sin(alpha) };
-                        const auto cos_i{ cos(alpha) };
+                        static constexpr float pi_over_2{ std::numbers::pi_v<float> / 2 };
+                        static constexpr float deg_to_rad{ std::numbers::pi_v<float> / 180 };
+                        const float alpha{ start_angle * deg_to_rad + i * pi_over_2 / c_Resolution };
+                        const float sin_i{ sin(alpha) };
+                        const float cos_i{ cos(alpha) };
                         draw_vertex({
                             center.x + sin_i * radius,
                             center.y + cos_i * radius,
