@@ -175,7 +175,6 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
             {
                 ImagePreview img{};
                 img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
-                img.m_CroppedImage.DebugDisplay();
                 img.m_UncroppedImage = img.m_CroppedImage;
                 img_dict[g_Cfg.m_FallbackName] = std::move(img);
             }
