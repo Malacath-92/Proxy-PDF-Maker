@@ -232,52 +232,56 @@ class GuidesOverlay : public QWidget
             };
 
             const auto top_left_pos{ top_left_corner + offset };
-            draw_guide(QLineF{ top_left_pos.x,
-                               top_left_pos.y,
-                               top_left_pos.x + line_length,
-                               top_left_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
-            draw_guide(QLineF{ top_left_pos.x,
-                               top_left_pos.y,
-                               top_left_pos.x,
-                               top_left_pos.y + line_length },
-                       m_Project.m_Data.m_CrossGuides);
-
             const auto top_right_pos{ top_left_corner + dla::vec2(1.0f, 0.0f) * card_size + dla::vec2(-1.0f, 1.0f) * offset };
-            draw_guide(QLineF{ top_right_pos.x,
-                               top_right_pos.y,
-                               top_right_pos.x - line_length,
-                               top_right_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
-            draw_guide(QLineF{ top_right_pos.x,
-                               top_right_pos.y,
-                               top_right_pos.x,
-                               top_right_pos.y + line_length },
-                       m_Project.m_Data.m_CrossGuides);
-
             const auto bottom_right_pos{ top_left_corner + dla::vec2(1.0f, 1.0f) * card_size + dla::vec2(-1.0f, -1.0f) * offset };
-            draw_guide(QLineF{ bottom_right_pos.x,
-                               bottom_right_pos.y,
-                               bottom_right_pos.x - line_length,
-                               bottom_right_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
-            draw_guide(QLineF{ bottom_right_pos.x,
-                               bottom_right_pos.y,
-                               bottom_right_pos.x,
-                               bottom_right_pos.y - line_length },
-                       m_Project.m_Data.m_CrossGuides);
-
             const auto bottom_left_pos{ top_left_corner + dla::vec2(0.0f, 1.0f) * card_size + dla::vec2(1.0f, -1.0f) * offset };
-            draw_guide(QLineF{ bottom_left_pos.x,
-                               bottom_left_pos.y,
-                               bottom_left_pos.x + line_length,
-                               bottom_left_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
-            draw_guide(QLineF{ bottom_left_pos.x,
-                               bottom_left_pos.y,
-                               bottom_left_pos.x,
-                               bottom_left_pos.y - line_length },
-                       m_Project.m_Data.m_CrossGuides);
+
+            if (m_Project.m_Data.m_CornerGuides)
+            {
+                draw_guide(QLineF{ top_left_pos.x,
+                                   top_left_pos.y,
+                                   top_left_pos.x + line_length,
+                                   top_left_pos.y },
+                           m_Project.m_Data.m_CrossGuides);
+                draw_guide(QLineF{ top_left_pos.x,
+                                   top_left_pos.y,
+                                   top_left_pos.x,
+                                   top_left_pos.y + line_length },
+                           m_Project.m_Data.m_CrossGuides);
+
+                draw_guide(QLineF{ top_right_pos.x,
+                                   top_right_pos.y,
+                                   top_right_pos.x - line_length,
+                                   top_right_pos.y },
+                           m_Project.m_Data.m_CrossGuides);
+                draw_guide(QLineF{ top_right_pos.x,
+                                   top_right_pos.y,
+                                   top_right_pos.x,
+                                   top_right_pos.y + line_length },
+                           m_Project.m_Data.m_CrossGuides);
+
+                draw_guide(QLineF{ bottom_right_pos.x,
+                                   bottom_right_pos.y,
+                                   bottom_right_pos.x - line_length,
+                                   bottom_right_pos.y },
+                           m_Project.m_Data.m_CrossGuides);
+                draw_guide(QLineF{ bottom_right_pos.x,
+                                   bottom_right_pos.y,
+                                   bottom_right_pos.x,
+                                   bottom_right_pos.y - line_length },
+                           m_Project.m_Data.m_CrossGuides);
+
+                draw_guide(QLineF{ bottom_left_pos.x,
+                                   bottom_left_pos.y,
+                                   bottom_left_pos.x + line_length,
+                                   bottom_left_pos.y },
+                           m_Project.m_Data.m_CrossGuides);
+                draw_guide(QLineF{ bottom_left_pos.x,
+                                   bottom_left_pos.y,
+                                   bottom_left_pos.x,
+                                   bottom_left_pos.y - line_length },
+                           m_Project.m_Data.m_CrossGuides);
+            }
 
             if (m_Project.m_Data.m_ExtendedGuides)
             {

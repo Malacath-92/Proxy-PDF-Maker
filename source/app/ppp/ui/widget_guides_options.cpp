@@ -24,14 +24,17 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_EnableGuidesCheckbox = new QCheckBox{ "Enable Guides" };
     m_EnableGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on the output");
 
-    m_BacksideGuidesCheckbox = new QCheckBox{ "Enable Backside Guides" };
-    m_BacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
+    m_EnableBacksideGuidesCheckbox = new QCheckBox{ "Enable Backside Guides" };
+    m_EnableBacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
 
-    m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
-    m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
+    m_CornerGuidesCheckbox = new QCheckBox{ "Enable Corner Guides" };
+    m_CornerGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered in the corner of each card");
 
     m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
     m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
+
+    m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
+    m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
@@ -65,9 +68,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_ExportExactGuidesCheckbox);
     layout->addWidget(m_EnableGuidesCheckbox);
-    layout->addWidget(m_BacksideGuidesCheckbox);
-    layout->addWidget(m_ExtendedGuidesCheckbox);
+    layout->addWidget(m_EnableBacksideGuidesCheckbox);
+    layout->addWidget(m_CornerGuidesCheckbox);
     layout->addWidget(m_CrossGuidesCheckbox);
+    layout->addWidget(m_ExtendedGuidesCheckbox);
     layout->addWidget(m_GuidesColorA);
     layout->addWidget(m_GuidesColorB);
     layout->addWidget(guides_offset);
@@ -91,9 +95,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             const bool enabled{ s == Qt::CheckState::Checked };
             m_Project.m_Data.m_EnableGuides = enabled;
 
-            m_BacksideGuidesCheckbox->setEnabled(enabled);
+            m_EnableBacksideGuidesCheckbox->setEnabled(enabled);
             m_ExtendedGuidesCheckbox->setEnabled(enabled);
-            m_CrossGuidesCheckbox->setEnabled(enabled);
+            m_CornerGuidesCheckbox->setEnabled(enabled);
+            m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_CornerGuides && enabled);
             m_GuidesColorA->setEnabled(enabled);
             m_GuidesColorB->setEnabled(enabled);
             m_GuidesOffsetSpin->setEnabled(enabled);
@@ -104,7 +109,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         }
     };
 
-    auto switch_backside_guides_enabled{
+    auto change_enable_backside_guides{
         [this, &project](Qt::CheckState s)
         {
             project.m_Data.m_BacksideEnableGuides = s == Qt::CheckState::Checked;
@@ -112,11 +117,12 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         }
     };
 
-    auto change_extended_guides{
+    auto change_corner_guides{
         [this](Qt::CheckState s)
         {
-            m_Project.m_Data.m_ExtendedGuides = s == Qt::CheckState::Checked;
-            ExtendedGuidesChanged();
+            m_Project.m_Data.m_CornerGuides = s == Qt::CheckState::Checked;
+            m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_CornerGuides);
+            CornerGuidesChanged();
         }
     };
 
@@ -125,6 +131,14 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         {
             m_Project.m_Data.m_CrossGuides = s == Qt::CheckState::Checked;
             CrossGuidesChanged();
+        }
+    };
+
+    auto change_extended_guides{
+        [this](Qt::CheckState s)
+        {
+            m_Project.m_Data.m_ExtendedGuides = s == Qt::CheckState::Checked;
+            ExtendedGuidesChanged();
         }
     };
 
@@ -213,18 +227,22 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QCheckBox::checkStateChanged,
                      this,
                      change_enable_guides);
-    QObject::connect(m_BacksideGuidesCheckbox,
+    QObject::connect(m_EnableBacksideGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
-                     switch_backside_guides_enabled);
-    QObject::connect(m_ExtendedGuidesCheckbox,
+                     change_enable_backside_guides);
+    QObject::connect(m_CornerGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
-                     change_extended_guides);
+                     change_corner_guides);
     QObject::connect(m_CrossGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
                      change_cross_guides);
+    QObject::connect(m_ExtendedGuidesCheckbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_extended_guides);
     QObject::connect(guides_color_a_button,
                      &QPushButton::clicked,
                      this,
@@ -268,8 +286,8 @@ void GuidesOptionsWidget::BleedChanged()
 
 void GuidesOptionsWidget::BacksideEnabledChanged()
 {
-    m_BacksideGuidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
+    m_EnableBacksideGuidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_EnableBacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
 
 void GuidesOptionsWidget::BaseUnitChanged()
@@ -297,15 +315,18 @@ void GuidesOptionsWidget::SetDefaults()
 
     m_EnableGuidesCheckbox->setChecked(m_Project.m_Data.m_EnableGuides);
 
-    m_BacksideGuidesCheckbox->setChecked(m_Project.m_Data.m_BacksideEnableGuides);
-    m_BacksideGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides && m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
+    m_EnableBacksideGuidesCheckbox->setChecked(m_Project.m_Data.m_BacksideEnableGuides);
+    m_EnableBacksideGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides && m_Project.m_Data.m_BacksideEnabled);
+    m_EnableBacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    m_CornerGuidesCheckbox->setChecked(m_Project.m_Data.m_CornerGuides);
+    m_CornerGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides);
+
+    m_CrossGuidesCheckbox->setChecked(m_Project.m_Data.m_CrossGuides);
+    m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_CornerGuides && m_Project.m_Data.m_EnableGuides);
 
     m_ExtendedGuidesCheckbox->setChecked(m_Project.m_Data.m_ExtendedGuides);
     m_ExtendedGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides);
-
-    m_CrossGuidesCheckbox->setChecked(m_Project.m_Data.m_CrossGuides);
-    m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides);
 
     m_GuidesColorA->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.m_Data.m_GuidesColorA));
     m_GuidesColorA->setEnabled(m_Project.m_Data.m_EnableGuides && m_Project.m_Data.m_EnableGuides);

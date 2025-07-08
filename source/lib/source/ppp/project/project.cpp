@@ -115,8 +115,16 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_ExportExactGuides = json["export_exact_guides"];
         m_Data.m_EnableGuides = json["enable_guides"];
         m_Data.m_BacksideEnableGuides = json["enable_backside_guides"];
-        m_Data.m_ExtendedGuides = json["extended_guides"];
+        if (json.contains("corner_guides"))
+        {
+            m_Data.m_CornerGuides = json["corner_guides"];
+        }
+        else
+        {
+            m_Data.m_CornerGuides = m_Data.m_EnableGuides;
+        }
         m_Data.m_CrossGuides = json["cross_guides"];
+        m_Data.m_ExtendedGuides = json["extended_guides"];
         m_Data.m_GuidesColorA.r = json["guides_color_a"][0];
         m_Data.m_GuidesColorA.g = json["guides_color_a"][1];
         m_Data.m_GuidesColorA.b = json["guides_color_a"][2];
@@ -188,8 +196,9 @@ void Project::Dump(const fs::path& json_path) const
         json["export_exact_guides"] = m_Data.m_ExportExactGuides;
         json["enable_guides"] = m_Data.m_EnableGuides;
         json["enable_backside_guides"] = m_Data.m_BacksideEnableGuides;
-        json["extended_guides"] = m_Data.m_ExtendedGuides;
+        json["corner_guides"] = m_Data.m_CornerGuides;
         json["cross_guides"] = m_Data.m_CrossGuides;
+        json["extended_guides"] = m_Data.m_ExtendedGuides;
         json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
         json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
         json["guides_offset"] = m_Data.m_GuidesOffset.value;

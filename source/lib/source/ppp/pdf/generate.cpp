@@ -110,15 +110,18 @@ fs::path GeneratePdf(const Project& project)
                         // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
                         const auto real_y{ start_y - y * (card_height + spacing) + dy };
 
-                        PdfPage::CrossData cross{
-                            .m_Pos{
-                                real_x,
-                                real_y,
-                            },
-                            .m_Length{ project.m_Data.m_GuidesLength },
-                            .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
-                        };
-                        page->DrawDashedCross(cross, line_style);
+                        if (project.m_Data.m_CornerGuides)
+                        {
+                            PdfPage::CrossData cross{
+                                .m_Pos{
+                                    real_x,
+                                    real_y,
+                                },
+                                .m_Length{ project.m_Data.m_GuidesLength },
+                                .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
+                            };
+                            page->DrawDashedCross(cross, line_style);
+                        }
 
                         if (project.m_Data.m_ExtendedGuides)
                         {
