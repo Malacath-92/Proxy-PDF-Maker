@@ -57,7 +57,22 @@ void Project::Load(const fs::path& json_path)
         }
 
         m_Data.m_BleedEdge.value = json["bleed_edge"];
-        m_Data.m_Spacing.value = json["spacing"];
+        {
+            const auto& spacing{ json["spacing"] };
+            if (spacing.is_number())
+            {
+                m_Data.m_Spacing.x.value = json["spacing"];
+                m_Data.m_Spacing.y = m_Data.m_Spacing.x;
+            }
+            else
+            {
+                m_Data.m_Spacing = Size{
+                    spacing["width"].get<float>() * 1_mm,
+                    spacing["height"].get<float>() * 1_mm,
+                };
+                m_Data.m_SpacingLinked = json["spacing_linked"];
+            }
+        }
         if (json.contains("corners"))
         {
             m_Data.m_Corners = magic_enum::enum_cast<CardCorners>(json["corners"].get_ref<const std::string&>())
@@ -168,7 +183,11 @@ void Project::Dump(const fs::path& json_path) const
         json["cards"] = cards;
 
         json["bleed_edge"] = m_Data.m_BleedEdge.value;
-        json["spacing"] = m_Data.m_Spacing.value;
+        json["spacing"] = nlohmann::json{
+            { "width", m_Data.m_Spacing.x / 1_mm },
+            { "height", m_Data.m_Spacing.y / 1_mm },
+        };
+        json["spacing_linked"] = m_Data.m_SpacingLinked;
         json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
 
         json["backside_enabled"] = m_Data.m_BacksideEnabled;
@@ -368,7 +387,7 @@ bool Project::CacheCardLayout()
         const Size card_size_with_bleed{ CardSizeWithBleed() };
         m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
 
-        if (m_Data.m_Spacing > 0_mm)
+        if (m_Data.m_Spacing.x > 0_mm || m_Data.m_Spacing.y > 0_mm)
         {
             const Size cards_size{ ComputeCardsSize() };
             if (cards_size.x > page_size.x)

@@ -37,7 +37,8 @@ class CardOptionsWidget : public QWidget
     Project& m_Project;
 
     QDoubleSpinBox* m_BleedEdgeSpin{ nullptr };
-    QDoubleSpinBox* m_SpacingSpin{ nullptr };
+    QDoubleSpinBox* m_HorizontalSpacingSpin{ nullptr };
+    QDoubleSpinBox* m_VerticalSpacingSpin{ nullptr };
     QComboBox* m_Corners{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };

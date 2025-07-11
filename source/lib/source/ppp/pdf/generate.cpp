@@ -83,8 +83,8 @@ fs::path GeneratePdf(const Project& project)
                 {
                     const auto orig_x{ is_backside ? backside_start_x : start_x };
                     const auto orig_y{ is_backside ? backside_start_y : start_y };
-                    const auto real_x{ orig_x + x * (card_width + spacing) + dx };
-                    const auto real_y{ orig_y - (y + 1) * card_height - y * spacing + dy };
+                    const auto real_x{ orig_x + x * (card_width + spacing.x) + dx };
+                    const auto real_y{ orig_y - (y + 1) * card_height - y * spacing.y + dy };
                     const auto real_w{ card_width };
                     const auto real_h{ card_height };
 
@@ -106,9 +106,9 @@ fs::path GeneratePdf(const Project& project)
                 const auto draw_cross_at_grid{
                     [&](PdfPage* page, size_t x, size_t y, CrossSegment s, Length dx, Length dy)
                     {
-                        const auto real_x{ start_x + x * (card_width + spacing) + dx };
+                        const auto real_x{ start_x + x * (card_width + spacing.x) + dx };
                         // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
-                        const auto real_y{ start_y - y * (card_height + spacing) + dy };
+                        const auto real_y{ start_y - y * (card_height + spacing.y) + dy };
 
                         if (project.m_Data.m_CornerGuides)
                         {
@@ -165,14 +165,14 @@ fs::path GeneratePdf(const Project& project)
                                    x + 1,
                                    y + 0,
                                    CrossSegment::TopRight,
-                                   -offset - spacing, // NOLINT(clang-analyzer-core.NonNullParamChecker)
+                                   -offset - spacing.x, // NOLINT(clang-analyzer-core.NonNullParamChecker)
                                    -offset);
                 draw_cross_at_grid(page,
                                    x + 1,
                                    y + 1,
                                    CrossSegment::BottomRight,
-                                   -offset - spacing,
-                                   +offset + spacing);
+                                   -offset - spacing.x,
+                                   +offset + spacing.y);
 
                 draw_cross_at_grid(page,
                                    x,
@@ -185,7 +185,7 @@ fs::path GeneratePdf(const Project& project)
                                    y + 1,
                                    CrossSegment::BottomLeft,
                                    +offset,
-                                   +offset + spacing);
+                                   +offset + spacing.y);
             }
         };
 

@@ -9,18 +9,23 @@ WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
     , m_Widget{ widget }
 {
-    auto* label{ new QLabel(label_text.empty() ? "" : ToQString(label_text) + ":") };
+    m_Label = new QLabel(label_text.empty() ? "" : ToQString(label_text) + ":");
     if (label_text.contains("&"))
     {
-        label->setBuddy(widget);
+        m_Label->setBuddy(widget);
     }
 
     auto* layout{ new QHBoxLayout };
-    layout->addWidget(label);
+    layout->addWidget(m_Label);
     layout->addWidget(widget);
     layout->setContentsMargins(0, 0, 0, 0);
 
     setLayout(layout);
+}
+
+QLabel* WidgetWithLabel::GetLabel() const
+{
+    return m_Label;
 }
 
 QWidget* WidgetWithLabel::GetWidget() const

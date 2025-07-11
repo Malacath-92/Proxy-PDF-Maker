@@ -28,7 +28,6 @@ class PageGrid : public QWidget
     struct Params
     {
         bool m_IsBackside{ false };
-        int m_Spacing{ 0 };
     };
 
     PageGrid(const Project& project, const Grid& card_grid, Params params)
@@ -147,7 +146,7 @@ class PageGrid : public QWidget
     BordersOverlay* m_Borders{ nullptr };
 
     Length m_CardsWidth{};
-    Length m_Spacing{};
+    Size m_Spacing{};
 };
 
 class GuidesOverlay : public QWidget
@@ -391,7 +390,9 @@ void PageGrid::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
 
     const auto pixel_ratio{ static_cast<float>(event->size().width()) / m_CardsWidth };
-    layout()->setSpacing(static_cast<int>(pixel_ratio * m_Spacing));
+    auto* grid_layout{ static_cast<QGridLayout*>(layout()) };
+    grid_layout->setHorizontalSpacing(static_cast<int>(pixel_ratio * m_Spacing.x));
+    grid_layout->setVerticalSpacing(static_cast<int>(pixel_ratio * m_Spacing.y));
 
     if (m_Guides != nullptr)
     {

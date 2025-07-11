@@ -14,9 +14,11 @@ class WidgetWithLabel : public QWidget
   public:
     WidgetWithLabel(std::string_view label_text, QWidget* widget);
 
+    QLabel* GetLabel() const;
     virtual QWidget* GetWidget() const;
 
   private:
+    QLabel* m_Label;
     QWidget* m_Widget;
 };
 

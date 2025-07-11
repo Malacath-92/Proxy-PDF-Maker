@@ -18,7 +18,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::uvec2 grid,
                                Size card_size,
                                Length bleed_edge,
-                               Length spacing,
+                               Size spacing,
                                Length corner_radius);
 
 void GenerateCardsSvg(const Project& project);

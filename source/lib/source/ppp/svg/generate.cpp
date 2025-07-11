@@ -49,7 +49,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::uvec2 grid,
                                Size card_size,
                                Length bleed_edge,
-                               Length spacing,
+                               Size spacing,
                                Length corner_radius)
 {
     const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
@@ -186,7 +186,7 @@ ENTITIES
     const auto grid{ project.m_Data.m_CardLayout };
     const auto& [columns, rows]{ grid.pod() };
 
-    const dla::vec2 origin{ spacing, spacing };
+    const auto origin{ spacing };
 
     for (uint32_t x = 0; x < columns; x++)
     {

@@ -3,6 +3,7 @@
 #include <QCheckBox>
 #include <QPushButton>
 #include <QSlider>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 #include <magic_enum/magic_enum.hpp>
@@ -12,6 +13,7 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/linked_spin_boxes.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_label.hpp>
@@ -76,11 +78,20 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BleedEdgeSpin->setSingleStep(0.1);
     m_BleedEdgeSpin->setSuffix(base_unit_name);
 
-    auto* spacing{ new DoubleSpinBoxWithLabel{ "Card S&pacing" } };
-    m_SpacingSpin = spacing->GetWidget();
-    m_SpacingSpin->setDecimals(2);
-    m_SpacingSpin->setSingleStep(0.1);
-    m_SpacingSpin->setSuffix(base_unit_name);
+    auto* spacing_spin_boxes{ new LinkedSpinBoxes{ project.m_Data.m_SpacingLinked } };
+
+    m_HorizontalSpacingSpin = spacing_spin_boxes->First();
+    m_HorizontalSpacingSpin->setDecimals(2);
+    m_HorizontalSpacingSpin->setSingleStep(0.1);
+    m_HorizontalSpacingSpin->setSuffix(base_unit_name);
+
+    m_VerticalSpacingSpin = spacing_spin_boxes->Second();
+    m_VerticalSpacingSpin->setDecimals(2);
+    m_VerticalSpacingSpin->setSingleStep(0.1);
+    m_VerticalSpacingSpin->setSuffix(base_unit_name);
+
+    auto* spacing{ new WidgetWithLabel{ "Card Spacing", spacing_spin_boxes } };
+    spacing->layout()->setAlignment(spacing->GetLabel(), Qt::AlignTop);
 
     auto* corners{ new ComboBoxWithLabel{ "Cor&ners",
                                           magic_enum::enum_names<CardCorners>(),
@@ -141,17 +152,46 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         }
     };
 
-    auto change_spacing{
+    auto link_spacing{
+        [this]()
+        {
+            m_Project.m_Data.m_SpacingLinked = true;
+        }
+    };
+
+    auto unlink_spacing{
+        [this]()
+        {
+            m_Project.m_Data.m_SpacingLinked = false;
+        }
+    };
+
+    auto change_horizontal_spacing{
         [this, &project](double v)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto new_spacing{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.m_Data.m_Spacing - new_spacing) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_Spacing.x - new_spacing) < 0.001_mm)
             {
                 return;
             }
 
-            project.m_Data.m_Spacing = new_spacing;
+            project.m_Data.m_Spacing.x = new_spacing;
+            SpacingChanged();
+        }
+    };
+
+    auto change_vertical_spacing{
+        [this, &project](double v)
+        {
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto new_spacing{ base_unit * static_cast<float>(v) };
+            if (dla::math::abs(project.m_Data.m_Spacing.y - new_spacing) < 0.001_mm)
+            {
+                return;
+            }
+
+            project.m_Data.m_Spacing.y = new_spacing;
             SpacingChanged();
         }
     };
@@ -206,10 +246,22 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_bleed_edge);
-    QObject::connect(m_SpacingSpin,
+    QObject::connect(spacing_spin_boxes,
+                     &LinkedSpinBoxes::Linked,
+                     this,
+                     link_spacing);
+    QObject::connect(spacing_spin_boxes,
+                     &LinkedSpinBoxes::UnLinked,
+                     this,
+                     unlink_spacing);
+    QObject::connect(m_HorizontalSpacingSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_spacing);
+                     change_horizontal_spacing);
+    QObject::connect(m_VerticalSpacingSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_vertical_spacing);
     QObject::connect(m_Corners,
                      &QComboBox::currentTextChanged,
                      this,
@@ -250,9 +302,13 @@ void CardOptionsWidget::BaseUnitChanged()
     m_BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
     m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
 
-    m_SpacingSpin->setRange(0, 1_cm / base_unit);
-    m_SpacingSpin->setSuffix(ToQString(base_unit_name));
-    m_SpacingSpin->setValue(m_Project.m_Data.m_Spacing / base_unit);
+    m_HorizontalSpacingSpin->setRange(0, 1_cm / base_unit);
+    m_HorizontalSpacingSpin->setSuffix(ToQString(base_unit_name));
+    m_HorizontalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.x / base_unit);
+
+    m_VerticalSpacingSpin->setRange(0, 1_cm / base_unit);
+    m_VerticalSpacingSpin->setSuffix(ToQString(base_unit_name));
+    m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
 
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
@@ -267,8 +323,11 @@ void CardOptionsWidget::SetDefaults()
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
 
-    m_SpacingSpin->setRange(0, 1_cm / base_unit);
-    m_SpacingSpin->setValue(m_Project.m_Data.m_Spacing / base_unit);
+    m_HorizontalSpacingSpin->setRange(0, 1_cm / base_unit);
+    m_HorizontalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.x / base_unit);
+
+    m_VerticalSpacingSpin->setRange(0, 1_cm / base_unit);
+    m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
 
     m_Corners->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Corners)));
 
