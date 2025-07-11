@@ -217,11 +217,11 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
             write_arr(name_str.data(), name_str.size());
 
             {
-                const auto buf{ image.m_CroppedImage.EncodePng() };
+                const auto buf{ image.m_CroppedImage.EncodeJpg(50) };
                 write_arr(buf.data(), buf.size());
             }
             {
-                const auto buf{ image.m_UncroppedImage.EncodePng() };
+                const auto buf{ image.m_UncroppedImage.EncodeJpg(50) };
                 write_arr(buf.data(), buf.size());
             }
         }

@@ -9,7 +9,7 @@ std::string_view ProxyPdfBuildTime();
 
 consteval uint64_t ImageCacheFormatVersion()
 {
-    constexpr char c_Version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '3' };
+    constexpr char c_Version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '4' };
     return std::bit_cast<uint64_t>(c_Version);
 }
 
