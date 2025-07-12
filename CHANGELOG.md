@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2025-12-07
+
+### Added
+- Rudimentary decklist downloader can be used to download MPCFill, Moxfield, and Archidekt lists, found via `Global Options` -> `Plugins`.
+- A new option `Card Options` -> `Corners` that allows you to export a pdf with rounded corners.
+- A new option `Print Options` -> `Flip On` adds possibility to flip the output on the top edge as opposed to usually on the left edge.
+- A new option `Guides Options` -> `Corner Guides` allows disabling cutting guides in the corners of cards.
+
+### Changed
+- Renamed card size options to something more general. **Note: This change required the global config.ini to be reset**
+- The `Guides Options` -> `Export Exact Guides` option now also generates a `.dxf` file.
+- Extended guides will now only be rendered outside of the card area.
+- Split spacing into two values for vertical and horizontal, by defaulting linking them to be same.
+
+### Fixed
+- Guides in the preview are now correct with non-filled pages.
+- Png backend will now successfully generate images with all page sizes.
+- Page and card sizes are recomputed on all relevant setting changes.
+- Now folders that are not exactly inside the working directory (typically next to the executable) can be used as image folders.
+- Images that contain alpha channels are read as-is, instead of discarding the alpha channel.
+- Enabling both extended guides and cross guides will no longer show the print preview incorrectly.
+
 ## [0.11.0] - 2025-26-05
 
 ### Added
