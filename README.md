@@ -30,7 +30,11 @@ On the top-left you can switch over to the `Preview`, which shows you a preview 
 ## Options
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that most options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
 
-### Card Size
+### Print Options
+
+These options control the format of the output, both the final pdf as well as the cropped images.
+
+#### Card Size
 The options for this are defined in config.ini, for example you may define this option:
 ```ini
 [CARD_SIZE - Carcassone]
@@ -42,10 +46,10 @@ Usage.Hint="only for Carcassone"
 ```
 Every group that starts with exactly `CARD_SIZE -` will be added to the drop-down. For formatting see [Dimension Formatting](#dimension-formatting). These numbers have the typical meaning for printing, but here is a somewhat superficial explanation for them.
 
-#### Card.Size
+##### Card.Size
 This is the physical size of the card once printed and cut to size. Note that if the input has a different aspect ratio the image will be stretched to accommodate.
 
-#### Input.Bleed
+##### Input.Bleed
 This is the physical size of the bleed edge present on the input images. If you only know this in pixels you can calculate it in physical units. For example when
 - the input image is 680x880 pixels,
 - the card size is 30x40mm,
@@ -60,46 +64,55 @@ pixels_per_mm = cropped_image_width / card_width = 600 / 30 = 20
 input_bleed = input_bleed_in_pixels / pixels_per_mm =  40 / 20 = 2
 ```
 
-#### Corner.Radius
+##### Corner.Radius
 This is the radius of the corners, not that this affects the size of the cutting guides to avoid the guides overlapping the image once corners are clipped.
 
-#### Usage.Hint
+##### Usage.Hint
 Tooltip shown to user when they hover the option, mainly useful for options that are valid for multiple games.
 
-### Paper Size: Fit
+#### Paper Size: Fit
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
-### Paper Size: Base Pdf
+#### Paper Size: Base Pdf
 The `Base Pdf` option is only available with the `PoDoFo` render backend. It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
 
-### Cards Size
+#### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
 
-#### Guides Options
+#### Flip On
+This option is only relevant if you print with backsides, in which case it is used to determine whether you will flip the paper on the left edge or the top edge.
 
-### Export Exact Guides
+### Guides Options
+
+#### Export Exact Guides
 Enables exporting an `.svg` file next to the exported `.pdf` which contains exact guides of the cards, including rounded corners. These can for example be imported into software that operates automatic cutting machines (e.g. Silhouette Studio).
 
 #### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
 
-#### Extended Guides
-Extends the cutting guides for the cards on the edges of the layout to the very edge of the page, will require a tiny bit more ink to print but makes cutting much easier.
+#### Enable Backside Guides
+Determines whether guides will be visible on the pages containing backsides of cards.
+
+#### Corner Guides
+Determines whether guides are rendered in the corner of each card.
 
 #### Cross Guides
-This determines whether the guides are cross-shaped or L-shaped. If L-shaped they will "embrace" the card to make it easy to see which side of the guide is the card and reduce overlap of guides.
+This determines whether the guides are cross-shaped or L-shaped. If L-shaped they will "embrace" the card to make it easy to see which side of the guide is the card and reduce overlap of guides. This option is disabled when the `Corner Guides` option is disabled.
+
+#### Guides Offset
+This will determine where the corner guides will be placed. At 0mm the guides will align exactly with the card edges, meaning the center of the guide will align with the card edge. If you want to avoid the potential error of having the guides be too long and thus showing after rounding off the corners, or if you plan to print (near-)rectangular cards, then it is advised to set this option to half the guides thickness. This option is disabled when the `Corner Guides` option is disabled.
+
+#### Guides Length
+This determines the length of the guides, with cross-guides this is equivalent to half the size of the cross. It defaults to half the cards corner radius, if made too long you may risk that the guides intrude on the actual cards print are, unless you offset the guides to account for this. This option is disabled when the `Corner Guides` option is disabled.
+
+#### Extended Guides
+Renders cutting guides in the border of the rendered pdf to the very edge of the page, will require a tiny bit more ink to print but makes cutting much easier.
 
 #### Guides Color A/B:
 Guides are dashed lines made from these two colors. By default these are black and light gray. Choose colors that fit best for the cards you are printing.
 
-#### Guides Offset
-This will determine where the guides will be placed. At 0mm the guides will align exactly with the card edges, meaning the center of the guide will align with the card edge. If you want to avoid the potential error of having the guides be too long and thus showing after rounding off the corners, or if you plan to print (near-)rectangular cards, then it is advised to set this option to half the guides thickness.
-
 #### Guides Thickness
 This determines how thick the guides are, it defaults to 1 point, which is equivalent to 1/72 inches.
-
-#### Guides Length
-This determines the length of the guides, with cross-guides this is equivalent to half the size of the cross. It defaults to half the cards corner radius, if made too long you may risk that the guides intrude on the actual cards print are, unless you offset the guides to account for this.
 
 ### Card Options
 
@@ -107,7 +120,7 @@ This determines the length of the guides, with cross-guides this is equivalent t
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
 #### Card Spacing
-With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste.
+With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste. Use the 🔗 symbol to specify different horizontal and vertical spacing, be sure to verify in the print preview what you are doing.
 
 #### Enable Backside
 Adds a backside to each image, which means when printing each other page will automatically be filled with the corresponding backsides for each image. This allows for double-sided cards, different card backs, etc.
@@ -161,6 +174,9 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 - Material Dark
 - Darkeum
 - Combinear
+
+#### Plugins
+Opens a window with all available game-specific plugins. Use the checkboxes to enable or disable the plugins.
 
 ## Actions
 At the top of the options you can see an untitled section, which are all buttons do perform various actions.
