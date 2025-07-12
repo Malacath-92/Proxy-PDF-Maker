@@ -33,6 +33,20 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
     m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
 
+    auto* guides_offset{ new DoubleSpinBoxWithLabel{ "Guides O&ffset" } };
+    m_GuidesOffsetSpin = guides_offset->GetWidget();
+    m_GuidesOffsetSpin->setDecimals(3);
+    m_GuidesOffsetSpin->setSingleStep(0.1);
+    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
+    m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
+
+    auto* guides_length{ new DoubleSpinBoxWithLabel{ "Guides &Length" } };
+    m_GuidesLengthSpin = guides_length->GetWidget();
+    m_GuidesLengthSpin->setDecimals(2);
+    m_GuidesLengthSpin->setSingleStep(0.1);
+    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
+    m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
+
     m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
     m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
 
@@ -42,26 +56,12 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto* guides_color_b_button{ new QPushButton };
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
 
-    auto* guides_offset{ new DoubleSpinBoxWithLabel{ "Guides O&ffset" } };
-    m_GuidesOffsetSpin = guides_offset->GetWidget();
-    m_GuidesOffsetSpin->setDecimals(3);
-    m_GuidesOffsetSpin->setSingleStep(0.1);
-    m_GuidesOffsetSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
-    m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
-
     auto* guides_thickness{ new DoubleSpinBoxWithLabel{ "Guides Thic&kness" } };
     m_GuidesThicknessSpin = guides_thickness->GetWidget();
     m_GuidesThicknessSpin->setDecimals(4);
     m_GuidesThicknessSpin->setSingleStep(0.01);
     m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
-
-    auto* guides_length{ new DoubleSpinBoxWithLabel{ "Guides &Length" } };
-    m_GuidesLengthSpin = guides_length->GetWidget();
-    m_GuidesLengthSpin->setDecimals(2);
-    m_GuidesLengthSpin->setSingleStep(0.1);
-    m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
-    m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
 
     SetDefaults();
 
@@ -71,12 +71,12 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_EnableBacksideGuidesCheckbox);
     layout->addWidget(m_CornerGuidesCheckbox);
     layout->addWidget(m_CrossGuidesCheckbox);
+    layout->addWidget(guides_offset);
+    layout->addWidget(guides_length);
     layout->addWidget(m_ExtendedGuidesCheckbox);
     layout->addWidget(m_GuidesColorA);
     layout->addWidget(m_GuidesColorB);
-    layout->addWidget(guides_offset);
     layout->addWidget(guides_thickness);
-    layout->addWidget(guides_length);
     setLayout(layout);
 
     auto change_export_exact_guides{
@@ -99,11 +99,11 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             m_ExtendedGuidesCheckbox->setEnabled(enabled);
             m_CornerGuidesCheckbox->setEnabled(enabled);
             m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_CornerGuides && enabled);
+            m_GuidesOffsetSpin->setEnabled(m_Project.m_Data.m_CornerGuides && enabled);
+            m_GuidesLengthSpin->setEnabled(m_Project.m_Data.m_CornerGuides && enabled);
             m_GuidesColorA->setEnabled(enabled);
             m_GuidesColorB->setEnabled(enabled);
-            m_GuidesOffsetSpin->setEnabled(enabled);
             m_GuidesThicknessSpin->setEnabled(enabled);
-            m_GuidesLengthSpin->setEnabled(enabled);
 
             GuidesEnabledChanged();
         }
@@ -122,6 +122,8 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         {
             m_Project.m_Data.m_CornerGuides = s == Qt::CheckState::Checked;
             m_CrossGuidesCheckbox->setEnabled(m_Project.m_Data.m_CornerGuides);
+            m_GuidesOffsetSpin->setEnabled(m_Project.m_Data.m_CornerGuides);
+            m_GuidesLengthSpin->setEnabled(m_Project.m_Data.m_CornerGuides);
             CornerGuidesChanged();
         }
     };
@@ -131,6 +133,30 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         {
             m_Project.m_Data.m_CrossGuides = s == Qt::CheckState::Checked;
             CrossGuidesChanged();
+        }
+    };
+
+    auto change_guides_offset{
+        [this, &project](double v)
+        {
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto new_guides_offset{ base_unit * static_cast<float>(v) };
+            if (dla::math::abs(project.m_Data.m_GuidesOffset - new_guides_offset) < 0.001_mm)
+            {
+                return;
+            }
+
+            project.m_Data.m_GuidesOffset = new_guides_offset;
+            GuidesOffsetChanged();
+        }
+    };
+
+    auto change_guides_length{
+        [this, &project](double v)
+        {
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            project.m_Data.m_GuidesLength = base_unit * static_cast<float>(v);
+            GuidesLengthChanged();
         }
     };
 
@@ -186,36 +212,12 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
         }
     };
 
-    auto change_guides_offset{
-        [this, &project](double v)
-        {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            const auto new_guides_offset{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.m_Data.m_GuidesOffset - new_guides_offset) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_GuidesOffset = new_guides_offset;
-            GuidesOffsetChanged();
-        }
-    };
-
     auto change_guides_thickness{
         [this, &project](double v)
         {
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             project.m_Data.m_GuidesThickness = base_unit * static_cast<float>(v);
             GuidesThicknessChanged();
-        }
-    };
-
-    auto change_guides_length{
-        [this, &project](double v)
-        {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            project.m_Data.m_GuidesLength = base_unit * static_cast<float>(v);
-            GuidesLengthChanged();
         }
     };
 
@@ -239,6 +241,14 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QCheckBox::checkStateChanged,
                      this,
                      change_cross_guides);
+    QObject::connect(m_GuidesOffsetSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_guides_offset);
+    QObject::connect(m_GuidesLengthSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_guides_length);
     QObject::connect(m_ExtendedGuidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -251,18 +261,10 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      pick_color_b);
-    QObject::connect(m_GuidesOffsetSpin,
-                     &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_guides_offset);
     QObject::connect(m_GuidesThicknessSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_guides_thickness);
-    QObject::connect(m_GuidesLengthSpin,
-                     &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_guides_length);
 }
 
 void GuidesOptionsWidget::NewProjectOpened()
@@ -300,13 +302,13 @@ void GuidesOptionsWidget::BaseUnitChanged()
     m_GuidesOffsetSpin->setRange(0, m_Project.m_Data.m_BleedEdge / base_unit);
     m_GuidesOffsetSpin->setValue(m_Project.m_Data.m_GuidesOffset / base_unit);
 
-    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
-    m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
-    m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
-
     m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
     m_GuidesLengthSpin->setValue(m_Project.m_Data.m_GuidesLength / base_unit);
+
+    m_GuidesThicknessSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
+    m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
+    m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
 }
 
 void GuidesOptionsWidget::SetDefaults()
@@ -339,16 +341,16 @@ void GuidesOptionsWidget::SetDefaults()
 
     m_GuidesOffsetSpin->setRange(0, m_Project.m_Data.m_BleedEdge / base_unit);
     m_GuidesOffsetSpin->setValue(m_Project.m_Data.m_GuidesOffset / base_unit);
-    m_GuidesOffsetSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
-
-    m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
-    m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
-    m_GuidesThicknessSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
+    m_GuidesOffsetSpin->setEnabled(m_Project.m_Data.m_CornerGuides && m_Project.m_Data.m_EnableGuides);
 
     m_GuidesLengthSpin->setSuffix(ToQString(g_Cfg.m_BaseUnit.m_ShortName));
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
     m_GuidesLengthSpin->setValue(m_Project.m_Data.m_GuidesLength / base_unit);
-    m_GuidesLengthSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
+    m_GuidesLengthSpin->setEnabled(m_Project.m_Data.m_CornerGuides && m_Project.m_Data.m_EnableGuides);
+
+    m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
+    m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
+    m_GuidesThicknessSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)

@@ -24,11 +24,11 @@ class GuidesOptionsWidget : public QWidget
     void BacksideGuidesEnabledChanged();
     void CornerGuidesChanged();
     void CrossGuidesChanged();
+    void GuidesOffsetChanged();
+    void GuidesLengthChanged();
     void ExtendedGuidesChanged();
     void GuidesColorChanged();
-    void GuidesOffsetChanged();
     void GuidesThicknessChanged();
-    void GuidesLengthChanged();
 
   public slots:
     void NewProjectOpened();
@@ -49,10 +49,10 @@ class GuidesOptionsWidget : public QWidget
     QCheckBox* m_EnableBacksideGuidesCheckbox{ nullptr };
     QCheckBox* m_CornerGuidesCheckbox{ nullptr };
     QCheckBox* m_CrossGuidesCheckbox{ nullptr };
+    QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
+    QDoubleSpinBox* m_GuidesLengthSpin{ nullptr };
     QCheckBox* m_ExtendedGuidesCheckbox{ nullptr };
     WidgetWithLabel* m_GuidesColorA{ nullptr };
     WidgetWithLabel* m_GuidesColorB{ nullptr };
-    QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
     QDoubleSpinBox* m_GuidesThicknessSpin{ nullptr };
-    QDoubleSpinBox* m_GuidesLengthSpin{ nullptr };
 };
