@@ -103,7 +103,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_Orientation = orientation->GetWidget();
 
     auto* flip_on{ new ComboBoxWithLabel{
-        "Fli&pOn", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
+        "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
     m_FlipOn = flip_on->GetWidget();
 
     SetDefaults();
