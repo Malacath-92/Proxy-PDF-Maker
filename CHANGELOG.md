@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `Guides Options` -> `Export Exact Guides` option now also generates a `.dxf` file.
 - Extended guides will now only be rendered outside of the card area.
 - Split spacing into two values for vertical and horizontal, by defaulting linking them to be same.
+- Logically linked some more options, aka disabling them when other dependent options are disabled.
 
 ### Fixed
 - Guides in the preview are now correct with non-filled pages.
