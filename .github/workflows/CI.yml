@@ -99,6 +99,18 @@ jobs:
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
+      - name: Debug (MacOS-x86)
+        if: ${{ inputs.os == 'MacOS-x86' }}
+        run: |
+          cd /Users/runner/work/Proxy-PDF-Maker/Proxy-PDF-Maker/.conan_home/p/b/qt5da74836b0a1b
+          ls
+          cd p
+          ls
+          cd plugins
+          ls
+          cd tls
+          ls
+
       - name: Configure (Ubuntu)
         id: configure-ubu
         if: ${{ inputs.os == 'Ubuntu' }}
