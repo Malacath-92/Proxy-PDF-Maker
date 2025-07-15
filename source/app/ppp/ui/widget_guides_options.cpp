@@ -1,5 +1,7 @@
 #include <ppp/ui/widget_guides_options.hpp>
 
+#include <charconv>
+
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QPushButton>
