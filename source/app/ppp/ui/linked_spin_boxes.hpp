@@ -8,7 +8,7 @@ class QToolButton;
 
 class LinkedSpinBoxes : public QWidget
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     LinkedSpinBoxes(bool initially_linked);
