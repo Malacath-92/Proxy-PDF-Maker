@@ -198,10 +198,22 @@ elseif(APPLE)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QCocoaIntegrationPlugin)
 
-	find_library(CORE_VIDEO_LIB CoreVideo REQUIRED)
+	macro(target_link_framework target type fwname)
+		find_library(FRAMEWORK_${fwname}
+			NAMES ${fwname}
+			PATHS ${CMAKE_OSX_SYSROOT}/System/Library
+			PATH_SUFFIXES Frameworks
+			NO_DEFAULT_PATH)
 
-	target_link_options(proxy_pdf_dependencies INTERFACE
-		${COCOA_LIB})
+		if(${FRAMEWORK_${fwname}} STREQUAL FRAMEWORK_${fwname}-NOTFOUND)
+			MESSAGE(ERROR ": Framework ${fwname} not found")
+		else()
+			target_link_libraries(${target} ${type} ${FRAMEWORK_${fwname}})
+			MESSAGE(STATUS "Framework ${fwname} found at ${FRAMEWORK_${fwname}}")
+		endif()
+	endmacro(target_link_framework)
+
+	target_link_framework(proxy_pdf_dependencies INTERFACE Cocoa)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
