@@ -214,6 +214,7 @@ elseif(APPLE)
 	endmacro(target_link_framework)
 
 	target_link_framework(proxy_pdf_dependencies INTERFACE CoreVideo)
+	target_link_framework(proxy_pdf_dependencies INTERFACE IOSurface)
 elseif(UNIX)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
