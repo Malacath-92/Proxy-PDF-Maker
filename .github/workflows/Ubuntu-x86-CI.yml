@@ -1,4 +1,4 @@
-name: Ubuntu
+name: Ubuntu-x86
 
 on:
   push:
@@ -11,14 +11,14 @@ jobs:
   ubuntu-debug:
     uses: ./.github/workflows/CI.yml
     with:
-      os: Ubuntu
+      os: Ubuntu-x86
       compiler: Gcc
       runs_on: ubuntu-24.04
       build_type: Debug
   ubuntu-release:
     uses: ./.github/workflows/CI.yml
     with:
-      os: Ubuntu
+      os: Ubuntu-x86
       compiler: Gcc
       runs_on: ubuntu-24.04
       build_type: Release
