@@ -15,6 +15,7 @@ jobs:
       compiler: AppleClang
       runs_on: macos-14
       build_type: Debug
+      arch: x86_64
   macos-x86-release:
     uses: ./.github/workflows/CI.yml
     with:
@@ -22,3 +23,4 @@ jobs:
       compiler: AppleClang
       runs_on: macos-14
       build_type: Release
+      arch: x86_64
