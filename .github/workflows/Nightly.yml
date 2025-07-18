@@ -101,9 +101,8 @@ jobs:
           echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
           echo "" >> default
 
-      - name: Configure (MacOS-ARM)
-        id: configure-osx-arm
-        if: ${{ matrix.os == 'MacOS-ARM' }}
+      - name: Configure (MacOS)
+        if: ${{ startsWith(matrix.os, 'MacOS') }}
         run: |
           mkdir build
           cd build
