@@ -1,0 +1,24 @@
+name: Ubuntu-ARM64
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  ubuntu-debug:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: Ubuntu-ARM64
+      compiler: Gcc
+      runs_on: ubuntu-24.04-arm
+      build_type: Debug
+  ubuntu-release:
+    uses: ./.github/workflows/CI.yml
+    with:
+      os: Ubuntu-ARM64
+      compiler: Gcc
+      runs_on: ubuntu-24.04-arm
+      build_type: Release
