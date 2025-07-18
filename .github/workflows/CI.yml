@@ -15,6 +15,9 @@ on:
       build_type:
         required: true
         type: string
+      arch:
+        required: false
+        type: string
 
 jobs:
   build:
@@ -23,7 +26,7 @@ jobs:
 
     steps:
       - name: Free Disk Space (Ubuntu)
-        if: ${{ inputs.os == 'Ubuntu' }}
+        if: ${{ startsWith(inputs.os, 'Ubuntu') }}
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
@@ -45,7 +48,7 @@ jobs:
           xcode-version: '16.2'
 
       - name: Install Extra Packages (Ubuntu)
-        if: ${{ inputs.os == 'Ubuntu' }}
+        if: ${{ startsWith(inputs.os, 'Ubuntu') }}
         run: |
           sudo add-apt-repository universe
           sudo apt-get update
@@ -83,25 +86,17 @@ jobs:
           echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
           echo "" >> default
           
-      - name: Configure (MacOS-ARM64)
-        id: configure-macos-arm
-        if: ${{ inputs.os == 'MacOS-ARM64' }}
+      - name: Configure (MacOS)
+        id: configure-macos
+        if: ${{ startsWith(inputs.os, 'MacOS') }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
-
-      - name: Configure (MacOS-x86)
-        id: configure-macos-x86
-        if: ${{ inputs.os == 'MacOS-x86' }}
-        run: |
-          mkdir build
-          cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
-        if: ${{ inputs.os == 'Ubuntu' }}
+        if: ${{ startsWith(inputs.os, 'Ubuntu') }}
         run: |
           mkdir build
           cd build
@@ -120,7 +115,7 @@ jobs:
           conan cache clean "*"
 
       - name: Always save Conan Cache
-        if: always() && (steps.configure-macos-arm.conclusion == 'success' || steps.configure-macos-x86.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
+        if: always() && (steps.configure-macos.conclusion == 'success' || steps.configure-ubu.conclusion == 'success' || steps.configure-win.conclusion == 'success') && steps.cache-conan.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
