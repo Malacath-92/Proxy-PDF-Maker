@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [Ubuntu, Windows]
+        os: [Windows, Ubuntu-ARM64, Ubuntu-x86, MacOS-ARM64, MacOS-x86]
         include:
           - os: Windows
             compiler: MSVC
@@ -26,7 +26,7 @@ jobs:
             compiler: Gcc
             runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
-          - os: MacOS-ARM
+          - os: MacOS-ARM64
             compiler: AppleClang
             runs_on: macos-14
             arch: arm64
