@@ -5,6 +5,7 @@
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
     <br>
     <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml/badge.svg"></a>
+    <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-ARM64-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-ARM64-CI.yml/badge.svg"></a>
     <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-x86-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-x86-CI.yml/badge.svg"></a>
     <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml/badge.svg"></a>
     <a href="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml"><img src="https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml/badge.svg"></a>
