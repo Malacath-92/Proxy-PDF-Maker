@@ -47,11 +47,11 @@ Code contributions are very welcome, to help you make them here is some informat
 - The build is managed with CMake.
 - The following platforms are supported and tested:
 
-|           | Windows               | Ubuntu 	                 | MacOS-ARM64             | MacOS-x86               |
-|---        |---                    |---                         |---                      |---                      |
-| Compiler  | Visual Studio 2022    | gcc-14                     | Xcode 16.2              | Xcode 16.2              |
-| Status    | Builds, Tests, Runs   | Builds, Tests, Not Running | Compiles, Does not Link | Compiles, Does not Link |
-|           | [![Windows](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml)|[![Ubuntu](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-CI.yml)|[![MacOS - Arm64](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml)|[![MacOS - x86](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml)
+|           | Windows            | Ubuntu-ARM64             | Ubuntu-x86 | MacOS-ARM64              | MacOS-x86                |
+|---        |---                 |---                       |---         |---                       |---                       |
+| Compiler  | Visual Studio 2022 | gcc-14                   | gcc-14     | Xcode 16.2               | Xcode 16.2               |
+| Status    | App Tested         | Tests Pass, App Untested | App Tested | Tests Pass, App Untested | Tests Pass, App Untested |
+|           | [![Windows](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Windows-CI.yml)|[![Ubuntu-ARM64](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-ARM64-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-ARM64-CI.yml)|[![Ubuntu-x86](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-x86-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/Ubuntu-x86-CI.yml)|[![MacOS - Arm64](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-ARM64-CI.yml)|[![MacOS - x86](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml/badge.svg)](https://github.com/Malacath-92/Proxy-PDF-Maker/actions/workflows/MacOS-x86-CI.yml)
 
 ### Required Software
 

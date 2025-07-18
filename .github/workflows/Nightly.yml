@@ -1,9 +1,12 @@
-name: Github Actions Publish
+name: Github Actions Nightly
 
 on:
-  push:
-    tags:
-      - "v*"
+    schedule:
+      - cron: "0 15 * * *" # run at 3 PM UTC every day
+    push:
+      paths:
+        - "**/Nightly.yml"
+    workflow_dispatch:
 
 jobs:
   build:
@@ -131,10 +134,6 @@ jobs:
           cd build
           cmake --install . --config Release
 
-      - name: Get Release Notes
-        id: extract_release_notes
-        uses: ffurrer2/extract-release-notes@v2.2.0
-
       - name: Zip Release
         run: |
           cd publish
@@ -143,10 +142,11 @@ jobs:
       - name: Upload Binaries
         uses: svenstaro/upload-release-action@2.9.0
         with:
-          release_name: Release ${{ github.ref_name }}
+          release_name: Nightly
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
-          body: ${{ steps.extract_release_notes.outputs.release_notes }}
-          draft: false
+          tag: "nightly"
+          body: "Unstable nightly release, use at your own risk"
+          draft: False
+          prerelease: True
