@@ -144,6 +144,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ matrix.asset_name }}
           asset_name: ${{ matrix.asset_name }}
+          overwrite: True
           tag: "nightly"
           body: "Unstable nightly release, use at your own risk"
           draft: False
