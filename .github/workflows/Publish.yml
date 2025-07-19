@@ -130,6 +130,12 @@ jobs:
           cd build
           cmake --install . --config Release
 
+      - name: Strip Binaries (Ubuntu)
+        if: ${{ startsWith(matrix.os, 'Ubuntu') }}
+        run: |
+          cd publish
+          strip --strip-debug proxy_pdf
+
       - name: Get Release Notes
         id: extract_release_notes
         uses: ffurrer2/extract-release-notes@v2.2.0

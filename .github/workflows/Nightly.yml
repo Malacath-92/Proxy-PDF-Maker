@@ -127,6 +127,12 @@ jobs:
             cd build
             cmake --build . --config Release
 
+      - name: Strip Binaries (Ubuntu)
+        if: ${{ startsWith(matrix.os, 'Ubuntu') }}
+        run: |
+          cd publish
+          strip --strip-debug proxy_pdf
+
       - name: Install
         run: |
           cd build
