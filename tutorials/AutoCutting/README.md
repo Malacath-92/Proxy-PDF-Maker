@@ -64,6 +64,8 @@ While we are here we can also disable the outer-most cutting line. Right-click t
 >! Note:
 >! You currently have to restart the app for this step, but that will be fixed in the future
 
+First go to the `Global Config` and choose `PoDoFo` for the `Rendering Backend` option.
+
 Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
 
 <p align="center">
