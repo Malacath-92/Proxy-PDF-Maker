@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2025-23-07
+
+### Added
+- Common paper size options A4+ and A3+ are not integrated into the app.
+- Binaries for Ubuntu-ARM64 are now available.
+
+### Fixed
+- The app will not crash anymore when rendering a PDF with images that contain an alpha channel while having rounded corners enabled.
+
 ## [0.12.0] - 2025-12-07
 
 ### Added
