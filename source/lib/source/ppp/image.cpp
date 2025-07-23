@@ -458,7 +458,7 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
     }
     else
     {
-        cv::multiply(mask, out_channels[4], out_channels[4]);
+        cv::multiply(mask, out_channels[3], out_channels[3]);
     }
 
     cv::Mat out_impl;
