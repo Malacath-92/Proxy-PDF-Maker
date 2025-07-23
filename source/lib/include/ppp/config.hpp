@@ -88,7 +88,9 @@ struct Config
         { "Legal", { { 14_in, 8.5_in }, 1_in, 1u } },
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
+        { "A4+", { { 240_mm, 329_mm }, 1_mm, 0u } },
         { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
+        { "A3+", { { 329_mm, 483_mm }, 1_mm, 0u } },
         { std::string{ c_FitSize }, {} },
         { std::string{ c_BasePDFSize }, {} },
     };
