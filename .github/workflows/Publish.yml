@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [Windows, Ubuntu-ARM64, Ubuntu-x86, MacOS-ARM64, MacOS-x86]
+        os: [Windows, Ubuntu-ARM64, Ubuntu-x86]
         include:
           - os: Windows
             compiler: MSVC
@@ -26,16 +26,16 @@ jobs:
             compiler: Gcc
             runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
-          - os: MacOS-ARM64
-            compiler: AppleClang
-            runs_on: macos-14
-            arch: arm64
-            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
-          - os: MacOS-x86
-            compiler: AppleClang
-            runs_on: macos-14
-            arch: x86_64
-            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
+          # - os: MacOS-ARM64
+          #   compiler: AppleClang
+          #   runs_on: macos-14
+          #   arch: arm64
+          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
+          # - os: MacOS-x86
+          #   compiler: AppleClang
+          #   runs_on: macos-14
+          #   arch: x86_64
+          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
 
     steps:
       - name: Free Disk Space (Ubuntu)
