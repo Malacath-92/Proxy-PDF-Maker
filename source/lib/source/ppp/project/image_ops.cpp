@@ -50,6 +50,14 @@ Image CropImage(const Image& image,
 {
     const Size card_size_with_full_bleed{ card_size + 2 * full_bleed };
     const PixelDensity density{ image.Density(card_size_with_full_bleed) };
+    
+    // Safety check: if density is zero or very small, return the original image
+    if (density <= 0_dpi)
+    {
+        LogInfo("Cropping images...\n{} - DPI calculated: 0, skipping cropping for image", image_name.string());
+        return image;
+    }
+    
     Pixel c{ full_bleed * density };
     {
         const PixelDensity dpi{ (density * 1_in / 1_m) };

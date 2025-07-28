@@ -85,7 +85,7 @@ struct Config
 
     std::map<std::string, SizeInfo> m_PageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
-        { "Legal", { { 14_in, 8.5_in }, 1_in, 1u } },
+        { "Legal", { { 8.5_in, 14_in }, 1_in, 1u } },
         { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
         { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
         { "A4+", { { 240_mm, 329_mm }, 1_mm, 0u } },
