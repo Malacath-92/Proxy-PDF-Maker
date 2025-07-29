@@ -467,8 +467,22 @@ class PrintPreview::PagePreview : public QWidget
         m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
-        m_LeftMargins = m_PaddingWidth - margins.x;
-        m_TopMargins = m_PaddingHeight - margins.y;
+        const auto margins_four{ project.ComputeMarginsFour() };
+
+        if (project.m_Data.m_CustomMarginsFour.has_value())
+        {
+            m_LeftMargins = m_PaddingWidth - margins_four.left;
+            m_TopMargins = m_PaddingHeight - margins_four.top;
+            m_RightMargins = m_PaddingWidth - margins_four.right;
+            m_BottomMargins = m_PaddingHeight - margins_four.bottom;
+        }
+        else
+        {
+            m_LeftMargins = m_PaddingWidth - margins.x;
+            m_TopMargins = m_PaddingHeight - margins.y;
+            m_RightMargins = m_PaddingWidth - margins.x;
+            m_BottomMargins = m_PaddingHeight - margins.y;
+        }
 
         if (params.m_GridParams.m_IsBackside)
         {
@@ -518,12 +532,12 @@ class PrintPreview::PagePreview : public QWidget
         const auto pixel_ratio{ size / page_size };
 
         const auto padding_width_left{ m_PaddingWidth - m_LeftMargins };
-        const auto padding_width_right{ m_PaddingWidth + m_LeftMargins };
+        const auto padding_width_right{ m_PaddingWidth - m_RightMargins };
         const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * pixel_ratio.x) };
         const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * pixel_ratio.x) };
 
         const auto padding_height_top{ m_PaddingHeight - m_TopMargins };
-        const auto padding_height_bottom{ m_PaddingHeight + m_TopMargins };
+        const auto padding_height_bottom{ m_PaddingHeight - m_BottomMargins };
         const auto padding_height_top_pixels{ static_cast<int>(padding_height_top * pixel_ratio.y) };
         const auto padding_height_bottom_pixels{ static_cast<int>(padding_height_bottom * pixel_ratio.y) };
 
@@ -546,6 +560,8 @@ class PrintPreview::PagePreview : public QWidget
     Length m_PaddingHeight;
     Length m_LeftMargins;
     Length m_TopMargins;
+    Length m_RightMargins;
+    Length m_BottomMargins;
 
     PageGrid* m_Grid;
     GuidesOverlay* m_Guides{ nullptr };

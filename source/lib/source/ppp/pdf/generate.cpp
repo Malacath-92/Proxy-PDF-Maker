@@ -44,12 +44,14 @@ fs::path GeneratePdf(const Project& project)
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.m_Data.m_CardLayout.pod() };
     const auto margins{ project.ComputeMargins() };
+    const auto margins_four{ project.ComputeMarginsFour() };
     const auto max_margins{ project.ComputeMaxMargins() };
 
-    const auto start_x{ margins.x };
-    const auto start_y{ page_height - margins.y };
+    // Use four-margin structure if available, otherwise fall back to old structure
+    const auto start_x{ project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.left : margins.x };
+    const auto start_y{ page_height - (project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.top : margins.y) };
 
-    const auto backside_start_x{ max_margins.x - margins.x };
+    const auto backside_start_x{ max_margins.x - start_x };
     const auto backside_start_y{ start_y };
 
     const auto bleed{ project.m_Data.m_BleedEdge };
@@ -260,7 +262,9 @@ fs::path GeneratePdf(const Project& project)
         }
     }
 
-    return pdf->Write(project.m_Data.m_FileName);
+    const auto pdf_path{ pdf->Write(project.m_Data.m_FileName) };
+
+    return pdf_path;
 }
 
 fs::path GenerateTestPdf(const Project& project)
@@ -335,3 +339,5 @@ fs::path GenerateTestPdf(const Project& project)
 
     return pdf->Write("alignment.pdf");
 }
+
+
