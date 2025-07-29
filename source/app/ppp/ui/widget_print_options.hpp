@@ -56,7 +56,21 @@ class PrintOptionsWidget : public QWidget
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };
     ComboBoxWithLabel* m_BasePdf{ nullptr };
+
+    // Margin control system provides both simple and advanced layout options
+    // The toggle between modes allows users to choose between quick uniform margins
+    // and precise individual control for professional printing requirements
     QCheckBox* m_CustomMargins{ nullptr };
+    QCheckBox* m_MarginModeToggle{ nullptr };
+
+    // Individual margin controls enable asymmetric layouts needed for binding,
+    // cutting guides, or when different margins are required for aesthetic reasons
     QDoubleSpinBox* m_LeftMarginSpin{ nullptr };
     QDoubleSpinBox* m_TopMarginSpin{ nullptr };
+    QDoubleSpinBox* m_RightMarginSpin{ nullptr };
+    QDoubleSpinBox* m_BottomMarginSpin{ nullptr };
+
+    // All-margins control provides quick uniform margin adjustment for common scenarios
+    // where symmetric margins are sufficient for the printing requirements
+    QDoubleSpinBox* m_AllMarginsSpin{ nullptr };
 };

@@ -42,6 +42,16 @@ enum class CardCorners
     Rounded,
 };
 
+struct FourMargins
+{
+    // Individual margin controls allow for asymmetric layouts needed in professional printing
+    // where different margins are required for binding, cutting, or aesthetic purposes
+    Length left{ 0_mm };
+    Length top{ 0_mm };
+    Length right{ 0_mm };
+    Length bottom{ 0_mm };
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -72,8 +82,10 @@ class Project : public QObject
 
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
+    Size ComputeEffectiveCardsSize() const;
     Size ComputeMargins() const;
     Size ComputeMaxMargins() const;
+    FourMargins ComputeMarginsFour() const;
 
     float CardRatio() const;
     Size CardSize() const;
@@ -120,7 +132,14 @@ class Project : public QObject
         std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
         std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
         std::string m_BasePdf{ "None" };
+
+        // Custom margins provide fine-grained control over page layout for professional printing
+        // where standard centered margins may not meet specific requirements
         std::optional<Size> m_CustomMargins{};
+        // Four-margin system enables asymmetric layouts needed for binding, cutting guides,
+        // or when different margins are required for aesthetic or functional reasons
+        std::optional<FourMargins> m_CustomMarginsFour{};
+
         dla::uvec2 m_CardLayout{ 3, 3 };
         PageOrientation m_Orientation{ PageOrientation::Portrait };
         FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
@@ -144,6 +163,7 @@ class Project : public QObject
         Size ComputeCardsSize(const Config& config) const;
         Size ComputeMargins(const Config& config) const;
         Size ComputeMaxMargins(const Config& config) const;
+        FourMargins ComputeMarginsFour(const Config& config) const;
 
         float CardRatio(const Config& config) const;
         Size CardSize(const Config& config) const;

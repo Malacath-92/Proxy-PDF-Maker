@@ -96,6 +96,8 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
         }
     };
 
+
+
     const auto save_project{
         [=, &project, &application]()
         {
@@ -192,6 +194,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                      &QPushButton::clicked,
                      this,
                      render);
+
     QObject::connect(save_button,
                      &QPushButton::clicked,
                      this,

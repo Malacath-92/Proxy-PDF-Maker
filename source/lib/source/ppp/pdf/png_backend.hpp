@@ -24,7 +24,7 @@ class PngPage final : public PdfPage
 
     virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     const Project* m_Project;

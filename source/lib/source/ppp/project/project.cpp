@@ -125,6 +125,20 @@ void Project::Load(const fs::path& json_path)
             m_Data.m_CustomMargins.reset();
         }
 
+        if (json.contains("custom_margins_four"))
+        {
+            m_Data.m_CustomMarginsFour = FourMargins{
+                json["custom_margins_four"]["left"].get<float>() * 1_cm,
+                json["custom_margins_four"]["top"].get<float>() * 1_cm,
+                json["custom_margins_four"]["right"].get<float>() * 1_cm,
+                json["custom_margins_four"]["bottom"].get<float>() * 1_cm,
+            };
+        }
+        else
+        {
+            m_Data.m_CustomMarginsFour.reset();
+        }
+
         m_Data.m_FileName = json["file_name"].get<std::string>();
 
         m_Data.m_ExportExactGuides = json["export_exact_guides"];
@@ -202,6 +216,15 @@ void Project::Dump(const fs::path& json_path) const
             json["custom_margins"] = nlohmann::json{
                 { "width", m_Data.m_CustomMargins->x / 1_cm },
                 { "height", m_Data.m_CustomMargins->y / 1_cm },
+            };
+        }
+        if (m_Data.m_CustomMarginsFour.has_value())
+        {
+            json["custom_margins_four"] = nlohmann::json{
+                { "left", m_Data.m_CustomMarginsFour->left / 1_cm },
+                { "top", m_Data.m_CustomMarginsFour->top / 1_cm },
+                { "right", m_Data.m_CustomMarginsFour->right / 1_cm },
+                { "bottom", m_Data.m_CustomMarginsFour->bottom / 1_cm },
             };
         }
         json["card_layout"] = nlohmann::json{
@@ -385,16 +408,32 @@ bool Project::CacheCardLayout()
 
         const Size page_size{ ComputePageSize() };
         const Size card_size_with_bleed{ CardSizeWithBleed() };
-        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+
+        // Calculate available space after accounting for margins
+        Size available_space{ page_size };
+        if (m_Data.m_CustomMarginsFour.has_value())
+        {
+            const auto margins_four{ ComputeMarginsFour() };
+            available_space.x -= (margins_four.left + margins_four.right);
+            available_space.y -= (margins_four.top + margins_four.bottom);
+        }
+        else if (m_Data.m_CustomMargins.has_value())
+        {
+            const auto margins{ ComputeMargins() };
+            available_space.x -= margins.x * 2;
+            available_space.y -= margins.y * 2;
+        }
+
+        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed));
 
         if (m_Data.m_Spacing.x > 0_mm || m_Data.m_Spacing.y > 0_mm)
         {
             const Size cards_size{ ComputeCardsSize() };
-            if (cards_size.x > page_size.x)
+            if (cards_size.x > available_space.x)
             {
                 m_Data.m_CardLayout.x--;
             }
-            if (cards_size.y > page_size.y)
+            if (cards_size.y > available_space.y)
             {
                 m_Data.m_CardLayout.y--;
             }
@@ -436,6 +475,37 @@ Size Project::ComputeCardsSize() const
     return m_Data.ComputeCardsSize(g_Cfg);
 }
 
+Size Project::ComputeEffectiveCardsSize() const
+{
+    const Size page_size{ ComputePageSize() };
+    const Size card_size_with_bleed{ CardSizeWithBleed() };
+    const auto [columns, rows]{ m_Data.m_CardLayout.pod() };
+
+    // Calculate the actual size of the cards area (including spacing)
+    const Size cards_size{ m_Data.m_CardLayout * card_size_with_bleed + (m_Data.m_CardLayout - 1) * m_Data.m_Spacing };
+
+    // If custom margins are set, the effective cards size is the cards area plus the margins
+    if (m_Data.m_CustomMarginsFour.has_value())
+    {
+        const auto margins_four{ ComputeMarginsFour() };
+        return Size{
+            cards_size.x + margins_four.left + margins_four.right,
+            cards_size.y + margins_four.top + margins_four.bottom
+        };
+    }
+    else if (m_Data.m_CustomMargins.has_value())
+    {
+        const auto margins{ ComputeMargins() };
+        return Size{
+            cards_size.x + margins.x * 2,
+            cards_size.y + margins.y * 2
+        };
+    }
+
+    // If no custom margins, return the cards size as is
+    return cards_size;
+}
+
 Size Project::ComputeMargins() const
 {
     return m_Data.ComputeMargins(g_Cfg);
@@ -444,6 +514,11 @@ Size Project::ComputeMargins() const
 Size Project::ComputeMaxMargins() const
 {
     return m_Data.ComputeMaxMargins(g_Cfg);
+}
+
+FourMargins Project::ComputeMarginsFour() const
+{
+    return m_Data.ComputeMarginsFour(g_Cfg);
 }
 
 float Project::CardRatio() const
@@ -520,11 +595,15 @@ Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 
 Size Project::ProjectData::ComputeMargins(const Config& config) const
 {
+    // Custom margins take precedence over computed defaults to allow user-defined layouts
+    // for specific printing requirements or aesthetic preferences
     if (m_CustomMargins.has_value())
     {
         return m_CustomMargins.value();
     }
 
+    // Default to centered margins by dividing available space equally
+    // This provides a balanced layout suitable for most printing scenarios
     return ComputeMaxMargins(config) / 2.0f;
 }
 
@@ -532,8 +611,33 @@ Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
 {
     const Size page_size{ ComputePageSize(config) };
     const Size cards_size{ ComputeCardsSize(config) };
+    // Maximum margins represent the total available space around the cards
+    // This is used to constrain user input and provide reasonable defaults
     const Size max_margins{ page_size - cards_size };
     return max_margins;
+}
+
+FourMargins Project::ProjectData::ComputeMarginsFour(const Config& config) const
+{
+    // Custom four-margin settings override computed defaults to support asymmetric layouts
+    // needed for professional printing with binding, cutting guides, or aesthetic requirements
+    if (m_CustomMarginsFour.has_value())
+    {
+        return m_CustomMarginsFour.value();
+    }
+
+    // Default to centered four-margin layout by dividing available space equally
+    // This maintains visual balance while providing individual margin control
+    const Size max_margins{ ComputeMaxMargins(config) };
+    const Length half_width{ max_margins.x / 2.0f };
+    const Length half_height{ max_margins.y / 2.0f };
+
+    return FourMargins{
+        .left = half_width,
+        .top = half_height,
+        .right = half_width,
+        .bottom = half_height,
+    };
 }
 
 float Project::ProjectData::CardRatio(const Config& config) const
