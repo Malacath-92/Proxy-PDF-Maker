@@ -283,12 +283,13 @@ bool ScryfallDownloader::NextRequest()
         const auto& card_info{ m_CardInfos[m_Downloads] };
 
         LogInfo("Requesting artwork for card  {}", card.m_Name.toStdString());
-        auto request_uri{ card_info["image_uris"]["png"].toString() };
-        do_request(std::move(request_uri));
-
         if (HasBackside(card_info))
         {
             const auto card_faces{ card_info["card_faces"] };
+
+            auto request_uri{ card_faces[0]["image_uris"]["png"].toString() };
+            do_request(std::move(request_uri));
+
             const auto back_face_uri{ card_faces[1]["image_uris"]["png"] };
 
             m_Backsides.push_back(BacksideRequest{
@@ -296,6 +297,11 @@ bool ScryfallDownloader::NextRequest()
                 .m_Front{ card },
             });
             ++m_TotalRequests;
+        }
+        else
+        {
+            auto request_uri{ card_info["image_uris"]["png"].toString() };
+            do_request(std::move(request_uri));
         }
 
         return true;
