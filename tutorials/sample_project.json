@@ -1,0 +1,115 @@
+{
+    "backside_default": "__back.png",
+    "backside_enabled": true,
+    "backside_offset": 0.0,
+    "bleed_edge": 0.0005,
+    "card_layout": {
+        "height": 2,
+        "width": 3
+    },
+    "card_size": "Magic the Gathering",
+    "cards": [
+        {
+            "backside": "073r_Timbercrown_Pathway.png",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "073f_Cragcrown_Pathway.png",
+            "num": 2
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 1,
+            "name": "073r_Timbercrown_Pathway.png",
+            "num": 0
+        },
+        {
+            "backside": "090r_Lavaglide_Pathway.png",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "090f_Riverglide_Pathway.png",
+            "num": 2
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 1,
+            "name": "090r_Lavaglide_Pathway.png",
+            "num": 0
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "Hengegate_Pathway.png",
+            "num": 1
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 1,
+            "name": "Jace_Telepath_Unbound.jpg",
+            "num": 0
+        },
+        {
+            "backside": "Jace_Telepath_Unbound.jpg",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "Jace_Vryns_Prodigy.jpg",
+            "num": 1
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "Jenova_Ancient_Calamity.png",
+            "num": 1
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "Lightning_Bolt_1.png",
+            "num": 1
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 0,
+            "name": "The_Warring_Triad.png",
+            "num": 1
+        },
+        {
+            "backside": "",
+            "backside_short_edge": false,
+            "hidden": 1,
+            "name": "__back.png",
+            "num": 0
+        }
+    ],
+    "cross_guides": false,
+    "enable_backside_guides": false,
+    "enable_guides": true,
+    "export_exact_guides": false,
+    "extended_guides": false,
+    "file_name": "_printme",
+    "guides_color_a": [
+        0,
+        0,
+        0
+    ],
+    "guides_color_b": [
+        190,
+        190,
+        190
+    ],
+    "guides_length": 0.003,
+    "guides_offset": 0.0,
+    "guides_thickness": 0.00035,
+    "image_dir": "tutorial_cards",
+    "img_cache": "tutorial_cards\\crop\\preview.cache",
+    "orientation": "Landscape",
+    "page_size": "A4",
+    "spacing": 0.0,
+    "version": "PPP00009"
+}
