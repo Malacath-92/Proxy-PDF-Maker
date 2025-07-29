@@ -275,6 +275,7 @@ void MtgDownloaderPopup::FinalizeDownload()
         }
         m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
     }
+    m_Project.m_Data.m_BacksideDefault = "__back.png";
 
     const fs::path output_dir{
         m_OutputDir.path().toStdString()
@@ -289,7 +290,10 @@ void MtgDownloaderPopup::FinalizeDownload()
     };
     for (const auto& img : new_images)
     {
-        fs::rename(output_dir / img, target_folder / img);
+        if (!fs::exists(target_folder / img))
+        {
+            fs::rename(output_dir / img, target_folder / img);
+        }
     }
 }
 
