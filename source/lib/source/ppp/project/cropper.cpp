@@ -65,10 +65,14 @@ void Cropper::Start()
     m_PreviewThread->setObjectName("Cropper Preview Work Thread");
     m_Router->moveToThread(m_PreviewThread);
 
+    using QTimerStart = void (QTimer::*)();
+    static constexpr QTimerStart timer_start{ &QTimer::start };
+
     m_CropTimer = new QTimer;
     m_CropTimer->setInterval(5);
     m_CropTimer->setSingleShot(true);
     QObject::connect(m_CropTimer, &QTimer::timeout, this, &Cropper::CropWork);
+    QObject::connect(this, &Cropper::RestartTimers, m_CropTimer, timer_start);
     m_CropTimer->start();
     m_CropTimer->moveToThread(m_CropThread);
 
@@ -76,6 +80,7 @@ void Cropper::Start()
     m_PreviewTimer->setInterval(5);
     m_PreviewTimer->setSingleShot(true);
     QObject::connect(m_PreviewTimer, &QTimer::timeout, m_Router, &CropperSignalRouter::DoWork);
+    QObject::connect(this, &Cropper::RestartTimers, m_PreviewTimer, timer_start);
     m_PreviewTimer->start();
     m_PreviewTimer->moveToThread(m_PreviewThread);
 
@@ -167,6 +172,13 @@ void Cropper::CardRemoved(const fs::path& card_name)
 {
     RemoveWork(card_name);
 
+    std::erase(m_LoadedPreviews, card_name);
+
+    if (m_Pause.load(std::memory_order_relaxed))
+    {
+        return;
+    }
+
     std::shared_lock lock{ m_PropertyMutex };
     if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.m_ImageDir / card_name))
     {
@@ -184,8 +196,6 @@ void Cropper::CardRemoved(const fs::path& card_name)
             }
         }
     }
-
-    std::erase(m_LoadedPreviews, card_name);
 }
 
 void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
@@ -225,8 +235,12 @@ void Cropper::PauseWork()
 
 void Cropper::RestartWork()
 {
-    m_Pause.store(false, std::memory_order_relaxed);
-    m_ThreadsPaused.store(0, std::memory_order_relaxed);
+    if (m_Pause.load(std::memory_order_relaxed))
+    {
+        m_ThreadsPaused.store(0, std::memory_order_relaxed);
+        m_Pause.store(false, std::memory_order_relaxed);
+        RestartTimers(QPrivateSignal{});
+    }
 }
 
 void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview)
