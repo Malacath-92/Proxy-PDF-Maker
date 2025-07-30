@@ -9,7 +9,7 @@ Make sure you downloaded the latest version of [Proxy-PDF-Maker](https://github.
 
 Additionally you will have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
-Do the usual steps to create your project, use the preview to verify everything would print as you want.  If you want to follow along this tutorial exactly, download the images in the folder `tutorial_cards` folder and load the project `tutorial_project.json`.
+Do the usual steps to create your project, use the preview to verify everything would print as you want.  If you want to follow along this tutorial exactly, download the images in the folder `tutorial_cards` folder and load the project `sample_project.json`.
 
 ## Setting up the _Silhouette Studio_ Project
 
