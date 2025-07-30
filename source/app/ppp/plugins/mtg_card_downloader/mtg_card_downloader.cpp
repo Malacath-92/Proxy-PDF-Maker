@@ -28,11 +28,11 @@ PluginInterface* InitMtGCardDownloaderPlugin(Project& project)
     widget->setObjectName("MtG Card Downloader");
 
     const auto open_downloader_popup{
-        [widget, &project]()
+        [plugin, widget, &project]()
         {
             widget->window()->setEnabled(false);
             {
-                MtgDownloaderPopup downloader{ nullptr, project };
+                MtgDownloaderPopup downloader{ nullptr, project, *plugin };
                 downloader.Show();
             }
             widget->window()->setEnabled(true);

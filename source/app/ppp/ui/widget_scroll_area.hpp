@@ -2,6 +2,8 @@
 
 #include <QScrollArea>
 
+#include <ppp/util.hpp>
+
 class Project;
 
 class CardScrollArea : public QScrollArea
@@ -20,8 +22,9 @@ class CardScrollArea : public QScrollArea
     void CardRemoved();
     void CardRenamed();
 
-  private:
     void FullRefresh();
+
+  private:
     int ComputeMinimumWidth();
 
     virtual void showEvent(QShowEvent* event) override;

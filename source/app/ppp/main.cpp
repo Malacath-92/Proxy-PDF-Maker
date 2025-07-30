@@ -103,8 +103,11 @@ int main(int argc, char** argv)
     auto* global_options{ new GlobalOptionsWidget{ app } };
 
     PluginRouter plugin_router{};
-    QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper](){ cropper.PauseWork(); });
-    QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, [&cropper](){ cropper.RestartWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
+                     { cropper.PauseWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, [&cropper]()
+                     { cropper.RestartWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, scroll_area, &CardScrollArea::FullRefresh);
 
     auto* options_area{
         new OptionsAreaWidget{

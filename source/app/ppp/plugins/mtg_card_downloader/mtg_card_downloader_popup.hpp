@@ -17,6 +17,7 @@ class QNetworkAccessManager;
 class QNetworkReply;
 
 class Project;
+class PluginInterface;
 
 enum class InputType
 {
@@ -28,7 +29,7 @@ enum class InputType
 class MtgDownloaderPopup : public PopupBase
 {
   public:
-    MtgDownloaderPopup(QWidget* parent, Project& project);
+    MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
     ~MtgDownloaderPopup();
 
   private slots:
@@ -47,6 +48,8 @@ class MtgDownloaderPopup : public PopupBase
     static InputType StupidInferSource(const QString& text);
 
     Project& m_Project;
+
+    PluginInterface& m_Router;
 
     InputType m_InputType{ InputType::None };
 

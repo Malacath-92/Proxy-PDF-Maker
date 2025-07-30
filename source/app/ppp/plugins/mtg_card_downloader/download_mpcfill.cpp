@@ -10,6 +10,11 @@
 
 #include <ppp/util/log.hpp>
 
+MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files)
+    : m_SkipFiles{ std::move(skip_files) }
+{
+}
+
 bool MPCFillDownloader::ParseInput(const QString& xml)
 {
     QDomDocument document;
@@ -186,11 +191,18 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
                 return;
             }
 
+            if (std::ranges::contains(m_SkipFiles, name))
+            {
+                LogInfo("Skipping download of card {}", name.toStdString());
+                requested_ids.push_back(id);
+                return;
+            }
+
             static constexpr const char c_DownloadScript[]{
                 "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec"
             };
             auto request_uri{ QString("%1?id=%2").arg(c_DownloadScript).arg(id) };
-            LogInfo("Requesting card  {}", name.toStdString());
+            LogInfo("Requesting card {}", name.toStdString());
 
             QNetworkRequest get_request{ std::move(request_uri) };
             QNetworkReply* reply{ network_manager.get(std::move(get_request)) };

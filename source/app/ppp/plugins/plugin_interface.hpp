@@ -2,6 +2,8 @@
 
 #include <QObject>
 
+#include <ppp/util.hpp>
+
 class QWidget;
 
 class Project;
@@ -22,12 +24,14 @@ class PluginInterface : public QObject
                      &PluginInterface::method)
         ROUTE(PauseCropper);
         ROUTE(UnpauseCropper);
+        ROUTE(RefreshCardGrid);
 #undef ROUTE
     }
 
   signals:
     void PauseCropper();
     void UnpauseCropper();
+    void RefreshCardGrid();
 };
 
 using PluginInit = PluginInterface*(Project& project);

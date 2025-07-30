@@ -26,10 +26,14 @@
 
 #include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
+#include <ppp/plugins/plugin_interface.hpp>
 
-MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
+MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
+                                       Project& project,
+                                       PluginInterface& router)
     : PopupBase{ parent }
     , m_Project{ project }
+    , m_Router{ router }
 {
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
@@ -109,10 +113,13 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent, Project& project)
     m_OutputDir.setAutoRemove(true);
 
     ValidateSettings();
+
+    m_Router.PauseCropper();
 }
 
 MtgDownloaderPopup::~MtgDownloaderPopup()
 {
+    m_Router.UnpauseCropper();
     UninstallLogHook();
 }
 
@@ -181,16 +188,25 @@ void MtgDownloaderPopup::DoDownload()
                          error_strings);
             });
 
+    const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
+    const auto skip_images{
+        (!clear_image_folder
+             ? ListImageFiles(m_Project.m_Data.m_ImageDir, m_Project.m_Data.m_CropDir)
+             : std::vector<fs::path>{}) |
+        std::views::transform(static_cast<QString (*)(const fs::path&)>(&ToQString)) |
+        std::ranges::to<std::vector>()
+    };
+
     switch (m_InputType)
     {
     default:
     case InputType::Decklist:
         LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<ScryfallDownloader>();
+        m_Downloader = std::make_unique<ScryfallDownloader>(std::move(skip_images));
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<MPCFillDownloader>();
+        m_Downloader = std::make_unique<MPCFillDownloader>(std::move(skip_images));
         break;
     }
 
@@ -225,6 +241,7 @@ void MtgDownloaderPopup::DoDownload()
     }
 
     m_DownloadButton->setDisabled(true);
+    m_ClearCheckbox->setDisabled(true);
 }
 
 void MtgDownloaderPopup::FinalizeDownload()
@@ -273,9 +290,12 @@ void MtgDownloaderPopup::FinalizeDownload()
         {
             card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
         }
+
         m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
     }
     m_Project.m_Data.m_BacksideDefault = "__back.png";
+
+    m_Router.RefreshCardGrid();
 
     const fs::path output_dir{
         m_OutputDir.path().toStdString()
@@ -290,11 +310,18 @@ void MtgDownloaderPopup::FinalizeDownload()
     };
     for (const auto& img : new_images)
     {
+        if (!fs::exists(target_folder))
+        {
+            fs::create_directories(target_folder);
+        }
+
         if (!fs::exists(target_folder / img))
         {
             fs::rename(output_dir / img, target_folder / img);
         }
     }
+
+    m_Router.UnpauseCropper();
 }
 
 void MtgDownloaderPopup::InstallLogHook()
