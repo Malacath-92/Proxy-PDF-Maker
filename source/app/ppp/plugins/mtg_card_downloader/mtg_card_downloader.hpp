@@ -2,5 +2,5 @@
 
 #include <ppp/plugins/plugin_interface.hpp>
 
-QWidget* InitMtGCardDownloaderPlugin(Project& project);
-void DestroyMtGCardDownloaderPlugin(QWidget* widget);
+PluginInterface* InitMtGCardDownloaderPlugin(Project& project);
+void DestroyMtGCardDownloaderPlugin(PluginInterface* widget);

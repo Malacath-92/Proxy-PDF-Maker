@@ -4,9 +4,27 @@
 
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
 
-QWidget* InitMtGCardDownloaderPlugin(Project& project)
+class DownloaderPlugin : public PluginInterface
 {
-    auto* widget{ new QPushButton{ "Open" } };
+  public:
+    DownloaderPlugin(const QString& text)
+        : m_Button{ new QPushButton{ text } }
+    {
+    }
+
+    virtual QPushButton* Widget() override
+    {
+        return m_Button;
+    }
+
+  private:
+    QPushButton* m_Button;
+};
+
+PluginInterface* InitMtGCardDownloaderPlugin(Project& project)
+{
+    auto* plugin{ new DownloaderPlugin{ "Open" } };
+    auto* widget{ static_cast<QPushButton*>(plugin->Widget()) };
     widget->setObjectName("MtG Card Downloader");
 
     const auto open_downloader_popup{
@@ -26,10 +44,10 @@ QWidget* InitMtGCardDownloaderPlugin(Project& project)
                      widget,
                      open_downloader_popup);
 
-    return widget;
+    return plugin;
 }
 
-void DestroyMtGCardDownloaderPlugin(QWidget* widget)
+void DestroyMtGCardDownloaderPlugin(PluginInterface* widget)
 {
     delete widget;
 }

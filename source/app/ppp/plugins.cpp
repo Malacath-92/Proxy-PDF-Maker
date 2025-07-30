@@ -21,7 +21,7 @@ std::vector<std::string_view> GetPluginNames()
            std::ranges::to<std::vector>();
 }
 
-QWidget* InitPlugin(std::string_view plugin_name, Project& project)
+PluginInterface* InitPlugin(std::string_view plugin_name, Project& project)
 {
     for (auto& [name, init, destroy] : c_Plugins)
     {
@@ -33,13 +33,13 @@ QWidget* InitPlugin(std::string_view plugin_name, Project& project)
     return nullptr;
 }
 
-void DestroyPlugin(std::string_view plugin_name, QWidget* plugin_widget)
+void DestroyPlugin(std::string_view plugin_name, PluginInterface* plugin)
 {
     for (auto& [name, init, destroy] : c_Plugins)
     {
         if (name == plugin_name)
         {
-            destroy(plugin_widget);
+            destroy(plugin);
         }
     }
 }

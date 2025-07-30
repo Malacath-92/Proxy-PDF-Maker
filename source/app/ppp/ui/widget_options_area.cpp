@@ -9,6 +9,7 @@
 #include <ppp/app.hpp>
 #include <ppp/config.hpp>
 #include <ppp/plugins.hpp>
+#include <ppp/plugins/plugin_interface.hpp>
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/collapse_button.hpp>
@@ -30,15 +31,6 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);
     AddCollapsible(layout, global_options);
-    for (const auto& plugin_name : GetPluginNames())
-    {
-        if (g_Cfg.m_PluginsState[std::string{ plugin_name }])
-        {
-            auto* plugin_widget{ InitPlugin(plugin_name, project) };
-            m_PluginWidgets[plugin_name] = plugin_widget;
-            AddCollapsible(layout, plugin_widget);
-        }
-    }
 
     auto* widget{ new QWidget };
     widget->setLayout(layout);
@@ -49,25 +41,34 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
     setMinimumHeight(400);
     setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
     setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
+
+    for (const auto& plugin_name : GetPluginNames())
+    {
+        if (g_Cfg.m_PluginsState[std::string{ plugin_name }])
+        {
+            PluginEnabled(plugin_name);
+        }
+    }
 }
 
 void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 {
-    if (!m_PluginWidgets.contains(plugin_name))
+    if (!m_Plugins.contains(plugin_name))
     {
-        auto* plugin_widget{ InitPlugin(plugin_name, m_Project) };
-        m_PluginWidgets[plugin_name] = plugin_widget;
+        auto* plugin{ InitPlugin(plugin_name, m_Project) };
+        m_Plugins[plugin_name] = plugin;
 
         auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
-        AddCollapsible(layout, plugin_widget);
+        AddCollapsible(layout, plugin->Widget());
     }
 }
 
 void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 {
-    if (m_PluginWidgets.contains(plugin_name))
+    if (m_Plugins.contains(plugin_name))
     {
-        auto* plugin_widget{ m_PluginWidgets[plugin_name] };
+        auto* plugin{ m_Plugins[plugin_name] };
+        auto* plugin_widget{ plugin->Widget() };
 
         auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
         const auto plugin_widget_index{ layout->indexOf(plugin_widget) };
@@ -81,8 +82,8 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
             layout->removeWidget(plugin_widget);
         }
 
-        m_PluginWidgets.erase(plugin_name);
-        DestroyPlugin(plugin_name, plugin_widget);
+        m_Plugins.erase(plugin_name);
+        DestroyPlugin(plugin_name, plugin);
     }
 }
 
