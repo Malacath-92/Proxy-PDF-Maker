@@ -16,6 +16,7 @@
 
 OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
                                      Project& project,
+                                     PluginInterface& plugin_router,
                                      QWidget* actions,
                                      QWidget* print_options,
                                      QWidget* guides_options,
@@ -23,6 +24,7 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
                                      QWidget* global_options)
     : m_App{ app }
     , m_Project{ project }
+    , m_PluginRouter{ plugin_router }
 {
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions);
@@ -60,6 +62,8 @@ void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 
         auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
         AddCollapsible(layout, plugin->Widget());
+
+        m_PluginRouter.Route(*plugin);
     }
 }
 
