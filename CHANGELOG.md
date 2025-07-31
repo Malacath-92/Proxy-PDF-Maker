@@ -6,10 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Common paper size option Ledger is now integrated into the app.
+
+### Fixed
+- The Legal paper size is now correctly oriented.
+- The app will no longer crash on various operations that it performs on accidentally empty images.
+- The app will no longer crash when working with images that can not correctly have their DPI calculated or somehow have a DPI of 0.
+- Fetching front-sides of double faced cards from Scryfall will no longer fail.
+
+### Contributors
+- @ahernandezjr with contributions to improve general stability, the Ledger paper size, and fixes to the Legal page size.
+
 ## [0.12.1] - 2025-23-07
 
 ### Added
-- Common paper size options A4+ and A3+ are not integrated into the app.
+- Common paper size options A4+ and A3+ are now integrated into the app.
 - Binaries for Ubuntu-ARM64 are now available.
 
 ### Fixed
