@@ -192,7 +192,6 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                      &QPushButton::clicked,
                      this,
                      render);
-
     QObject::connect(save_button,
                      &QPushButton::clicked,
                      this,
