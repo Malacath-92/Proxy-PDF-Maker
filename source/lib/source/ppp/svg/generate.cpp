@@ -52,6 +52,12 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                Size spacing,
                                Length corner_radius)
 {
+    // Return empty path when no cards can fit (invalid layout)
+    if (grid.x == 0 || grid.y == 0)
+    {
+        return QPainterPath{};
+    }
+
     const auto card_size_with_bleed{ card_size + 2 * bleed_edge };
     const auto physical_canvas_size{
         grid * card_size_with_bleed + (grid - 1) * spacing
@@ -109,7 +115,7 @@ void GenerateCardsSvg(const Project& project)
     generator.setTitle("Card cutting guides.");
     generator.setDescription("An SVG containing exact cutting guides for the accompanying sheet.");
 
-    LogInfo("Drawing card path...");
+    LogDebug("Drawing card path...");
     QPainter painter;
     painter.begin(&generator);
     DrawSvg(painter, path);
@@ -185,6 +191,12 @@ ENTITIES
     const auto card_size_without_bleed{ project.CardSize() / 1_mm };
     const auto grid{ project.m_Data.m_CardLayout };
     const auto& [columns, rows]{ grid.pod() };
+
+    // Return early when no cards can fit (invalid layout)
+    if (columns == 0 || rows == 0)
+    {
+        return;
+    }
 
     const auto origin{ spacing };
 

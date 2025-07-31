@@ -67,34 +67,34 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     m_CustomMargins = new QCheckBox{ "&Custom Margins" };
 
-    auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
-    m_LeftMarginSpin = left_margin->GetWidget();
+    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", new QDoubleSpinBox } };
+    m_LeftMarginSpin = static_cast<QDoubleSpinBox*>(left_margin->GetWidget());
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
     m_LeftMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
-    m_TopMarginSpin = top_margin->GetWidget();
+    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", new QDoubleSpinBox } };
+    m_TopMarginSpin = static_cast<QDoubleSpinBox*>(top_margin->GetWidget());
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
     m_TopMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* right_margin{ new DoubleSpinBoxWithLabel{ "&Right Margin" } };
-    m_RightMarginSpin = right_margin->GetWidget();
+    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", new QDoubleSpinBox } };
+    m_RightMarginSpin = static_cast<QDoubleSpinBox*>(right_margin->GetWidget());
     m_RightMarginSpin->setDecimals(2);
     m_RightMarginSpin->setSingleStep(0.1);
     m_RightMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* bottom_margin{ new DoubleSpinBoxWithLabel{ "&Bottom Margin" } };
-    m_BottomMarginSpin = bottom_margin->GetWidget();
+    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", new QDoubleSpinBox } };
+    m_BottomMarginSpin = static_cast<QDoubleSpinBox*>(bottom_margin->GetWidget());
     m_BottomMarginSpin->setDecimals(2);
     m_BottomMarginSpin->setSingleStep(0.1);
     m_BottomMarginSpin->setSuffix(initial_base_unit_name);
 
     m_MarginModeToggle = new QCheckBox{ "&All Margins Mode" };
 
-    auto* all_margins{ new DoubleSpinBoxWithLabel{ "&All Margins" } };
-    m_AllMarginsSpin = all_margins->GetWidget();
+    auto* all_margins{ new WidgetWithLabel{ "&All Margins", new QDoubleSpinBox } };
+    m_AllMarginsSpin = static_cast<QDoubleSpinBox*>(all_margins->GetWidget());
     m_AllMarginsSpin->setDecimals(2);
     m_AllMarginsSpin->setSingleStep(0.1);
     m_AllMarginsSpin->setSuffix(initial_base_unit_name);
@@ -373,12 +373,20 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            // Synchronize all individual margin controls when using uniform margin mode
-            // This ensures consistency and provides immediate visual feedback
-            m_LeftMarginSpin->setValue(v);
-            m_TopMarginSpin->setValue(v);
-            m_RightMarginSpin->setValue(v);
-            m_BottomMarginSpin->setValue(v);
+            // Convert UI value to internal units and update project data for all margins
+            // This ensures the project data is properly synchronized with the UI
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto margin_value{ static_cast<float>(v) * base_unit };
+            m_Project.m_Data.m_CustomMarginsFour.value().left = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().top = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().right = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().bottom = margin_value;
+
+            // Recalculate card layout and refresh UI to reflect margin changes
+            // This ensures the preview accurately represents the final output
+            m_Project.CacheCardLayout();
+            RefreshSizes();
+            MarginsChanged();
         }
     };
 
@@ -645,6 +653,10 @@ void PrintOptionsWidget::SetDefaults()
     m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
     m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
     m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+    
+    // Update card layout display and warnings
+    RefreshCardLayout();
+    
     m_Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Orientation)));
     m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_FlipOn)));
 
@@ -720,6 +732,13 @@ void PrintOptionsWidget::RefreshSizes()
     const auto current_right{ m_RightMarginSpin->value() };
     const auto current_bottom{ m_BottomMarginSpin->value() };
 
+    // Temporarily block signals to prevent recursive calls during refresh
+    m_LeftMarginSpin->blockSignals(true);
+    m_TopMarginSpin->blockSignals(true);
+    m_RightMarginSpin->blockSignals(true);
+    m_BottomMarginSpin->blockSignals(true);
+    m_AllMarginsSpin->blockSignals(true);
+
     m_LeftMarginSpin->setRange(0, max_margins.x);
     m_LeftMarginSpin->setValue(current_left);
 
@@ -734,6 +753,13 @@ void PrintOptionsWidget::RefreshSizes()
 
     // Update All Margins range
     m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+
+    // Re-enable signals after all values are set
+    m_LeftMarginSpin->blockSignals(false);
+    m_TopMarginSpin->blockSignals(false);
+    m_RightMarginSpin->blockSignals(false);
+    m_BottomMarginSpin->blockSignals(false);
+    m_AllMarginsSpin->blockSignals(false);
 
     // Maintain enabled states based on margin mode
     const bool all_margins_mode{ m_MarginModeToggle->isChecked() };
@@ -750,6 +776,22 @@ void PrintOptionsWidget::RefreshCardLayout()
     {
         m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
         m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+        
+        // Show visual warning when no cards can fit on the page
+        if (m_Project.m_Data.m_CardLayout.x == 0 || m_Project.m_Data.m_CardLayout.y == 0)
+        {
+            m_CardsWidth->setStyleSheet("QSpinBox { color: red; }");
+            m_CardsHeight->setStyleSheet("QSpinBox { color: red; }");
+            m_CardsWidth->setToolTip("No cards can fit on the page with current settings");
+            m_CardsHeight->setToolTip("No cards can fit on the page with current settings");
+        }
+        else
+        {
+            m_CardsWidth->setStyleSheet("");
+            m_CardsHeight->setStyleSheet("");
+            m_CardsWidth->setToolTip("");
+            m_CardsHeight->setToolTip("");
+        }
     }
 }
 

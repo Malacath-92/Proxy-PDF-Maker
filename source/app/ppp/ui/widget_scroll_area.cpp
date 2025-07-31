@@ -4,6 +4,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QIntValidator>
+#include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QResizeEvent>
@@ -79,6 +80,7 @@ class CardWidget : public QFrame
         m_ImageWidget = card_widget;
         m_NumberEdit = number_edit;
         m_NumberArea = number_area;
+        m_IncrementButton = increment_button;
 
         const auto margins{ layout()->contentsMargins() };
         const auto minimum_img_width{ card_widget->minimumWidth() };
@@ -88,6 +90,8 @@ class CardWidget : public QFrame
         setFrameShape(Shape::Box);
         setFrameShadow(Shadow::Raised);
     }
+
+    const fs::path& GetCardName() const { return m_CardName; }
 
     virtual bool hasHeightForWidth() const override
     {
@@ -114,8 +118,9 @@ class CardWidget : public QFrame
 
     void ApplyNumber(Project& project, int64_t number)
     {
-        project.m_Data.m_Cards[m_CardName].m_Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
+        project.m_Data.m_Cards[m_CardName].m_Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 100 }), int64_t{ 0 }));
         m_NumberEdit->setText(QString{}.setNum(project.m_Data.m_Cards[m_CardName].m_Num));
+        m_IncrementButton->setEnabled(project.m_Data.m_Cards[m_CardName].m_Num < 100);
     }
 
     virtual void Refresh(Project& project)
@@ -303,7 +308,7 @@ class CardWidget : public QFrame
 
   protected:
     fs::path m_CardName;
-
+    
   private:
     bool m_BacksideEnabled{ false };
 
@@ -311,6 +316,7 @@ class CardWidget : public QFrame
     QLineEdit* m_NumberEdit{ nullptr };
     QWidget* m_NumberArea{ nullptr };
     QWidget* m_ExtraOptions{ nullptr };
+    QPushButton* m_IncrementButton{ nullptr };
 };
 
 class DummyCardWidget : public CardWidget
@@ -570,6 +576,7 @@ CardScrollArea::CardScrollArea(Project& project)
             {
                 card->DecrementNumber(project);
             }
+            UpdateGlobalIncrementButton();
         }
     };
 
@@ -580,6 +587,7 @@ CardScrollArea::CardScrollArea(Project& project)
             {
                 card->IncrementNumber(project);
             }
+            UpdateGlobalIncrementButton();
         }
     };
 
@@ -590,6 +598,7 @@ CardScrollArea::CardScrollArea(Project& project)
             {
                 card->ApplyNumber(project, 0);
             }
+            UpdateGlobalIncrementButton();
         }
     };
 
@@ -607,6 +616,10 @@ CardScrollArea::CardScrollArea(Project& project)
                      reset_number);
 
     m_Grid = card_grid;
+    m_GlobalIncrementButton = global_increment_button;
+    
+    // Initial state update
+    UpdateGlobalIncrementButton();
 }
 
 void CardScrollArea::NewProjectOpened()
@@ -652,6 +665,7 @@ void CardScrollArea::FullRefresh()
 {
     m_Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
+    UpdateGlobalIncrementButton();
 }
 
 int CardScrollArea::ComputeMinimumWidth()
@@ -665,6 +679,25 @@ void CardScrollArea::showEvent(QShowEvent* event)
     QScrollArea::showEvent(event);
 
     setMinimumWidth(ComputeMinimumWidth());
+}
+
+void CardScrollArea::UpdateGlobalIncrementButton()
+{
+    if (m_GlobalIncrementButton == nullptr)
+        return;
+        
+    // Check if any card is at the maximum value (100)
+    bool any_at_max = false;
+    for (const auto& [_, card] : m_Grid->GetCards())
+    {
+        if (m_Project.m_Data.m_Cards[card->GetCardName()].m_Num >= 100)
+        {
+            any_at_max = true;
+            break;
+        }
+    }
+    
+    m_GlobalIncrementButton->setEnabled(!any_at_max);
 }
 
 #include <widget_scroll_area.moc>

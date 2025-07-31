@@ -3,6 +3,7 @@
 #include <QScrollArea>
 
 class Project;
+class QPushButton;
 
 class CardScrollArea : public QScrollArea
 {
@@ -19,6 +20,7 @@ class CardScrollArea : public QScrollArea
     void CardAdded();
     void CardRemoved();
     void CardRenamed();
+    void UpdateGlobalIncrementButton();
 
   private:
     void FullRefresh();
@@ -30,4 +32,5 @@ class CardScrollArea : public QScrollArea
 
     class CardGrid;
     CardGrid* m_Grid;
+    QPushButton* m_GlobalIncrementButton{ nullptr };
 };

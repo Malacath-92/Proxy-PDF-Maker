@@ -90,6 +90,14 @@ fs::path GeneratePdf(const Project& project)
                     const auto real_w{ card_width };
                     const auto real_h{ card_height };
 
+                    // Safety check: don't render cards that don't fit on the page
+                    if (real_x < 0_m || real_y < 0_m || 
+                        real_x + real_w > page_width || real_y + real_h > page_height)
+                    {
+                        // Skip rendering this card - it doesn't fit
+                        return;
+                    }
+
                     const auto rotation{ GetCardRotation(is_backside, image.m_BacksideShortEdge) };
                     PdfPage::ImageData image_data{
                         .m_Path{ img_path },
@@ -111,6 +119,14 @@ fs::path GeneratePdf(const Project& project)
                         const auto real_x{ start_x + x * (card_width + spacing.x) + dx };
                         // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
                         const auto real_y{ start_y - y * (card_height + spacing.y) + dy };
+
+                        // Safety check: don't draw guides outside the page bounds
+                        if (real_x < 0_m || real_y < 0_m || 
+                            real_x > page_width || real_y > page_height)
+                        {
+                            // Skip drawing this guide - it's outside the page
+                            return;
+                        }
 
                         if (project.m_Data.m_CornerGuides)
                         {
@@ -207,7 +223,7 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
+                        LogDebug(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
                         draw_image(front_page, card.value(), x, y);
                         i++;
 
@@ -237,7 +253,7 @@ fs::path GeneratePdf(const Project& project)
                 {
                     if (const auto card{ card_grid[y][x] })
                     {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
+                        LogDebug(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
 
                         auto backside_card{ card.value() };
                         backside_card.m_Image = project.GetBacksideImage(card->m_Image);

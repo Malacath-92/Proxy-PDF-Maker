@@ -309,7 +309,7 @@ void Cropper::CropWork()
 
                 const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
                 const auto crop_work_duration{ crop_work_end_point - m_CropWorkStartPoint };
-                LogInfo("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
+                LogDebug("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
                         m_TotalWorkDone.load(std::memory_order_relaxed),
                         std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
             }
@@ -600,6 +600,17 @@ bool Cropper::DoCropWork(T* signaller)
 template<class T>
 bool Cropper::DoPreviewWork(T* signaller)
 {
+    // Skip processing when no cards can fit on the page
+    {
+        std::shared_lock lock{ m_PropertyMutex };
+        const auto [columns, rows]{ m_Data.m_CardLayout.pod() };
+        if (columns == 0)
+        {
+            LogInfo("DoPreviewWork: Card layout has 0 columns, skipping work");
+            return false;
+        }
+    }
+    
     auto pop_work{
         [this]() -> std::optional<fs::path>
         {
@@ -618,26 +629,46 @@ bool Cropper::DoPreviewWork(T* signaller)
     if (auto preview_work_to_do{ pop_work() })
     {
         fs::path card_name{ std::move(preview_work_to_do).value() };
+        LogInfo("DoPreviewWork: Processing card: {}", card_name.string());
 
         try
         {
+            LogDebug("DoPreviewWork: Acquiring property mutex");
             std::shared_lock lock{ m_PropertyMutex };
+            LogDebug("DoPreviewWork: Property mutex acquired");
+            
             const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
+            LogDebug("DoPreviewWork: Preview width calculated");
+            
             const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
+            LogDebug("DoPreviewWork: Uncropped size calculated");
+            
             const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
+            LogDebug("DoPreviewWork: Full bleed edge calculated");
+            
             const Size card_size{ m_Data.CardSize(m_Cfg) };
+            LogDebug("DoPreviewWork: Card size calculated");
+            
             const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
+            LogDebug("DoPreviewWork: Card size with full bleed calculated");
 
             const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
             const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
+            LogDebug("DoPreviewWork: Enable uncrop: {}, fancy uncrop: {}", enable_uncrop, fancy_uncrop);
 
             const fs::path input_file{ m_Data.m_ImageDir / card_name };
             const fs::path crop_file{ m_Data.m_CropDir / card_name };
+            LogDebug("DoPreviewWork: Input file: {}", input_file.string());
+            LogDebug("DoPreviewWork: Crop file: {}", crop_file.string());
 
             const bool has_preview{ std::ranges::contains(m_LoadedPreviews, card_name) };
+            LogDebug("DoPreviewWork: Has preview: {}", has_preview);
+            
             lock.unlock();
+            LogDebug("DoPreviewWork: Property mutex released");
 
             const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
+            LogDebug("DoPreviewWork: Output file: {}", output_file.string());
 
             // Fake image parameters
             ImageParameters image_params{
@@ -646,10 +677,13 @@ bool Cropper::DoPreviewWork(T* signaller)
                 .m_FullBleedEdge{ full_bleed_edge },
                 .m_WillWriteOutput = false,
             };
+            LogDebug("DoPreviewWork: Image parameters created");
 
             // Generate Preview ...
             if (fs::exists(input_file))
             {
+                LogDebug("DoPreviewWork: Input file exists, processing");
+                
                 QByteArray input_file_hash{
                     [&, this]()
                     {
@@ -657,28 +691,40 @@ bool Cropper::DoPreviewWork(T* signaller)
                         return m_ImageDB.TestEntry(output_file, input_file, image_params);
                     }()
                 };
+                LogDebug("DoPreviewWork: Input file hash calculated");
 
                 // empty hash indicates that the source has not changed
                 if (input_file_hash.isEmpty() && has_preview)
                 {
+                    LogDebug("DoPreviewWork: File unchanged, skipping");
                     return true;
                 }
 
+                LogDebug("DoPreviewWork: Reading and resizing image");
                 const Image image{ Image::Read(input_file).Resize(uncropped_size) };
+                LogDebug("DoPreviewWork: Image read and resized successfully");
 
                 ImagePreview image_preview{};
                 image_preview.m_UncroppedImage = image;
+                LogDebug("DoPreviewWork: Creating cropped image");
                 image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
+                LogDebug("DoPreviewWork: Cropped image created successfully");
 
                 {
                     std::unique_lock image_db_lock{ m_ImageDBMutex };
                     m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
                 }
+                LogDebug("DoPreviewWork: Image database updated");
 
+                LogDebug("DoPreviewWork: Signaling preview updated");
                 signaller->PreviewUpdated(card_name, image_preview);
+                LogInfo("DoPreviewWork: Preview work completed successfully");
+                return true;
             }
             else if (enable_uncrop && fs::exists(crop_file))
             {
+                LogDebug("DoPreviewWork: Crop file exists and uncrop enabled, processing");
+                
                 QByteArray crop_file_hash{
                     [&, this]()
                     {
@@ -686,53 +732,58 @@ bool Cropper::DoPreviewWork(T* signaller)
                         return m_ImageDB.TestEntry(output_file, crop_file, image_params);
                     }()
                 };
+                LogDebug("DoPreviewWork: Crop file hash calculated");
 
                 // empty hash indicates that the source has not changed
                 if (crop_file_hash.isEmpty() && has_preview)
                 {
+                    LogDebug("DoPreviewWork: Crop file unchanged, skipping");
                     return true;
                 }
 
-                const PixelSize cropped_size{
-                    [&]() -> PixelSize
-                    {
-                        const auto [w, h]{ uncropped_size.pod() };
-                        const auto [bw, bh]{ card_size_with_full_bleed.pod() };
-                        const auto density{ dla::math::min(w / bw, h / bh) };
-                        const auto crop{ dla::math::round(0.12_in * density) };
-                        return uncropped_size - 2.0f * crop;
-                    }()
-                };
-
-                const Image image{ Image::Read(crop_file).Resize(cropped_size) };
+                LogDebug("DoPreviewWork: Reading and resizing crop file");
+                const Image image{ Image::Read(crop_file).Resize(uncropped_size) };
+                LogDebug("DoPreviewWork: Crop file read and resized successfully");
 
                 ImagePreview image_preview{};
-                image_preview.m_CroppedImage = image;
                 image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
+                image_preview.m_CroppedImage = image;
+                LogDebug("DoPreviewWork: Uncrop image created successfully");
 
+                {
+                    std::unique_lock image_db_lock{ m_ImageDBMutex };
+                    m_ImageDB.PutEntry(output_file, std::move(crop_file_hash), image_params);
+                }
+                LogDebug("DoPreviewWork: Image database updated");
+
+                LogDebug("DoPreviewWork: Signaling preview updated");
                 signaller->PreviewUpdated(card_name, image_preview);
+                LogInfo("DoPreviewWork: Preview work completed successfully");
+                return true;
             }
-
-            if (!has_preview)
+            else
             {
-                m_LoadedPreviews.push_back(card_name);
+                LogDebug("DoPreviewWork: No input file and no crop file, skipping");
+                return true;
             }
-            return true;
+        }
+        catch (const std::exception& e)
+        {
+            LogError("DoPreviewWork: Exception caught: {}", e.what());
+            return false;
         }
         catch (...)
         {
-            // If user updated the file we may be reading it's still being written to,
-            // Hopefully that's the only reason to end up here...
-            std::lock_guard lock{ m_PendingPreviewWorkMutex };
-            if (!std::ranges::contains(m_PendingPreviewWork, card_name))
-            {
-                m_PendingPreviewWork.push_back(std::move(card_name));
-            }
-
-            // We have failed, but we tried doing work, so we return true
-            return true;
+            LogError("DoPreviewWork: Unknown exception caught");
+            return false;
         }
+    }
+    else
+    {
+        // LogInfo("DoPreviewWork: No work to do");
+        return false;
     }
 
     return false;
 }
+

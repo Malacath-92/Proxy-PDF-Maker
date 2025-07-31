@@ -48,8 +48,31 @@ Image CropImage(const Image& image,
                 Length bleed_edge,
                 PixelDensity max_density)
 {
+    // Safety check: ensure card size is valid
+    if (card_size.x <= 0_mm || card_size.y <= 0_mm)
+    {
+        LogInfo("Cropping images...\n{} - Invalid card size {}, skipping crop", image_name.string(), card_size);
+        return image;
+    }
+
     const Size card_size_with_full_bleed{ card_size + 2 * full_bleed };
+    
+    // Safety check: ensure card size with bleed is valid
+    if (card_size_with_full_bleed.x <= 0_mm || card_size_with_full_bleed.y <= 0_mm)
+    {
+        LogInfo("Cropping images...\n{} - Invalid card size with bleed {}, skipping crop", image_name.string(), card_size_with_full_bleed);
+        return image;
+    }
+
     const PixelDensity density{ image.Density(card_size_with_full_bleed) };
+    
+    // Safety check: ensure density is valid
+    if (density <= 0_dpi)
+    {
+        LogInfo("Cropping images...\n{} - Invalid density {}, skipping crop", image_name.string(), density);
+        return image;
+    }
+
     Pixel c{ full_bleed * density };
     {
         const PixelDensity dpi{ (density * 1_in / 1_m) };
@@ -57,17 +80,24 @@ Image CropImage(const Image& image,
         {
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(dla::math::max(0_pix, c - bleed_pixels));
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
-                    image_name.string(),
-                    dpi.value,
-                    c,
-                    bleed_edge);
+            LogDebug("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
+                     image_name.string(),
+                     dpi.value,
+                     c,
+                     bleed_edge);
         }
         else
         {
             c = dla::math::round(c);
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
+            LogDebug("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
         }
+    }
+
+    // Safety check: ensure crop amount is reasonable
+    if (c < 0_pix || c > image.Size().x / 2 || c > image.Size().y / 2)
+    {
+        LogInfo("Cropping images...\n{} - Invalid crop amount {}, skipping crop", image_name.string(), c);
+        return image;
     }
 
     Image cropped_image{ image.Crop(c, c, c, c) };
@@ -87,7 +117,7 @@ Image UncropImage(const Image& image, const fs::path& image_name, Size card_size
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
+    LogDebug("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
 
     if (fancy_uncrop)
     {
