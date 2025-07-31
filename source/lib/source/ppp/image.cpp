@@ -277,6 +277,12 @@ Image Image::Decode(EncodedImageView buffer)
 
 EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 {
+    // Safety check: if image is empty, return empty buffer
+    if (m_Impl.empty())
+    {
+        return {};
+    }
+    
     std::vector<int> png_params;
     if (compression.has_value())
     {
@@ -300,6 +306,12 @@ EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 
 EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
 {
+    // Safety check: if image is empty, return empty buffer
+    if (m_Impl.empty())
+    {
+        return {};
+    }
+    
     std::vector<int> jpg_params;
     if (quality.has_value())
     {
@@ -654,6 +666,13 @@ PixelDensity Image::Density(::Size real_size) const
 {
     const auto [w, h]{ Size().pod() };
     const auto [bw, bh]{ (real_size).pod() };
+    
+    // Safety check: if real_size is very small or zero, return a reasonable default
+    if (bw <= 0_m || bh <= 0_m)
+    {
+        return PixelDensity{ 96.0f }; // Default DPI value
+    }
+    
     return dla::math::min(w / bw, h / bh);
 }
 

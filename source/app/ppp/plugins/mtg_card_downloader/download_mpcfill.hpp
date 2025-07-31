@@ -11,7 +11,7 @@ class MPCFillDownloader : public CardArtDownloader
     Q_OBJECT
 
   public:
-    MPCFillDownloader() = default;
+    MPCFillDownloader(std::vector<QString> skip_files);
 
     virtual bool ParseInput(const QString& xml) override;
     virtual bool BeginDownload(QNetworkAccessManager& network_manager) override;
@@ -52,6 +52,8 @@ class MPCFillDownloader : public CardArtDownloader
 
     static QString MPCFillIdFromUrl(const QString& url);
     static CardParseResult ParseMPCFillCard(const QDomElement& element);
+
+    std::vector<QString> m_SkipFiles;
 
     MPCFillSet m_Set{};
     std::unordered_map<QString, std::vector<QString>> m_Duplicates;

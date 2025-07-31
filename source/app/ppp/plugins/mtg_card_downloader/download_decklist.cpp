@@ -28,7 +28,8 @@ struct ScryfallDownloader::BacksideRequest
     DecklistCard m_Front;
 };
 
-ScryfallDownloader::ScryfallDownloader()
+ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files)
+    : m_SkipFiles{ std::move(skip_files) }
 {
     m_ScryfallTimer.setInterval(100);
     m_ScryfallTimer.setSingleShot(true);
@@ -71,6 +72,16 @@ bool ScryfallDownloader::ParseInput(const QString& decklist)
 bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
     m_TotalRequests = static_cast<uint32_t>(m_Cards.size()) * 2;
+
+    if (!std::ranges::contains(m_SkipFiles, "__back.png"))
+    {
+        m_TotalRequests++;
+        m_Backsides.push_back(BacksideRequest{
+            .m_Uri{ "http://cards.scryfall.io/back.png" },
+            .m_Front{},
+        });
+    }
+
     Progress(0, static_cast<int>(m_TotalRequests));
 
     m_NetworkManager = &network_manager;
@@ -225,7 +236,7 @@ bool ScryfallDownloader::HasBackside(const QJsonDocument& card_info)
 
 QString ScryfallDownloader::BacksideFilename(const QString& file_name)
 {
-    return "__back_" + file_name;
+    return file_name.isEmpty() ? "__back.png" : "__back_" + file_name;
 }
 
 bool ScryfallDownloader::NextRequest()
@@ -281,15 +292,13 @@ bool ScryfallDownloader::NextRequest()
     {
         const auto& card{ m_Cards[m_Downloads] };
         const auto& card_info{ m_CardInfos[m_Downloads] };
+        const bool has_backside{ HasBackside(card_info) };
 
-        LogInfo("Requesting artwork for card  {}", card.m_Name.toStdString());
-        auto request_uri{ card_info["image_uris"]["png"].toString() };
-        do_request(std::move(request_uri));
-
-        if (HasBackside(card_info))
+        if (has_backside &&
+            !std::ranges::contains(m_SkipFiles, BacksideFilename(card.m_FileName)))
         {
-            const auto card_faces{ card_info["card_faces"] };
-            const auto back_face_uri{ card_faces[1]["image_uris"]["png"] };
+            const auto& card_faces{ card_info["card_faces"] };
+            const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
 
             m_Backsides.push_back(BacksideRequest{
                 .m_Uri{ back_face_uri.toString() },
@@ -298,12 +307,36 @@ bool ScryfallDownloader::NextRequest()
             ++m_TotalRequests;
         }
 
+        if (std::ranges::contains(m_SkipFiles, card.m_FileName))
+        {
+            LogInfo("Skipping card {}", card.m_Name.toStdString());
+            m_Downloads++;
+            Progress(static_cast<int>(m_Downloads + m_CardInfos.size()),
+                     static_cast<int>(m_TotalRequests));
+            return NextRequest();
+        }
+        else
+        {
+            LogInfo("Requesting artwork for card {}", card.m_Name.toStdString());
+            if (HasBackside(card_info))
+            {
+                const auto& card_faces{ card_info["card_faces"] };
+                const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
+                do_request(request_uri.toString());
+            }
+            else
+            {
+                const auto& request_uri{ card_info["image_uris"]["png"] };
+                do_request(request_uri.toString());
+            }
+        }
+
         return true;
     }
     else if (want_more_back_arts)
     {
         const auto& backside_card{ m_Backsides[m_Downloads - cards_in_deck] };
-        LogInfo("Requesting backside artwork for card  {}", backside_card.m_Front.m_Name.toStdString());
+        LogInfo("Requesting backside artwork for card {}", backside_card.m_Front.m_Name.toStdString());
         do_request(backside_card.m_Uri);
 
         return true;

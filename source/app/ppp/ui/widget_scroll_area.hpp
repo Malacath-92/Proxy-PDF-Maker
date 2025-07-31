@@ -2,6 +2,8 @@
 
 #include <QScrollArea>
 
+#include <ppp/util.hpp>
+
 class Project;
 class QPushButton;
 
@@ -22,8 +24,9 @@ class CardScrollArea : public QScrollArea
     void CardRenamed();
     void UpdateGlobalIncrementButton();
 
-  private:
     void FullRefresh();
+
+  private:
     int ComputeMinimumWidth();
 
     virtual void showEvent(QShowEvent* event) override;

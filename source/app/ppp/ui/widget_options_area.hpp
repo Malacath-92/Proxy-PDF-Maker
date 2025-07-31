@@ -6,6 +6,7 @@ class QVBoxLayout;
 
 class PrintProxyPrepApplication;
 class Project;
+class PluginInterface;
 
 class OptionsAreaWidget : public QScrollArea
 {
@@ -14,6 +15,7 @@ class OptionsAreaWidget : public QScrollArea
   public:
     OptionsAreaWidget(const PrintProxyPrepApplication& app,
                       Project& project,
+                      PluginInterface& plugin_router,
                       QWidget* actions,
                       QWidget* print_options,
                       QWidget* guides_options,
@@ -33,5 +35,6 @@ class OptionsAreaWidget : public QScrollArea
     const PrintProxyPrepApplication& m_App;
     Project& m_Project;
 
-    std::unordered_map<std::string_view, QWidget*> m_PluginWidgets;
+    PluginInterface& m_PluginRouter;
+    std::unordered_map<std::string_view, PluginInterface*> m_Plugins;
 };

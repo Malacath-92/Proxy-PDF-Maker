@@ -26,6 +26,7 @@ class CardWidget : public QFrame
     CardWidget(const fs::path& card_name, Project& project)
         : m_CardName{ card_name }
         , m_BacksideEnabled{ project.m_Data.m_BacksideEnabled }
+        , m_Backside{ project.GetBacksideImage(card_name) }
     {
         const uint32_t initial_number{ card_name.empty() ? 1 : project.m_Data.m_Cards[card_name].m_Num };
 
@@ -125,11 +126,13 @@ class CardWidget : public QFrame
 
     virtual void Refresh(Project& project)
     {
-        const bool backside_changed{ m_BacksideEnabled != project.m_Data.m_BacksideEnabled };
+        const bool backside_enabled_changed{ m_BacksideEnabled != project.m_Data.m_BacksideEnabled };
+        const bool backside_changed{ m_Backside != project.GetBacksideImage(m_CardName) };
 
         m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
+        m_Backside = project.GetBacksideImage(m_CardName);
 
-        if (backside_changed)
+        if (backside_enabled_changed)
         {
             auto* card_widget{ MakeCardWidget(project) };
             layout()->replaceWidget(m_ImageWidget, card_widget);
@@ -153,6 +156,14 @@ class CardWidget : public QFrame
                 layout()->replaceWidget(m_ExtraOptions, extra_options);
                 std::swap(extra_options, m_ExtraOptions);
                 delete extra_options;
+            }
+        }
+        else if (backside_changed)
+        {
+            if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
+            {
+                BacksideImage* backside_image{ new BacksideImage{ m_Backside, project } };
+                stacked_widget->RefreshBackside(backside_image);
             }
         }
     }
@@ -311,6 +322,7 @@ class CardWidget : public QFrame
     
   private:
     bool m_BacksideEnabled{ false };
+    fs::path m_Backside{};
 
     QWidget* m_ImageWidget{ nullptr };
     QLineEdit* m_NumberEdit{ nullptr };

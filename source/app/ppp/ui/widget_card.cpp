@@ -287,7 +287,10 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     new_backside->setMouseTracking(true);
 
     auto* backside_layout{ static_cast<QHBoxLayout*>(m_BacksideContainer->layout()) };
+
     m_Backside->setParent(nullptr);
+    delete m_Backside;
+
     backside_layout->addWidget(new_backside);
     backside_layout->addWidget(new_backside, 0, Qt::AlignmentFlag::AlignBottom);
     m_Backside = new_backside;

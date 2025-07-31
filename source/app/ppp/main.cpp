@@ -36,6 +36,16 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_scroll_area.hpp>
 
+#include <ppp/plugins/plugin_interface.hpp>
+
+class PluginRouter : public PluginInterface
+{
+    virtual QWidget* Widget() override
+    {
+        return nullptr;
+    }
+};
+
 int main(int argc, char** argv)
 {
 #ifdef WIN32
@@ -92,10 +102,18 @@ int main(int argc, char** argv)
     auto* card_options{ new CardOptionsWidget{ project } };
     auto* global_options{ new GlobalOptionsWidget{ app } };
 
+    PluginRouter plugin_router{};
+    QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
+                     { cropper.PauseWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, [&cropper]()
+                     { cropper.RestartWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, scroll_area, &CardScrollArea::FullRefresh);
+
     auto* options_area{
         new OptionsAreaWidget{
             app,
             project,
+            plugin_router,
             actions,
             print_options,
             guides_options,

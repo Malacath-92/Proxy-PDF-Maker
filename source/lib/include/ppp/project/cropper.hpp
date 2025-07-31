@@ -37,6 +37,8 @@ class Cropper : public QObject
     void CropProgress(float progress);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
+    void RestartTimers(QPrivateSignal);
+
   public slots:
     void NewProjectOpenedDiff(const Project::ProjectData& data);
     void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
@@ -59,7 +61,6 @@ class Cropper : public QObject
     void CropWork();
     void PreviewWork();
 
-  private:
     void PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview);
     void RemoveWork(const fs::path& card_name);
 

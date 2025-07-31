@@ -17,7 +17,7 @@ class ScryfallDownloader : public CardArtDownloader
     Q_OBJECT
 
   public:
-    ScryfallDownloader();
+    ScryfallDownloader(std::vector<QString> skip_files);
     virtual ~ScryfallDownloader() override;
 
     virtual bool ParseInput(const QString& decklist) override;
@@ -44,6 +44,8 @@ class ScryfallDownloader : public CardArtDownloader
     static QString BacksideFilename(const QString& file_name);
 
     bool NextRequest();
+
+    std::vector<QString> m_SkipFiles;
 
     std::vector<DecklistCard> m_Cards;
     std::unordered_map<QString, size_t> m_FileNameIndexMap;
