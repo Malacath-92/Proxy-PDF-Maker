@@ -402,25 +402,25 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 bool Project::CacheCardLayout()
 {
     LogDebug("CacheCardLayout: Starting card layout calculation");
-    
+
     const bool fit_size{ m_Data.m_PageSize == Config::c_FitSize };
     if (!fit_size)
     {
         LogDebug("CacheCardLayout: Not fit size mode, calculating layout");
-        
+
         const auto previous_layout{ m_Data.m_CardLayout };
         LogDebug("CacheCardLayout: Previous layout: {}x{}", previous_layout.x, previous_layout.y);
 
         const Size page_size{ ComputePageSize() };
         LogDebug("CacheCardLayout: Page size calculated");
-        
+
         const Size card_size_with_bleed{ CardSizeWithBleed() };
         LogDebug("CacheCardLayout: Card size with bleed calculated");
 
         // Calculate available space after accounting for margins
         Size available_space{ page_size };
         LogDebug("CacheCardLayout: Initial available space set");
-        
+
         if (m_Data.m_CustomMarginsFour.has_value())
         {
             LogDebug("CacheCardLayout: Using custom margins four");
@@ -468,7 +468,7 @@ bool Project::CacheCardLayout()
         }
 
         LogDebug("CacheCardLayout: Calculating layout");
-        
+
         m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed));
         LogInfo("CacheCardLayout: Calculated layout: {}x{}", m_Data.m_CardLayout.x, m_Data.m_CardLayout.y);
 
@@ -546,13 +546,13 @@ Size Project::ComputeCardsSize() const
 Size Project::ComputeEffectiveCardsSize() const
 {
     LogDebug("ComputeEffectiveCardsSize: Starting calculation");
-    
+
     const Size page_size{ ComputePageSize() };
     LogDebug("ComputeEffectiveCardsSize: Page size calculated");
-    
+
     const Size card_size_with_bleed{ CardSizeWithBleed() };
     LogDebug("ComputeEffectiveCardsSize: Card size with bleed calculated");
-    
+
     const auto [columns, rows]{ m_Data.m_CardLayout.pod() };
     LogDebug("ComputeEffectiveCardsSize: Card layout: {}x{}", columns, rows);
 
@@ -732,7 +732,7 @@ Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
     // Maximum margins represent the total available space around the cards
     // This is used to constrain user input and provide reasonable defaults
     // Add 0.01 mm buffer to prevent crashes when values are exactly at the limit
-    const Size max_margins{ page_size - cards_size - Size{0.01_mm, 0.01_mm} };
+    const Size max_margins{ page_size - cards_size - Size{ 0.01_mm, 0.01_mm } };
     return Size{
         max_margins.x > 0_mm ? max_margins.x : 0_mm,
         max_margins.y > 0_mm ? max_margins.y : 0_mm

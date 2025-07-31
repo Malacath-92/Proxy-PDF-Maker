@@ -56,7 +56,7 @@ Image CropImage(const Image& image,
     }
 
     const Size card_size_with_full_bleed{ card_size + 2 * full_bleed };
-    
+
     // Safety check: ensure card size with bleed is valid
     if (card_size_with_full_bleed.x <= 0_mm || card_size_with_full_bleed.y <= 0_mm)
     {
@@ -65,7 +65,7 @@ Image CropImage(const Image& image,
     }
 
     const PixelDensity density{ image.Density(card_size_with_full_bleed) };
-    
+
     // Safety check: ensure density is valid
     if (density <= 0_dpi)
     {

@@ -282,7 +282,7 @@ EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
     {
         return {};
     }
-    
+
     std::vector<int> png_params;
     if (compression.has_value())
     {
@@ -311,7 +311,7 @@ EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
     {
         return {};
     }
-    
+
     std::vector<int> jpg_params;
     if (quality.has_value())
     {
@@ -383,23 +383,23 @@ Image Image::Rotate(Rotation rotation) const
 Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
     const auto [w, h] = Size().pod();
-    
+
     // Ensure crop parameters are valid to prevent crashes
     const int safe_left = static_cast<int>(std::max(0, static_cast<int>(left.value)));
     const int safe_top = static_cast<int>(std::max(0, static_cast<int>(top.value)));
     const int safe_right = static_cast<int>(std::max(0, static_cast<int>(right.value)));
     const int safe_bottom = static_cast<int>(std::max(0, static_cast<int>(bottom.value)));
-    
+
     // Ensure ranges are valid
     const int end_y = static_cast<int>(h.value) - safe_bottom;
     const int end_x = static_cast<int>(w.value) - safe_right;
-    
+
     // If crop would result in empty image, return empty image
     if (safe_top >= end_y || safe_left >= end_x)
     {
         return Image{};
     }
-    
+
     Image img{};
     img.m_Impl = m_Impl(
         cv::Range(safe_top, end_y),
@@ -414,7 +414,7 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
     const int safe_top = static_cast<int>(std::max(0, static_cast<int>(top.value)));
     const int safe_right = static_cast<int>(std::max(0, static_cast<int>(right.value)));
     const int safe_bottom = static_cast<int>(std::max(0, static_cast<int>(bottom.value)));
-    
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -434,7 +434,7 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     const int safe_top = static_cast<int>(std::max(0, static_cast<int>(top.value)));
     const int safe_right = static_cast<int>(std::max(0, static_cast<int>(right.value)));
     const int safe_bottom = static_cast<int>(std::max(0, static_cast<int>(bottom.value)));
-    
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -666,13 +666,13 @@ PixelDensity Image::Density(::Size real_size) const
 {
     const auto [w, h]{ Size().pod() };
     const auto [bw, bh]{ (real_size).pod() };
-    
+
     // Safety check: if real_size is very small or zero, return a reasonable default
     if (bw <= 0_m || bh <= 0_m)
     {
         return PixelDensity{ 96.0f }; // Default DPI value
     }
-    
+
     return dla::math::min(w / bw, h / bh);
 }
 

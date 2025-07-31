@@ -653,10 +653,10 @@ void PrintOptionsWidget::SetDefaults()
     m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
     m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
     m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
-    
+
     // Update card layout display and warnings
     RefreshCardLayout();
-    
+
     m_Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Orientation)));
     m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_FlipOn)));
 
@@ -776,7 +776,7 @@ void PrintOptionsWidget::RefreshCardLayout()
     {
         m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
         m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
-        
+
         // Show visual warning when no cards can fit on the page
         if (m_Project.m_Data.m_CardLayout.x == 0 || m_Project.m_Data.m_CardLayout.y == 0)
         {

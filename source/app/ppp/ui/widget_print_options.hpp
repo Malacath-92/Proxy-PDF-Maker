@@ -1,8 +1,8 @@
 #pragma once
 
-#include <QWidget>
 #include <QDoubleSpinBox>
 #include <QWheelEvent>
+#include <QWidget>
 
 #include <ppp/util.hpp>
 

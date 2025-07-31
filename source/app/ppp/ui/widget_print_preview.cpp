@@ -391,11 +391,11 @@ void PageGrid::resizeEvent(QResizeEvent* event)
 
     const auto pixel_ratio{ static_cast<float>(event->size().width()) / m_CardsWidth };
     auto* grid_layout{ static_cast<QGridLayout*>(layout()) };
-    
+
     // Safety check: ensure spacing values are reasonable
     const int horizontal_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.x));
     const int vertical_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.y));
-    
+
     grid_layout->setHorizontalSpacing(horizontal_spacing);
     grid_layout->setVerticalSpacing(vertical_spacing);
 
@@ -606,7 +606,7 @@ void PrintPreview::Refresh()
     };
 
     const auto raw_pages{ DistributeCardsToPages(m_Project, columns, rows) };
-    
+
     // Show empty preview when no cards can fit on the page
     if (raw_pages.empty())
     {
@@ -620,7 +620,7 @@ void PrintPreview::Refresh()
         setWidget(empty_widget);
         return;
     }
-    
+
     auto pages{ raw_pages |
                 std::views::transform([](const Page& page)
                                       { return TempPage{ page, false }; }) |

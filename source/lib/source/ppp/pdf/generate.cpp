@@ -91,7 +91,7 @@ fs::path GeneratePdf(const Project& project)
                     const auto real_h{ card_height };
 
                     // Safety check: don't render cards that don't fit on the page
-                    if (real_x < 0_m || real_y < 0_m || 
+                    if (real_x < 0_m || real_y < 0_m ||
                         real_x + real_w > page_width || real_y + real_h > page_height)
                     {
                         // Skip rendering this card - it doesn't fit
@@ -121,7 +121,7 @@ fs::path GeneratePdf(const Project& project)
                         const auto real_y{ start_y - y * (card_height + spacing.y) + dy };
 
                         // Safety check: don't draw guides outside the page bounds
-                        if (real_x < 0_m || real_y < 0_m || 
+                        if (real_x < 0_m || real_y < 0_m ||
                             real_x > page_width || real_y > page_height)
                         {
                             // Skip drawing this guide - it's outside the page
@@ -355,5 +355,3 @@ fs::path GenerateTestPdf(const Project& project)
 
     return pdf->Write("alignment.pdf");
 }
-
-

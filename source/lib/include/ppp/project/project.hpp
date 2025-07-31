@@ -86,7 +86,7 @@ class Project : public QObject
     Size ComputeMargins() const;
     Size ComputeMaxMargins() const;
     FourMargins ComputeMarginsFour() const;
-    
+
     // Dynamic margin limit functions for flexible margin control
     Length ComputeMaxLeftMargin(Length right_margin) const;
     Length ComputeMaxRightMargin(Length left_margin) const;
@@ -170,7 +170,7 @@ class Project : public QObject
         Size ComputeMargins(const Config& config) const;
         Size ComputeMaxMargins(const Config& config) const;
         FourMargins ComputeMarginsFour(const Config& config) const;
-        
+
         // Dynamic margin limit functions for flexible margin control
         Length ComputeMaxLeftMargin(const Config& config, Length right_margin) const;
         Length ComputeMaxRightMargin(const Config& config, Length left_margin) const;

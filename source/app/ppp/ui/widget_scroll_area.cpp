@@ -92,7 +92,10 @@ class CardWidget : public QFrame
         setFrameShadow(Shadow::Raised);
     }
 
-    const fs::path& GetCardName() const { return m_CardName; }
+    const fs::path& GetCardName() const
+    {
+        return m_CardName;
+    }
 
     virtual bool hasHeightForWidth() const override
     {
@@ -319,7 +322,7 @@ class CardWidget : public QFrame
 
   protected:
     fs::path m_CardName;
-    
+
   private:
     bool m_BacksideEnabled{ false };
     fs::path m_Backside{};
@@ -629,7 +632,7 @@ CardScrollArea::CardScrollArea(Project& project)
 
     m_Grid = card_grid;
     m_GlobalIncrementButton = global_increment_button;
-    
+
     // Initial state update
     UpdateGlobalIncrementButton();
 }
@@ -697,7 +700,7 @@ void CardScrollArea::UpdateGlobalIncrementButton()
 {
     if (m_GlobalIncrementButton == nullptr)
         return;
-        
+
     // Check if any card is at the maximum value (100)
     bool any_at_max = false;
     for (const auto& [_, card] : m_Grid->GetCards())
@@ -708,7 +711,7 @@ void CardScrollArea::UpdateGlobalIncrementButton()
             break;
         }
     }
-    
+
     m_GlobalIncrementButton->setEnabled(!any_at_max);
 }
 

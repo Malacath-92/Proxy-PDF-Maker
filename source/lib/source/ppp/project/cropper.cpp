@@ -324,8 +324,8 @@ void Cropper::CropWork()
                 const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
                 const auto crop_work_duration{ crop_work_end_point - m_CropWorkStartPoint };
                 LogDebug("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
-                        m_TotalWorkDone.load(std::memory_order_relaxed),
-                        std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
+                         m_TotalWorkDone.load(std::memory_order_relaxed),
+                         std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
             }
         }
 
@@ -624,7 +624,7 @@ bool Cropper::DoPreviewWork(T* signaller)
             return false;
         }
     }
-    
+
     auto pop_work{
         [this]() -> std::optional<fs::path>
         {
@@ -650,19 +650,19 @@ bool Cropper::DoPreviewWork(T* signaller)
             LogDebug("DoPreviewWork: Acquiring property mutex");
             std::shared_lock lock{ m_PropertyMutex };
             LogDebug("DoPreviewWork: Property mutex acquired");
-            
+
             const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
             LogDebug("DoPreviewWork: Preview width calculated");
-            
+
             const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
             LogDebug("DoPreviewWork: Uncropped size calculated");
-            
+
             const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
             LogDebug("DoPreviewWork: Full bleed edge calculated");
-            
+
             const Size card_size{ m_Data.CardSize(m_Cfg) };
             LogDebug("DoPreviewWork: Card size calculated");
-            
+
             const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
             LogDebug("DoPreviewWork: Card size with full bleed calculated");
 
@@ -677,7 +677,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
             const bool has_preview{ std::ranges::contains(m_LoadedPreviews, card_name) };
             LogDebug("DoPreviewWork: Has preview: {}", has_preview);
-            
+
             lock.unlock();
             LogDebug("DoPreviewWork: Property mutex released");
 
@@ -697,7 +697,7 @@ bool Cropper::DoPreviewWork(T* signaller)
             if (fs::exists(input_file))
             {
                 LogDebug("DoPreviewWork: Input file exists, processing");
-                
+
                 QByteArray input_file_hash{
                     [&, this]()
                     {
@@ -738,7 +738,7 @@ bool Cropper::DoPreviewWork(T* signaller)
             else if (enable_uncrop && fs::exists(crop_file))
             {
                 LogDebug("DoPreviewWork: Crop file exists and uncrop enabled, processing");
-                
+
                 QByteArray crop_file_hash{
                     [&, this]()
                     {
@@ -800,4 +800,3 @@ bool Cropper::DoPreviewWork(T* signaller)
 
     return false;
 }
-
