@@ -476,10 +476,10 @@ class PrintPreview::PagePreview : public QWidget
 
         if (project.m_Data.m_CustomMarginsFour.has_value())
         {
-            m_LeftMargins = m_PaddingWidth - margins_four.left;
-            m_TopMargins = m_PaddingHeight - margins_four.top;
-            m_RightMargins = m_PaddingWidth - margins_four.right;
-            m_BottomMargins = m_PaddingHeight - margins_four.bottom;
+            m_LeftMargins = m_PaddingWidth - margins_four.m_Left;
+            m_TopMargins = m_PaddingHeight - margins_four.m_Top;
+            m_RightMargins = m_PaddingWidth - margins_four.m_Right;
+            m_BottomMargins = m_PaddingHeight - margins_four.m_Bottom;
         }
         else
         {

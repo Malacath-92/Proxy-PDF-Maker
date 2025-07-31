@@ -292,7 +292,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMarginsFour.value().left = static_cast<float>(v) * base_unit;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Left = static_cast<float>(v) * base_unit;
 
             // Recalculate card layout and refresh UI to reflect margin changes
             // This ensures the preview accurately represents the final output
@@ -313,7 +313,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMarginsFour.value().top = static_cast<float>(v) * base_unit;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Top = static_cast<float>(v) * base_unit;
 
             // Recalculate card layout and refresh UI to reflect margin changes
             // This ensures the preview accurately represents the final output
@@ -334,7 +334,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMarginsFour.value().right = static_cast<float>(v) * base_unit;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Right = static_cast<float>(v) * base_unit;
 
             // Recalculate card layout and refresh UI to reflect margin changes
             // This ensures the preview accurately represents the final output
@@ -355,7 +355,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMarginsFour.value().bottom = static_cast<float>(v) * base_unit;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Bottom = static_cast<float>(v) * base_unit;
 
             // Recalculate card layout and refresh UI to reflect margin changes
             // This ensures the preview accurately represents the final output
@@ -377,10 +377,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // This ensures the project data is properly synchronized with the UI
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto margin_value{ static_cast<float>(v) * base_unit };
-            m_Project.m_Data.m_CustomMarginsFour.value().left = margin_value;
-            m_Project.m_Data.m_CustomMarginsFour.value().top = margin_value;
-            m_Project.m_Data.m_CustomMarginsFour.value().right = margin_value;
-            m_Project.m_Data.m_CustomMarginsFour.value().bottom = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Left = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Top = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Right = margin_value;
+            m_Project.m_Data.m_CustomMarginsFour.value().m_Bottom = margin_value;
 
             // Recalculate card layout and refresh UI to reflect margin changes
             // This ensures the preview accurately represents the final output
@@ -675,19 +675,19 @@ void PrintOptionsWidget::SetDefaults()
     const auto margins_four{ m_Project.ComputeMarginsFour() };
 
     m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(custom_margins_four ? margins_four.left / base_unit : margins.x);
+    m_LeftMarginSpin->setValue(custom_margins_four ? margins_four.m_Left / base_unit : margins.x);
     m_LeftMarginSpin->setEnabled(custom_margins || custom_margins_four);
 
     m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(custom_margins_four ? margins_four.top / base_unit : margins.y);
+    m_TopMarginSpin->setValue(custom_margins_four ? margins_four.m_Top / base_unit : margins.y);
     m_TopMarginSpin->setEnabled(custom_margins || custom_margins_four);
 
     m_RightMarginSpin->setRange(0, max_margins.x);
-    m_RightMarginSpin->setValue(custom_margins_four ? margins_four.right / base_unit : margins.x);
+    m_RightMarginSpin->setValue(custom_margins_four ? margins_four.m_Right / base_unit : margins.x);
     m_RightMarginSpin->setEnabled(custom_margins_four);
 
     m_BottomMarginSpin->setRange(0, max_margins.y);
-    m_BottomMarginSpin->setValue(custom_margins_four ? margins_four.bottom / base_unit : margins.y);
+    m_BottomMarginSpin->setValue(custom_margins_four ? margins_four.m_Bottom / base_unit : margins.y);
     m_BottomMarginSpin->setEnabled(custom_margins_four);
 
     // Set up All Margins control

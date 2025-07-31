@@ -221,10 +221,10 @@ void Project::Dump(const fs::path& json_path) const
         if (m_Data.m_CustomMarginsFour.has_value())
         {
             json["custom_margins_four"] = nlohmann::json{
-                { "left", m_Data.m_CustomMarginsFour->left / 1_cm },
-                { "top", m_Data.m_CustomMarginsFour->top / 1_cm },
-                { "right", m_Data.m_CustomMarginsFour->right / 1_cm },
-                { "bottom", m_Data.m_CustomMarginsFour->bottom / 1_cm },
+                { "left", m_Data.m_CustomMarginsFour->m_Left / 1_cm },
+                { "top", m_Data.m_CustomMarginsFour->m_Top / 1_cm },
+                { "right", m_Data.m_CustomMarginsFour->m_Right / 1_cm },
+                { "bottom", m_Data.m_CustomMarginsFour->m_Bottom / 1_cm },
             };
         }
         json["card_layout"] = nlohmann::json{
@@ -426,8 +426,8 @@ bool Project::CacheCardLayout()
             LogDebug("CacheCardLayout: Using custom margins four");
             const auto margins_four{ ComputeMarginsFour() };
             LogDebug("CacheCardLayout: Margins four calculated");
-            available_space.x -= (margins_four.left + margins_four.right);
-            available_space.y -= (margins_four.top + margins_four.bottom);
+            available_space.x -= (margins_four.m_Left + margins_four.m_Right);
+            available_space.y -= (margins_four.m_Top + margins_four.m_Bottom);
             LogDebug("CacheCardLayout: Available space after margins calculated");
         }
         else if (m_Data.m_CustomMargins.has_value())
@@ -574,8 +574,8 @@ Size Project::ComputeEffectiveCardsSize() const
         const auto margins_four{ ComputeMarginsFour() };
         LogDebug("ComputeEffectiveCardsSize: Margins four calculated");
         const Size effective_size{
-            cards_size.x + margins_four.left + margins_four.right,
-            cards_size.y + margins_four.top + margins_four.bottom
+            cards_size.x + margins_four.m_Left + margins_four.m_Right,
+            cards_size.y + margins_four.m_Top + margins_four.m_Bottom
         };
         LogDebug("ComputeEffectiveCardsSize: Effective size calculated");
         return effective_size;
@@ -799,10 +799,10 @@ FourMargins Project::ProjectData::ComputeMarginsFour(const Config& config) const
     const Length half_height{ max_margins.y / 2.0f };
 
     return FourMargins{
-        .left = half_width,
-        .top = half_height,
-        .right = half_width,
-        .bottom = half_height,
+        .m_Left = half_width,
+        .m_Top = half_height,
+        .m_Right = half_width,
+        .m_Bottom = half_height,
     };
 }
 

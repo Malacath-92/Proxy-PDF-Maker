@@ -48,8 +48,8 @@ fs::path GeneratePdf(const Project& project)
     const auto max_margins{ project.ComputeMaxMargins() };
 
     // Use four-margin structure if available, otherwise fall back to old structure
-    const auto start_x{ project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.left : margins.x };
-    const auto start_y{ page_height - (project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.top : margins.y) };
+    const auto start_x{ project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.m_Left : margins.x };
+    const auto start_y{ page_height - (project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.m_Top : margins.y) };
 
     const auto backside_start_x{ max_margins.x - start_x };
     const auto backside_start_y{ start_y };
