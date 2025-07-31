@@ -188,11 +188,19 @@ PngDocument::PngDocument(const Project& project)
     m_PageSize = project.ComputePageSize();
     if (m_Project.m_Data.m_PageSize == Config::c_FitSize)
     {
-        const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
-        m_PrecomputedPageSize = PixelSize{
-            static_cast<float>(page_size_pixels.x) * 1_pix,
-            static_cast<float>(page_size_pixels.y) * 1_pix,
-        };
+        // Use minimum page size when no cards can fit (invalid layout)
+        if (m_Project.m_Data.m_CardLayout.x == 0 || m_Project.m_Data.m_CardLayout.y == 0)
+        {
+            m_PrecomputedPageSize = PixelSize{ 100.0f * 1_pix, 100.0f * 1_pix };
+        }
+        else
+        {
+            const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
+            m_PrecomputedPageSize = PixelSize{
+                static_cast<float>(page_size_pixels.x) * 1_pix,
+                static_cast<float>(page_size_pixels.y) * 1_pix,
+            };
+        }
     }
     else
     {
@@ -253,7 +261,7 @@ fs::path PngDocument::Write(fs::path path)
         const fs::path png_path{ png_folder / fs::path{ std::to_string(i) }.replace_extension(".png") };
         {
             const auto png_path_str{ png_path.string() };
-            LogInfo("Saving to {}...", png_path_str);
+            LogDebug("Saving to {}...", png_path_str);
         }
         if (fs::exists(png_path))
         {

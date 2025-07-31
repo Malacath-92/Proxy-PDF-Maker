@@ -273,7 +273,7 @@ fs::path PoDoFoDocument::Write(fs::path path)
     {
         const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
         const auto pdf_path_string{ pdf_path.string() };
-        LogInfo("Saving to {}...", pdf_path_string);
+        LogDebug("Saving to {}...", pdf_path_string);
         m_Document.Write(pdf_path.c_str());
         return pdf_path;
     }

@@ -14,7 +14,7 @@ Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
     : m_LogName(log_name)
     , m_LogFlags(log_flags)
 {
-    LogInfo("Constructing log sink '{}'!", m_LogName);
+    LogDebug("Constructing log sink '{}'!", m_LogName);
 
     if (bool(m_LogFlags & LogFlags::File))
         CreateLogFile();
@@ -22,7 +22,7 @@ Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
 
 Log::LogImpl::~LogImpl()
 {
-    LogInfo("Destroying log sink '{}'!", m_LogName);
+    LogDebug("Destroying log sink '{}'!", m_LogName);
 
     UnregisterInstance();
 }
