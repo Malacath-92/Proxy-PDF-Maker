@@ -2,7 +2,7 @@
 
 Many players making proxies for their favorite game (or even their own card games) use a guillotine or rotary cutter, a corner cutter, maybe even scissors. All those methods are very functional and give good results after getting used to them. However a cutting machine or plotter can give much more consistent results. Thus many players like to cut their proxies with a cutting machine.
 
-There are a multitude of automatic cutting machines available to end-users. Common ones are provided by _Silhouette America_, _Cricut_, or _Siser_. They all use their own software for creating designs, in this tutorial we will focus on _Silhouette Studio_, which is the design app used for Silhouette America, but it should be possible to translate the few steps within the design app to other brands.
+There are a multitude of automatic cutting machines available to end-users. Common ones are provided by _Silhouette America_, _Cricut_, or _Siser_. They all use their own software for creating designs, in this tutorial we will focus on _Silhouette Studio_ and _Cricut Design Space_, which are the design apps used for Silhouette America and Cricut respectively, but it should be possible to translate the few steps within the design app to other brands.
 
 ## Prerequisites
 Make sure you downloaded the latest version of [Proxy-PDF-Maker](https://github.com/Malacath-92/Proxy-PDF-Maker/releases).
@@ -59,6 +59,7 @@ While we are here we can also disable the outer-most cutting line. Right-click t
     Splitting cutting guides into separate paths
 </p>
 
+
 ## Generating the full PDF in the App
 
 >! Note:
@@ -81,3 +82,58 @@ Lastly you can now press `Render Document` to generate the pdf.
 ## Doing the Print & Cut
 
 Lastly you just print as usual, laminate, sticker, whatever you like. Then you place your prints on the mat, insert into your machine and send the cutting instructions. The actual settings, tools, and method for cutting highly depend on your material and machine, so we won't go into details about that here.
+
+## _Cricut Design Space_ Specific Instructions
+
+### Initial Setup
+
+Follow the Silhouette Studio instructions up to rendering the document. Make sure you only have `Export Exact Guides` enabled under `Guides Options`. It's recommended to set margins to at least 1.25 cm, but we recommend setting margins to around ~2.5 cm for reasons explained later.
+
+### Creating the Cricut Project
+
+1. Open a new project in _Cricut Design Space_ and upload the `_printme.svg` file
+2. Click on the Cut Guides, and in the top bar, set Operation to 'Print Then Cut' and unlock the Size
+3. Copy the values from `Cards Size` within the print options
+   > **Note:** You may have to go to Settings and Canvas and set Units to Metric. The size in the bar will be in centimeters, so for example, 268.0 mm should be set to 26.8 within Cricut
+
+### Configuring Page Settings
+
+1. Go to Settings and select the Load Type menu
+2. Set Print Then Cut Page Size to Tabloid
+   > **Important:** The Load Type setting will use whatever mat you decide to use which is important because Cricut must recognize the mat length. Ensure the mat fits the paper
+
+### Setting Up the Print Area
+
+1. Click Make and set the box in the Upper Leftmost corner
+2. If you have lots of margin space, leave the box as is for easy future replication
+
+### Configuring Print Settings
+
+1. Click Continue
+2. Under 'Printed', click 'Send to Printer' and select Printer: Microsoft Print to PDF
+3. If you are not using tabloid/ledger paper, also click 'Use System Dialog'
+4. Click Print
+5. In the System Print pop up:
+   - Set Printer as Microsoft Print to PDF
+   - Click Preferences and select the proper orientation
+   - Click Advanced and set the proper paper type
+   - Click OK and Print
+
+### Finalizing the Base PDF
+
+_This section is a summarization fo the 'Generating the full PDF in the App' section._
+1. Save/Move the file to `res\base_pdfs` within the PDF Proxy Printer folder
+2. Restart PDF Proxy Printer
+3. Reopen and set Rendering Backend to PoDoFo
+4. Set Paper Size to Base Pdf and set Base Pdf to your proper file
+5. Set the margins to what you set them to previously
+
+### Fine-tuning Alignment
+
+1. Click Render Document and look at the resultant PDF
+2. Continue adjusting margins until the lines are perfectly aligned
+3. Save the final PDF
+
+### Printing and Cutting
+
+Print the PDF with full page and insert it into the Cricut. Follow the onscreen instructions.
