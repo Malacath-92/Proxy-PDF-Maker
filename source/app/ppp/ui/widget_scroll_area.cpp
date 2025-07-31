@@ -585,7 +585,7 @@ CardScrollArea::CardScrollArea(Project& project)
     setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
 
     auto dec_number{
-        [=, &project]()
+        [=, this, &project]()
         {
             for (auto& [_, card] : card_grid->GetCards())
             {
@@ -596,7 +596,7 @@ CardScrollArea::CardScrollArea(Project& project)
     };
 
     auto inc_number{
-        [=, &project]()
+        [=, this, &project]()
         {
             for (auto& [_, card] : card_grid->GetCards())
             {
@@ -607,7 +607,7 @@ CardScrollArea::CardScrollArea(Project& project)
     };
 
     auto reset_number{
-        [=, &project]()
+        [=, this, &project]()
         {
             for (auto& [_, card] : card_grid->GetCards())
             {

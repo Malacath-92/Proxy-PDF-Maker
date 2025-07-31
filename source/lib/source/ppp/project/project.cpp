@@ -547,9 +547,6 @@ Size Project::ComputeEffectiveCardsSize() const
 {
     LogDebug("ComputeEffectiveCardsSize: Starting calculation");
 
-    const Size page_size{ ComputePageSize() };
-    LogDebug("ComputeEffectiveCardsSize: Page size calculated");
-
     const Size card_size_with_bleed{ CardSizeWithBleed() };
     LogDebug("ComputeEffectiveCardsSize: Card size with bleed calculated");
 
