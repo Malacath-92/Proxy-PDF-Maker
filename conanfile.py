@@ -30,6 +30,7 @@ class ProxyPDF(ConanFile):
         self.options["qt"].with_odbc = False
         self.options["qt"].with_mysql = False
         self.options["qt"].with_sqlite3 = False
+        self.options["qt"].with_pq = False
 
         self.options["openssl"].shared = False
 
