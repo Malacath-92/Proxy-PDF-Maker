@@ -475,37 +475,6 @@ Size Project::ComputeCardsSize() const
     return m_Data.ComputeCardsSize(g_Cfg);
 }
 
-Size Project::ComputeEffectiveCardsSize() const
-{
-    const Size page_size{ ComputePageSize() };
-    const Size card_size_with_bleed{ CardSizeWithBleed() };
-    const auto [columns, rows]{ m_Data.m_CardLayout.pod() };
-
-    // Calculate the actual size of the cards area (including spacing)
-    const Size cards_size{ m_Data.m_CardLayout * card_size_with_bleed + (m_Data.m_CardLayout - 1) * m_Data.m_Spacing };
-
-    // If custom margins are set, the effective cards size is the cards area plus the margins
-    if (m_Data.m_CustomMarginsFour.has_value())
-    {
-        const auto margins_four{ ComputeMarginsFour() };
-        return Size{
-            cards_size.x + margins_four.m_Left + margins_four.m_Right,
-            cards_size.y + margins_four.m_Top + margins_four.m_Bottom
-        };
-    }
-    else if (m_Data.m_CustomMargins.has_value())
-    {
-        const auto margins{ ComputeMargins() };
-        return Size{
-            cards_size.x + margins.x * 2,
-            cards_size.y + margins.y * 2
-        };
-    }
-
-    // If no custom margins, return the cards size as is
-    return cards_size;
-}
-
 Size Project::ComputeMargins() const
 {
     return m_Data.ComputeMargins(g_Cfg);

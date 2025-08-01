@@ -82,7 +82,6 @@ class Project : public QObject
 
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
-    Size ComputeEffectiveCardsSize() const;
     Size ComputeMargins() const;
     Size ComputeMaxMargins() const;
     FourMargins ComputeMarginsFour() const;
