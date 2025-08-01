@@ -723,8 +723,6 @@ void PrintOptionsWidget::RefreshSizes()
 
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
-    const auto margins{ m_Project.ComputeMargins() / base_unit };
-    const auto margins_four{ m_Project.ComputeMarginsFour() };
 
     // Preserve current margin values when updating ranges
     const auto current_left{ m_LeftMarginSpin->value() };
