@@ -46,10 +46,10 @@ struct FourMargins
 {
     // Individual margin controls allow for asymmetric layouts needed in professional printing
     // where different margins are required for binding, cutting, or aesthetic purposes
-    Length left{ 0_mm };
-    Length top{ 0_mm };
-    Length right{ 0_mm };
-    Length bottom{ 0_mm };
+    Length m_Left{ 0_mm };
+    Length m_Top{ 0_mm };
+    Length m_Right{ 0_mm };
+    Length m_Bottom{ 0_mm };
 };
 
 class Project : public QObject

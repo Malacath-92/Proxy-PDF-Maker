@@ -96,8 +96,6 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
         }
     };
 
-
-
     const auto save_project{
         [=, &project, &application]()
         {
