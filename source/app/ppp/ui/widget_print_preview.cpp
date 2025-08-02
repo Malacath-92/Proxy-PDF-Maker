@@ -389,8 +389,13 @@ void PageGrid::resizeEvent(QResizeEvent* event)
 
     const auto pixel_ratio{ static_cast<float>(event->size().width()) / m_CardsWidth };
     auto* grid_layout{ static_cast<QGridLayout*>(layout()) };
-    grid_layout->setHorizontalSpacing(static_cast<int>(pixel_ratio * m_Spacing.x));
-    grid_layout->setVerticalSpacing(static_cast<int>(pixel_ratio * m_Spacing.y));
+
+    // Safety check: ensure spacing values are reasonable
+    const int horizontal_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.x));
+    const int vertical_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.y));
+
+    grid_layout->setHorizontalSpacing(horizontal_spacing);
+    grid_layout->setVerticalSpacing(vertical_spacing);
 
     if (m_Guides != nullptr)
     {
@@ -465,8 +470,22 @@ class PrintPreview::PagePreview : public QWidget
         m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
-        m_LeftMargins = m_PaddingWidth - margins.x;
-        m_TopMargins = m_PaddingHeight - margins.y;
+        const auto margins_four{ project.ComputeMarginsFour() };
+
+        if (project.m_Data.m_CustomMarginsFour.has_value())
+        {
+            m_LeftMargins = m_PaddingWidth - margins_four.m_Left;
+            m_TopMargins = m_PaddingHeight - margins_four.m_Top;
+            m_RightMargins = m_PaddingWidth - margins_four.m_Right;
+            m_BottomMargins = m_PaddingHeight - margins_four.m_Bottom;
+        }
+        else
+        {
+            m_LeftMargins = m_PaddingWidth - margins.x;
+            m_TopMargins = m_PaddingHeight - margins.y;
+            m_RightMargins = m_PaddingWidth - margins.x;
+            m_BottomMargins = m_PaddingHeight - margins.y;
+        }
 
         if (params.m_GridParams.m_IsBackside)
         {
@@ -516,20 +535,26 @@ class PrintPreview::PagePreview : public QWidget
         const auto pixel_ratio{ size / page_size };
 
         const auto padding_width_left{ m_PaddingWidth - m_LeftMargins };
-        const auto padding_width_right{ m_PaddingWidth + m_LeftMargins };
+        const auto padding_width_right{ m_PaddingWidth - m_RightMargins };
         const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * pixel_ratio.x) };
         const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * pixel_ratio.x) };
 
         const auto padding_height_top{ m_PaddingHeight - m_TopMargins };
-        const auto padding_height_bottom{ m_PaddingHeight + m_TopMargins };
+        const auto padding_height_bottom{ m_PaddingHeight - m_BottomMargins };
         const auto padding_height_top_pixels{ static_cast<int>(padding_height_top * pixel_ratio.y) };
         const auto padding_height_bottom_pixels{ static_cast<int>(padding_height_bottom * pixel_ratio.y) };
 
+        // Safety check: ensure margins don't cause negative or excessive values
+        const int safe_left = qMax(0, qMin(padding_width_left_pixels, width / 2));
+        const int safe_right = qMax(0, qMin(padding_width_right_pixels, width / 2));
+        const int safe_top = qMax(0, qMin(padding_height_top_pixels, height / 2));
+        const int safe_bottom = qMax(0, qMin(padding_height_bottom_pixels, height / 2));
+
         setContentsMargins(
-            padding_width_left_pixels,
-            padding_height_top_pixels,
-            padding_width_right_pixels,
-            padding_height_bottom_pixels);
+            safe_left,
+            safe_top,
+            safe_right,
+            safe_bottom);
     }
 
   private:
@@ -544,6 +569,8 @@ class PrintPreview::PagePreview : public QWidget
     Length m_PaddingHeight;
     Length m_LeftMargins;
     Length m_TopMargins;
+    Length m_RightMargins;
+    Length m_BottomMargins;
 
     PageGrid* m_Grid;
     GuidesOverlay* m_Guides{ nullptr };
@@ -577,6 +604,21 @@ void PrintPreview::Refresh()
     };
 
     const auto raw_pages{ DistributeCardsToPages(m_Project, columns, rows) };
+
+    // Show empty preview when no cards can fit on the page
+    if (raw_pages.empty())
+    {
+        auto* empty_widget{ new QWidget };
+        auto* empty_layout{ new QVBoxLayout };
+        auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
+        empty_label->setAlignment(Qt::AlignCenter);
+        empty_label->setStyleSheet("QLabel { color : red; font-size: 14px; }");
+        empty_layout->addWidget(empty_label);
+        empty_widget->setLayout(empty_layout);
+        setWidget(empty_widget);
+        return;
+    }
+
     auto pages{ raw_pages |
                 std::views::transform([](const Page& page)
                                       { return TempPage{ page, false }; }) |
@@ -620,6 +662,7 @@ void PrintPreview::Refresh()
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
+    header_layout->addWidget(new QLabel{ "Note: Card sizes shown are not representative of final render, but quantities are accurate." });
 
     const auto has_missing_previews{ std::ranges::any_of(page_widgets, &PagePreview::DoesHaveMissingPreviews) };
     if (has_missing_previews)

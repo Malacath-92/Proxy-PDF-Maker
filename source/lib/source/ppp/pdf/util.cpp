@@ -29,6 +29,12 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
 
 std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows)
 {
+    // Return empty result when no cards can fit on a page (invalid layout)
+    if (columns == 0 || rows == 0)
+    {
+        return {};
+    }
+
     const auto images_per_page{ columns * rows };
 
     // throw all images N times into a list
@@ -124,6 +130,12 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
 
 Grid DistributeCardsToGrid(const Page& page, GridOrientation orientation, uint32_t columns, uint32_t rows)
 {
+    // Return empty grid when no cards can fit (invalid layout)
+    if (columns == 0 || rows == 0)
+    {
+        return {};
+    }
+
     auto get_coord{
         [=](size_t i)
         {
