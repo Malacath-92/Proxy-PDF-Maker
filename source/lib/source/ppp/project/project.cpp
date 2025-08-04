@@ -246,10 +246,9 @@ void Project::InitProperties()
 {
     LogInfo("Collecting images...");
 
-    // Get all image files in the crop directory or the previews
+    // Get all image files in the images directory
     const std::vector crop_list{
-        g_Cfg.m_EnableUncrop ? ListImageFiles(m_Data.m_ImageDir)
-                             : ListImageFiles(m_Data.m_ImageDir, m_Data.m_CropDir)
+        ListImageFiles(m_Data.m_ImageDir)
     };
 
     // Check that we have all our cards accounted for

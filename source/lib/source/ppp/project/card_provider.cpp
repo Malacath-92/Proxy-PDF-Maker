@@ -8,14 +8,9 @@
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
     , m_ImageDir{ project.m_Data.m_ImageDir }
-    , m_CropDir{ g_Cfg.m_EnableUncrop ? project.m_Data.m_CropDir : "" }
     , m_OutputDir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) }
 {
     m_Watcher.addWatch(m_ImageDir.string(), this, false);
-    if (!m_CropDir.empty())
-    {
-        m_Watcher.addWatch(m_CropDir.string(), this, false);
-    }
 }
 
 void CardProvider::Start()
@@ -46,13 +41,8 @@ void CardProvider::ImageDirChanged()
     }
 
     m_Watcher.removeWatch((m_ImageDir / "").string());
-    if (!m_CropDir.empty())
-    {
-        m_Watcher.removeWatch((m_CropDir / "").string());
-    }
 
     m_ImageDir = m_Project.m_Data.m_ImageDir;
-    m_CropDir = m_Project.m_Data.m_CropDir;
     m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
 
     // ... and add all new files ...
@@ -74,53 +64,6 @@ void CardProvider::BleedChanged()
     for (const fs::path& image : ListFiles())
     {
         CardAdded(image, true, false);
-    }
-}
-void CardProvider::EnableUncropChanged()
-{
-    // g_Cfg.m_EnableUncrop option has changed, so we need to add/remove cards
-    // that are in the crop folder but not the images folder ...
-
-    const auto images{
-        ListImageFiles(m_ImageDir)
-    };
-    if (!m_CropDir.empty())
-    {
-        // g_Cfg.m_EnableUncrop was enabled, is not anymore, so we remove the
-        // difference ...
-        const auto crop_images{
-            ListImageFiles(m_CropDir)
-        };
-        for (const fs::path& image : crop_images)
-        {
-            if (!std::ranges::contains(images, image))
-            {
-                CardRemoved(image);
-            }
-        }
-
-        // ... and remove the old watch ...
-        m_CropDir.clear();
-        m_Watcher.removeWatch((m_CropDir / "").string());
-    }
-    else
-    {
-        // g_Cfg.m_EnableUncrop was not enabled, now it is, so we add the
-        // difference ... ...
-        const auto crop_images{
-            ListImageFiles(m_Project.m_Data.m_CropDir)
-        };
-        for (const fs::path& image : crop_images)
-        {
-            if (!std::ranges::contains(images, image))
-            {
-                CardAdded(image, true, true);
-            }
-        }
-
-        // ... and add a new watch ...
-        m_CropDir = m_Project.m_Data.m_CropDir;
-        m_Watcher.addWatch(m_CropDir.string(), this, false);
     }
 }
 void CardProvider::ColorCubeChanged()
@@ -189,7 +132,5 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
 
 std::vector<fs::path> CardProvider::ListFiles()
 {
-    return !m_CropDir.empty()
-               ? ListImageFiles(m_ImageDir, m_CropDir)
-               : ListImageFiles(m_ImageDir);
+    return ListImageFiles(m_ImageDir);
 }

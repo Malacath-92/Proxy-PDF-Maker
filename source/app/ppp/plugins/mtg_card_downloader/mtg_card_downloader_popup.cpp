@@ -303,11 +303,7 @@ void MtgDownloaderPopup::FinalizeDownload()
     const auto new_images{
         ListImageFiles(output_dir)
     };
-    const auto& target_folder{
-        m_Downloader->ProvidesBleedEdge()
-            ? m_Project.m_Data.m_ImageDir
-            : m_Project.m_Data.m_CropDir,
-    };
+    const auto& target_folder{ m_Project.m_Data.m_ImageDir };
     for (const auto& img : new_images)
     {
         if (!fs::exists(target_folder))
@@ -352,10 +348,6 @@ bool MtgDownloaderPopup::ValidateSettings()
     if (m_Project.m_Data.m_CardSizeChoice != "Standard")
     {
         error += "Be sure to card size to \"Standard\" when downloading MtG cards!";
-    }
-    if (m_InputType == InputType::Decklist && !g_Cfg.m_EnableUncrop)
-    {
-        error += "Be sure to set the \"Allow Precropped\" option when downloading from Scryfall!";
     }
 
     if (!error.isEmpty())

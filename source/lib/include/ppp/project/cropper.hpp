@@ -5,6 +5,7 @@
 #include <functional>
 
 #include <QObject>
+#include <QTemporaryDir>
 #include <QTimer>
 
 #include <ppp/util.hpp>
@@ -44,7 +45,6 @@ class Cropper : public QObject
     void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
     void CardSizeChangedDiff(std::string card_size);
     void BleedChangedDiff(Length bleed);
-    void EnableUncropChangedDiff(bool enable_uncrop);
     void ColorCubeChangedDiff(const std::string& cube_name);
     void BasePreviewWidthChangedDiff(Pixel base_preview_width);
     void MaxDPIChangedDiff(PixelDensity dpi);
@@ -89,6 +89,9 @@ class Cropper : public QObject
 
     std::shared_mutex m_IgnoreMutex;
     std::vector<fs::path> m_IgnoreNotification;
+
+    std::shared_mutex m_FileMutex;
+    QTemporaryDir m_TmpDir;
 
     using time_point = decltype(std::chrono::high_resolution_clock::now());
     time_point m_CropWorkStartPoint;

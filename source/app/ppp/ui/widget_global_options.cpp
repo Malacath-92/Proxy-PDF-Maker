@@ -128,10 +128,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
     jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
 
-    auto* precropped_checkbox{ new QCheckBox{ "Allow Precropped" } };
-    precropped_checkbox->setChecked(g_Cfg.m_EnableUncrop);
-    precropped_checkbox->setToolTip("Allows putting pre-cropped images into images/crop");
-
     auto* color_cube{ new ComboBoxWithLabel{
         "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube } };
     color_cube->GetWidget()->setToolTip("Requires rerunning cropper");
@@ -167,7 +163,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     layout->addWidget(backend);
     layout->addWidget(image_format);
     layout->addWidget(jpg_quality);
-    layout->addWidget(precropped_checkbox);
     layout->addWidget(color_cube);
     layout->addWidget(preview_width);
     layout->addWidget(max_dpi);
@@ -227,15 +222,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
             g_Cfg.m_JpgQuality = static_cast<int>(v);
             SaveConfig(g_Cfg);
             JpgQualityChanged();
-        }
-    };
-
-    auto change_precropped{
-        [this](Qt::CheckState s)
-        {
-            g_Cfg.m_EnableUncrop = s == Qt::CheckState::Checked;
-            SaveConfig(g_Cfg);
-            EnableUncropChanged();
         }
     };
 
@@ -323,10 +309,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_jpg_quality);
-    QObject::connect(precropped_checkbox,
-                     &QCheckBox::checkStateChanged,
-                     this,
-                     change_precropped);
     QObject::connect(color_cube->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,

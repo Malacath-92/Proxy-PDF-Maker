@@ -44,6 +44,8 @@ Cropper::~Cropper()
     delete m_Router;
 
     m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
+
+    m_TmpDir.setAutoRemove(true);
 }
 
 void Cropper::Start()
@@ -139,12 +141,6 @@ void Cropper::BleedChangedDiff(Length bleed)
     m_Data.m_BleedEdge = bleed;
 }
 
-void Cropper::EnableUncropChangedDiff(bool enable_uncrop)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.m_EnableUncrop = enable_uncrop;
-}
-
 void Cropper::ColorCubeChangedDiff(const std::string& cube_name)
 {
     std::unique_lock lock{ m_PropertyMutex };
@@ -180,11 +176,7 @@ void Cropper::CardRemoved(const fs::path& card_name)
     }
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.m_ImageDir / card_name))
-    {
-        CardModified(card_name);
-    }
-    else if (fs::exists(m_Data.m_CropDir / card_name))
+    if (fs::exists(m_Data.m_CropDir / card_name))
     {
         fs::remove(m_Data.m_CropDir / card_name);
 
@@ -203,11 +195,7 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     RemoveWork(old_card_name);
 
     std::shared_lock lock{ m_PropertyMutex };
-    if (g_Cfg.m_EnableUncrop && fs::exists(m_Data.m_ImageDir / old_card_name))
-    {
-        fs::rename(m_Data.m_ImageDir / old_card_name, m_Data.m_ImageDir / new_card_name);
-    }
-    else if (fs::exists(m_Data.m_CropDir / old_card_name))
+    if (fs::exists(m_Data.m_CropDir / old_card_name))
     {
         fs::rename(m_Data.m_CropDir / old_card_name, m_Data.m_CropDir / new_card_name);
     }
@@ -437,7 +425,6 @@ bool Cropper::DoCropWork(T* signaller)
             const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
             const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-            const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
             const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
             const std::string color_cube_name{ m_Cfg.m_ColorCube };
@@ -445,9 +432,16 @@ bool Cropper::DoCropWork(T* signaller)
             const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
 
             const fs::path input_file{ m_Data.m_ImageDir / card_name };
-            const fs::path crop_file{ m_Data.m_CropDir / card_name };
-            const fs::path output_file{ output_dir / card_name };
+            const fs::path crop_dir{ m_Data.m_CropDir };
             lock.unlock();
+
+            const fs::path crop_file{ crop_dir / card_name };
+            const fs::path output_file{ output_dir / card_name };
+
+            const auto card_aspect_ratio{ card_size.x / card_size.y };
+            const auto card_with_full_bleed_aspect_ratio{
+                card_size_with_full_bleed.x / card_size_with_full_bleed.y
+            };
 
             const bool do_color_correction{ color_cube_name != "None" };
             const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
@@ -494,56 +488,8 @@ bool Cropper::DoCropWork(T* signaller)
                 }
             };
 
-            if (enable_uncrop && fs::exists(crop_file))
-            {
-                // Only uncrop if there is no input-file or the input-file has
-                // previously been written by us
-                if (!fs::exists(input_file) || m_ImageDB.FindEntry(input_file))
-                {
-                    QByteArray crop_file_hash{
-                        [&, this]()
-                        {
-                            std::shared_lock image_db_lock{ m_ImageDBMutex };
-                            return m_ImageDB.TestEntry(input_file, crop_file, image_params);
-                        }()
-                    };
-
-                    // non-empty hash indicates that the source has changed
-                    if (!crop_file_hash.isEmpty())
-                    {
-                        const auto handle_ignore{
-                            [&, crop_file]
-                            {
-                                if (should_ignore(crop_file))
-                                {
-                                    // we just wrote to this file, ignore the change and write to DB
-                                    discard_ignore_notifications.push_back(crop_file);
-
-                                    std::unique_lock image_db_lock{ m_ImageDBMutex };
-                                    m_ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
-                                    return true;
-                                }
-                                else
-                                {
-                                    // we will now write to this file, we expect to get a notification on its change that we should ignore
-                                    new_ignore_notifications.push_back(crop_file);
-                                    return false;
-                                }
-                            }
-                        };
-
-                        if (!handle_ignore())
-                        {
-                            const Image image{ Image::Read(crop_file) };
-                            const Image uncropped_image{ UncropImage(image, card_name, card_size, fancy_uncrop) };
-                            uncropped_image.Write(input_file, 3, 95, card_size_with_full_bleed);
-
-                            std::unique_lock image_db_lock{ m_ImageDBMutex };
-                            m_ImageDB.PutEntry(input_file, std::move(crop_file_hash), image_params);
-                        }
-                    }
-                }
-            }
+            // Hold on to a shared lock while reading files ...
+            std::shared_lock files_lock{ m_FileMutex };
 
             QByteArray input_file_hash{
                 [&, this]()
@@ -567,28 +513,56 @@ bool Cropper::DoCropWork(T* signaller)
                 }
             };
 
+            Image source_image{ Image::Read(input_file) };
+
+            // no more file reading necessary, we have the source in memory
+            files_lock.unlock();
+
             if (should_ignore(input_file))
             {
                 // we just wrote to this file, ignore the change and write to DB
                 discard_ignore_notifications.push_back(input_file);
                 return true;
             }
-            else if (enable_uncrop && crop_file == output_file)
+
+            const auto image_aspect_ratio{ source_image.AspectRatio() };
+            const bool image_has_bleed{
+                std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio) <
+                std::abs(image_aspect_ratio - card_aspect_ratio)
+            };
+            const bool image_is_precropped{ !image_has_bleed };
+
+            if (image_is_precropped)
             {
+                const Image uncropped_image{ UncropImage(source_image, card_name, card_size, fancy_uncrop) };
+                const auto tmp_file_path{ fs::path{ m_TmpDir.path().toStdString() } / card_name };
+                uncropped_image.Write(tmp_file_path, 3, 100, card_size_with_full_bleed);
+
+                // make sure we copy this over so the following steps can use the uncropped image
+                source_image = uncropped_image;
+
                 // we will now write to this file, we expect to get a notification on its change that we should ignore
-                new_ignore_notifications.push_back(crop_file);
+                new_ignore_notifications.push_back(input_file);
+
+                // take a unique lock so we can move the old pre-cropped file and replace it with the new one
+                std::unique_lock files_write_lock{ m_FileMutex };
+                if (!fs::exists(crop_dir))
+                {
+                    fs::create_directories(crop_dir);
+                }
+                fs::rename(input_file, crop_file);
+                fs::rename(tmp_file_path, input_file);
             }
 
-            const Image image{ Image::Read(input_file) };
-            const Image cropped_image{ CropImage(image, card_name, card_size, full_bleed_edge, bleed_edge, max_density) };
+            const Image cropped_image{ CropImage(source_image, card_name, card_size, full_bleed_edge, bleed_edge, max_density) };
             if (do_color_correction)
             {
                 const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-                vibrant_image.Write(output_file, 3, 95, card_size_with_bleed);
+                vibrant_image.Write(output_file, 3, 100, card_size_with_bleed);
             }
             else
             {
-                cropped_image.Write(output_file, 3, 95, card_size_with_bleed);
+                cropped_image.Write(output_file, 3, 100, card_size_with_bleed);
             }
 
             return true;
@@ -642,7 +616,6 @@ bool Cropper::DoPreviewWork(T* signaller)
             const Size card_size{ m_Data.CardSize(m_Cfg) };
             const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-            const bool enable_uncrop{ m_Cfg.m_EnableUncrop };
             const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
             const fs::path input_file{ m_Data.m_ImageDir / card_name };
@@ -650,6 +623,11 @@ bool Cropper::DoPreviewWork(T* signaller)
 
             const bool has_preview{ std::ranges::contains(m_LoadedPreviews, card_name) };
             lock.unlock();
+
+            const auto card_aspect_ratio{ card_size.x / card_size.y };
+            const auto card_with_full_bleed_aspect_ratio{
+                card_size_with_full_bleed.x / card_size_with_full_bleed.y
+            };
 
             const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
 
@@ -661,70 +639,72 @@ bool Cropper::DoPreviewWork(T* signaller)
                 .m_WillWriteOutput = false,
             };
 
-            // Generate Preview ...
-            if (fs::exists(input_file))
             {
-                QByteArray input_file_hash{
-                    [&, this]()
-                    {
-                        std::shared_lock image_db_lock{ m_ImageDBMutex };
-                        return m_ImageDB.TestEntry(output_file, input_file, image_params);
-                    }()
-                };
+                // Hold on to a shared lock while reading files ...
+                std::shared_lock files_lock{ m_FileMutex };
 
-                // empty hash indicates that the source has not changed
-                if (input_file_hash.isEmpty() && has_preview)
+                // ... and generate Preview ...
+                if (fs::exists(input_file))
                 {
-                    return true;
-                }
+                    QByteArray input_file_hash{
+                        [&, this]()
+                        {
+                            std::shared_lock image_db_lock{ m_ImageDBMutex };
+                            return m_ImageDB.TestEntry(output_file, input_file, image_params);
+                        }()
+                    };
 
-                const Image image{ Image::Read(input_file).Resize(uncropped_size) };
-
-                ImagePreview image_preview{};
-                image_preview.m_UncroppedImage = image;
-                image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
-
-                {
-                    std::unique_lock image_db_lock{ m_ImageDBMutex };
-                    m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
-                }
-
-                signaller->PreviewUpdated(card_name, image_preview);
-            }
-            else if (enable_uncrop && fs::exists(crop_file))
-            {
-                QByteArray crop_file_hash{
-                    [&, this]()
+                    // empty hash indicates that the source has not changed
+                    if (input_file_hash.isEmpty() && has_preview)
                     {
-                        std::shared_lock image_db_lock{ m_ImageDBMutex };
-                        return m_ImageDB.TestEntry(output_file, crop_file, image_params);
-                    }()
-                };
+                        return true;
+                    }
 
-                // empty hash indicates that the source has not changed
-                if (crop_file_hash.isEmpty() && has_preview)
-                {
-                    return true;
-                }
+                    const Image source_image{ Image::Read(input_file) };
 
-                const PixelSize cropped_size{
-                    [&]() -> PixelSize
+                    // no more file reading necessary, we have the source in memory
+                    files_lock.unlock();
+
+                    const auto image_aspect_ratio{ source_image.AspectRatio() };
+                    const bool image_has_bleed{
+                        std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio) <
+                        std::abs(image_aspect_ratio - card_aspect_ratio)
+                    };
+
+                    ImagePreview image_preview{};
+                    if (image_has_bleed)
                     {
-                        const auto [w, h]{ uncropped_size.pod() };
-                        const auto [bw, bh]{ card_size_with_full_bleed.pod() };
-                        const auto density{ dla::math::min(w / bw, h / bh) };
-                        const auto crop{ dla::math::round(0.12_in * density) };
-                        return uncropped_size - 2.0f * crop;
-                    }()
-                };
+                        const Image image{ source_image.Resize(uncropped_size) };
 
-                const Image image{ Image::Read(crop_file).Resize(cropped_size) };
+                        image_preview.m_UncroppedImage = image;
+                        image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
+                    }
+                    else
+                    {
+                        const PixelSize cropped_size{
+                            [&]() -> PixelSize
+                            {
+                                const auto [w, h]{ uncropped_size.pod() };
+                                const auto [bw, bh]{ card_size_with_full_bleed.pod() };
+                                const auto density{ dla::math::min(w / bw, h / bh) };
+                                const auto crop{ dla::math::round(0.12_in * density) };
+                                return uncropped_size - 2.0f * crop;
+                            }()
+                        };
 
-                ImagePreview image_preview{};
-                image_preview.m_CroppedImage = image;
-                image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
+                        const Image image{ source_image.Resize(cropped_size) };
 
-                signaller->PreviewUpdated(card_name, image_preview);
+                        image_preview.m_CroppedImage = image;
+                        image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
+                    }
+
+                    {
+                        std::unique_lock image_db_lock{ m_ImageDBMutex };
+                        m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
+                    }
+
+                    signaller->PreviewUpdated(card_name, image_preview);
+                }
             }
 
             if (!has_preview)

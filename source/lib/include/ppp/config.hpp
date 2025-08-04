@@ -41,7 +41,6 @@ struct UnitInfo
 
 struct Config
 {
-    bool m_EnableUncrop{ false };
     bool m_EnableFancyUncrop{ true };
     Pixel m_BasePreviewWidth{ 248_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
