@@ -179,7 +179,7 @@ QRegularExpression ScryfallDownloader::GetDecklistRegex()
         Arkidekt:
         N Name (S) CN ...
     */
-    return QRegularExpression{ R"'((\d+)x? "?(.*)"? \(([^ ]+)\) ((.*-)?\d+))'" };
+    return QRegularExpression{ R"'((\d+)x? "?(.*)"? \(([^ ]+)\) ((.*-)?\d+\w*))'" };
 }
 
 ScryfallDownloader::DecklistCard ScryfallDownloader::ParseDeckline(const QRegularExpressionMatch& deckline)
