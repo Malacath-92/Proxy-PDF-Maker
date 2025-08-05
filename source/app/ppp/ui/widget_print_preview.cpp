@@ -21,6 +21,7 @@
 
 class GuidesOverlay;
 class BordersOverlay;
+class MarginsOverlay;
 
 class PageGrid : public QWidget
 {
@@ -132,10 +133,11 @@ class PageGrid : public QWidget
         return m_HasMissingPreviews;
     }
 
-    void SetOverlays(GuidesOverlay* guides, BordersOverlay* borders)
+    void SetOverlays(GuidesOverlay* guides, BordersOverlay* borders, MarginsOverlay* margins)
     {
         m_Guides = guides;
         m_Borders = borders;
+        m_Margins = margins;
     }
 
     virtual void resizeEvent(QResizeEvent* event) override;
@@ -144,6 +146,7 @@ class PageGrid : public QWidget
     bool m_HasMissingPreviews{ false };
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
+    MarginsOverlay* m_Margins{ nullptr };
 
     Length m_CardsWidth{};
     Size m_Spacing{};
@@ -385,6 +388,61 @@ class BordersOverlay : public QWidget
     QPainterPath m_CardBorder;
 };
 
+class MarginsOverlay : public QWidget
+{
+  public:
+    MarginsOverlay(const Project& project)
+        : m_Project{ project }
+    {
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
+
+    virtual void paintEvent(QPaintEvent* /*event*/) override
+    {
+        QPainter painter{ this };
+        DrawSvg(painter, m_Margins, QColor{ 0, 0, 255 });
+        painter.end();
+    }
+
+    void ResizeOverlay(PageGrid* grid)
+    {
+        const dla::vec2 first_card_corner{
+            static_cast<float>(grid->pos().x()),
+            static_cast<float>(grid->pos().y()),
+        };
+        const dla::vec2 grid_size{
+            static_cast<float>(grid->size().width()),
+            static_cast<float>(grid->size().height()),
+        };
+        const auto pixel_ratio{ grid_size.x / m_Project.ComputeCardsSize().x };
+
+        const auto margins{
+            m_Project.ComputeMargins(),
+        };
+        const auto page_size{
+            m_Project.ComputePageSize()
+        };
+        const dla::vec2 usable_size{
+            (page_size.x - margins.m_Right - margins.m_Left) * pixel_ratio,
+            (page_size.y - margins.m_Bottom - margins.m_Top) * pixel_ratio,
+        };
+
+        const QRectF rect{
+            first_card_corner.x,
+            first_card_corner.y,
+            usable_size.x,
+            usable_size.y,
+        };
+        m_Margins.addRect(rect);
+    }
+
+  private:
+    const Project& m_Project;
+
+    QPainterPath m_Margins;
+};
+
 void PageGrid::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
@@ -407,6 +465,11 @@ void PageGrid::resizeEvent(QResizeEvent* event)
     if (m_Borders != nullptr)
     {
         m_Borders->ResizeOverlay(this);
+    }
+
+    if (m_Margins != nullptr)
+    {
+        m_Margins->ResizeOverlay(this);
     }
 }
 
@@ -455,7 +518,10 @@ class PrintPreview::PagePreview : public QWidget
             m_Borders->setParent(this);
         }
 
-        grid->SetOverlays(m_Guides, m_Borders);
+        m_Margins = new MarginsOverlay{ project };
+        m_Margins->setParent(this);
+
+        grid->SetOverlays(m_Guides, m_Borders, m_Margins);
 
         const auto& [page_width, page_height]{ params.m_PageSize.pod() };
         m_PageRatio = page_width / page_height;
@@ -532,6 +598,12 @@ class PrintPreview::PagePreview : public QWidget
             m_Borders->setFixedHeight(height);
         }
 
+        if (m_Margins != nullptr)
+        {
+            m_Margins->setFixedWidth(width);
+            m_Margins->setFixedHeight(height);
+        }
+
         const dla::ivec2 size{ width, height };
         const Size page_size{ m_PageWidth, m_PageHeight };
         const auto pixel_ratio{ size / page_size };
@@ -577,6 +649,7 @@ class PrintPreview::PagePreview : public QWidget
     PageGrid* m_Grid;
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
+    MarginsOverlay* m_Margins{ nullptr };
 };
 
 PrintPreview::PrintPreview(const Project& project)
