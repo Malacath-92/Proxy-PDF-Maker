@@ -472,26 +472,26 @@ class PrintPreview::PagePreview : public QWidget
         m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
-        const auto margins_four{ project.ComputeMarginsFour() };
+        m_LeftMargins = m_PaddingWidth - margins.m_Left;
+        m_TopMargins = m_PaddingHeight - margins.m_Top;
 
-        if (project.m_Data.m_CustomMarginsFour.has_value())
-        {
-            m_LeftMargins = m_PaddingWidth - margins_four.m_Left;
-            m_TopMargins = m_PaddingHeight - margins_four.m_Top;
-            m_RightMargins = m_PaddingWidth - margins_four.m_Right;
-            m_BottomMargins = m_PaddingHeight - margins_four.m_Bottom;
-        }
-        else
-        {
-            m_LeftMargins = m_PaddingWidth - margins.x;
-            m_TopMargins = m_PaddingHeight - margins.y;
-            m_RightMargins = m_PaddingWidth - margins.x;
-            m_BottomMargins = m_PaddingHeight - margins.y;
-        }
+        const auto effective_margins_right{ page_width - cards_size.x - margins.m_Left };
+        const auto effective_margins_bottom{ page_height - cards_size.y - margins.m_Top };
+        m_RightMargins = m_PaddingWidth - effective_margins_right;
+        m_BottomMargins = m_PaddingHeight - effective_margins_bottom;
 
         if (params.m_GridParams.m_IsBackside)
         {
-            m_LeftMargins = -m_LeftMargins + project.m_Data.m_BacksideOffset;
+            if (project.m_Data.m_FlipOn == FlipPageOn::LeftEdge)
+            {
+                std::swap(m_LeftMargins, m_RightMargins);
+            }
+            else
+            {
+                std::swap(m_TopMargins, m_BottomMargins);
+            }
+            m_LeftMargins += project.m_Data.m_BacksideOffset;
+            m_RightMargins -= project.m_Data.m_BacksideOffset;
         }
 
         m_Grid = grid;
@@ -664,7 +664,6 @@ void PrintPreview::Refresh()
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
-    header_layout->addWidget(new QLabel{ "Note: Card sizes shown are not representative of final render, but quantities are accurate." });
 
     const auto has_missing_previews{ std::ranges::any_of(page_widgets, &PagePreview::DoesHaveMissingPreviews) };
     if (has_missing_previews)
