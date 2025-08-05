@@ -135,8 +135,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         {
             m_Project.m_Data.m_PageSize = t.toStdString();
 
-            RefreshSizes();
-
             const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
             const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
 
@@ -164,7 +162,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             CardSizeChanged();
 
             // Refresh anything needed for size change
-            change_papersize(ToQString(m_Project.m_Data.m_PageSize));
+            RefreshSizes();
         }
     };
 
@@ -407,6 +405,13 @@ void PrintOptionsWidget::RenderBackendChanged()
         m_Project.m_Data.m_PageSize = g_Cfg.m_DefaultPageSize;
         PageSizeChanged();
     }
+}
+
+void PrintOptionsWidget::ExternalCardSizeChanged()
+{
+    m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
+    RefreshSizes();
+    CardSizeChanged();
 }
 
 void PrintOptionsWidget::SetDefaults()

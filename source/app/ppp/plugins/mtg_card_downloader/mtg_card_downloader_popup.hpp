@@ -43,7 +43,7 @@ class MtgDownloaderPopup : public PopupBase
     void InstallLogHook();
     void UninstallLogHook();
 
-    bool ValidateSettings();
+    void ValidateSettings();
 
     static InputType StupidInferSource(const QString& text);
 

@@ -109,6 +109,18 @@ int main(int argc, char** argv)
                      { cropper.RestartWork(); });
     QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, scroll_area, &CardScrollArea::FullRefresh);
 
+    QObject::connect(
+        &plugin_router,
+        &PluginRouter::SetCardSizeChoice,
+        [&](const std::string& card_size_choice)
+        {
+            if (g_Cfg.m_CardSizes.contains(card_size_choice) && card_size_choice != project.m_Data.m_CardSizeChoice)
+            {
+                project.m_Data.m_CardSizeChoice = card_size_choice;
+                print_options->ExternalCardSizeChanged();
+            }
+        });
+
     auto* options_area{
         new OptionsAreaWidget{
             app,
