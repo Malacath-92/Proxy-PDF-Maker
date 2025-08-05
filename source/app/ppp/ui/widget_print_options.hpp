@@ -62,8 +62,7 @@ class PrintOptionsWidget : public QWidget
     // Margin control system provides both simple and advanced layout options
     // The toggle between modes allows users to choose between quick uniform margins
     // and precise individual control for professional printing requirements
-    QCheckBox* m_CustomMargins{ nullptr };
-    QCheckBox* m_MarginModeToggle{ nullptr };
+    QComboBox* m_MarginsMode{ nullptr };
 
     // Individual margin controls enable asymmetric layouts needed for binding,
     // cutting guides, or when different margins are required for aesthetic reasons

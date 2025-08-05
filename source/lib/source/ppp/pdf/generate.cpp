@@ -44,12 +44,11 @@ fs::path GeneratePdf(const Project& project)
     const auto [card_width, card_height]{ card_size_with_bleed.pod() };
     const auto [columns, rows]{ project.m_Data.m_CardLayout.pod() };
     const auto margins{ project.ComputeMargins() };
-    const auto margins_four{ project.ComputeMarginsFour() };
     const auto max_margins{ project.ComputeMaxMargins() };
 
     // Use four-margin structure if available, otherwise fall back to old structure
-    const auto start_x{ project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.m_Left : margins.x };
-    const auto start_y{ page_height - (project.m_Data.m_CustomMarginsFour.has_value() ? margins_four.m_Top : margins.y) };
+    const auto start_x{ margins.m_Left };
+    const auto start_y{ page_height - margins.m_Top };
 
     const auto backside_start_x{ max_margins.x - start_x };
     const auto backside_start_y{ start_y };
