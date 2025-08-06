@@ -73,15 +73,6 @@ bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
     m_TotalRequests = static_cast<uint32_t>(m_Cards.size()) * 2;
 
-    if (!std::ranges::contains(m_SkipFiles, "__back.png"))
-    {
-        m_TotalRequests++;
-        m_Backsides.push_back(BacksideRequest{
-            .m_Uri{ "http://cards.scryfall.io/back.png" },
-            .m_Front{},
-        });
-    }
-
     Progress(0, static_cast<int>(m_TotalRequests));
 
     m_NetworkManager = &network_manager;
@@ -134,9 +125,18 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
 std::vector<QString> ScryfallDownloader::GetFiles() const
 {
-    return m_Cards |
-           std::views::transform(&DecklistCard::m_FileName) |
-           std::ranges::to<std::vector>();
+    auto cards{ m_Cards |
+                std::views::transform(&DecklistCard::m_FileName) |
+                std::ranges::to<std::vector>()
+    };
+    auto backsides{
+        m_Backsides |
+        std::views::transform(&BacksideRequest::m_Front) |
+        std::views::transform(&DecklistCard::m_FileName) |
+        std::views::transform(&ScryfallDownloader::BacksideFilename)
+    };
+    cards.append_range(backsides);
+    return cards;
 }
 
 uint32_t ScryfallDownloader::GetAmount(const QString& file_name) const
@@ -150,6 +150,18 @@ std::optional<QString> ScryfallDownloader::GetBackside(const QString& file_name)
     {
         return BacksideFilename(file_name);
     }
+
+    const auto it{ std::ranges::find(m_Cards, file_name, &DecklistCard::m_FileName) };
+    if (it != m_Cards.end())
+    {
+        const auto idx{ it - m_Cards.begin() };
+        const auto card_info{ m_CardInfos[idx] };
+        if (card_info["card_back_id"].isString())
+        {
+            return BacksideFilename(CardBackFilename(card_info["card_back_id"].toString()));
+        }
+    }
+
     return std::nullopt;
 }
 
@@ -179,7 +191,7 @@ QRegularExpression ScryfallDownloader::GetDecklistRegex()
         Arkidekt:
         N Name (S) CN ...
     */
-    return QRegularExpression{ R"'((\d+)x? "?(.*)"? \(([^ ]+)\) ((.*-)?\d+\w*))'" };
+    return QRegularExpression{ R"'((\d+)x? "?(.*)"? \(([^ ]+)\) (\S*\d+\S*))'" };
 }
 
 ScryfallDownloader::DecklistCard ScryfallDownloader::ParseDeckline(const QRegularExpressionMatch& deckline)
@@ -236,7 +248,12 @@ bool ScryfallDownloader::HasBackside(const QJsonDocument& card_info)
 
 QString ScryfallDownloader::BacksideFilename(const QString& file_name)
 {
-    return file_name.isEmpty() ? "__back.png" : "__back_" + file_name;
+    return "__back_" + file_name;
+}
+
+QString ScryfallDownloader::CardBackFilename(const QString& card_back_id)
+{
+    return card_back_id + ".png";
 }
 
 bool ScryfallDownloader::NextRequest()
@@ -328,6 +345,31 @@ bool ScryfallDownloader::NextRequest()
             {
                 const auto& request_uri{ card_info["image_uris"]["png"] };
                 do_request(request_uri.toString());
+
+                if (card_info["card_back_id"].isString())
+                {
+                    LogInfo("Requesting card back id for card {}", card.m_Name.toStdString());
+                    const auto& card_back_id{ card_info["card_back_id"].toString() };
+
+                    if (!std::ranges::contains(m_SkipFiles, card_back_id))
+                    {
+                        const auto card_back_uri{ QString{ "https://backs.scryfall.io/png/%1/%2/%3.png" }
+                                                      .arg(card_back_id[0])
+                                                      .arg(card_back_id[1])
+                                                      .arg(card_back_id) };
+
+                        m_Backsides.push_back(BacksideRequest{
+                            .m_Uri{ card_back_uri },
+                            .m_Front{
+                                .m_Name{ card_back_id },
+                                .m_FileName{ CardBackFilename(card_back_id) },
+                            },
+                        });
+                        ++m_TotalRequests;
+
+                        m_SkipFiles.push_back(card_back_id);
+                    }
+                }
             }
         }
 

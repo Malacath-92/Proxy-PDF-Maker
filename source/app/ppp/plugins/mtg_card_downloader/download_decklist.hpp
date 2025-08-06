@@ -42,6 +42,7 @@ class ScryfallDownloader : public CardArtDownloader
 
     static bool HasBackside(const QJsonDocument& card_info);
     static QString BacksideFilename(const QString& file_name);
+    static QString CardBackFilename(const QString& card_back_id);
 
     bool NextRequest();
 
