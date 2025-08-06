@@ -337,7 +337,10 @@ void MtgDownloaderPopup::UninstallLogHook()
 
 void MtgDownloaderPopup::ValidateSettings()
 {
-    m_Router.SetCardSizeChoice("Standard");
+    if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
+    {
+        m_Router.SetCardSizeChoice("Standard");
+    }
 }
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
