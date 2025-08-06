@@ -19,7 +19,7 @@ struct CardInfo
     fs::path m_Backside{};
     bool m_BacksideShortEdge{ false };
 
-    uint32_t m_ForceKeep{ 0 };
+    bool m_Transient{ false };
 };
 using CardMap = std::map<fs::path, CardInfo>;
 

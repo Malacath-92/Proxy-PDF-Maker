@@ -173,12 +173,15 @@ void Project::Dump(const fs::path& json_path) const
         std::vector<nlohmann::json> cards;
         for (const auto& [name, card] : m_Data.m_Cards)
         {
-            nlohmann::json& card_json{ cards.emplace_back() };
-            card_json["name"] = name.string();
-            card_json["num"] = card.m_Num;
-            card_json["hidden"] = card.m_Hidden;
-            card_json["backside"] = card.m_Backside.string();
-            card_json["backside_short_edge"] = card.m_BacksideShortEdge;
+            if (!card.m_Transient)
+            {
+                nlohmann::json& card_json{ cards.emplace_back() };
+                card_json["name"] = name.string();
+                card_json["num"] = card.m_Num;
+                card_json["hidden"] = card.m_Hidden;
+                card_json["backside"] = card.m_Backside.string();
+                card_json["backside_short_edge"] = card.m_BacksideShortEdge;
+            }
         }
         json["cards"] = cards;
 
@@ -282,7 +285,8 @@ void Project::InitProperties()
 
 void Project::CardAdded(const fs::path& card_name)
 {
-    if (!m_Data.m_Cards.contains(card_name))
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it == m_Data.m_Cards.end())
     {
         if (card_name.string().starts_with("__"))
         {
@@ -299,21 +303,21 @@ void Project::CardAdded(const fs::path& card_name)
             };
         }
     }
+    else if (it->second.m_Transient)
+    {
+        --it->second.m_Hidden;
+        it->second.m_Transient = false;
+    }
 }
 
 void Project::CardRemoved(const fs::path& card_name)
 {
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
     {
-        auto it{ m_Data.m_Cards.find(card_name) };
-        if (it != m_Data.m_Cards.end() && it->second.m_ForceKeep > 0)
-        {
-            --it->second.m_ForceKeep;
-            return;
-        }
+        ++it->second.m_Hidden;
+        it->second.m_Transient = true;
     }
-
-    m_Data.m_Cards.erase(card_name);
-    m_Data.m_Previews.erase(card_name);
 }
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)

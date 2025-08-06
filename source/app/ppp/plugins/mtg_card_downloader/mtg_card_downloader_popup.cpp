@@ -243,77 +243,73 @@ void MtgDownloaderPopup::DoDownload()
 
 void MtgDownloaderPopup::FinalizeDownload()
 {
+    const auto downloaded_files{
+        m_Downloader->GetFiles()
+    };
+    const auto downloaded_file_paths{
+        downloaded_files |
+        std::views::transform([](const auto& file)
+                              { return fs::path{ file.toStdString() }; }) |
+        std::ranges::to<std::vector>()
+    };
+
+    const auto& target_dir{
+        m_Project.m_Data.m_ImageDir
+    };
+    if (!fs::exists(target_dir))
+    {
+        fs::create_directories(target_dir);
+    }
+
     const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
     if (clear_image_folder)
     {
         const auto images{
-            ListImageFiles(m_Project.m_Data.m_ImageDir)
+            ListImageFiles(target_dir)
         };
         for (const auto& img : images)
         {
-            fs::remove(m_Project.m_Data.m_ImageDir / img);
-
-            if (fs::exists(m_Project.m_Data.m_CropDir / img))
+            if (!std::ranges::contains(downloaded_file_paths, img) &&
+                fs::exists(target_dir / img))
             {
-                fs::remove(m_Project.m_Data.m_CropDir / img);
+                fs::remove(target_dir / img);
             }
         }
     }
-
-    for (const auto& card : m_Downloader->GetFiles())
-    {
-        CardInfo card_info{
-            .m_Num = m_Downloader->GetAmount(card),
-            .m_Hidden = (card.startsWith("__") ? 1u : 0u),
-        };
-
-        if (const std::optional backside{ m_Downloader->GetBackside(card) })
-        {
-            const fs::path backside_name{ backside.value().toStdString() };
-            CardInfo backside_card_info{
-                .m_Num = 0,
-                .m_Hidden = 1,
-            };
-            if (m_Project.m_Data.m_Cards.contains(backside_name))
-            {
-                backside_card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-            }
-            m_Project.m_Data.m_Cards[backside_name] = backside_card_info;
-            card_info.m_Backside = backside_name;
-        }
-
-        const fs::path card_name{ card.toStdString() };
-        if (m_Project.m_Data.m_Cards.contains(card_name))
-        {
-            card_info.m_ForceKeep = clear_image_folder ? 1 : 0;
-        }
-
-        m_Project.m_Data.m_Cards[card_name] = std::move(card_info);
-    }
-    m_Project.m_Data.m_BacksideDefault = "__back.png";
-
-    m_Router.RefreshCardGrid();
 
     const fs::path output_dir{
         m_OutputDir.path().toStdString()
     };
-    const auto new_images{
-        ListImageFiles(output_dir)
-    };
-    const auto& target_folder{ m_Project.m_Data.m_ImageDir };
-    for (const auto& img : new_images)
+
+    for (const auto& [card, path] : std::views::zip(downloaded_files, downloaded_file_paths))
     {
-        if (!fs::exists(target_folder))
+        if (fs::exists(output_dir / path))
         {
-            fs::create_directories(target_folder);
+            fs::rename(output_dir / path, target_dir / path);
         }
 
-        if (!fs::exists(target_folder / img))
+        auto& card_info{
+            m_Project.m_Data.m_Cards[path]
+        };
+
+        const bool hidden{ card.startsWith("__") };
+        if (hidden)
         {
-            fs::rename(output_dir / img, target_folder / img);
+            card_info.m_Num = 0;
+        }
+        else
+        {
+            card_info.m_Num = m_Downloader->GetAmount(card);
+
+            if (const std::optional backside{ m_Downloader->GetBackside(card) })
+            {
+                card_info.m_Backside = backside.value().toStdString();
+            }
         }
     }
+    m_Project.m_Data.m_BacksideDefault = "__back.png";
 
+    m_Router.RefreshCardGrid();
     m_Router.UnpauseCropper();
 }
 
