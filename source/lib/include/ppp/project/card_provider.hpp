@@ -44,7 +44,6 @@ class CardProvider : public QObject, public efsw::FileWatchListener
     const Project& m_Project;
 
     fs::path m_ImageDir;
-    fs::path m_OutputDir;
 
     efsw::FileWatcher m_Watcher;
 

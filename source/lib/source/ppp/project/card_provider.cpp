@@ -8,7 +8,6 @@
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
     , m_ImageDir{ project.m_Data.m_ImageDir }
-    , m_OutputDir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) }
 {
     m_Watcher.addWatch(m_ImageDir.string(), this, false);
 }
@@ -43,7 +42,8 @@ void CardProvider::ImageDirChanged()
     m_Watcher.removeWatch((m_ImageDir / "").string());
 
     m_ImageDir = m_Project.m_Data.m_ImageDir;
-    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
+
+    m_Watcher.addWatch(m_ImageDir.string(), this, false);
 
     // ... and add all new files ...
     Start();
@@ -58,8 +58,6 @@ void CardProvider::CardSizeChanged()
 }
 void CardProvider::BleedChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
-
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
     {
@@ -68,8 +66,6 @@ void CardProvider::BleedChanged()
 }
 void CardProvider::ColorCubeChanged()
 {
-    m_OutputDir = GetOutputDir(m_Project.m_Data.m_CropDir, m_Project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube);
-
     // Generate new crops only ...
     for (const fs::path& image : ListFiles())
     {
