@@ -21,6 +21,7 @@
 
 class GuidesOverlay;
 class BordersOverlay;
+class MarginsOverlay;
 
 class PageGrid : public QWidget
 {
@@ -132,10 +133,11 @@ class PageGrid : public QWidget
         return m_HasMissingPreviews;
     }
 
-    void SetOverlays(GuidesOverlay* guides, BordersOverlay* borders)
+    void SetOverlays(GuidesOverlay* guides, BordersOverlay* borders, MarginsOverlay* margins)
     {
         m_Guides = guides;
         m_Borders = borders;
+        m_Margins = margins;
     }
 
     virtual void resizeEvent(QResizeEvent* event) override;
@@ -144,6 +146,7 @@ class PageGrid : public QWidget
     bool m_HasMissingPreviews{ false };
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
+    MarginsOverlay* m_Margins{ nullptr };
 
     Length m_CardsWidth{};
     Size m_Spacing{};
@@ -383,14 +386,74 @@ class BordersOverlay : public QWidget
     QPainterPath m_CardBorder;
 };
 
+class MarginsOverlay : public QWidget
+{
+  public:
+    MarginsOverlay(const Project& project)
+        : m_Project{ project }
+    {
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
+
+    virtual void paintEvent(QPaintEvent* /*event*/) override
+    {
+        QPainter painter{ this };
+        DrawSvg(painter, m_Margins, QColor{ 0, 0, 255 });
+        painter.end();
+    }
+
+    void ResizeOverlay(PageGrid* grid)
+    {
+        const dla::vec2 first_card_corner{
+            static_cast<float>(grid->pos().x()),
+            static_cast<float>(grid->pos().y()),
+        };
+        const dla::vec2 grid_size{
+            static_cast<float>(grid->size().width()),
+            static_cast<float>(grid->size().height()),
+        };
+        const auto pixel_ratio{ grid_size.x / m_Project.ComputeCardsSize().x };
+
+        const auto margins{
+            m_Project.ComputeMargins(),
+        };
+        const auto page_size{
+            m_Project.ComputePageSize()
+        };
+        const dla::vec2 usable_size{
+            (page_size.x - margins.m_Right - margins.m_Left) * pixel_ratio,
+            (page_size.y - margins.m_Bottom - margins.m_Top) * pixel_ratio,
+        };
+
+        const QRectF rect{
+            first_card_corner.x,
+            first_card_corner.y,
+            usable_size.x,
+            usable_size.y,
+        };
+        m_Margins.addRect(rect);
+    }
+
+  private:
+    const Project& m_Project;
+
+    QPainterPath m_Margins;
+};
+
 void PageGrid::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 
     const auto pixel_ratio{ static_cast<float>(event->size().width()) / m_CardsWidth };
     auto* grid_layout{ static_cast<QGridLayout*>(layout()) };
-    grid_layout->setHorizontalSpacing(static_cast<int>(pixel_ratio * m_Spacing.x));
-    grid_layout->setVerticalSpacing(static_cast<int>(pixel_ratio * m_Spacing.y));
+
+    // Safety check: ensure spacing values are reasonable
+    const int horizontal_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.x));
+    const int vertical_spacing = qMax(0, static_cast<int>(pixel_ratio * m_Spacing.y));
+
+    grid_layout->setHorizontalSpacing(horizontal_spacing);
+    grid_layout->setVerticalSpacing(vertical_spacing);
 
     if (m_Guides != nullptr)
     {
@@ -400,6 +463,11 @@ void PageGrid::resizeEvent(QResizeEvent* event)
     if (m_Borders != nullptr)
     {
         m_Borders->ResizeOverlay(this);
+    }
+
+    if (m_Margins != nullptr)
+    {
+        m_Margins->ResizeOverlay(this);
     }
 }
 
@@ -448,7 +516,10 @@ class PrintPreview::PagePreview : public QWidget
             m_Borders->setParent(this);
         }
 
-        grid->SetOverlays(m_Guides, m_Borders);
+        m_Margins = new MarginsOverlay{ project };
+        m_Margins->setParent(this);
+
+        grid->SetOverlays(m_Guides, m_Borders, m_Margins);
 
         const auto& [page_width, page_height]{ params.m_PageSize.pod() };
         m_PageRatio = page_width / page_height;
@@ -465,12 +536,26 @@ class PrintPreview::PagePreview : public QWidget
         m_PaddingHeight = (page_height - cards_size.y) / 2.0f;
 
         const auto margins{ project.ComputeMargins() };
-        m_LeftMargins = m_PaddingWidth - margins.x;
-        m_TopMargins = m_PaddingHeight - margins.y;
+        m_LeftMargins = m_PaddingWidth - margins.m_Left;
+        m_TopMargins = m_PaddingHeight - margins.m_Top;
+
+        const auto effective_margins_right{ page_width - cards_size.x - margins.m_Left };
+        const auto effective_margins_bottom{ page_height - cards_size.y - margins.m_Top };
+        m_RightMargins = m_PaddingWidth - effective_margins_right;
+        m_BottomMargins = m_PaddingHeight - effective_margins_bottom;
 
         if (params.m_GridParams.m_IsBackside)
         {
-            m_LeftMargins = -m_LeftMargins + project.m_Data.m_BacksideOffset;
+            if (project.m_Data.m_FlipOn == FlipPageOn::LeftEdge)
+            {
+                std::swap(m_LeftMargins, m_RightMargins);
+            }
+            else
+            {
+                std::swap(m_TopMargins, m_BottomMargins);
+            }
+            m_LeftMargins += project.m_Data.m_BacksideOffset;
+            m_RightMargins -= project.m_Data.m_BacksideOffset;
         }
 
         m_Grid = grid;
@@ -511,25 +596,37 @@ class PrintPreview::PagePreview : public QWidget
             m_Borders->setFixedHeight(height);
         }
 
+        if (m_Margins != nullptr)
+        {
+            m_Margins->setFixedWidth(width);
+            m_Margins->setFixedHeight(height);
+        }
+
         const dla::ivec2 size{ width, height };
         const Size page_size{ m_PageWidth, m_PageHeight };
         const auto pixel_ratio{ size / page_size };
 
         const auto padding_width_left{ m_PaddingWidth - m_LeftMargins };
-        const auto padding_width_right{ m_PaddingWidth + m_LeftMargins };
+        const auto padding_width_right{ m_PaddingWidth - m_RightMargins };
         const auto padding_width_left_pixels{ static_cast<int>(padding_width_left * pixel_ratio.x) };
         const auto padding_width_right_pixels{ static_cast<int>(padding_width_right * pixel_ratio.x) };
 
         const auto padding_height_top{ m_PaddingHeight - m_TopMargins };
-        const auto padding_height_bottom{ m_PaddingHeight + m_TopMargins };
+        const auto padding_height_bottom{ m_PaddingHeight - m_BottomMargins };
         const auto padding_height_top_pixels{ static_cast<int>(padding_height_top * pixel_ratio.y) };
         const auto padding_height_bottom_pixels{ static_cast<int>(padding_height_bottom * pixel_ratio.y) };
 
+        // Safety check: ensure margins don't cause negative or excessive values
+        const int safe_left = qMax(0, qMin(padding_width_left_pixels, width / 2));
+        const int safe_right = qMax(0, qMin(padding_width_right_pixels, width / 2));
+        const int safe_top = qMax(0, qMin(padding_height_top_pixels, height / 2));
+        const int safe_bottom = qMax(0, qMin(padding_height_bottom_pixels, height / 2));
+
         setContentsMargins(
-            padding_width_left_pixels,
-            padding_height_top_pixels,
-            padding_width_right_pixels,
-            padding_height_bottom_pixels);
+            safe_left,
+            safe_top,
+            safe_right,
+            safe_bottom);
     }
 
   private:
@@ -544,10 +641,13 @@ class PrintPreview::PagePreview : public QWidget
     Length m_PaddingHeight;
     Length m_LeftMargins;
     Length m_TopMargins;
+    Length m_RightMargins;
+    Length m_BottomMargins;
 
     PageGrid* m_Grid;
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
+    MarginsOverlay* m_Margins{ nullptr };
 };
 
 PrintPreview::PrintPreview(const Project& project)
@@ -577,6 +677,21 @@ void PrintPreview::Refresh()
     };
 
     const auto raw_pages{ DistributeCardsToPages(m_Project, columns, rows) };
+
+    // Show empty preview when no cards can fit on the page
+    if (raw_pages.empty())
+    {
+        auto* empty_widget{ new QWidget };
+        auto* empty_layout{ new QVBoxLayout };
+        auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
+        empty_label->setAlignment(Qt::AlignCenter);
+        empty_label->setStyleSheet("QLabel { color : red; font-size: 14px; }");
+        empty_layout->addWidget(empty_label);
+        empty_widget->setLayout(empty_layout);
+        setWidget(empty_widget);
+        return;
+    }
+
     auto pages{ raw_pages |
                 std::views::transform([](const Page& page)
                                       { return TempPage{ page, false }; }) |

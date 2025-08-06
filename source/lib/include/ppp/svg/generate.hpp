@@ -7,7 +7,7 @@
 
 class Project;
 
-void DrawSvg(QPainter& painter, const QPainterPath& path);
+void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color = QColor{ 255, 0, 0 });
 
 QPainterPath GenerateCardsPath(const Project& project);
 QPainterPath GenerateCardsPath(dla::vec2 origin,

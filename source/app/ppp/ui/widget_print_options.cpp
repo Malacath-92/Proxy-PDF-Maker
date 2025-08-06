@@ -44,7 +44,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             project.m_Data.m_CardSizeChoice,
         },
     };
-    card_size->setToolTip("Additional card sizes can be defined in config.ini");
+    card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
     m_CardSize = card_size->GetWidget();
 
     auto* paper_size{ new ComboBoxWithLabel{
@@ -63,20 +63,43 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
     m_CardsInfo = cards_info->GetWidget();
+    m_CardsInfo->setToolTip("Size of the cards area in the final rendered PDF (excluding margins)");
 
-    m_CustomMargins = new QCheckBox{ "&Custom Margins" };
-
-    auto* left_margin{ new DoubleSpinBoxWithLabel{ "&Left Margin" } };
-    m_LeftMarginSpin = left_margin->GetWidget();
+    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", new QDoubleSpinBox } };
+    m_LeftMarginSpin = static_cast<QDoubleSpinBox*>(left_margin->GetWidget());
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
     m_LeftMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* top_margin{ new DoubleSpinBoxWithLabel{ "&Top Margin" } };
-    m_TopMarginSpin = top_margin->GetWidget();
+    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", new QDoubleSpinBox } };
+    m_TopMarginSpin = static_cast<QDoubleSpinBox*>(top_margin->GetWidget());
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
     m_TopMarginSpin->setSuffix(initial_base_unit_name);
+
+    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", new QDoubleSpinBox } };
+    m_RightMarginSpin = static_cast<QDoubleSpinBox*>(right_margin->GetWidget());
+    m_RightMarginSpin->setDecimals(2);
+    m_RightMarginSpin->setSingleStep(0.1);
+    m_RightMarginSpin->setSuffix(initial_base_unit_name);
+
+    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", new QDoubleSpinBox } };
+    m_BottomMarginSpin = static_cast<QDoubleSpinBox*>(bottom_margin->GetWidget());
+    m_BottomMarginSpin->setDecimals(2);
+    m_BottomMarginSpin->setSingleStep(0.1);
+    m_BottomMarginSpin->setSuffix(initial_base_unit_name);
+
+    auto* margins_mode{ new ComboBoxWithLabel{
+        "&Margin Mode",
+        magic_enum::enum_names<MarginsMode>(),
+        magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
+    m_MarginsMode = margins_mode->GetWidget();
+
+    auto* all_margins{ new WidgetWithLabel{ "&All Margins", new QDoubleSpinBox } };
+    m_AllMarginsSpin = static_cast<QDoubleSpinBox*>(all_margins->GetWidget());
+    m_AllMarginsSpin->setDecimals(2);
+    m_AllMarginsSpin->setSingleStep(0.1);
+    m_AllMarginsSpin->setSuffix(initial_base_unit_name);
 
     m_CardsWidth = new QDoubleSpinBox;
     m_CardsWidth->setDecimals(0);
@@ -115,9 +138,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(m_BasePdf);
     layout->addWidget(paper_info);
     layout->addWidget(cards_info);
-    layout->addWidget(m_CustomMargins);
+    layout->addWidget(margins_mode);
     layout->addWidget(left_margin);
     layout->addWidget(top_margin);
+    layout->addWidget(right_margin);
+    layout->addWidget(bottom_margin);
+    layout->addWidget(all_margins);
     layout->addWidget(cards_layout);
     layout->addWidget(orientation);
     layout->addWidget(flip_on);
@@ -144,6 +170,31 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             cards_layout->setVisible(fit_size);
             orientation->setEnabled(!fit_size && !infer_size);
             orientation->setVisible(!fit_size && !infer_size);
+
+            // Reset margins to default for the new paper size
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+            const auto default_margins{ max_margins / 2.0f };
+
+            m_LeftMarginSpin->setRange(0, max_margins.x);
+            m_LeftMarginSpin->setValue(default_margins.x);
+            m_TopMarginSpin->setRange(0, max_margins.y);
+            m_TopMarginSpin->setValue(default_margins.y);
+            m_RightMarginSpin->setRange(0, max_margins.x);
+            m_RightMarginSpin->setValue(default_margins.x);
+            m_BottomMarginSpin->setRange(0, max_margins.y);
+            m_BottomMarginSpin->setValue(default_margins.y);
+
+            // Update All Margins range
+            m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+
+            // Disable custom margins
+            m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
+            m_LeftMarginSpin->setEnabled(false);
+            m_TopMarginSpin->setEnabled(false);
+            m_RightMarginSpin->setEnabled(false);
+            m_BottomMarginSpin->setEnabled(false);
+            m_AllMarginsSpin->setEnabled(false);
 
             PageSizeChanged();
         }
@@ -183,33 +234,130 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
-    auto switch_custom_margins{
-        [this](Qt::CheckState s)
+    auto on_margins_changed{
+        [this]()
         {
-            const bool custom_margins{ s == Qt::CheckState::Checked };
+            // Recalculate card layout and refresh UI to reflect margin changes
+            // This ensures the preview accurately represents the final output
+            m_Project.CacheCardLayout();
+            RefreshSizes();
+            MarginsChanged();
+        }
+    };
 
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    auto change_margins_mode{
+        [=, this](const QString& t)
+        {
+            m_Project.m_Data.m_MarginsMode = magic_enum::enum_cast<MarginsMode>(t.toStdString())
+                                                 .value_or(MarginsMode::Simple);
 
-            if (custom_margins)
+            switch (m_Project.m_Data.m_MarginsMode)
             {
-                const auto default_margins{ m_Project.ComputeMargins() };
-                m_Project.m_Data.m_CustomMargins.emplace(default_margins);
-            }
-            else
-            {
+            case MarginsMode::Auto:
+                // Reset custom margins
                 m_Project.m_Data.m_CustomMargins.reset();
-
+                break;
+            case MarginsMode::Simple:
+            {
                 const auto default_margins{ m_Project.ComputeMargins() };
-                m_LeftMarginSpin->setValue(default_margins.x / base_unit);
-                m_TopMarginSpin->setValue(default_margins.y / base_unit);
+                // Initialize with computed top-left margin defaults to provide a reasonable starting point
+                m_Project.m_Data.m_CustomMargins = CustomMargins{
+                    .m_TopLeft{ default_margins.m_Left, default_margins.m_Top },
+                };
+                break;
+            }
+            case MarginsMode::Full:
+            {
+                const auto default_margins{ m_Project.ComputeMargins() };
+                // Initialize with computed four-margin defaults to provide a reasonable starting point
+                m_Project.m_Data.m_CustomMargins = CustomMargins{
+                    .m_TopLeft{ default_margins.m_Left, default_margins.m_Top },
+                    .m_BottomRight{ Size{ default_margins.m_Right, default_margins.m_Bottom } },
+                };
+            }
+            break;
+            case MarginsMode::Linked:
+            {
+                const auto default_margins{ m_Project.ComputeMargins().m_Left };
+                // Initialize all to the same reasonable choice
+                m_Project.m_Data.m_CustomMargins = CustomMargins{
+                    .m_TopLeft{ default_margins, default_margins },
+                    .m_BottomRight{ Size{ default_margins, default_margins } },
+                };
+                break;
+            }
             }
 
-            m_LeftMarginSpin->setEnabled(custom_margins);
-            m_TopMarginSpin->setEnabled(custom_margins);
+            const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
+            const bool margins_full_control{ margins_mode == MarginsMode::Full };
+            const bool margins_linked{ margins_mode == MarginsMode::Linked };
+            m_LeftMarginSpin->setEnabled(!margins_linked);
+            m_TopMarginSpin->setEnabled(!margins_linked);
+            m_RightMarginSpin->setEnabled(margins_full_control);
+            m_BottomMarginSpin->setEnabled(margins_full_control);
+            m_AllMarginsSpin->setEnabled(margins_linked);
+
+            // Initialize uniform margin value with current individual margin
+            // This provides a sensible starting point for uniform adjustments
+            if (margins_linked)
+            {
+                m_AllMarginsSpin->setValue(m_LeftMarginSpin->value());
+            }
+
+            on_margins_changed();
         }
     };
 
-    auto change_left_margin{
+    enum class Margin
+    {
+        Left,
+        Top,
+        Right,
+        Bottom,
+    };
+
+    auto change_margin{
+        [=, this](Margin margin, double v)
+        {
+            if (!m_Project.m_Data.m_CustomMargins.has_value())
+            {
+                return;
+            }
+
+            auto& custom_margins{ m_Project.m_Data.m_CustomMargins.value() };
+            if (margin == Margin::Right || margin == Margin::Bottom)
+            {
+                if (!custom_margins.m_BottomRight.has_value())
+                {
+                    return;
+                }
+            }
+
+            // Convert UI value to internal units and update project data
+            // Real-time updates ensure immediate visual feedback in preview
+            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto margin_value{ static_cast<float>(v) * base_unit };
+            switch (margin)
+            {
+            case Margin::Left:
+                custom_margins.m_TopLeft.x = margin_value;
+                break;
+            case Margin::Top:
+                custom_margins.m_TopLeft.y = margin_value;
+                break;
+            case Margin::Right:
+                custom_margins.m_BottomRight->x = margin_value;
+                break;
+            case Margin::Bottom:
+                custom_margins.m_BottomRight->y = margin_value;
+                break;
+            }
+
+            on_margins_changed();
+        }
+    };
+
+    auto change_all_margins{
         [=, this](double v)
         {
             if (!m_Project.m_Data.m_CustomMargins.has_value())
@@ -217,23 +365,22 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMargins.value().x = static_cast<float>(v) * base_unit;
-            MarginsChanged();
-        }
-    };
-
-    auto change_top_margin{
-        [=, this](double v)
-        {
-            if (!m_Project.m_Data.m_CustomMargins.has_value())
+            auto& custom_margins{ m_Project.m_Data.m_CustomMargins.value() };
+            if (!custom_margins.m_BottomRight.has_value())
             {
                 return;
             }
 
+            // Convert UI value to internal units and update project data for all margins
+            // This ensures the project data is properly synchronized with the UI
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-            m_Project.m_Data.m_CustomMargins.value().y = static_cast<float>(v) * base_unit;
-            MarginsChanged();
+            const auto margin_value{ static_cast<float>(v) * base_unit };
+            custom_margins.m_TopLeft.x = margin_value;
+            custom_margins.m_TopLeft.y = margin_value;
+            custom_margins.m_BottomRight->x = margin_value;
+            custom_margins.m_BottomRight->y = margin_value;
+
+            on_margins_changed();
         }
     };
 
@@ -266,15 +413,34 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
+            // Clear custom margins when orientation changes
+            m_Project.m_Data.m_CustomMargins.reset();
+
             RefreshSizes();
 
+            // Reset margins to default for the new orientation
             const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
             const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+            const auto default_margins{ max_margins / 2.0f };
 
             m_LeftMarginSpin->setRange(0, max_margins.x);
-            m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
+            m_LeftMarginSpin->setValue(default_margins.x);
             m_TopMarginSpin->setRange(0, max_margins.y);
-            m_TopMarginSpin->setValue(max_margins.y / 2.0f);
+            m_TopMarginSpin->setValue(default_margins.y);
+            m_RightMarginSpin->setRange(0, max_margins.x);
+            m_RightMarginSpin->setValue(default_margins.x);
+            m_BottomMarginSpin->setRange(0, max_margins.y);
+            m_BottomMarginSpin->setValue(default_margins.y);
+
+            // Update All Margins range
+            m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+
+            // Disable custom margins
+            m_LeftMarginSpin->setEnabled(false);
+            m_TopMarginSpin->setEnabled(false);
+            m_RightMarginSpin->setEnabled(false);
+            m_BottomMarginSpin->setEnabled(false);
+            m_AllMarginsSpin->setEnabled(false);
 
             OrientationChanged();
         }
@@ -305,18 +471,30 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_base_pdf);
-    QObject::connect(m_CustomMargins,
-                     &QCheckBox::checkStateChanged,
+    QObject::connect(m_MarginsMode,
+                     &QComboBox::currentTextChanged,
                      this,
-                     switch_custom_margins);
+                     change_margins_mode);
     QObject::connect(m_LeftMarginSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_left_margin);
+                     std::bind_front(change_margin, Margin::Left));
     QObject::connect(m_TopMarginSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_top_margin);
+                     std::bind_front(change_margin, Margin::Top));
+    QObject::connect(m_RightMarginSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     std::bind_front(change_margin, Margin::Right));
+    QObject::connect(m_BottomMarginSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     std::bind_front(change_margin, Margin::Bottom));
+    QObject::connect(m_AllMarginsSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_all_margins);
     QObject::connect(m_CardsWidth,
                      &QDoubleSpinBox::valueChanged,
                      this,
@@ -360,10 +538,20 @@ void PrintOptionsWidget::BaseUnitChanged()
 
     m_LeftMarginSpin->setSuffix(base_unit_name);
     m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(margins.x);
+    m_LeftMarginSpin->setValue(margins.m_Left);
     m_TopMarginSpin->setSuffix(base_unit_name);
     m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(margins.y);
+    m_TopMarginSpin->setValue(margins.m_Top);
+    m_RightMarginSpin->setSuffix(base_unit_name);
+    m_RightMarginSpin->setRange(0, max_margins.x);
+    m_RightMarginSpin->setValue(margins.m_Right);
+    m_BottomMarginSpin->setSuffix(base_unit_name);
+    m_BottomMarginSpin->setRange(0, max_margins.y);
+    m_BottomMarginSpin->setValue(margins.m_Top);
+
+    // Update All Margins range and suffix
+    m_AllMarginsSpin->setSuffix(base_unit_name);
+    m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
 }
 
 void PrintOptionsWidget::RenderBackendChanged()
@@ -421,6 +609,10 @@ void PrintOptionsWidget::SetDefaults()
     m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
     m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
     m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+
+    // Update card layout display and warnings
+    RefreshCardLayout();
+
     m_Orientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Orientation)));
     m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_FlipOn)));
 
@@ -429,20 +621,38 @@ void PrintOptionsWidget::SetDefaults()
     m_BasePdf->setEnabled(infer_size);
     m_BasePdf->setVisible(infer_size);
 
-    const bool custom_margins{ m_Project.m_Data.m_CustomMargins.has_value() };
-    m_CustomMargins->setChecked(custom_margins);
-
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
 
+    const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
+    const bool custom_margins{ margins_mode != MarginsMode::Auto };
+    const bool margins_full_control{ margins_mode == MarginsMode::Full };
+    const bool margins_linked{ margins_mode == MarginsMode::Linked };
+
     m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(margins.x);
-    m_LeftMarginSpin->setEnabled(custom_margins);
+    m_LeftMarginSpin->setValue(margins.m_Left);
+    m_LeftMarginSpin->setEnabled(custom_margins && !margins_linked);
 
     m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(margins.y);
-    m_TopMarginSpin->setEnabled(custom_margins);
+    m_TopMarginSpin->setValue(margins.m_Top);
+    m_TopMarginSpin->setEnabled(custom_margins && !margins_linked);
+
+    m_RightMarginSpin->setRange(0, max_margins.x);
+    m_RightMarginSpin->setValue(margins.m_Right);
+    m_RightMarginSpin->setEnabled(custom_margins && margins_full_control);
+
+    m_BottomMarginSpin->setRange(0, max_margins.y);
+    m_BottomMarginSpin->setValue(margins.m_Bottom);
+    m_BottomMarginSpin->setEnabled(custom_margins && margins_full_control);
+
+    // Set up All Margins control
+    m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+    m_AllMarginsSpin->setValue(m_LeftMarginSpin->value());
+    m_AllMarginsSpin->setEnabled(custom_margins && margins_linked);
+
+    // Set up margin mode toggle
+    m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
 }
 
 void PrintOptionsWidget::RefreshSizes()
@@ -454,12 +664,54 @@ void PrintOptionsWidget::RefreshSizes()
 
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+    const auto margins{ m_Project.ComputeMargins() / base_unit };
+
+    // Preserve current margin values when updating ranges while also pulling
+    // exact computed margins in case they are dependent on each other
+    const auto current_left{ margins.m_Left };
+    const auto current_top{ margins.m_Top };
+    const auto current_right{ margins.m_Right };
+    const auto current_bottom{ margins.m_Bottom };
+
+    // Temporarily block signals to prevent recursive calls during refresh
+    m_LeftMarginSpin->blockSignals(true);
+    m_TopMarginSpin->blockSignals(true);
+    m_RightMarginSpin->blockSignals(true);
+    m_BottomMarginSpin->blockSignals(true);
+    m_AllMarginsSpin->blockSignals(true);
 
     m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(max_margins.x / 2.0f);
+    m_LeftMarginSpin->setValue(current_left);
 
     m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(max_margins.y / 2.0f);
+    m_TopMarginSpin->setValue(current_top);
+
+    m_RightMarginSpin->setRange(0, max_margins.x);
+    m_RightMarginSpin->setValue(current_right);
+
+    m_BottomMarginSpin->setRange(0, max_margins.y);
+    m_BottomMarginSpin->setValue(current_bottom);
+
+    // Update All Margins range
+    m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+
+    // Re-enable signals after all values are set
+    m_LeftMarginSpin->blockSignals(false);
+    m_TopMarginSpin->blockSignals(false);
+    m_RightMarginSpin->blockSignals(false);
+    m_BottomMarginSpin->blockSignals(false);
+    m_AllMarginsSpin->blockSignals(false);
+
+    // Maintain enabled states based on margin mode
+    const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
+    const bool custom_margins{ margins_mode != MarginsMode::Auto };
+    const bool margins_full_control{ margins_mode == MarginsMode::Full };
+    const bool margins_linked{ margins_mode == MarginsMode::Linked };
+    m_LeftMarginSpin->setEnabled(custom_margins && !margins_linked);
+    m_TopMarginSpin->setEnabled(custom_margins && !margins_linked);
+    m_RightMarginSpin->setEnabled(custom_margins && margins_full_control);
+    m_BottomMarginSpin->setEnabled(custom_margins && margins_full_control);
+    m_AllMarginsSpin->setEnabled(custom_margins && margins_linked);
 }
 
 void PrintOptionsWidget::RefreshCardLayout()
@@ -468,6 +720,22 @@ void PrintOptionsWidget::RefreshCardLayout()
     {
         m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
         m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+
+        // Show visual warning when no cards can fit on the page
+        if (m_Project.m_Data.m_CardLayout.x == 0 || m_Project.m_Data.m_CardLayout.y == 0)
+        {
+            m_CardsWidth->setStyleSheet("QSpinBox { color: red; }");
+            m_CardsHeight->setStyleSheet("QSpinBox { color: red; }");
+            m_CardsWidth->setToolTip("No cards can fit on the page with current settings");
+            m_CardsHeight->setToolTip("No cards can fit on the page with current settings");
+        }
+        else
+        {
+            m_CardsWidth->setStyleSheet("");
+            m_CardsHeight->setStyleSheet("");
+            m_CardsWidth->setToolTip("");
+            m_CardsHeight->setToolTip("");
+        }
     }
 }
 

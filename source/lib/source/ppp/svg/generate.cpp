@@ -12,13 +12,13 @@
 
 #include <ppp/project/project.hpp>
 
-void DrawSvg(QPainter& painter, const QPainterPath& path)
+void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color)
 {
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
     QPen pen{};
     pen.setWidth(1);
-    pen.setColor(QColor{ 255, 0, 0 });
+    pen.setColor(color);
     painter.setPen(pen);
     painter.drawPath(path);
 }

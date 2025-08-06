@@ -115,10 +115,35 @@ void Project::Load(const fs::path& json_path)
 
         if (json.contains("custom_margins"))
         {
-            m_Data.m_CustomMargins = Size{
-                json["custom_margins"]["width"].get<float>() * 1_cm,
-                json["custom_margins"]["height"].get<float>() * 1_cm,
-            };
+            const auto& custom_margins{ json["custom_margins"] };
+            m_Data.m_CustomMargins.emplace();
+            if (custom_margins.contains("width"))
+            {
+                // Legacy two-value margins
+                m_Data.m_CustomMargins.value().m_TopLeft = Size{
+                    custom_margins["width"].get<float>() * 1_cm,
+                    custom_margins["height"].get<float>() * 1_cm,
+                };
+            }
+            else
+            {
+                m_Data.m_MarginsMode = magic_enum::enum_cast<MarginsMode>(json["margins_mode"].get_ref<const std::string&>())
+                                           .value_or(MarginsMode::Simple);
+
+                // Full four-value margins ...
+                m_Data.m_CustomMargins.value().m_TopLeft = Size{
+                    custom_margins["left"].get<float>() * 1_cm,
+                    custom_margins["top"].get<float>() * 1_cm,
+                };
+                // ... last two being optional
+                if (custom_margins.contains("right"))
+                {
+                    m_Data.m_CustomMargins.value().m_BottomRight = Size{
+                        custom_margins["right"].get<float>() * 1_cm,
+                        custom_margins["bottom"].get<float>() * 1_cm,
+                    };
+                }
+            }
         }
         else
         {
@@ -202,10 +227,24 @@ void Project::Dump(const fs::path& json_path) const
         json["base_pdf"] = m_Data.m_BasePdf;
         if (m_Data.m_CustomMargins.has_value())
         {
-            json["custom_margins"] = nlohmann::json{
-                { "width", m_Data.m_CustomMargins->x / 1_cm },
-                { "height", m_Data.m_CustomMargins->y / 1_cm },
-            };
+            json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
+
+            if (!m_Data.m_CustomMargins->m_BottomRight.has_value())
+            {
+                json["custom_margins"] = nlohmann::json{
+                    { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                    { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
+                };
+            }
+            else
+            {
+                json["custom_margins"] = nlohmann::json{
+                    { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                    { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
+                    { "right", m_Data.m_CustomMargins->m_BottomRight->x / 1_cm },
+                    { "bottom", m_Data.m_CustomMargins->m_BottomRight->y / 1_cm },
+                };
+            }
         }
         json["card_layout"] = nlohmann::json{
             { "width", m_Data.m_CardLayout.x },
@@ -388,16 +427,26 @@ bool Project::CacheCardLayout()
 
         const Size page_size{ ComputePageSize() };
         const Size card_size_with_bleed{ CardSizeWithBleed() };
-        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed));
+
+        // Calculate available space after accounting for margins
+        Size available_space{ page_size };
+        if (m_Data.m_CustomMargins.has_value())
+        {
+            const auto margins{ ComputeMargins() };
+            available_space.x -= (margins.m_Left + margins.m_Right);
+            available_space.y -= (margins.m_Top + margins.m_Bottom);
+        }
+
+        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed));
 
         if (m_Data.m_Spacing.x > 0_mm || m_Data.m_Spacing.y > 0_mm)
         {
             const Size cards_size{ ComputeCardsSize() };
-            if (cards_size.x > page_size.x)
+            if (cards_size.x > available_space.x)
             {
                 m_Data.m_CardLayout.x--;
             }
-            if (cards_size.y > page_size.y)
+            if (cards_size.y > available_space.y)
             {
                 m_Data.m_CardLayout.y--;
             }
@@ -439,7 +488,7 @@ Size Project::ComputeCardsSize() const
     return m_Data.ComputeCardsSize(g_Cfg);
 }
 
-Size Project::ComputeMargins() const
+Margins Project::ComputeMargins() const
 {
     return m_Data.ComputeMargins(g_Cfg);
 }
@@ -517,24 +566,65 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
 
 Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
-    const Size card_size_with_bleed{ CardSize(config) + 2 * m_BleedEdge };
+    const Size card_size_with_bleed{ CardSizeWithBleed(config) };
     return m_CardLayout * card_size_with_bleed + (m_CardLayout - 1) * m_Spacing;
 }
 
-Size Project::ProjectData::ComputeMargins(const Config& config) const
+Margins Project::ProjectData::ComputeMargins(const Config& config) const
 {
+    // Custom margins take precedence over computed defaults to allow user-defined layouts
+    // for specific printing requirements or aesthetic preferences
     if (m_CustomMargins.has_value())
     {
-        return m_CustomMargins.value();
+        const auto& custom_margins{ m_CustomMargins.value() };
+        const auto& top_left_margins{ custom_margins.m_TopLeft };
+        if (!custom_margins.m_BottomRight.has_value())
+        {
+            // If only top-left margins are specified by user we essentially treat this as
+            // an offset of the cards to one side
+            const auto max_margins{ ComputeMaxMargins(config) };
+            const auto bottom_right_margins{ max_margins - top_left_margins };
+            return Margins{
+                .m_Left{ top_left_margins.x },
+                .m_Top{ top_left_margins.y },
+                .m_Right{ bottom_right_margins.x },
+                .m_Bottom{ bottom_right_margins.y },
+            };
+        }
+        else
+        {
+            // If all margins are specified by user pass these directly
+            const auto& bottom_right_margins{ custom_margins.m_BottomRight.value() };
+            return Margins{
+                .m_Left{ top_left_margins.x },
+                .m_Top{ top_left_margins.y },
+                .m_Right{ bottom_right_margins.x },
+                .m_Bottom{ bottom_right_margins.y },
+            };
+        }
     }
 
-    return ComputeMaxMargins(config) / 2.0f;
+    // Default to centered margins by dividing available space equally
+    // This provides a balanced layout suitable for most printing scenarios
+    const auto half_max_margins{ ComputeMaxMargins(config) / 2.0f };
+    return Margins{
+        half_max_margins.x,
+        half_max_margins.y,
+        half_max_margins.x,
+        half_max_margins.y,
+    };
 }
 
 Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
 {
     const Size page_size{ ComputePageSize(config) };
-    const Size cards_size{ ComputeCardsSize(config) };
+    // We can not rely on a pre-computed layout here, so we manually compute
+    // the best case layout and compute margins from that
+    const Size card_size_with_bleed{ CardSizeWithBleed(config) };
+    const auto card_layout{ static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed)) };
+    const Size cards_size{ card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing };
+    // Maximum margins represent the total available space around the cards
+    // This is used to constrain user input and provide reasonable defaults
     const Size max_margins{ page_size - cards_size };
     return max_margins;
 }

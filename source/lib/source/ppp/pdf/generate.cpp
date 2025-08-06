@@ -46,10 +46,11 @@ fs::path GeneratePdf(const Project& project)
     const auto margins{ project.ComputeMargins() };
     const auto max_margins{ project.ComputeMaxMargins() };
 
-    const auto start_x{ margins.x };
-    const auto start_y{ page_height - margins.y };
+    // Use four-margin structure if available, otherwise fall back to old structure
+    const auto start_x{ margins.m_Left };
+    const auto start_y{ page_height - margins.m_Top };
 
-    const auto backside_start_x{ max_margins.x - margins.x };
+    const auto backside_start_x{ max_margins.x - start_x };
     const auto backside_start_y{ start_y };
 
     const auto bleed{ project.m_Data.m_BleedEdge };
@@ -262,7 +263,9 @@ fs::path GeneratePdf(const Project& project)
         }
     }
 
-    return pdf->Write(project.m_Data.m_FileName);
+    const auto pdf_path{ pdf->Write(project.m_Data.m_FileName) };
+
+    return pdf_path;
 }
 
 fs::path GenerateTestPdf(const Project& project)

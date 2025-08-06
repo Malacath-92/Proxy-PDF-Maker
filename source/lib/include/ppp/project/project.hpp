@@ -42,6 +42,44 @@ enum class CardCorners
     Rounded,
 };
 
+enum class MarginsMode
+{
+    Auto,
+    Simple,
+    Full,
+    Linked,
+};
+
+template<class T>
+struct GenericMargins
+{
+    T m_Left{};
+    T m_Top{};
+    T m_Right{};
+    T m_Bottom{};
+
+    template<class U>
+    auto operator/(const U& rhs)
+    {
+        using ResT = decltype(std::declval<T>() / std::declval<U>());
+        return GenericMargins<ResT>{
+            m_Left / rhs,
+            m_Top / rhs,
+            m_Right / rhs,
+            m_Bottom / rhs,
+        };
+    }
+};
+using Margins = GenericMargins<Length>;
+
+// Individual margin controls allow for asymmetric layouts needed in professional printing
+// where different margins are required for binding, cutting, or aesthetic purposes
+struct CustomMargins
+{
+    Size m_TopLeft{ 0_mm, 0_mm };
+    std::optional<Size> m_BottomRight{ std::nullopt };
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -72,7 +110,7 @@ class Project : public QObject
 
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
-    Size ComputeMargins() const;
+    Margins ComputeMargins() const;
     Size ComputeMaxMargins() const;
 
     float CardRatio() const;
@@ -120,7 +158,14 @@ class Project : public QObject
         std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
         std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
         std::string m_BasePdf{ "None" };
-        std::optional<Size> m_CustomMargins{};
+
+        // Margin mode is the user-selected edit-mode of margins
+        MarginsMode m_MarginsMode{ MarginsMode::Auto };
+
+        // Custom margins provide fine-grained control over page layout for professional printing
+        // where standard centered margins may not meet specific requirements
+        std::optional<CustomMargins> m_CustomMargins{};
+
         dla::uvec2 m_CardLayout{ 3, 3 };
         PageOrientation m_Orientation{ PageOrientation::Portrait };
         FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
@@ -142,7 +187,7 @@ class Project : public QObject
         // Utility functions
         Size ComputePageSize(const Config& config) const;
         Size ComputeCardsSize(const Config& config) const;
-        Size ComputeMargins(const Config& config) const;
+        Margins ComputeMargins(const Config& config) const;
         Size ComputeMaxMargins(const Config& config) const;
 
         float CardRatio(const Config& config) const;
