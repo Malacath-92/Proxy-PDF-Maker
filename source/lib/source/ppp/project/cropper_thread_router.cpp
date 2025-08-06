@@ -29,11 +29,6 @@ void CropperThreadRouter::BleedChanged()
     BleedChangedDiff(m_Project.m_Data.m_BleedEdge);
 }
 
-void CropperThreadRouter::EnableUncropChanged()
-{
-    EnableUncropChangedDiff(g_Cfg.m_EnableUncrop);
-}
-
 void CropperThreadRouter::ColorCubeChanged()
 {
     ColorCubeChangedDiff(g_Cfg.m_ColorCube);

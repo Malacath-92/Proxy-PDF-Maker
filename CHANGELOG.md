@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2025-03-08
+
 ### Added
 - Common paper size option Ledger is now integrated into the app.
 
@@ -16,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fetching front-sides of double faced cards from Scryfall will no longer fail.
 
 ### Contributors
-- @ahernandezjr with contributions to improve general stability, the Ledger paper size, and fixes to the Legal page size.
+- Thank you @ahernandezjr for contributions to improve general stability, the Ledger paper size, and fixes to the Legal page size.
 
 ## [0.12.1] - 2025-23-07
 

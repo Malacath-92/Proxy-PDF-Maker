@@ -57,6 +57,8 @@ fs::path GeneratePdf(const Project& project)
     const auto offset{ bleed - project.m_Data.m_GuidesOffset };
     const auto spacing{ project.m_Data.m_Spacing };
 
+    const auto extended_offset{ bleed + 1_mm };
+
     const auto images{ DistributeCardsToPages(project, columns, rows) };
 
     auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
@@ -129,7 +131,7 @@ fs::path GeneratePdf(const Project& project)
                             if (x == 0)
                             {
                                 PdfPage::LineData line{
-                                    .m_From{ real_x, real_y },
+                                    .m_From{ real_x - extended_offset, real_y },
                                     .m_To{ 0_m, real_y },
                                 };
                                 page->DrawDashedLine(line, line_style);
@@ -137,7 +139,7 @@ fs::path GeneratePdf(const Project& project)
                             if (x == columns)
                             {
                                 PdfPage::LineData line{
-                                    .m_From{ real_x, real_y },
+                                    .m_From{ real_x + extended_offset, real_y },
                                     .m_To{ page_width, real_y },
                                 };
                                 page->DrawDashedLine(line, line_style);
@@ -145,7 +147,7 @@ fs::path GeneratePdf(const Project& project)
                             if (y == rows)
                             {
                                 PdfPage::LineData line{
-                                    .m_From{ real_x, real_y },
+                                    .m_From{ real_x, real_y - extended_offset },
                                     .m_To{ real_x, 0_m },
                                 };
                                 page->DrawDashedLine(line, line_style);
@@ -153,7 +155,7 @@ fs::path GeneratePdf(const Project& project)
                             if (y == 0)
                             {
                                 PdfPage::LineData line{
-                                    .m_From{ real_x, real_y },
+                                    .m_From{ real_x, real_y + extended_offset },
                                     .m_To{ real_x, page_height },
                                 };
                                 page->DrawDashedLine(line, line_style);

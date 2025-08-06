@@ -18,7 +18,6 @@ class GlobalOptionsWidget : public QWidget
     void RenderBackendChanged();
     void ImageFormatChanged();
     void JpgQualityChanged();
-    void EnableUncropChanged();
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();

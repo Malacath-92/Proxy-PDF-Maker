@@ -37,6 +37,8 @@ class PrintOptionsWidget : public QWidget
     void BaseUnitChanged();
     void RenderBackendChanged();
 
+    void ExternalCardSizeChanged();
+
   private:
     void SetDefaults();
 

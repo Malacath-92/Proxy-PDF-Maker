@@ -25,6 +25,7 @@ class PluginInterface : public QObject
         ROUTE(PauseCropper);
         ROUTE(UnpauseCropper);
         ROUTE(RefreshCardGrid);
+        ROUTE(SetCardSizeChoice);
 #undef ROUTE
     }
 
@@ -32,6 +33,8 @@ class PluginInterface : public QObject
     void PauseCropper();
     void UnpauseCropper();
     void RefreshCardGrid();
+
+    void SetCardSizeChoice(const std::string& card_size_choice);
 };
 
 using PluginInit = PluginInterface*(Project& project);

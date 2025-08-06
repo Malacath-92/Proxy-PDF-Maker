@@ -86,21 +86,19 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             m_InputType = StupidInferSource(text);
 
             m_Hint->setVisible(true);
-            if (ValidateSettings())
+            ValidateSettings();
+            switch (m_InputType)
             {
-                switch (m_InputType)
-                {
-                case InputType::Decklist:
-                    m_Hint->setText("Input inferred as Moxfield or Archidekt list...");
-                    break;
-                case InputType::MPCAutofill:
-                    m_Hint->setText("Input inferred as MPC Autofill xml...");
-                    break;
-                case InputType::None:
-                default:
-                    m_Hint->setText("Can't infer input type...");
-                    break;
-                }
+            case InputType::Decklist:
+                m_Hint->setText("Input inferred as Moxfield or Archidekt list...");
+                break;
+            case InputType::MPCAutofill:
+                m_Hint->setText("Input inferred as MPC Autofill xml...");
+                break;
+            case InputType::None:
+            default:
+                m_Hint->setText("Can't infer input type...");
+                break;
             }
         }
     };
@@ -163,10 +161,9 @@ void MtgDownloaderPopup::DoDownload()
         setEnabled(true);
 
         m_InputType = type_selector.GetInputType();
-        if (ValidateSettings())
-        {
-            DoDownload();
-        }
+        ValidateSettings();
+
+        DoDownload();
         return;
     }
 
@@ -303,11 +300,7 @@ void MtgDownloaderPopup::FinalizeDownload()
     const auto new_images{
         ListImageFiles(output_dir)
     };
-    const auto& target_folder{
-        m_Downloader->ProvidesBleedEdge()
-            ? m_Project.m_Data.m_ImageDir
-            : m_Project.m_Data.m_CropDir,
-    };
+    const auto& target_folder{ m_Project.m_Data.m_ImageDir };
     for (const auto& img : new_images)
     {
         if (!fs::exists(target_folder))
@@ -346,25 +339,9 @@ void MtgDownloaderPopup::UninstallLogHook()
     }
 }
 
-bool MtgDownloaderPopup::ValidateSettings()
+void MtgDownloaderPopup::ValidateSettings()
 {
-    QStringList error;
-    if (m_Project.m_Data.m_CardSizeChoice != "Standard")
-    {
-        error += "Be sure to card size to \"Standard\" when downloading MtG cards!";
-    }
-    if (m_InputType == InputType::Decklist && !g_Cfg.m_EnableUncrop)
-    {
-        error += "Be sure to set the \"Allow Precropped\" option when downloading from Scryfall!";
-    }
-
-    if (!error.isEmpty())
-    {
-        m_Hint->setText(error.join("\n"));
-        return false;
-    }
-
-    return true;
+    m_Router.SetCardSizeChoice("Standard");
 }
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)

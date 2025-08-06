@@ -633,6 +633,11 @@ PixelSize Image::Size() const
     };
 }
 
+float Image::AspectRatio() const
+{
+    return static_cast<float>(m_Impl.cols) / m_Impl.rows;
+}
+
 PixelDensity Image::Density(::Size real_size) const
 {
     const auto [w, h]{ Size().pod() };

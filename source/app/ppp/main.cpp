@@ -109,6 +109,18 @@ int main(int argc, char** argv)
                      { cropper.RestartWork(); });
     QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, scroll_area, &CardScrollArea::FullRefresh);
 
+    QObject::connect(
+        &plugin_router,
+        &PluginRouter::SetCardSizeChoice,
+        [&](const std::string& card_size_choice)
+        {
+            if (g_Cfg.m_CardSizes.contains(card_size_choice) && card_size_choice != project.m_Data.m_CardSizeChoice)
+            {
+                project.m_Data.m_CardSizeChoice = card_size_choice;
+                print_options->ExternalCardSizeChanged();
+            }
+        });
+
     auto* options_area{
         new OptionsAreaWidget{
             app,
@@ -151,7 +163,6 @@ int main(int argc, char** argv)
         QObject::connect(&cropper_router, &CropperThreadRouter::ImageDirChangedDiff, &cropper, &Cropper::ImageDirChangedDiff);
         QObject::connect(&cropper_router, &CropperThreadRouter::CardSizeChangedDiff, &cropper, &Cropper::CardSizeChangedDiff);
         QObject::connect(&cropper_router, &CropperThreadRouter::BleedChangedDiff, &cropper, &Cropper::BleedChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::EnableUncropChangedDiff, &cropper, &Cropper::EnableUncropChangedDiff);
         QObject::connect(&cropper_router, &CropperThreadRouter::ColorCubeChangedDiff, &cropper, &Cropper::ColorCubeChangedDiff);
         QObject::connect(&cropper_router, &CropperThreadRouter::BasePreviewWidthChangedDiff, &cropper, &Cropper::BasePreviewWidthChangedDiff);
         QObject::connect(&cropper_router, &CropperThreadRouter::MaxDPIChangedDiff, &cropper, &Cropper::MaxDPIChangedDiff);
@@ -163,7 +174,6 @@ int main(int argc, char** argv)
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &cropper_router, &CropperThreadRouter::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &cropper_router, &CropperThreadRouter::BleedChanged);
 
-        QObject::connect(global_options, &GlobalOptionsWidget::EnableUncropChanged, &cropper_router, &CropperThreadRouter::EnableUncropChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &cropper_router, &CropperThreadRouter::ColorCubeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &cropper_router, &CropperThreadRouter::BasePreviewWidthChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &cropper_router, &CropperThreadRouter::MaxDPIChanged);
@@ -175,7 +185,6 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
-        QObject::connect(global_options, &GlobalOptionsWidget::EnableUncropChanged, &card_provider, &CardProvider::EnableUncropChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &card_provider, &CardProvider::MaxDPIChanged);

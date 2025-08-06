@@ -63,6 +63,7 @@ class [[nodiscard]] Image
     Pixel Width() const;
     Pixel Height() const;
     PixelSize Size() const;
+    float AspectRatio() const;
     PixelDensity Density(::Size real_size) const;
 
     uint64_t Hash() const;
