@@ -135,7 +135,7 @@ std::vector<QString> ScryfallDownloader::GetFiles() const
         std::views::transform(&DecklistCard::m_FileName) |
         std::views::transform(&ScryfallDownloader::BacksideFilename)
     };
-    cards.append_range(backsides);
+    cards.insert(cards.end(), backsides.begin(), backsides.end());
     return cards;
 }
 
@@ -364,6 +364,9 @@ bool ScryfallDownloader::NextRequest()
                                 .m_Name{ card_back_id },
                                 .m_FileName{ CardBackFilename(card_back_id) },
                                 .m_Amount = 0,
+
+                                .m_Set{ std::nullopt },
+                                .m_CollectorNumber{ std::nullopt },
                             },
                         });
                         ++m_TotalRequests;
