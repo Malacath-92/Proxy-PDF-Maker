@@ -1,6 +1,7 @@
 #include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 
 #include <ranges>
+#include <vector>
 
 #include <QFile>
 #include <QJsonDocument>
@@ -127,8 +128,7 @@ std::vector<QString> ScryfallDownloader::GetFiles() const
 {
     auto cards{ m_Cards |
                 std::views::transform(&DecklistCard::m_FileName) |
-                std::ranges::to<std::vector>()
-    };
+                std::ranges::to<std::vector>() };
     auto backsides{
         m_Backsides |
         std::views::transform(&BacksideRequest::m_Front) |
@@ -363,6 +363,7 @@ bool ScryfallDownloader::NextRequest()
                             .m_Front{
                                 .m_Name{ card_back_id },
                                 .m_FileName{ CardBackFilename(card_back_id) },
+                                .m_Amount = 0,
                             },
                         });
                         ++m_TotalRequests;
