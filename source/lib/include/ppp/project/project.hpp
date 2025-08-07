@@ -59,6 +59,17 @@ struct GenericMargins
     T m_Bottom{};
 
     template<class U>
+    auto operator*(const U& rhs)
+    {
+        using ResT = decltype(std::declval<T>() * std::declval<U>());
+        return GenericMargins<ResT>{
+            m_Left * rhs,
+            m_Top * rhs,
+            m_Right * rhs,
+            m_Bottom * rhs,
+        };
+    }
+    template<class U>
     auto operator/(const U& rhs)
     {
         using ResT = decltype(std::declval<T>() / std::declval<U>());

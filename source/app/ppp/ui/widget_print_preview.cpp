@@ -405,10 +405,6 @@ class MarginsOverlay : public QWidget
 
     void ResizeOverlay(PageGrid* grid)
     {
-        const dla::vec2 first_card_corner{
-            static_cast<float>(grid->pos().x()),
-            static_cast<float>(grid->pos().y()),
-        };
         const dla::vec2 grid_size{
             static_cast<float>(grid->size().width()),
             static_cast<float>(grid->size().height()),
@@ -416,23 +412,25 @@ class MarginsOverlay : public QWidget
         const auto pixel_ratio{ grid_size.x / m_Project.ComputeCardsSize().x };
 
         const auto margins{
-            m_Project.ComputeMargins(),
+            m_Project.ComputeMargins() * pixel_ratio
         };
         const auto page_size{
-            m_Project.ComputePageSize()
-        };
-        const dla::vec2 usable_size{
-            (page_size.x - margins.m_Right - margins.m_Left) * pixel_ratio,
-            (page_size.y - margins.m_Bottom - margins.m_Top) * pixel_ratio,
+            m_Project.ComputePageSize() * pixel_ratio
         };
 
-        const QRectF rect{
-            first_card_corner.x,
-            first_card_corner.y,
-            usable_size.x,
-            usable_size.y,
-        };
-        m_Margins.addRect(rect);
+        m_Margins.clear();
+
+        m_Margins.moveTo(0, margins.m_Top);
+        m_Margins.lineTo(page_size.x, margins.m_Top);
+
+        m_Margins.moveTo(0, page_size.y - margins.m_Bottom);
+        m_Margins.lineTo(page_size.x, page_size.y - margins.m_Bottom);
+
+        m_Margins.moveTo(margins.m_Left, 0);
+        m_Margins.lineTo(margins.m_Left, page_size.y);
+
+        m_Margins.moveTo(page_size.x - margins.m_Right, 0);
+        m_Margins.lineTo(page_size.x - margins.m_Right, page_size.y);
     }
 
   private:
