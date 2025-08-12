@@ -78,7 +78,7 @@ Open a command prompt in the root of the project. Then run the following command
 ```sh
 mkdir build
 cd build
-cmake .. -DPPP_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug
+cmake .. -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=ON -DCMAKE_BUILD_TYPE=Debug
 ```
 
 If you configured e.g. with Visual Studio you can now work in the generated solution. Otherwise you can build via:
@@ -95,3 +95,5 @@ When you submit a Pull-Request Github will kick off jobs to test your code. Plea
 ```sh
 cmake --build . --target=format_proxy_pdf
 ```
+
+You may need an additional formatter downloaded for this command to work. Such as `clang-format`.

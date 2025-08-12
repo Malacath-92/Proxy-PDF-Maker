@@ -16,3 +16,6 @@ config.ini
 
 # Conan home, local in this repo for stability and CI
 .conan_home
+
+# macOS hidden files
+.DS_Store
