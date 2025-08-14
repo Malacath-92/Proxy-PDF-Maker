@@ -155,7 +155,7 @@ This determines whether images are encoded to `.png` or `.jpg` before writing th
 This lets you change the quality of jpg files embedded in the PDF. Lower numbers will reduce file size at the cost of image artifacts appearing. Even at `100` the file size will be significantly smaller than encoding to `.png` files.
 
 #### Allow Precropped
-In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/cropped` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
+In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/crop` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
 
 #### Color Cube
 Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.CUBE` files with an arbitrary resolution. Higher resolutions will not slow down application of the cube maps, trilinear interpolation is used irrespective of resolution. Ships with the following color cubes:
