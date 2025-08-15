@@ -535,7 +535,11 @@ void Project::EnsureOutputFolder() const
     };
     if (!fs::exists(output_dir))
     {
-        fs::create_directories(output_dir);
+        std::error_code error_code;
+        if (!fs::create_directories(output_dir, error_code))
+        {
+            LogError("Failed to create directories: {}", error_code.message());
+        }
     }
 }
 

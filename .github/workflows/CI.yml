@@ -85,14 +85,14 @@ jobs:
           echo "[conf]" >> default
           echo "tools.cmake.cmaketoolchain:generator=Ninja" >> default
           echo "" >> default
-          
+
       - name: Configure (MacOS)
         id: configure-macos
         if: ${{ startsWith(inputs.os, 'MacOS') }}
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
