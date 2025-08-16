@@ -126,7 +126,8 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
         }
     }
 
-    static DetailInformation MakeDetailInformation(const std::source_location& source_info, bool with_stack_trace)
+    static DetailInformation MakeDetailInformation(const std::source_location& source_info,
+                                                   [[maybe_unused]] bool with_stack_trace)
     {
 
         std::string file{ source_info.file_name() };
