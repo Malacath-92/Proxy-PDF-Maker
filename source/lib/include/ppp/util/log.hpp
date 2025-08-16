@@ -59,7 +59,7 @@ class Log
     struct DetailInformation
     {
         std::time_t m_Time;
-        std::string_view m_File;
+        std::string m_File;
         std::size_t m_Line;
         std::size_t m_Column;
         std::string_view m_Function;
@@ -126,56 +126,65 @@ Call to Log::Print<BufferSize> reqiures a bigger buffer here, called with {} but
         }
     }
 
+    static DetailInformation MakeDetailInformation(const std::source_location& source_info, bool with_stack_trace)
+    {
+
+        std::string file{ source_info.file_name() };
+#ifdef _WIN32
+        std::ranges::replace(file, '\\', '/');
+#endif
+
+        DetailInformation detail_info{
+            std::time(nullptr),
+            std::move(file),
+            source_info.line(),
+            source_info.column(),
+            source_info.function_name(),
+            GetThreadName(std::this_thread::get_id()),
+            {},
+        };
+
+#ifdef __cpp_lib_stacktrace
+        if (with_stack_trace)
+        {
+            std::stacktrace stacktrace = std::stacktrace::current(2);
+            for (const auto& stack_elem : stacktrace)
+            {
+                const std::string source_file = stack_elem.source_file();
+                if (!source_file.empty())
+                {
+                    detail_info.m_StackTrace.push_back(
+                        fmt::format("  {:<64} @ {}:{}",
+                                    stack_elem.description(),
+                                    source_file,
+                                    stack_elem.source_line()));
+                }
+                else
+                {
+                    detail_info.m_StackTrace.push_back(
+                        fmt::format("  {}", stack_elem.description()));
+                }
+            }
+
+            if (!detail_info.m_StackTrace.empty())
+            {
+                detail_info.m_StackTrace[0][0] = '>';
+            }
+        }
+#endif
+
+        return detail_info;
+    }
+
     template<std::size_t BufferSize, class... Args>
     static void DoLog(std::string_view log_name, LogLevel level, const LogMessage<Args...>& message, Args&&... args)
     {
         Log* log_sink = Log::GetInstance(log_name);
         if (log_sink)
         {
-#ifdef _WIN32
-            std::string file{ message.m_SourceInfo.file_name() };
-            std::ranges::replace(file, '\\', '/');
-#else
-            std::string_view file{ message.m_SourceInfo.file_name() };
-#endif
-            DetailInformation detail_info{
-                std::time(nullptr),
-                file,
-                message.m_SourceInfo.line(),
-                message.m_SourceInfo.column(),
-                message.m_SourceInfo.function_name(),
-                GetThreadName(std::this_thread::get_id()),
-                {},
+            const DetailInformation detail_info{
+                MakeDetailInformation(message.m_SourceInfo, log_sink->GetStacktraceEnabled(level))
             };
-
-#ifdef __cpp_lib_stacktrace
-            if (log_sink->GetStacktraceEnabled(level))
-            {
-                std::stacktrace stacktrace = std::stacktrace::current(2);
-                for (const auto& stack_elem : stacktrace)
-                {
-                    const std::string source_file = stack_elem.source_file();
-                    if (!source_file.empty())
-                    {
-                        detail_info.m_StackTrace.push_back(
-                            fmt::format("  {:<64} @ {}:{}",
-                                        stack_elem.description(),
-                                        source_file,
-                                        stack_elem.source_line()));
-                    }
-                    else
-                    {
-                        detail_info.m_StackTrace.push_back(
-                            fmt::format("  {}", stack_elem.description()));
-                    }
-                }
-
-                if (!detail_info.m_StackTrace.empty())
-                {
-                    detail_info.m_StackTrace[0][0] = '>';
-                }
-            }
-#endif
             log_sink->Print<BufferSize>(detail_info, level, message.m_Message, std::forward<Args>(args)...);
         }
     }

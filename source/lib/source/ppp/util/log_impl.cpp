@@ -14,7 +14,14 @@ Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
     : m_LogName(log_name)
     , m_LogFlags(log_flags)
 {
-    LogInfo("Constructing log sink '{}'!", m_LogName);
+    {
+        char message[128]{};
+        fmt::format_to(message, "Constructing log sink '{}'!", m_LogName);
+
+        std::source_location source_info{ std::source_location::current() };
+        const Log::DetailInformation detail_info{ Log::MakeDetailInformation(source_info, false) };
+        Print(detail_info, LogLevel::Information, message);
+    }
 
     if (bool(m_LogFlags & LogFlags::File))
         CreateLogFile();
@@ -22,7 +29,14 @@ Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
 
 Log::LogImpl::~LogImpl()
 {
-    LogInfo("Destroying log sink '{}'!", m_LogName);
+    {
+        char message[128]{};
+        fmt::format_to(message, "Destroying log sink '{}'!", m_LogName);
+
+        std::source_location source_info{ std::source_location::current() };
+        const Log::DetailInformation detail_info{ Log::MakeDetailInformation(source_info, false) };
+        Print(detail_info, LogLevel::Information, message);
+    }
 
     UnregisterInstance();
 }
