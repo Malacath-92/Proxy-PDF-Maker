@@ -91,6 +91,13 @@ struct CustomMargins
     std::optional<Size> m_BottomRight{ std::nullopt };
 };
 
+enum CardOrientation
+{
+    Vertical,
+    Horizontal,
+    Mixed,
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -121,6 +128,8 @@ class Project : public QObject
 
     Size ComputePageSize() const;
     Size ComputeCardsSize() const;
+    Size ComputeCardsSizeVertical() const;
+    Size ComputeCardsSizeHorizontal() const;
     Margins ComputeMargins() const;
     Size ComputeMaxMargins() const;
 
@@ -177,7 +186,12 @@ class Project : public QObject
         // where standard centered margins may not meet specific requirements
         std::optional<CustomMargins> m_CustomMargins{};
 
-        dla::uvec2 m_CardLayout{ 3, 3 };
+        // The way cards are layed out on the card can help maximize the amount of cards or
+        // reduce print errors
+        CardOrientation m_CardOrientation{ CardOrientation::Vertical };
+        dla::uvec2 m_CardLayoutVertical{ 3, 3 };
+        dla::uvec2 m_CardLayoutHorizontal{};
+
         PageOrientation m_Orientation{ PageOrientation::Portrait };
         FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
         fs::path m_FileName{ "_printme" };
@@ -196,8 +210,19 @@ class Project : public QObject
         Length m_GuidesLength{ 1.5_mm };
 
         // Utility functions
+        struct CardLayout
+        {
+            dla::uvec2 m_CardLayoutVertical;
+            dla::uvec2 m_CardLayoutHorizontal;
+        };
+        CardLayout ComputeAutoCardLayout(const Config& config, Size available_space) const;
+        dla::uvec2 ComputeCardLayout(const Config& config,
+                                     Size available_space,
+                                     CardOrientation orientation) const;
+
         Size ComputePageSize(const Config& config) const;
         Size ComputeCardsSize(const Config& config) const;
+        Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
         Margins ComputeMargins(const Config& config) const;
         Size ComputeMaxMargins(const Config& config) const;
 

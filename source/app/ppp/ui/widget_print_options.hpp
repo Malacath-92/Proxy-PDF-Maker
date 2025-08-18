@@ -13,6 +13,7 @@ class QLabel;
 class QLineEdit;
 
 class Project;
+class WidgetWithLabel;
 class ComboBoxWithLabel;
 
 class PrintOptionsWidget : public QWidget
@@ -26,6 +27,7 @@ class PrintOptionsWidget : public QWidget
     void PageSizeChanged();
     void CardSizeChanged();
     void MarginsChanged();
+    void CardOrientationChanged();
     void CardLayoutChanged();
     void OrientationChanged();
     void FlipOnChanged();
@@ -53,13 +55,18 @@ class PrintOptionsWidget : public QWidget
     QLineEdit* m_PrintOutput{ nullptr };
     QComboBox* m_CardSize{ nullptr };
     QComboBox* m_PaperSize{ nullptr };
-    QDoubleSpinBox* m_CardsWidth{ nullptr };
-    QDoubleSpinBox* m_CardsHeight{ nullptr };
+    ComboBoxWithLabel* m_BasePdf{ nullptr };
+    QComboBox* m_CardOrientation{ nullptr };
+    WidgetWithLabel* m_CardsLayoutVertical{ nullptr };
+    QDoubleSpinBox* m_CardsWidthVertical{ nullptr };
+    QDoubleSpinBox* m_CardsHeightVertical{ nullptr };
+    WidgetWithLabel* m_CardsLayoutHorizontal{ nullptr };
+    QDoubleSpinBox* m_CardsWidthHorizontal{ nullptr };
+    QDoubleSpinBox* m_CardsHeightHorizontal{ nullptr };
     QComboBox* m_Orientation{ nullptr };
     QComboBox* m_FlipOn{ nullptr };
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };
-    ComboBoxWithLabel* m_BasePdf{ nullptr };
 
     // Margin control system provides both simple and advanced layout options
     // The toggle between modes allows users to choose between quick uniform margins

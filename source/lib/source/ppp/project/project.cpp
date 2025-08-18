@@ -103,15 +103,23 @@ void Project::Load(const fs::path& json_path)
             m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(json["flip_page_on"].get_ref<const std::string&>())
                                   .value_or(FlipPageOn::LeftEdge);
         }
-        if (m_Data.m_PageSize == Config::c_FitSize)
+
+        if (json.contains("card_orientation"))
         {
-            m_Data.m_CardLayout.x = json["card_layout"]["width"];
-            m_Data.m_CardLayout.y = json["card_layout"]["height"];
+            m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(json["card_orientation"].get_ref<const std::string&>())
+                                           .value_or(CardOrientation::Vertical);
+            m_Data.m_CardLayoutVertical.x = json["card_layout_vertical"]["width"];
+            m_Data.m_CardLayoutVertical.y = json["card_layout_vertical"]["height"];
+            m_Data.m_CardLayoutHorizontal.x = json["card_layout_horizontal"]["width"];
+            m_Data.m_CardLayoutHorizontal.y = json["card_layout_horizontal"]["height"];
         }
-        else
+        else if (m_Data.m_PageSize == Config::c_FitSize)
         {
-            CacheCardLayout();
+            m_Data.m_CardLayoutVertical.x = json["card_layout"]["width"];
+            m_Data.m_CardLayoutVertical.y = json["card_layout"]["height"];
         }
+
+        CacheCardLayout();
 
         if (json.contains("custom_margins"))
         {
@@ -246,9 +254,14 @@ void Project::Dump(const fs::path& json_path) const
                 };
             }
         }
-        json["card_layout"] = nlohmann::json{
-            { "width", m_Data.m_CardLayout.x },
-            { "height", m_Data.m_CardLayout.y },
+        json["card_orientation"] = magic_enum::enum_name(m_Data.m_CardOrientation);
+        json["card_layout_vertical"] = nlohmann::json{
+            { "width", m_Data.m_CardLayoutVertical.x },
+            { "height", m_Data.m_CardLayoutVertical.y },
+        };
+        json["card_layout_horizontal"] = nlohmann::json{
+            { "width", m_Data.m_CardLayoutHorizontal.x },
+            { "height", m_Data.m_CardLayoutHorizontal.y },
         };
         json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
         json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
@@ -421,41 +434,29 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 bool Project::CacheCardLayout()
 {
     const bool fit_size{ m_Data.m_PageSize == Config::c_FitSize };
-    if (!fit_size)
+    if (fit_size)
     {
-        const auto previous_layout{ m_Data.m_CardLayout };
-
-        const Size page_size{ ComputePageSize() };
-        const Size card_size_with_bleed{ CardSizeWithBleed() };
-
-        // Calculate available space after accounting for margins
-        Size available_space{ page_size };
-        if (m_Data.m_CustomMargins.has_value())
-        {
-            const auto margins{ ComputeMargins() };
-            available_space.x -= (margins.m_Left + margins.m_Right);
-            available_space.y -= (margins.m_Top + margins.m_Bottom);
-        }
-
-        m_Data.m_CardLayout = static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed));
-
-        if (m_Data.m_Spacing.x > 0_mm || m_Data.m_Spacing.y > 0_mm)
-        {
-            const Size cards_size{ ComputeCardsSize() };
-            if (cards_size.x > available_space.x)
-            {
-                m_Data.m_CardLayout.x--;
-            }
-            if (cards_size.y > available_space.y)
-            {
-                m_Data.m_CardLayout.y--;
-            }
-        }
-
-        return previous_layout != m_Data.m_CardLayout;
+        return false;
     }
 
-    return false;
+    // Calculate available space after accounting for margins
+    const Size page_size{ ComputePageSize() };
+    Size available_space{ page_size };
+    if (m_Data.m_CustomMargins.has_value())
+    {
+        const auto margins{ ComputeMargins() };
+        available_space.x -= (margins.m_Left + margins.m_Right);
+        available_space.y -= (margins.m_Top + margins.m_Bottom);
+    }
+
+    const auto previous_layout_vertical{ m_Data.m_CardLayoutVertical };
+    const auto previous_layout_horizontal{ m_Data.m_CardLayoutHorizontal };
+
+    const auto auto_layout{ m_Data.ComputeAutoCardLayout(g_Cfg, available_space) };
+    m_Data.m_CardLayoutVertical = auto_layout.m_CardLayoutVertical;
+    m_Data.m_CardLayoutHorizontal = auto_layout.m_CardLayoutHorizontal;
+
+    return previous_layout_vertical != m_Data.m_CardLayoutVertical || previous_layout_horizontal != m_Data.m_CardLayoutHorizontal;
 }
 
 Size Project::ComputePageSize() const
@@ -486,6 +487,28 @@ Size Project::ComputePageSize() const
 Size Project::ComputeCardsSize() const
 {
     return m_Data.ComputeCardsSize(g_Cfg);
+}
+
+Size Project::ComputeCardsSizeVertical() const
+{
+    if (m_Data.m_CardLayoutVertical.x > 0 && m_Data.m_CardLayoutVertical.y > 0)
+    {
+        const auto card_size_with_bleed{ CardSizeWithBleed() };
+        return m_Data.ComputeCardsSize(card_size_with_bleed, m_Data.m_CardLayoutVertical);
+    }
+
+    return {};
+}
+
+Size Project::ComputeCardsSizeHorizontal() const
+{
+    if (m_Data.m_CardLayoutHorizontal.x > 0 && m_Data.m_CardLayoutHorizontal.y > 0)
+    {
+        const auto card_size_with_bleed{ dla::rotl(CardSizeWithBleed()) };
+        return m_Data.ComputeCardsSize(card_size_with_bleed, m_Data.m_CardLayoutHorizontal);
+    }
+
+    return {};
 }
 
 Margins Project::ComputeMargins() const
@@ -542,6 +565,61 @@ void Project::EnsureOutputFolder() const
         }
     }
 }
+Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
+    const Config& config,
+    Size available_space) const
+{
+    switch (m_CardOrientation)
+    {
+    default:
+    case CardOrientation::Vertical:
+        return {
+            .m_CardLayoutVertical{ ComputeCardLayout(config, available_space, CardOrientation::Vertical) },
+            .m_CardLayoutHorizontal{},
+        };
+    case CardOrientation::Horizontal:
+        return {
+            .m_CardLayoutVertical{},
+            .m_CardLayoutHorizontal{ ComputeCardLayout(config, available_space, CardOrientation::Horizontal) },
+        };
+    case CardOrientation::Mixed:
+    {
+        const auto card_layout_vertical{ ComputeCardLayout(config, available_space, CardOrientation::Vertical) };
+        available_space.y -= ComputeCardsSize(CardSizeWithBleed(config), card_layout_vertical).y + m_Spacing.y;
+        return {
+            .m_CardLayoutVertical{ card_layout_vertical },
+            .m_CardLayoutHorizontal{ ComputeCardLayout(config, available_space, CardOrientation::Horizontal) },
+        };
+    }
+    }
+}
+
+dla::uvec2 Project::ProjectData::ComputeCardLayout(const Config& config,
+                                                   Size available_space,
+                                                   CardOrientation orientation) const
+{
+    const Size card_size_with_bleed{
+        orientation == CardOrientation::Horizontal ? dla::rotl(CardSizeWithBleed(config))
+                                                   : CardSizeWithBleed(config)
+    };
+
+    auto layout{ static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed)) };
+
+    if (m_Spacing.x > 0_mm || m_Spacing.y > 0_mm)
+    {
+        const Size cards_size{ ComputeCardsSize(card_size_with_bleed, layout) };
+        if (cards_size.x > available_space.x)
+        {
+            layout.x--;
+        }
+        if (cards_size.y > available_space.y)
+        {
+            layout.y--;
+        }
+    }
+
+    return layout;
+}
 
 Size Project::ProjectData::ComputePageSize(const Config& config) const
 {
@@ -570,8 +648,38 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
 
 Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 {
-    const Size card_size_with_bleed{ CardSizeWithBleed(config) };
-    return m_CardLayout * card_size_with_bleed + (m_CardLayout - 1) * m_Spacing;
+    const bool has_vertical_layout{ m_CardLayoutVertical.x > 0 && m_CardLayoutVertical.y > 0 };
+    const bool has_horizontal_layout{ m_CardLayoutHorizontal.x > 0 && m_CardLayoutHorizontal.y > 0 };
+    if (has_vertical_layout && has_horizontal_layout)
+    {
+        const auto card_size_with_bleed{ CardSizeWithBleed(config) };
+        const auto verical_cards_size{ ComputeCardsSize(card_size_with_bleed, m_CardLayoutVertical) };
+
+        const auto card_size_with_bleed_horizontal{ dla::rotl(card_size_with_bleed) };
+        const auto horizontal_cards_size{ ComputeCardsSize(card_size_with_bleed_horizontal, m_CardLayoutHorizontal) };
+
+        return Size{
+            dla::math::max(verical_cards_size.x, horizontal_cards_size.x),
+            verical_cards_size.y + horizontal_cards_size.y + m_Spacing.y,
+        };
+    }
+    else if (has_vertical_layout)
+    {
+        const auto card_size_with_bleed{ CardSizeWithBleed(config) };
+        return ComputeCardsSize(card_size_with_bleed, m_CardLayoutVertical);
+    }
+    else if (has_horizontal_layout)
+    {
+        const auto card_size_with_bleed{ dla::rotl(CardSizeWithBleed(config)) };
+        return ComputeCardsSize(card_size_with_bleed, m_CardLayoutHorizontal);
+    }
+
+    return {};
+}
+
+Size Project::ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const
+{
+    return card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing;
 }
 
 Margins Project::ProjectData::ComputeMargins(const Config& config) const
@@ -622,11 +730,21 @@ Margins Project::ProjectData::ComputeMargins(const Config& config) const
 Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
 {
     const Size page_size{ ComputePageSize(config) };
-    // We can not rely on a pre-computed layout here, so we manually compute
+    // We can not rely on a pre-computed layout here, so we compute
     // the best case layout and compute margins from that
-    const Size card_size_with_bleed{ CardSizeWithBleed(config) };
-    const auto card_layout{ static_cast<dla::uvec2>(dla::floor(page_size / card_size_with_bleed)) };
-    const Size cards_size{ card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing };
+    const auto card_size_with_bleed{ CardSizeWithBleed(config) };
+    const auto card_layout{ ComputeAutoCardLayout(config, page_size) };
+    const auto cards_size_vertical{ ComputeCardsSize(card_size_with_bleed,
+                                                     card_layout.m_CardLayoutVertical) };
+    const auto cards_size_horizontal{ ComputeCardsSize(dla::rotl(card_size_with_bleed),
+                                                       card_layout.m_CardLayoutHorizontal) };
+    const Size cards_size{
+        dla::math::max(cards_size_vertical.x, cards_size_horizontal.x),
+        cards_size_vertical.y +
+            cards_size_horizontal.y +
+            (card_layout.m_CardLayoutVertical.y != 0 && card_layout.m_CardLayoutHorizontal.y != 0 ? m_Spacing.y : 0_mm)
+    };
+
     // Maximum margins represent the total available space around the cards
     // This is used to constrain user input and provide reasonable defaults
     const Size max_margins{ page_size - cards_size };

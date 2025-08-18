@@ -26,6 +26,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     const bool initial_fit_size{ project.m_Data.m_PageSize == Config::c_FitSize };
     const bool initial_infer_size{ project.m_Data.m_PageSize == Config::c_BasePDFSize };
 
+    const bool initial_layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
+    const bool initial_layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
+
     const auto initial_page_size{ project.ComputePageSize() };
     const auto initial_cards_size{ project.ComputeCardsSize() };
 
@@ -57,6 +60,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     };
     m_BasePdf->setEnabled(initial_infer_size);
     m_BasePdf->setVisible(initial_infer_size);
+
+    auto* orientation{ new ComboBoxWithLabel{
+        "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.m_Data.m_Orientation) } };
+    orientation->setEnabled(!initial_fit_size && !initial_infer_size);
+    orientation->setVisible(!initial_fit_size && !initial_infer_size);
+    m_Orientation = orientation->GetWidget();
 
     auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size) } };
     m_PaperInfo = paper_info->GetWidget();
@@ -101,29 +110,51 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_AllMarginsSpin->setSingleStep(0.1);
     m_AllMarginsSpin->setSuffix(initial_base_unit_name);
 
-    m_CardsWidth = new QDoubleSpinBox;
-    m_CardsWidth->setDecimals(0);
-    m_CardsWidth->setRange(1, 10);
-    m_CardsWidth->setSingleStep(1);
-    m_CardsHeight = new QDoubleSpinBox;
-    m_CardsHeight->setDecimals(0);
-    m_CardsHeight->setRange(1, 10);
-    m_CardsHeight->setSingleStep(1);
-    auto* cards_layout_layout{ new QHBoxLayout };
-    cards_layout_layout->addWidget(m_CardsWidth);
-    cards_layout_layout->addWidget(m_CardsHeight);
-    cards_layout_layout->setContentsMargins(0, 0, 0, 0);
-    auto* cards_layout_container{ new QWidget };
-    cards_layout_container->setLayout(cards_layout_layout);
-    auto* cards_layout{ new WidgetWithLabel("Layout", cards_layout_container) };
-    cards_layout->setEnabled(initial_fit_size);
-    cards_layout->setVisible(initial_fit_size);
+    auto* card_orientation{ new ComboBoxWithLabel{
+        "Card Orien&tation",
+        magic_enum::enum_names<CardOrientation>(),
+        magic_enum::enum_name(project.m_Data.m_CardOrientation) } };
+    m_CardOrientation = card_orientation->GetWidget();
 
-    auto* orientation{ new ComboBoxWithLabel{
-        "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.m_Data.m_Orientation) } };
-    orientation->setEnabled(!initial_fit_size && !initial_infer_size);
-    orientation->setVisible(!initial_fit_size && !initial_infer_size);
-    m_Orientation = orientation->GetWidget();
+    {
+        m_CardsWidthVertical = new QDoubleSpinBox;
+        m_CardsWidthVertical->setDecimals(0);
+        m_CardsWidthVertical->setRange(1, 10);
+        m_CardsWidthVertical->setSingleStep(1);
+        m_CardsHeightVertical = new QDoubleSpinBox;
+        m_CardsHeightVertical->setDecimals(0);
+        m_CardsHeightVertical->setRange(1, 10);
+        m_CardsHeightVertical->setSingleStep(1);
+        auto* cards_layout_vertical_layout{ new QHBoxLayout };
+        cards_layout_vertical_layout->addWidget(m_CardsWidthVertical);
+        cards_layout_vertical_layout->addWidget(m_CardsHeightVertical);
+        cards_layout_vertical_layout->setContentsMargins(0, 0, 0, 0);
+        auto* cards_layout_vertical_container{ new QWidget };
+        cards_layout_vertical_container->setLayout(cards_layout_vertical_layout);
+        m_CardsLayoutVertical = new WidgetWithLabel("&Vertical Layout", cards_layout_vertical_container);
+        m_CardsLayoutVertical->setEnabled(initial_layout_vertical && initial_fit_size);
+        m_CardsLayoutVertical->setVisible(initial_layout_vertical && initial_fit_size);
+    }
+
+    {
+        m_CardsWidthHorizontal = new QDoubleSpinBox;
+        m_CardsWidthHorizontal->setDecimals(0);
+        m_CardsWidthHorizontal->setRange(1, 10);
+        m_CardsWidthHorizontal->setSingleStep(1);
+        m_CardsHeightHorizontal = new QDoubleSpinBox;
+        m_CardsHeightHorizontal->setDecimals(0);
+        m_CardsHeightHorizontal->setRange(1, 10);
+        m_CardsHeightHorizontal->setSingleStep(1);
+        auto* cards_layout_horizontal_layout{ new QHBoxLayout };
+        cards_layout_horizontal_layout->addWidget(m_CardsWidthHorizontal);
+        cards_layout_horizontal_layout->addWidget(m_CardsHeightHorizontal);
+        cards_layout_horizontal_layout->setContentsMargins(0, 0, 0, 0);
+        auto* cards_layout_horizontal_container{ new QWidget };
+        cards_layout_horizontal_container->setLayout(cards_layout_horizontal_layout);
+        m_CardsLayoutHorizontal = new WidgetWithLabel("&Horizontal Layout", cards_layout_horizontal_container);
+        m_CardsLayoutHorizontal->setEnabled(initial_layout_horizontal && initial_fit_size);
+        m_CardsLayoutHorizontal->setVisible(initial_layout_horizontal && initial_fit_size);
+    }
 
     auto* flip_on{ new ComboBoxWithLabel{
         "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
@@ -136,6 +167,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(card_size);
     layout->addWidget(paper_size);
     layout->addWidget(m_BasePdf);
+    layout->addWidget(orientation);
     layout->addWidget(paper_info);
     layout->addWidget(cards_info);
     layout->addWidget(margins_mode);
@@ -144,8 +176,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     layout->addWidget(right_margin);
     layout->addWidget(bottom_margin);
     layout->addWidget(all_margins);
-    layout->addWidget(cards_layout);
-    layout->addWidget(orientation);
+    layout->addWidget(card_orientation);
+    layout->addWidget(m_CardsLayoutVertical);
+    layout->addWidget(m_CardsLayoutHorizontal);
     layout->addWidget(flip_on);
     setLayout(layout);
 
@@ -163,11 +196,15 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
             const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
+            const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
+            const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
 
             m_BasePdf->setEnabled(infer_size);
             m_BasePdf->setVisible(infer_size);
-            cards_layout->setEnabled(fit_size);
-            cards_layout->setVisible(fit_size);
+            m_CardsLayoutVertical->setEnabled(fit_size && layout_vertical);
+            m_CardsLayoutVertical->setVisible(fit_size && layout_vertical);
+            m_CardsLayoutHorizontal->setEnabled(fit_size && layout_horizontal);
+            m_CardsLayoutHorizontal->setVisible(fit_size && layout_horizontal);
             orientation->setEnabled(!fit_size && !infer_size);
             orientation->setVisible(!fit_size && !infer_size);
 
@@ -200,23 +237,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
-    auto change_cardsize{
-        [=, this](QString t)
-        {
-            std::string new_choice{ t.toStdString() };
-            if (new_choice == m_Project.m_Data.m_CardSizeChoice)
-            {
-                return;
-            }
-
-            m_Project.m_Data.m_CardSizeChoice = std::move(new_choice);
-            CardSizeChanged();
-
-            // Refresh anything needed for size change
-            RefreshSizes();
-        }
-    };
-
     auto change_base_pdf{
         [=, this](QString t)
         {
@@ -231,6 +251,23 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             RefreshSizes();
 
             PageSizeChanged();
+        }
+    };
+
+    auto change_cardsize{
+        [=, this](QString t)
+        {
+            std::string new_choice{ t.toStdString() };
+            if (new_choice == m_Project.m_Data.m_CardSizeChoice)
+            {
+                return;
+            }
+
+            m_Project.m_Data.m_CardSizeChoice = std::move(new_choice);
+            CardSizeChanged();
+
+            // Refresh anything needed for size change
+            RefreshSizes();
         }
     };
 
@@ -384,18 +421,61 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
-    auto change_cards_width{
+    auto change_card_orientation{
+        [=, this](QString t)
+        {
+            m_Project.m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(t.toStdString())
+                                                     .value_or(CardOrientation::Vertical);
+
+            const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
+            if (fit_size)
+            {
+                const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
+                m_CardsLayoutVertical->setEnabled(layout_vertical);
+                m_CardsLayoutVertical->setVisible(layout_vertical);
+
+                const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
+                m_CardsLayoutHorizontal->setEnabled(layout_horizontal);
+                m_CardsLayoutHorizontal->setVisible(layout_horizontal);
+            }
+
+            if (m_Project.CacheCardLayout())
+            {
+                CardLayoutChanged();
+            }
+            CardOrientationChanged();
+
+            RefreshSizes();
+        }
+    };
+    auto change_cards_width_vertical{
         [=, this](double v)
         {
-            m_Project.m_Data.m_CardLayout.x = static_cast<uint32_t>(v);
+            m_Project.m_Data.m_CardLayoutVertical.x = static_cast<uint32_t>(v);
             CardLayoutChanged();
         }
     };
 
-    auto change_cards_height{
+    auto change_cards_height_vertical{
         [=, this](double v)
         {
-            m_Project.m_Data.m_CardLayout.y = static_cast<uint32_t>(v);
+            m_Project.m_Data.m_CardLayoutVertical.y = static_cast<uint32_t>(v);
+            CardLayoutChanged();
+        }
+    };
+
+    auto change_cards_width_horizontal{
+        [=, this](double v)
+        {
+            m_Project.m_Data.m_CardLayoutHorizontal.x = static_cast<uint32_t>(v);
+            CardLayoutChanged();
+        }
+    };
+
+    auto change_cards_height_horizontal{
+        [=, this](double v)
+        {
+            m_Project.m_Data.m_CardLayoutHorizontal.y = static_cast<uint32_t>(v);
             CardLayoutChanged();
         }
     };
@@ -495,14 +575,26 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_all_margins);
-    QObject::connect(m_CardsWidth,
+    QObject::connect(card_orientation->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_card_orientation);
+    QObject::connect(m_CardsWidthVertical,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_cards_width);
-    QObject::connect(m_CardsHeight,
+                     change_cards_width_vertical);
+    QObject::connect(m_CardsHeightVertical,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_cards_height);
+                     change_cards_height_vertical);
+    QObject::connect(m_CardsWidthHorizontal,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_cards_width_horizontal);
+    QObject::connect(m_CardsHeightHorizontal,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_cards_height_horizontal);
     QObject::connect(orientation->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
@@ -607,8 +699,22 @@ void PrintOptionsWidget::SetDefaults()
     m_PrintOutput->setText(ToQString(m_Project.m_Data.m_FileName));
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
     m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
-    m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
-    m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+    m_CardOrientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_CardOrientation)));
+
+    const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
+
+    const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
+    m_CardsLayoutVertical->setEnabled(fit_size && layout_vertical);
+    m_CardsLayoutVertical->setVisible(fit_size && layout_vertical);
+
+    const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
+    m_CardsLayoutHorizontal->setEnabled(fit_size && layout_horizontal);
+    m_CardsLayoutHorizontal->setVisible(fit_size && layout_horizontal);
+
+    m_CardsWidthVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.x);
+    m_CardsHeightVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.y);
+    m_CardsWidthHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.x);
+    m_CardsHeightHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.y);
 
     // Update card layout display and warnings
     RefreshCardLayout();
@@ -718,24 +824,34 @@ void PrintOptionsWidget::RefreshCardLayout()
 {
     if (m_Project.CacheCardLayout())
     {
-        m_CardsWidth->setValue(m_Project.m_Data.m_CardLayout.x);
-        m_CardsHeight->setValue(m_Project.m_Data.m_CardLayout.y);
+        m_CardsWidthVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.x);
+        m_CardsHeightVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.y);
+
+        m_CardsWidthHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.x);
+        m_CardsHeightHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.y);
 
         // Show visual warning when no cards can fit on the page
-        if (m_Project.m_Data.m_CardLayout.x == 0 || m_Project.m_Data.m_CardLayout.y == 0)
-        {
-            m_CardsWidth->setStyleSheet("QSpinBox { color: red; }");
-            m_CardsHeight->setStyleSheet("QSpinBox { color: red; }");
-            m_CardsWidth->setToolTip("No cards can fit on the page with current settings");
-            m_CardsHeight->setToolTip("No cards can fit on the page with current settings");
-        }
-        else
-        {
-            m_CardsWidth->setStyleSheet("");
-            m_CardsHeight->setStyleSheet("");
-            m_CardsWidth->setToolTip("");
-            m_CardsHeight->setToolTip("");
-        }
+        const auto check_valid_layout{
+            [](QDoubleSpinBox* width, QDoubleSpinBox* height, const auto& layout)
+            {
+                if (layout.x == 0 || layout.y == 0)
+                {
+                    width->setStyleSheet("QSpinBox { color: red; }");
+                    height->setStyleSheet("QSpinBox { color: red; }");
+                    width->setToolTip("No cards can fit on the page with current settings");
+                    height->setToolTip("No cards can fit on the page with current settings");
+                }
+                else
+                {
+                    width->setStyleSheet("");
+                    height->setStyleSheet("");
+                    width->setToolTip("");
+                    height->setToolTip("");
+                }
+            }
+        };
+        check_valid_layout(m_CardsWidthVertical, m_CardsHeightVertical, m_Project.m_Data.m_CardLayoutVertical);
+        check_valid_layout(m_CardsWidthHorizontal, m_CardsHeightHorizontal, m_Project.m_Data.m_CardLayoutHorizontal);
     }
 }
 

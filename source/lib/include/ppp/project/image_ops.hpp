@@ -22,6 +22,8 @@ inline const std::array g_ValidImageExtensions{
     ".jpg"_p,
     ".jpeg"_p,
     ".png"_p,
+    ".tif"_p,
+    ".tiff"_p,
 };
 
 std::vector<fs::path> ListImageFiles(const fs::path& path);

@@ -188,7 +188,7 @@ PngDocument::PngDocument(const Project& project)
     m_PageSize = project.ComputePageSize();
     if (m_Project.m_Data.m_PageSize == Config::c_FitSize)
     {
-        const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayout };
+        const auto page_size_pixels{ card_size_pixels * m_Project.m_Data.m_CardLayoutVertical };
         m_PrecomputedPageSize = PixelSize{
             static_cast<float>(page_size_pixels.x) * 1_pix,
             static_cast<float>(page_size_pixels.y) * 1_pix,

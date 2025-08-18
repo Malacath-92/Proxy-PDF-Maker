@@ -4,6 +4,8 @@
 
 #include <podofo/podofo.h>
 
+#include <dla/vector_math.h>
+
 #include <ppp/project/project.hpp>
 #include <ppp/util.hpp>
 
@@ -27,81 +29,171 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
     return std::nullopt;
 }
 
-std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows)
+PageImageTransforms ComputeTransforms(const Project& project)
 {
+    const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
+    const auto layout_horizontal{ project.m_Data.m_CardLayoutHorizontal };
+
     // Return empty result when no cards can fit on a page (invalid layout)
-    if (columns == 0 || rows == 0)
+    if ((layout_vertical.x == 0 || layout_vertical.y == 0) &&
+        (layout_horizontal.x == 0 || layout_horizontal.y == 0))
     {
         return {};
     }
 
-    const auto images_per_page{ columns * rows };
+    const auto card_size_vertical{ project.CardSizeWithBleed() };
+    const auto card_size_horizontal{ dla::rotl(project.CardSizeWithBleed()) };
+    const auto cards_size_vertical{ project.ComputeCardsSizeVertical() };
+    const auto cards_size_horizontal{ project.ComputeCardsSizeHorizontal() };
+    const auto cards_size_width_offset{ (cards_size_vertical.x - cards_size_horizontal.x) / 2 };
+    const auto origin_width_vertical{ cards_size_width_offset > 0_mm ? 0_mm : -cards_size_width_offset };
+    const auto origin_width_horizontal{ cards_size_width_offset < 0_mm ? 0_mm : cards_size_width_offset };
+    const auto margins{ project.ComputeMargins() };
 
-    // throw all images N times into a list
-    struct TempImageData
-    {
-        std::reference_wrapper<const fs::path> m_Image;
-        bool m_BacksideShortEdge;
+    const Position origin_vertical{
+        margins.m_Left + origin_width_vertical,
+        margins.m_Top,
     };
-    std::vector<TempImageData> images;
+    const Position origin_horizontal{
+        margins.m_Left + origin_width_horizontal,
+        margins.m_Top + cards_size_vertical.y + project.m_Data.m_Spacing.y,
+    };
+
+    const auto vertical_images_per_page{ layout_vertical.x * layout_vertical.y };
+    const auto horizontal_images_per_page{ layout_horizontal.x * layout_horizontal.y };
+    const auto images_per_page{ vertical_images_per_page + horizontal_images_per_page };
+
+    PageImageTransforms transforms{};
+    transforms.reserve(images_per_page);
+
+    for (auto i = 0u; i < vertical_images_per_page; ++i)
+    {
+        const auto origin{ origin_vertical };
+        const auto columns{ layout_vertical.x };
+        const dla::uvec2 grid_pos{ i % columns, i / columns };
+        const auto position{ origin + grid_pos * card_size_vertical + grid_pos * project.m_Data.m_Spacing };
+        transforms.push_back(PageImageTransform{ position, card_size_vertical, Image::Rotation::None });
+    }
+
+    for (auto i = 0u; i < horizontal_images_per_page; ++i)
+    {
+        const auto origin{ origin_horizontal };
+        const auto columns{ layout_horizontal.x };
+        const dla::uvec2 grid_pos{ i % columns, i / columns };
+        const auto position{ origin + grid_pos * card_size_horizontal + grid_pos * project.m_Data.m_Spacing };
+        transforms.push_back(PageImageTransform{ position, card_size_horizontal, Image::Rotation::Degree90 });
+    }
+
+    return transforms;
+}
+
+PageImageTransforms ComputeBacksideTransforms(
+    const Project& project,
+    const PageImageTransforms& frontside_transforms)
+{
+    const auto page_size{ project.ComputePageSize() };
+
+    const auto flip_on_left{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
+    auto get_backside_rotation{
+        [flip_on_left](Image::Rotation frontside_rotation) -> Image::Rotation
+        {
+            switch (frontside_rotation)
+            {
+            default:
+            case Image::Rotation::None:
+                return flip_on_left ? Image::Rotation::None : Image::Rotation::Degree180;
+            case Image::Rotation::Degree90:
+                return flip_on_left ? Image::Rotation::Degree270 : Image::Rotation::Degree90;
+            case Image::Rotation::Degree180:
+                return flip_on_left ? Image::Rotation::Degree180 : Image::Rotation::None;
+            case Image::Rotation::Degree270:
+                return flip_on_left ? Image::Rotation::Degree90 : Image::Rotation::Degree270;
+            }
+        }
+    };
+
+    const auto backside_offset{ project.m_Data.m_BacksideOffset };
+
+    PageImageTransforms backside_transforms;
+    backside_transforms.reserve(frontside_transforms.size());
+
+    for (const PageImageTransform& transform : frontside_transforms)
+    {
+        const auto& frontside_position{ transform.m_Position };
+        const auto& frontside_size{ transform.m_Size };
+        if (flip_on_left)
+        {
+            const auto backside_position_x{ page_size.x -
+                                            frontside_position.x -
+                                            frontside_size.x -
+                                            backside_offset };
+            const Position backside_position{
+                backside_position_x,
+                frontside_position.y,
+            };
+            backside_transforms.push_back(PageImageTransform{
+                backside_position,
+                frontside_size,
+                get_backside_rotation(transform.m_Rotation),
+            });
+        }
+        else
+        {
+            const auto backside_position_y{ page_size.y -
+                                            frontside_position.y -
+                                            frontside_size.y };
+            const Position backside_position{
+                frontside_position.x - backside_offset,
+                backside_position_y,
+            };
+            backside_transforms.push_back(PageImageTransform{
+                backside_position,
+                frontside_size,
+                get_backside_rotation(transform.m_Rotation),
+            });
+        }
+    }
+
+    return backside_transforms;
+}
+
+std::vector<Page> DistributeCardsToPages(const Project& project)
+{
+    const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
+    const auto layout_horizontal{ project.m_Data.m_CardLayoutHorizontal };
+
+    // Return empty result when no cards can fit on a page (invalid layout)
+    if ((layout_vertical.x == 0 || layout_vertical.y == 0) &&
+        (layout_horizontal.x == 0 || layout_horizontal.y == 0))
+    {
+        return {};
+    }
+
+    const auto vertical_images_per_page{ layout_vertical.x * layout_vertical.y };
+    const auto horizontal_images_per_page{ layout_horizontal.x * layout_horizontal.y };
+    const auto images_per_page{ vertical_images_per_page + horizontal_images_per_page };
+
+    std::vector<Page> pages;
+    pages.emplace_back();
+
     for (const auto& [img, info] : project.m_Data.m_Cards)
     {
         for (uint32_t i = 0; i < info.m_Num; i++)
         {
-            images.push_back({
+            // make new page if last page is full
+            if (pages.back().m_Images.size() == images_per_page)
+            {
+                pages.emplace_back();
+            }
+
+            // add image to the page
+            Page& page{ pages.back() };
+            page.m_Images.push_back({
                 img,
                 info.m_BacksideShortEdge,
             });
         }
     }
-
-    auto page_has_space{
-        [=](const Page& page)
-        {
-            const size_t regular_images{ page.m_Images.size() };
-            const size_t single_spaces{ regular_images };
-            const size_t free_single_spaces{ images_per_page - single_spaces };
-            return free_single_spaces > 0;
-        }
-    };
-
-    auto is_page_full{
-        [=](const Page& page)
-        {
-            return !page_has_space(page);
-        }
-    };
-
-    std::vector<Page> pages;
-    std::vector<Page> unfinished_pages;
-
-    for (const auto& [img, backside_short_edge] : images)
-    {
-        // get a page that can fit this card
-        auto page_with_space{ std::ranges::find_if(unfinished_pages, page_has_space) };
-
-        // or start a new page if none is available
-        if (page_with_space == unfinished_pages.end())
-        {
-            unfinished_pages.emplace_back();
-            page_with_space = unfinished_pages.end() - 1;
-        }
-
-        // add image to the page
-        page_with_space->m_Images.push_back({ img, backside_short_edge });
-
-        // push full page into final list
-        if (is_page_full(*page_with_space))
-        {
-            pages.push_back(std::move(*page_with_space));
-            unfinished_pages.erase(page_with_space);
-        }
-    }
-
-    // push all unfinished pages into final list
-    pages.insert(pages.end(),
-                 std::make_move_iterator(unfinished_pages.begin()),
-                 std::make_move_iterator(unfinished_pages.end()));
 
     return pages;
 }
@@ -119,103 +211,15 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
     };
 
     std::vector<Page> backside_pages;
+    backside_pages.reserve(pages.size());
+
     for (const Page& page : pages)
     {
         Page& backside_page{ backside_pages.emplace_back() };
-        backside_page.m_Images = page.m_Images | std::views::transform(backside_of_image) | std::ranges::to<std::vector>();
+        backside_page.m_Images = page.m_Images |
+                                 std::views::transform(backside_of_image) |
+                                 std::ranges::to<std::vector>();
     }
 
     return backside_pages;
-}
-
-Grid DistributeCardsToGrid(const Page& page, GridOrientation orientation, uint32_t columns, uint32_t rows)
-{
-    // Return empty grid when no cards can fit (invalid layout)
-    if (columns == 0 || rows == 0)
-    {
-        return {};
-    }
-
-    auto get_coord{
-        [=](size_t i)
-        {
-            return GetGridCords(static_cast<uint32_t>(i), columns, rows, orientation);
-        }
-    };
-
-    using TempGridImage = std::variant<std::monostate, // empty
-                                       GridImage>;     // explicit image
-    auto card_grid{ std::vector{ rows, std::vector{ columns, TempGridImage{} } } };
-
-    {
-        size_t k{ 0 };
-        for (const auto& [img, backside_short_edge] : page.m_Images)
-        {
-            dla::uvec2 coord{ get_coord(k) };
-            const auto& [x, y]{ coord.pod() };
-
-            // find an empty slot
-            while (!std::holds_alternative<std::monostate>(card_grid[y][x]))
-            {
-                ++k;
-                coord = get_coord(k);
-            }
-
-            card_grid[y][x] = GridImage{ img, backside_short_edge };
-        }
-    }
-
-    Grid clean_card_grid{};
-    for (size_t x = 0; x < rows; x++)
-    {
-        static constexpr auto c_CollapseToOptional{
-            [](const TempGridImage& tmp_img)
-            {
-                struct Visitor
-                {
-                    std::optional<GridImage> operator()(std::monostate)
-                    {
-                        return std::nullopt;
-                    }
-                    std::optional<GridImage> operator()(const GridImage& img)
-                    {
-                        return img;
-                    }
-                };
-                return std::visit(Visitor{}, tmp_img);
-            }
-        };
-        clean_card_grid.push_back(card_grid[x] |
-                                  std::views::transform(c_CollapseToOptional) |
-                                  std::ranges::to<std::vector>());
-    }
-
-    return clean_card_grid;
-}
-
-dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, uint32_t rows, GridOrientation orientation)
-{
-    uint32_t x{ idx % columns };
-    uint32_t y{ idx / columns };
-    switch (orientation)
-    {
-    case GridOrientation::Default:
-        break;
-    case GridOrientation::FlippedHorizontally:
-        x = columns - x - 1;
-        break;
-    case GridOrientation::FlippedVertically:
-        y = rows - y - 1;
-        break;
-    }
-    return { x, y };
-}
-
-Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge)
-{
-    if (is_backside && is_short_edge)
-    {
-        return Image::Rotation::Degree180;
-    }
-    return Image::Rotation::None;
 }

@@ -37,34 +37,113 @@ fs::path GeneratePdf(const Project& project)
         guides_color_b,
     };
 
-    const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const auto page_size{ project.ComputePageSize() };
-
     const auto [page_width, page_height]{ page_size.pod() };
-    const auto [card_width, card_height]{ card_size_with_bleed.pod() };
-    const auto [columns, rows]{ project.m_Data.m_CardLayout.pod() };
-    const auto margins{ project.ComputeMargins() };
-    const auto max_margins{ project.ComputeMaxMargins() };
-
-    // Use four-margin structure if available, otherwise fall back to old structure
-    const auto start_x{ margins.m_Left };
-    const auto start_y{ page_height - margins.m_Top };
-
-    const auto backside_start_x{ max_margins.x - start_x };
-    const auto backside_start_y{ start_y };
 
     const auto bleed{ project.m_Data.m_BleedEdge };
-    const auto offset{ bleed - project.m_Data.m_GuidesOffset };
-    const auto spacing{ project.m_Data.m_Spacing };
+    const auto corner_guides_offset{ bleed - project.m_Data.m_GuidesOffset };
 
-    const auto extended_offset{ bleed + 1_mm };
+    const auto pages{ DistributeCardsToPages(project) };
+    const auto transforms{ ComputeTransforms(project) };
 
-    const auto images{ DistributeCardsToPages(project, columns, rows) };
+    const auto backside_pages{
+        project.m_Data.m_BacksideEnabled ? MakeBacksidePages(project, pages)
+                                         : std::vector<Page>{}
+    };
+    const auto backside_transforms{
+        project.m_Data.m_BacksideEnabled ? ComputeBacksideTransforms(project, transforms)
+                                         : PageImageTransforms{}
+    };
+
+    std::vector<PdfPage::LineData> extended_guides;
+    std::vector<PdfPage::LineData> backside_extended_guides;
+    if (project.m_Data.m_ExtendedGuides)
+    {
+        static constexpr auto g_Precision{ 0.1_pts };
+
+        const auto generate_extended_guides{
+            [page_width, page_height, bleed](const auto& transforms)
+            {
+                std::vector<PdfPage::LineData> guides;
+                if (transforms.empty())
+                {
+                    return guides;
+                }
+
+                std::vector<int32_t> unique_x;
+                std::vector<int32_t> unique_y;
+                for (const auto& transform : transforms)
+                {
+                    const auto top_left_corner{
+                        static_cast<dla::ivec2>((transform.m_Position + bleed) / g_Precision)
+                    };
+                    if (!std::ranges::contains(unique_x, top_left_corner.x))
+                    {
+                        unique_x.push_back(top_left_corner.x);
+                    }
+                    if (!std::ranges::contains(unique_y, top_left_corner.y))
+                    {
+                        unique_y.push_back(top_left_corner.y);
+                    }
+
+                    const auto card_size{
+                        static_cast<dla::ivec2>((transform.m_Size - bleed * 2) / g_Precision)
+                    };
+                    const auto bottom_right_corner{ top_left_corner + card_size };
+                    if (!std::ranges::contains(unique_x, bottom_right_corner.x))
+                    {
+                        unique_x.push_back(bottom_right_corner.x);
+                    }
+                    if (!std::ranges::contains(unique_y, bottom_right_corner.y))
+                    {
+                        unique_y.push_back(bottom_right_corner.y);
+                    }
+                }
+
+                const auto extended_offset{ bleed + 1_mm };
+                const auto x_min{ std::ranges::min(unique_x) * g_Precision - extended_offset };
+                const auto x_max{ std::ranges::max(unique_x) * g_Precision + extended_offset };
+                const auto y_min{ std::ranges::min(unique_y) * g_Precision - extended_offset };
+                const auto y_max{ std::ranges::max(unique_y) * g_Precision + extended_offset };
+
+                for (const auto& x : unique_x)
+                {
+                    const auto real_x{ x * g_Precision };
+                    guides.push_back(PdfPage::LineData{
+                        .m_From{ real_x, y_min },
+                        .m_To{ real_x, 0_mm },
+                    });
+                    guides.push_back(PdfPage::LineData{
+                        .m_From{ real_x, y_max },
+                        .m_To{ real_x, page_height },
+                    });
+                }
+
+                for (const auto& y : unique_y)
+                {
+                    const auto real_y{ y * g_Precision };
+                    guides.push_back(PdfPage::LineData{
+                        .m_From{ x_min, real_y },
+                        .m_To{ 0_mm, real_y },
+                    });
+                    guides.push_back(PdfPage::LineData{
+                        .m_From{ x_max, real_y },
+                        .m_To{ page_width, real_y },
+                    });
+                }
+
+                return guides;
+            }
+        };
+
+        extended_guides = generate_extended_guides(transforms);
+        backside_extended_guides = generate_extended_guides(backside_transforms);
+    }
 
     auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
 
 #if __cpp_lib_ranges_enumerate
-    for (auto [p, page_images] : images | std::views::enumerate)
+    for (auto [p, page] : pages | std::views::enumerate)
     {
 #else
     for (size_t p = 0; p < images.size(); p++)
@@ -72,127 +151,70 @@ fs::path GeneratePdf(const Project& project)
         const Page& page_images{ images[p] };
 #endif
 
-        auto draw_image{
+        const auto draw_image{
             [&](PdfPage* page,
-                const GridImage& image,
-                size_t x,
-                size_t y,
-                Length dx = 0_pts,
-                Length dy = 0_pts,
-                bool is_backside = false)
+                const PageImage& image,
+                const PageImageTransform& transform)
             {
                 const auto img_path{ output_dir / image.m_Image };
                 if (fs::exists(img_path))
                 {
-                    const auto orig_x{ is_backside ? backside_start_x : start_x };
-                    const auto orig_y{ is_backside ? backside_start_y : start_y };
-                    const auto real_x{ orig_x + x * (card_width + spacing.x) + dx };
-                    const auto real_y{ orig_y - (y + 1) * card_height - y * spacing.y + dy };
-                    const auto real_w{ card_width };
-                    const auto real_h{ card_height };
-
-                    const auto rotation{ GetCardRotation(is_backside, image.m_BacksideShortEdge) };
                     PdfPage::ImageData image_data{
                         .m_Path{ img_path },
-                        .m_Pos{ real_x, real_y },
-                        .m_Size{ real_w, real_h },
-                        .m_Rotation = rotation,
+                        .m_Pos{
+                            transform.m_Position.x,
+                            page_height - transform.m_Position.y - transform.m_Size.y,
+                        },
+                        .m_Size{ transform.m_Size },
+                        .m_Rotation = transform.m_Rotation,
                     };
                     page->DrawImage(image_data);
                 }
             }
         };
 
-        const auto draw_guides{
-            [&](PdfPage* page, size_t x, size_t y)
+        const auto draw_corner_guides{
+            [&](PdfPage* page, const PageImageTransform& transform)
             {
                 const auto draw_cross_at_grid{
-                    [&](PdfPage* page, size_t x, size_t y, CrossSegment s, Length dx, Length dy)
+                    [&](PdfPage* page, Position pos, CrossSegment s)
                     {
-                        const auto real_x{ start_x + x * (card_width + spacing.x) + dx };
-                        // NOLINTNEXTLINE(clang-analyzer-core.NonNullParamChecker)
-                        const auto real_y{ start_y - y * (card_height + spacing.y) + dy };
-
-                        if (project.m_Data.m_CornerGuides)
-                        {
-                            PdfPage::CrossData cross{
-                                .m_Pos{
-                                    real_x,
-                                    real_y,
-                                },
-                                .m_Length{ project.m_Data.m_GuidesLength },
-                                .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
-                            };
-                            page->DrawDashedCross(cross, line_style);
-                        }
-
-                        if (project.m_Data.m_ExtendedGuides)
-                        {
-                            if (x == 0)
-                            {
-                                PdfPage::LineData line{
-                                    .m_From{ real_x - extended_offset, real_y },
-                                    .m_To{ 0_m, real_y },
-                                };
-                                page->DrawDashedLine(line, line_style);
-                            }
-                            if (x == columns)
-                            {
-                                PdfPage::LineData line{
-                                    .m_From{ real_x + extended_offset, real_y },
-                                    .m_To{ page_width, real_y },
-                                };
-                                page->DrawDashedLine(line, line_style);
-                            }
-                            if (y == rows)
-                            {
-                                PdfPage::LineData line{
-                                    .m_From{ real_x, real_y - extended_offset },
-                                    .m_To{ real_x, 0_m },
-                                };
-                                page->DrawDashedLine(line, line_style);
-                            }
-                            if (y == 0)
-                            {
-                                PdfPage::LineData line{
-                                    .m_From{ real_x, real_y + extended_offset },
-                                    .m_To{ real_x, page_height },
-                                };
-                                page->DrawDashedLine(line, line_style);
-                            }
-                        }
+                        PdfPage::CrossData cross{
+                            .m_Pos{ pos },
+                            .m_Length{ project.m_Data.m_GuidesLength },
+                            .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
+                        };
+                        page->DrawDashedCross(cross, line_style);
                     }
                 };
 
-                draw_cross_at_grid(page,
-                                   x + 1,
-                                   y + 0,
-                                   CrossSegment::TopRight,
-                                   -offset - spacing.x, // NOLINT(clang-analyzer-core.NonNullParamChecker)
-                                   -offset);
-                draw_cross_at_grid(page,
-                                   x + 1,
-                                   y + 1,
-                                   CrossSegment::BottomRight,
-                                   -offset - spacing.x,
-                                   +offset + spacing.y);
+                const Position position{
+                    transform.m_Position.x,
+                    page_height - transform.m_Position.y - transform.m_Size.y,
+                };
+                const auto bottom_left{ position + corner_guides_offset };
+                const auto top_right{ position + transform.m_Size - corner_guides_offset };
 
                 draw_cross_at_grid(page,
-                                   x,
-                                   y + 0,
-                                   CrossSegment::TopLeft,
-                                   +offset,
-                                   -offset);
+                                   Position{
+                                       bottom_left.x,
+                                       top_right.y,
+                                   },
+                                   CrossSegment::TopLeft);
                 draw_cross_at_grid(page,
-                                   x,
-                                   y + 1,
-                                   CrossSegment::BottomLeft,
-                                   +offset,
-                                   +offset + spacing.y);
+                                   bottom_left,
+                                   CrossSegment::BottomLeft);
+                draw_cross_at_grid(page,
+                                   Position{
+                                       top_right.x,
+                                       bottom_left.y,
+                                   },
+                                   CrossSegment::BottomRight);
+                draw_cross_at_grid(page,
+                                   top_right,
+                                   CrossSegment::TopRight);
             }
         };
-
-        const auto card_grid{ DistributeCardsToGrid(page_images, GridOrientation::Default, columns, rows) };
 
         {
             static constexpr const char c_RenderFmt[]{
@@ -201,21 +223,30 @@ fs::path GeneratePdf(const Project& project)
 
             PdfPage* front_page{ pdf->NextPage() };
 
-            size_t i{};
-            for (size_t y = 0; y < rows; y++)
+            for (size_t i = 0; i < page.m_Images.size(); ++i)
             {
-                for (size_t x = 0; x < columns; x++)
-                {
-                    if (const auto card{ card_grid[y][x] })
-                    {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
-                        draw_image(front_page, card.value(), x, y);
-                        i++;
+                const auto& card{ page.m_Images[i] };
+                const auto& transform{ transforms[i] };
 
-                        if (project.m_Data.m_EnableGuides)
-                        {
-                            draw_guides(front_page, x, y);
-                        }
+                LogInfo(c_RenderFmt, p + 1, i + 1, card.m_Image.get().string());
+                draw_image(front_page, card, transform);
+            }
+
+            if (project.m_Data.m_EnableGuides)
+            {
+                if (project.m_Data.m_CornerGuides)
+                {
+                    for (const auto& transform : transforms)
+                    {
+                        draw_corner_guides(front_page, transform);
+                    }
+                }
+
+                if (project.m_Data.m_ExtendedGuides)
+                {
+                    for (const auto& guide : extended_guides)
+                    {
+                        front_page->DrawDashedLine(guide, line_style);
                     }
                 }
             }
@@ -231,30 +262,31 @@ fs::path GeneratePdf(const Project& project)
 
             PdfPage* back_page{ pdf->NextPage() };
 
-            size_t i{};
-            for (size_t y = 0; y < rows; y++)
+            const auto& backside_page{ backside_pages[p] };
+            for (size_t i = 0; i < backside_page.m_Images.size(); ++i)
             {
-                for (size_t x = 0; x < columns; x++)
+                const auto& card{ backside_page.m_Images[i] };
+                const auto& transform{ backside_transforms[i] };
+
+                LogInfo(c_RenderFmt, p + 1, i + 1, card.m_Image.get().string());
+                draw_image(back_page, card, transform);
+            }
+
+            if (project.m_Data.m_EnableGuides && project.m_Data.m_BacksideEnableGuides)
+            {
+                if (project.m_Data.m_CornerGuides)
                 {
-                    if (const auto card{ card_grid[y][x] })
+                    for (const auto& transform : backside_transforms)
                     {
-                        LogInfo(c_RenderFmt, p + 1, i + 1, card->m_Image.get().string());
+                        draw_corner_guides(back_page, transform);
+                    }
+                }
 
-                        auto backside_card{ card.value() };
-                        backside_card.m_Image = project.GetBacksideImage(card->m_Image);
-
-                        const auto flip_x{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
-                        const auto flip_y{ !flip_x };
-                        const auto bx{ flip_x ? columns - x - 1 : x };
-                        const auto by{ flip_y ? rows - y - 1 : y };
-
-                        draw_image(back_page, backside_card, bx, by, project.m_Data.m_BacksideOffset, 0_pts, true);
-                        i++;
-
-                        if (project.m_Data.m_EnableGuides && project.m_Data.m_BacksideEnableGuides)
-                        {
-                            draw_guides(back_page, x, y);
-                        }
+                if (project.m_Data.m_ExtendedGuides)
+                {
+                    for (const auto& guide : backside_extended_guides)
+                    {
+                        back_page->DrawDashedLine(guide, line_style);
                     }
                 }
             }

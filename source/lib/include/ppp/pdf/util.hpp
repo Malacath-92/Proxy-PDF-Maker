@@ -9,6 +9,14 @@
 
 class Project;
 
+struct PageImageTransform
+{
+    Position m_Position;
+    Size m_Size;
+    Image::Rotation m_Rotation;
+};
+using PageImageTransforms = std::vector<PageImageTransform>;
+
 struct PageImage
 {
     std::reference_wrapper<const fs::path> m_Image;
@@ -19,28 +27,14 @@ struct Page
     std::vector<PageImage> m_Images;
 };
 
-struct GridImage
-{
-    std::reference_wrapper<const fs::path> m_Image;
-    bool m_BacksideShortEdge;
-};
-using Grid = std::vector<std::vector<std::optional<GridImage>>>;
-
-enum class GridOrientation
-{
-    Default,
-    FlippedHorizontally,
-    FlippedVertically,
-};
-
 std::optional<Size> LoadPdfSize(const fs::path& pdf_path);
 
-std::vector<Page> DistributeCardsToPages(const Project& project, uint32_t columns, uint32_t rows);
+PageImageTransforms ComputeTransforms(const Project& project);
+PageImageTransforms ComputeBacksideTransforms(
+    const Project& project,
+    const PageImageTransforms& frontside_transforms);
 
+std::vector<Page> DistributeCardsToPages(const Project& project);
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);
 
-Grid DistributeCardsToGrid(const Page& page, GridOrientation orientation, uint32_t columns, uint32_t rows);
-
-dla::uvec2 GetGridCords(uint32_t idx, uint32_t columns, uint32_t rows, GridOrientation orientation);
-
-Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge);
+// Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge);
