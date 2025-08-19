@@ -54,7 +54,7 @@ class GuidesOverlay : public QWidget
     {
         QWidget::resizeEvent(event);
 
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size / m_Project.ComputePageSize() };
 
         const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
@@ -225,7 +225,7 @@ class BordersOverlay : public QWidget
     {
         QWidget::resizeEvent(event);
 
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size / m_Project.ComputePageSize() };
 
         const auto bleed_edge{ m_Project.m_Data.m_BleedEdge * pixel_ratio };
