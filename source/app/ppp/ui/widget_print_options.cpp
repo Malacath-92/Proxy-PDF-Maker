@@ -233,6 +233,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             m_BottomMarginSpin->setEnabled(false);
             m_AllMarginsSpin->setEnabled(false);
 
+            RefreshSizes();
             PageSizeChanged();
         }
     };

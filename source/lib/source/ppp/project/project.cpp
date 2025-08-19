@@ -598,6 +598,11 @@ dla::uvec2 Project::ProjectData::ComputeCardLayout(const Config& config,
                                                    Size available_space,
                                                    CardOrientation orientation) const
 {
+    if (available_space.x <= 0_mm || available_space.y <= 0_mm)
+    {
+        return {};
+    }
+
     const Size card_size_with_bleed{
         orientation == CardOrientation::Horizontal ? dla::rotl(CardSizeWithBleed(config))
                                                    : CardSizeWithBleed(config)
@@ -679,6 +684,11 @@ Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 
 Size Project::ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const
 {
+    if (card_layout.x == 0 || card_layout.y == 0)
+    {
+        return {};
+    }
+
     return card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing;
 }
 
