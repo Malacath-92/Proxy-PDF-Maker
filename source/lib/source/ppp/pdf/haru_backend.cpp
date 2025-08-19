@@ -119,20 +119,6 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
         return it->m_HaruImage;
     }
 
-    const auto use_jpg{ g_Cfg.m_PdfImageFormat == ImageFormat::Jpg };
-    const std::function<std::vector<std::byte>(const Image&)> encoder{
-        use_jpg
-            ? [](const Image& image)
-            { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
-            : [](const Image& image)
-            { return image.EncodePng(std::optional{ 0 }); }
-    };
-    const auto loader{
-        use_jpg
-            ? &HPDF_LoadJpegImageFromMem
-            : &HPDF_LoadPngImageFromMem
-    };
-
     const bool rounded_corners{
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
         m_Project.m_Data.m_BleedEdge == 0_mm
@@ -143,6 +129,24 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
             ? m_Project.CardCornerRadius()
             : 0_mm,
     };
+
+    const auto use_png{ g_Cfg.m_PdfImageFormat == ImageFormat::Png };
+    // clang-format off
+    const std::function<std::vector<std::byte>(const Image&)> encoder{
+        use_png         ? [](const Image& image)
+                          { return image.EncodePng(std::optional{ 0 }); } :
+        rounded_corners ? [](const Image& image)
+                          { return image.ApplyAlpha({ 255, 255, 255 }).EncodeJpg(g_Cfg.m_JpgQuality); }
+                        : [](const Image& image)
+                          { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
+    };
+    // clang-format on
+    const auto loader{
+        use_png
+            ? &HPDF_LoadPngImageFromMem
+            : &HPDF_LoadJpegImageFromMem
+    };
+
     const Image loaded_image{
         Image::Read(image_path)
             .RoundCorners(card_size, corner_radius)
