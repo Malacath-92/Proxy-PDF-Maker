@@ -343,6 +343,11 @@ void MtgDownloaderPopup::ValidateSettings()
     {
         m_Router.SetCardSizeChoice("Standard");
     }
+
+    if (!m_Project.m_Data.m_BacksideEnabled)
+    {
+        m_Router.SetEnableBackside(true);
+    }
 }
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)

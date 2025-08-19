@@ -120,6 +120,17 @@ int main(int argc, char** argv)
                 print_options->ExternalCardSizeChanged();
             }
         });
+    QObject::connect(
+        &plugin_router,
+        &PluginRouter::SetEnableBackside,
+        [&](bool enabled)
+        {
+            if (project.m_Data.m_BacksideEnabled != enabled)
+            {
+                project.m_Data.m_BacksideEnabled = enabled;
+                card_options->BacksideEnabledChangedExternal();
+            }
+        });
 
     auto* options_area{
         new OptionsAreaWidget{
