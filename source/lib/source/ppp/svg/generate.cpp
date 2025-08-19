@@ -144,9 +144,9 @@ SECTION
 ENTITIES
 )";
 
+    const auto cards_size{ project.ComputeCardsSize() / 1_mm };
     if (project.m_Data.m_BleedEdge > 0_mm)
     {
-        const auto cards_size{ project.ComputeCardsSize() / 1_mm };
         auto poly_line{ start_poly_line() };
 
         draw_vertex(dla::vec2{ 0, 0 });
@@ -163,9 +163,13 @@ ENTITIES
 
     for (const auto& transform : transforms)
     {
-        const auto top_left_corner{ transform.m_Position / 1_mm + bleed_edge - cards_offset };
-        const auto card_size{ transform.m_Size / 1_mm };
-        const auto bottom_right_corner{ top_left_corner + card_size - bleed_edge * 2 };
+        const dla::vec2 position{ transform.m_Position.x / 1_mm, cards_size.y - transform.m_Position.y / 1_mm };
+        const auto card_size{ transform.m_Size / 1_mm - bleed_edge * 2.0f };
+
+        const auto left{ position.x + bleed_edge - cards_offset.x };
+        const auto right{ left + card_size.x };
+        const auto top{ position.y + bleed_edge - cards_offset.y };
+        const auto bottom{ top - card_size.y };
 
         auto poly_line{ start_poly_line() };
 
@@ -190,18 +194,18 @@ ENTITIES
             },
         };
 
-        draw_vertex({ top_left_corner.x, top_left_corner.y + radius });
-        draw_vertex({ top_left_corner.x, bottom_right_corner.y - radius });
-        draw_quarter_circle({ top_left_corner.x + radius, bottom_right_corner.y - radius }, radius, 270);
-        draw_vertex({ top_left_corner.x + radius, bottom_right_corner.y });
-        draw_vertex({ bottom_right_corner.x - radius, bottom_right_corner.y });
-        draw_quarter_circle({ bottom_right_corner.x - radius, bottom_right_corner.y - radius }, radius, 0);
-        draw_vertex({ bottom_right_corner.x, bottom_right_corner.y - radius });
-        draw_vertex({ bottom_right_corner.x, top_left_corner.y + radius });
-        draw_quarter_circle({ bottom_right_corner.x - radius, top_left_corner.y + radius }, radius, 90);
-        draw_vertex({ bottom_right_corner.x - radius, top_left_corner.y });
-        draw_vertex({ top_left_corner.x + radius, top_left_corner.y });
-        draw_quarter_circle({ top_left_corner.x + radius, top_left_corner.y + radius }, radius, 180);
+        draw_vertex({ right, top - radius });
+        draw_vertex({ right, bottom + radius });
+        draw_quarter_circle({ right - radius, bottom + radius }, radius, 90);
+        draw_vertex({ right - radius, bottom });
+        draw_vertex({ left + radius, bottom });
+        draw_quarter_circle({ left + radius, bottom + radius }, radius, 180);
+        draw_vertex({ left, bottom + radius });
+        draw_vertex({ left, top - radius });
+        draw_quarter_circle({ left + radius, top - radius }, radius, 270);
+        draw_vertex({ left + radius, top });
+        draw_vertex({ right - radius, top });
+        draw_quarter_circle({ right - radius, top - radius }, radius, 0);
     }
 
     output << R"(  0
