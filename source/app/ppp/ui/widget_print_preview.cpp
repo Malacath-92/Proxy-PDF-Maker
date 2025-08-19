@@ -327,8 +327,31 @@ class PrintPreview::PagePreview : public QWidget
             const auto& [image_name, backside_short_edge]{
                 page.m_Images[i]
             };
-            const auto& [position, size, rotation]{
+            const auto& [position, size, base_rotation]{
                 transforms[i]
+            };
+
+            const auto rotation{
+                [=]()
+                {
+                    if (!backside_short_edge || !params.m_IsBackside)
+                    {
+                        return base_rotation;
+                    }
+
+                    switch (base_rotation)
+                    {
+                    default:
+                    case Image::Rotation::None:
+                        return Image::Rotation::Degree180;
+                    case Image::Rotation::Degree90:
+                        return Image::Rotation::Degree270;
+                    case Image::Rotation::Degree180:
+                        return Image::Rotation::None;
+                    case Image::Rotation::Degree270:
+                        return Image::Rotation::Degree90;
+                    }
+                }()
             };
 
             auto* image_widget{
