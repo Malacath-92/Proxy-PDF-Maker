@@ -420,11 +420,6 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
 
 Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 {
-    if (corner_radius == 1_mm)
-    {
-        return *this;
-    }
-
     const auto corner_radius_pixels{ static_cast<int>(dla::math::floor(Density(real_size) * corner_radius) / 1_pix) };
     if (corner_radius_pixels == 0)
     {
