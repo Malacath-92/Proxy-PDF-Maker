@@ -20,7 +20,16 @@ Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) pa
 On Windows you will additionally have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
 # Running the Program
-First, throw some images with bleed edge in the `images` folder. Note that images starting with `__` will not be visible in the program. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping
+
+> [!NOTE]
+> This app was initially designed to work with card images that include a bleed edge. However it should be able to handle images without bleed edge by generating it on the fly. Be aware though that this is done based on aspect-ratio, so the images need to align as good as possible to avoid stretching and squishing. Card size and bleed edge can be further configured by users and changed per-game. 
+
+First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping
+
+> [!NOTE]
+> Images starting with `__` will not be visible in the program. These can however still be used as backsides for other cards.
+
+Below is an outline of the different parts of the app and most importantly the many options that you can work with.
 
 ## Cards
 The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a +/-, use these to adjust how many copies for each card you want. On the top you have global controls to +/- all cards or reset them back to 1.
@@ -80,6 +89,19 @@ The `Base Pdf` option is only available with the `PoDoFo` render backend. It wil
 #### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
 
+#### Margin Mode
+Determines how the margins are determined, giving the following options:
+
+- `Auto`: Automatically compute the margins to be as small as possible.
+- `Simple`: Allow changing top-left margins only, giving the option to offset the cards.
+- `Full`: Gives control over all margins, allowing to offset the cards and also reduce the amount of cards on the page.
+- `Linked`: Gives control over a single value and forces all margins to be that value. Useful for example when working with setups where specifications require specific margins.
+
+#### Card Orientation
+This allows you to choose whether you want the cards to be upright (`Vertical`) or rotated (`Horizontal`). This is an alternative to generating the pdf in portrait or landscape. The third option (`Mixed`) tries to fit as many cards as possible upright, then tries to fill the remaining space with rotated cards.
+
+If you want to reduce the amount of cards, e.g. because your printer has a lower margin than the automatically computed layout allows, this option is very useful. Set `Margin Mode` to `Full` and `Card Orientation` to `Mixed`. Now you can increase the bottom margins, which will force the bottom row to be turned and give you much bigger margins. From there you can modify the top margins to get those where you need them.
+
 #### Flip On
 This option is only relevant if you print with backsides, in which case it is used to determine whether you will flip the paper on the left edge or the top edge.
 
@@ -123,6 +145,9 @@ Instead of printing cards perfectly cropped to card size this option will leave 
 #### Card Spacing
 With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste. Use the 🔗 symbol to specify different horizontal and vertical spacing, be sure to verify in the print preview what you are doing.
 
+#### Corners
+When `Bleed Edge` is set to zero this option becomes available. It allows you to choose whether the generated pdf should output with the cards' corners already rounded off. This may be especially useful for Scan & Cut scenarios.
+
 #### Enable Backside
 Adds a backside to each image, which means when printing each other page will automatically be filled with the corresponding backsides for each image. This allows for double-sided cards, different card backs, etc.
 
@@ -153,9 +178,6 @@ This determines whether images are encoded to `.png` or `.jpg` before writing th
 
 #### Jpg Quality
 This lets you change the quality of jpg files embedded in the PDF. Lower numbers will reduce file size at the cost of image artifacts appearing. Even at `100` the file size will be significantly smaller than encoding to `.png` files.
-
-#### Allow Precropped
-In some cases you may find yourself having card images that don't have a bleed edge. In those cases, enable this option and place your images into the `images/crop` folder. The program will automatically add a black bleed edge so that all features of the program work as intended.
 
 #### Color Cube
 Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.CUBE` files with an arbitrary resolution. Higher resolutions will not slow down application of the cube maps, trilinear interpolation is used irrespective of resolution. Ships with the following color cubes:
