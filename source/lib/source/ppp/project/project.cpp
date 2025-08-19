@@ -554,7 +554,7 @@ Length Project::CardCornerRadius() const
 
 void Project::EnsureOutputFolder() const
 {
-    static constexpr auto create_directories{
+    static constexpr auto c_CreateDirectories{
         [](const auto& path)
         {
             std::error_code error_code;
@@ -571,13 +571,13 @@ void Project::EnsureOutputFolder() const
         };
         if (!fs::exists(output_dir))
         {
-            create_directories(output_dir);
+            c_CreateDirectories(output_dir);
         }
     }
 
     if (!fs::exists(m_Data.m_UncropDir))
     {
-        create_directories(m_Data.m_UncropDir);
+        c_CreateDirectories(m_Data.m_UncropDir);
     }
 }
 Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
