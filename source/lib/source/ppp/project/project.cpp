@@ -555,7 +555,8 @@ Length Project::CardCornerRadius() const
 void Project::EnsureOutputFolder() const
 {
     static constexpr auto create_directories{
-        [](const auto& path) {
+        [](const auto& path)
+        {
             std::error_code error_code;
             if (!fs::create_directories(path, error_code))
             {
