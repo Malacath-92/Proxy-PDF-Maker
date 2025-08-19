@@ -273,7 +273,7 @@ class MarginsOverlay : public QWidget
 
     void resizeEvent(QResizeEvent* event) override
     {
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size.x / m_Project.ComputePageSize().x };
 
         const auto margins{
@@ -388,7 +388,7 @@ class PrintPreview::PagePreview : public QWidget
         const auto height{ heightForWidth(width) };
         setFixedHeight(height);
 
-        const dla::tvec2 size{ width, height };
+        const dla::ivec2 size{ width, height };
         const auto pixel_ratio{ size / m_PageSize };
 
         for (size_t i = 0; i < m_Images.size(); ++i)
