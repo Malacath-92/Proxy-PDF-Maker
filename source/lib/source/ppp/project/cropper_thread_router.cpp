@@ -16,6 +16,7 @@ void CropperThreadRouter::ImageDirChanged()
 {
     ImageDirChangedDiff(m_Project.m_Data.m_ImageDir,
                         m_Project.m_Data.m_CropDir,
+                        m_Project.m_Data.m_UncropDir,
                         m_Project.m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>());
 }
 

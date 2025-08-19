@@ -42,7 +42,10 @@ class Cropper : public QObject
 
   public slots:
     void NewProjectOpenedDiff(const Project::ProjectData& data);
-    void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
+    void ImageDirChangedDiff(const fs::path& image_dir,
+                             const fs::path& crop_dir,
+                             const fs::path& uncrop_dir,
+                             const std::vector<fs::path>& loaded_previews);
     void CardSizeChangedDiff(std::string card_size);
     void BleedChangedDiff(Length bleed);
     void ColorCubeChangedDiff(const std::string& cube_name);
@@ -86,12 +89,6 @@ class Cropper : public QObject
     Project::ProjectData m_Data;
     Config m_Cfg;
     std::vector<fs::path> m_LoadedPreviews;
-
-    std::shared_mutex m_IgnoreMutex;
-    std::vector<fs::path> m_IgnoreNotification;
-
-    std::shared_mutex m_FileMutex;
-    QTemporaryDir m_TmpDir;
 
     using time_point = decltype(std::chrono::high_resolution_clock::now());
     time_point m_CropWorkStartPoint;

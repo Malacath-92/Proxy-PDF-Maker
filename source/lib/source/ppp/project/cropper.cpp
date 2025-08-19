@@ -44,8 +44,6 @@ Cropper::~Cropper()
     delete m_Router;
 
     m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
-
-    m_TmpDir.setAutoRemove(true);
 }
 
 void Cropper::Start()
@@ -115,7 +113,10 @@ void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
     m_LoadedPreviews = m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>();
 }
 
-void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews)
+void Cropper::ImageDirChangedDiff(const fs::path& image_dir,
+                                  const fs::path& crop_dir,
+                                  const fs::path& uncrop_dir,
+                                  const std::vector<fs::path>& loaded_previews)
 {
     {
         std::unique_lock lock{ m_ImageDBMutex };
@@ -126,6 +127,7 @@ void Cropper::ImageDirChangedDiff(const fs::path& image_dir, const fs::path& cro
     std::unique_lock lock{ m_PropertyMutex };
     m_Data.m_ImageDir = image_dir;
     m_Data.m_CropDir = crop_dir;
+    m_Data.m_UncropDir = uncrop_dir;
     m_LoadedPreviews = loaded_previews;
 }
 
@@ -433,6 +435,7 @@ bool Cropper::DoCropWork(T* signaller)
 
             const fs::path input_file{ m_Data.m_ImageDir / card_name };
             const fs::path crop_dir{ m_Data.m_CropDir };
+            const fs::path uncrop_dir{ m_Data.m_UncropDir };
             lock.unlock();
 
             const fs::path crop_file{ crop_dir / card_name };
@@ -452,44 +455,12 @@ bool Cropper::DoCropWork(T* signaller)
                 .m_FullBleedEdge{ full_bleed_edge },
             };
 
-            std::vector<fs::path> new_ignore_notifications{};
-            std::vector<fs::path> discard_ignore_notifications{};
-
-            AtScopeExit flush_ignore_notifications{
-                [&]()
-                {
-                    std::lock_guard ignore_lock{ m_IgnoreMutex };
-                    for (fs::path& ignore_path : new_ignore_notifications)
-                    {
-                        if (!std::ranges::contains(m_IgnoreNotification, ignore_path))
-                        {
-                            m_IgnoreNotification.push_back(std::move(ignore_path));
-                        }
-                    }
-                    for (const fs::path& ignore_path : discard_ignore_notifications)
-                    {
-                        std::erase(m_IgnoreNotification, ignore_path);
-                    }
-                }
-            };
-
-            const auto should_ignore{
-                [&](const fs::path& file_path)
-                {
-                    std::lock_guard ignore_lock{ m_IgnoreMutex };
-                    return std::ranges::contains(m_IgnoreNotification, file_path);
-                }
-            };
-
             AtScopeExit update_progress{
                 [&]()
                 {
                     signaller->CropProgress(progress);
                 }
             };
-
-            // Hold on to a shared lock while reading files ...
-            std::shared_lock files_lock{ m_FileMutex };
 
             QByteArray input_file_hash{
                 [&, this]()
@@ -505,25 +476,7 @@ bool Cropper::DoCropWork(T* signaller)
                 return true;
             }
 
-            AtScopeExit write_to_db{
-                [&]()
-                {
-                    std::unique_lock image_db_lock{ m_ImageDBMutex };
-                    m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
-                }
-            };
-
             Image source_image{ Image::Read(input_file) };
-
-            // no more file reading necessary, we have the source in memory
-            files_lock.unlock();
-
-            if (should_ignore(input_file))
-            {
-                // we just wrote to this file, ignore the change and write to DB
-                discard_ignore_notifications.push_back(input_file);
-                return true;
-            }
 
             const auto image_aspect_ratio{ source_image.AspectRatio() };
             const bool image_has_bleed{
@@ -534,24 +487,32 @@ bool Cropper::DoCropWork(T* signaller)
 
             if (image_is_precropped)
             {
-                const Image uncropped_image{ UncropImage(source_image, card_name, card_size, fancy_uncrop) };
-                const auto tmp_file_path{ fs::path{ m_TmpDir.path().toStdString() } / card_name };
-                uncropped_image.Write(tmp_file_path, 3, 100, card_size_with_full_bleed);
+                const auto uncropped_file_path{ uncrop_dir / card_name };
 
-                // make sure we copy this over so the following steps can use the uncropped image
-                source_image = uncropped_image;
+                QByteArray uncrop_input_file_hash{
+                    [&, this]()
+                    {
+                        std::shared_lock image_db_lock{ m_ImageDBMutex };
+                        return m_ImageDB.TestEntry(uncropped_file_path, input_file, image_params);
+                    }()
+                };
 
-                // we will now write to this file, we expect to get a notification on its change that we should ignore
-                new_ignore_notifications.push_back(input_file);
-
-                // take a unique lock so we can move the old pre-cropped file and replace it with the new one
-                std::unique_lock files_write_lock{ m_FileMutex };
-                if (!fs::exists(crop_dir))
+                // empty hash indicates that the source has not changed
+                if (uncrop_input_file_hash.isEmpty())
                 {
-                    fs::create_directories(crop_dir);
+                    // load the uncropped file
+                    source_image = Image::Read(uncropped_file_path);
                 }
-                fs::rename(input_file, crop_file);
-                fs::rename(tmp_file_path, input_file);
+                else
+                {
+                    // do the uncrop, write the file, and copy to source_image
+                    const Image uncropped_image{ UncropImage(source_image, card_name, card_size, fancy_uncrop) };
+                    uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
+                    source_image = std::move(uncropped_image);
+
+                    std::unique_lock image_db_lock{ m_ImageDBMutex };
+                    m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
+                }
             }
 
             const Image cropped_image{ CropImage(source_image, card_name, card_size, full_bleed_edge, bleed_edge, max_density) };
@@ -564,6 +525,10 @@ bool Cropper::DoCropWork(T* signaller)
             {
                 cropped_image.Write(output_file, 3, 100, card_size_with_bleed);
             }
+
+            // If there are any early-exists we need to move this into a RAII wrapper
+            std::unique_lock image_db_lock{ m_ImageDBMutex };
+            m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
 
             return true;
         }
@@ -640,9 +605,6 @@ bool Cropper::DoPreviewWork(T* signaller)
             };
 
             {
-                // Hold on to a shared lock while reading files ...
-                std::shared_lock files_lock{ m_FileMutex };
-
                 // ... and generate Preview ...
                 if (fs::exists(input_file))
                 {
@@ -661,9 +623,6 @@ bool Cropper::DoPreviewWork(T* signaller)
                     }
 
                     const Image source_image{ Image::Read(input_file) };
-
-                    // no more file reading necessary, we have the source in memory
-                    files_lock.unlock();
 
                     const auto image_aspect_ratio{ source_image.AspectRatio() };
                     const bool image_has_bleed{

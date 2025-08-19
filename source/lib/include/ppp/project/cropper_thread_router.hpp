@@ -16,7 +16,10 @@ class CropperThreadRouter : public QObject
 
   signals:
     void NewProjectOpenedDiff(const Project::ProjectData& data);
-    void ImageDirChangedDiff(const fs::path& image_dir, const fs::path& crop_dir, const std::vector<fs::path>& loaded_previews);
+    void ImageDirChangedDiff(const fs::path& image_dir,
+                             const fs::path& crop_dir,
+                             const fs::path& uncrop_dir,
+                             const std::vector<fs::path>& loaded_previews);
     void CardSizeChangedDiff(std::string card_size);
     void BleedChangedDiff(Length bleed);
     void ColorCubeChangedDiff(const std::string& cube_name);

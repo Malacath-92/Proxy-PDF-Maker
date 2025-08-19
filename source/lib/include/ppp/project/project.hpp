@@ -156,6 +156,7 @@ class Project : public QObject
         // Project options
         fs::path m_ImageDir{ "images" };
         fs::path m_CropDir{ "images/crop" };
+        fs::path m_UncropDir{ "images/uncrop" };
         fs::path m_ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards

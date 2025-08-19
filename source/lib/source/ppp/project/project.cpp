@@ -45,6 +45,7 @@ void Project::Load(const fs::path& json_path)
 
         m_Data.m_ImageDir = json["image_dir"].get<std::string>();
         m_Data.m_CropDir = m_Data.m_ImageDir / "crop";
+        m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
         for (const nlohmann::json& card_json : json["cards"])
@@ -553,16 +554,29 @@ Length Project::CardCornerRadius() const
 
 void Project::EnsureOutputFolder() const
 {
-    const auto output_dir{
-        GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
-    };
-    if (!fs::exists(output_dir))
-    {
-        std::error_code error_code;
-        if (!fs::create_directories(output_dir, error_code))
-        {
-            LogError("Failed to create directories: {}", error_code.message());
+    static constexpr auto create_directories{
+        [](const auto& path) {
+            std::error_code error_code;
+            if (!fs::create_directories(path, error_code))
+            {
+                LogError("Failed to create directories: {}", error_code.message());
+            }
         }
+    };
+
+    {
+        const auto output_dir{
+            GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
+        };
+        if (!fs::exists(output_dir))
+        {
+            create_directories(output_dir);
+        }
+    }
+
+    if (!fs::exists(m_Data.m_UncropDir))
+    {
+        create_directories(m_Data.m_UncropDir);
     }
 }
 Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
