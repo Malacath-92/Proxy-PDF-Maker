@@ -257,6 +257,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             // This ensures the preview accurately represents the final output
             m_Project.CacheCardLayout();
             RefreshSizes();
+            RefreshMargins(false);
             MarginsChanged();
         }
     };
@@ -267,8 +268,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             const auto margins_mode{ magic_enum::enum_cast<MarginsMode>(t.toStdString())
                                          .value_or(MarginsMode::Simple) };
             m_Project.SetMarginsMode(margins_mode);
-
-            RefreshMargins(false);
 
             on_margins_changed();
         }
@@ -319,6 +318,45 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 break;
             }
 
+            if (m_Project.m_Data.m_MarginsMode == MarginsMode::Full)
+            {
+                // In full control adjust margins to make sure we fit at least one card
+                const auto margins{ m_Project.ComputeMargins() };
+                const auto page_size{ m_Project.ComputePageSize() };
+                const auto card_size{ m_Project.CardSizeWithBleed() };
+                switch (margin)
+                {
+                case Margin::Left:
+                    if (page_size.x - margins.m_Left - margins.m_Right < card_size.x)
+                    {
+                        custom_margins.m_BottomRight->x =
+                            page_size.x - margins.m_Left - card_size.x;
+                    }
+                    break;
+                case Margin::Top:
+                    if (page_size.y - margins.m_Top - margins.m_Bottom < card_size.y)
+                    {
+                        custom_margins.m_BottomRight->y =
+                            page_size.y - margins.m_Top - card_size.y;
+                    }
+                    break;
+                case Margin::Right:
+                    if (page_size.x - margins.m_Left - margins.m_Right < card_size.x)
+                    {
+                        custom_margins.m_TopLeft.x =
+                            page_size.x - margins.m_Right - card_size.x;
+                    }
+                    break;
+                case Margin::Bottom:
+                    if (page_size.y - margins.m_Top - margins.m_Bottom < card_size.y)
+                    {
+                        custom_margins.m_TopLeft.y =
+                            page_size.y - margins.m_Bottom - card_size.y;
+                    }
+                    break;
+                }
+            }
+
             on_margins_changed();
         }
     };
@@ -345,23 +383,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             custom_margins.m_TopLeft.y = margin_value;
             custom_margins.m_BottomRight->x = margin_value;
             custom_margins.m_BottomRight->y = margin_value;
-
-            // Temporarily block signals to prevent recursive calls
-            m_LeftMarginSpin->blockSignals(true);
-            m_TopMarginSpin->blockSignals(true);
-            m_RightMarginSpin->blockSignals(true);
-            m_BottomMarginSpin->blockSignals(true);
-
-            m_LeftMarginSpin->setValue(v);
-            m_TopMarginSpin->setValue(v);
-            m_RightMarginSpin->setValue(v);
-            m_BottomMarginSpin->setValue(v);
-
-            // Unblock signals
-            m_LeftMarginSpin->blockSignals(false);
-            m_TopMarginSpin->blockSignals(false);
-            m_RightMarginSpin->blockSignals(false);
-            m_BottomMarginSpin->blockSignals(false);
 
             on_margins_changed();
         }
@@ -701,13 +722,11 @@ void PrintOptionsWidget::RefreshMargins(bool reset_margins)
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
     const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
-    const auto margins{ m_Project.ComputeMargins() / base_unit };
 
     m_LeftMarginSpin->setRange(0, max_margins.x);
     m_TopMarginSpin->setRange(0, max_margins.y);
     m_RightMarginSpin->setRange(0, max_margins.x);
     m_BottomMarginSpin->setRange(0, max_margins.y);
-
     m_AllMarginsSpin->setRange(0, std::min(max_margins.x, max_margins.y));
 
     if (reset_margins)
@@ -743,6 +762,7 @@ void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 
         // Preserve current margin values after updating ranges while also pulling
         // exact computed margins in case they are dependent on each other
+        const auto margins{ m_Project.ComputeMargins() / base_unit };
         m_LeftMarginSpin->setValue(margins.m_Left);
         m_TopMarginSpin->setValue(margins.m_Top);
         m_RightMarginSpin->setValue(margins.m_Right);
@@ -765,7 +785,7 @@ void PrintOptionsWidget::RefreshMargins(bool reset_margins)
         m_AllMarginsSpin->blockSignals(false);
     }
 
-    // Maintain enabled states based on margin mode
+    // Set enabled states based on margin mode
     const bool custom_margins{ margins_mode != MarginsMode::Auto };
     const bool margins_full_control{ margins_mode == MarginsMode::Full };
     const bool margins_linked{ margins_mode == MarginsMode::Linked };
