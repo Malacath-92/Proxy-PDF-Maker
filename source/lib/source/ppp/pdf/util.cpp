@@ -43,20 +43,30 @@ PageImageTransforms ComputeTransforms(const Project& project)
 
     const auto card_size_vertical{ project.CardSizeWithBleed() };
     const auto card_size_horizontal{ dla::rotl(project.CardSizeWithBleed()) };
+    const auto cards_size{ project.ComputeCardsSize() };
     const auto cards_size_vertical{ project.ComputeCardsSizeVertical() };
     const auto cards_size_horizontal{ project.ComputeCardsSizeHorizontal() };
     const auto cards_size_width_offset{ (cards_size_vertical.x - cards_size_horizontal.x) / 2 };
     const auto origin_width_vertical{ cards_size_width_offset > 0_mm ? 0_mm : -cards_size_width_offset };
     const auto origin_width_horizontal{ cards_size_width_offset < 0_mm ? 0_mm : cards_size_width_offset };
+    const auto page_size{ project.ComputePageSize() };
     const auto margins{ project.ComputeMargins() };
+    const Size margins_size{
+        page_size.x - margins.m_Left - margins.m_Right,
+        page_size.y - margins.m_Top - margins.m_Bottom,
+    };
 
+    const Position cards_origin{
+        margins.m_Left + (margins_size.x - cards_size.x) / 2.0f,
+        margins.m_Top + (margins_size.y - cards_size.y) / 2.0f,
+    };
     const Position origin_vertical{
-        margins.m_Left + origin_width_vertical,
-        margins.m_Top,
+        cards_origin.x + origin_width_vertical,
+        cards_origin.y,
     };
     const Position origin_horizontal{
-        margins.m_Left + origin_width_horizontal,
-        margins.m_Top + cards_size_vertical.y + project.m_Data.m_Spacing.y,
+        cards_origin.x + origin_width_horizontal,
+        cards_origin.y + cards_size_vertical.y + project.m_Data.m_Spacing.y,
     };
 
     const auto vertical_images_per_page{ layout_vertical.x * layout_vertical.y };
