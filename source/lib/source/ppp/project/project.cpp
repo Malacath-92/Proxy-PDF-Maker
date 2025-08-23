@@ -884,6 +884,9 @@ Size Project::ProjectData::ComputeMaxMargins(const Config& config, MarginsMode m
                             dla::max(page_size - card_size_with_bleed,
                                      page_size - dla::rotl(card_size_with_bleed)));
         }
+
+        // Fallthrough, we should not land here unless enum values are invalid
+        std::unreachable();
     case MarginsMode::Linked:
         // With maximum margins we can fit exactly one card, if possible,
         // that is centered on the page
@@ -900,6 +903,9 @@ Size Project::ProjectData::ComputeMaxMargins(const Config& config, MarginsMode m
                                      page_size - dla::rotl(card_size_with_bleed))) / 2;
             // clang-format on
         }
+
+        // Fallthrough, we should not land here unless enum values are invalid
+        std::unreachable();
     }
 
     // Fallthrough, we should not land here unless enum values are invalid
