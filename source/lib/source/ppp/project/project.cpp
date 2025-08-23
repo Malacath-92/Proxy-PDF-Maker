@@ -1,6 +1,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ranges>
+#include <utility>
 
 #include <nlohmann/json.hpp>
 
@@ -521,6 +522,89 @@ Size Project::ComputeMaxMargins() const
     return m_Data.ComputeMaxMargins(g_Cfg);
 }
 
+Size Project::ComputeDefaultMargins() const
+{
+    return m_Data.ComputeMaxMargins(g_Cfg);
+}
+
+void Project::SetMarginsMode(MarginsMode margins_mode)
+{
+    switch (margins_mode)
+    {
+    case MarginsMode::Auto:
+        // Reset custom margins
+        m_Data.m_CustomMargins.reset();
+        break;
+    case MarginsMode::Simple:
+    {
+        const auto current_margins{ ComputeMargins() };
+        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+
+        // Initialize with computed top-left margin defaults to provide a reasonable starting point
+        m_Data.m_CustomMargins = CustomMargins{
+            .m_TopLeft{
+                dla::math::min(max_margins.x, current_margins.m_Left),
+                dla::math::min(max_margins.y, current_margins.m_Top),
+            },
+        };
+        break;
+    }
+    case MarginsMode::Full:
+    {
+        const auto current_margins{ ComputeMargins() };
+        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+
+        // Initialize with computed four-margin defaults to provide a reasonable starting point
+        m_Data.m_CustomMargins = CustomMargins{
+            .m_TopLeft{
+                dla::math::min(max_margins.x, current_margins.m_Left),
+                dla::math::min(max_margins.y, current_margins.m_Top),
+            },
+            .m_BottomRight{ Size{
+                dla::math::min(max_margins.x, current_margins.m_Right),
+                dla::math::min(max_margins.y, current_margins.m_Bottom),
+            } },
+        };
+    }
+    break;
+    case MarginsMode::Linked:
+    {
+        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+        const auto current_margins{ ComputeMargins() };
+        const auto min_margins_vertical{
+            dla::math::min(
+                dla::math::min(
+                    current_margins.m_Top,
+                    current_margins.m_Bottom),
+                max_margins.y)
+        };
+        const auto min_margins_horizontal{
+            dla::math::min(
+                dla::math::min(
+                    current_margins.m_Left,
+                    current_margins.m_Right),
+                max_margins.x)
+        };
+        const auto min_margins{
+            dla::math::min(
+                min_margins_vertical,
+                min_margins_horizontal)
+        };
+
+        // Initialize with the minimum of the compute margins
+        m_Data.m_CustomMargins = CustomMargins{
+            .m_TopLeft{ min_margins, min_margins },
+            .m_BottomRight{ Size{ min_margins, min_margins } },
+        };
+        break;
+    }
+    }
+
+    // Set margins mode after setting margins as we want to grab the current
+    // margins and their computation may depend on the current margins mode
+    m_Data.m_MarginsMode = margins_mode;
+}
+
 float Project::CardRatio() const
 {
     return m_Data.CardRatio(g_Cfg);
@@ -718,7 +802,7 @@ Margins Project::ProjectData::ComputeMargins(const Config& config) const
 
     // Default to centered margins by dividing available space equally
     // This provides a balanced layout suitable for most printing scenarios
-    const auto half_max_margins{ ComputeMaxMargins(config) / 2.0f };
+    const auto half_max_margins{ ComputeDefaultMargins(config) };
     return Margins{
         half_max_margins.x,
         half_max_margins.y,
@@ -729,26 +813,96 @@ Margins Project::ProjectData::ComputeMargins(const Config& config) const
 
 Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
 {
-    const Size page_size{ ComputePageSize(config) };
-    // We can not rely on a pre-computed layout here, so we compute
-    // the best case layout and compute margins from that
-    const auto card_size_with_bleed{ CardSizeWithBleed(config) };
-    const auto card_layout{ ComputeAutoCardLayout(config, page_size) };
-    const auto cards_size_vertical{ ComputeCardsSize(card_size_with_bleed,
-                                                     card_layout.m_CardLayoutVertical) };
-    const auto cards_size_horizontal{ ComputeCardsSize(dla::rotl(card_size_with_bleed),
-                                                       card_layout.m_CardLayoutHorizontal) };
-    const Size cards_size{
-        dla::math::max(cards_size_vertical.x, cards_size_horizontal.x),
-        cards_size_vertical.y +
-            cards_size_horizontal.y +
-            (card_layout.m_CardLayoutVertical.y != 0 && card_layout.m_CardLayoutHorizontal.y != 0 ? m_Spacing.y : 0_mm)
-    };
+    return ComputeMaxMargins(config, m_MarginsMode);
+}
 
-    // Maximum margins represent the total available space around the cards
-    // This is used to constrain user input and provide reasonable defaults
-    const Size max_margins{ page_size - cards_size };
-    return max_margins;
+Size Project::ProjectData::ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const
+{
+    const Size page_size{ ComputePageSize(config) };
+    const auto card_size_with_bleed{ CardSizeWithBleed(config) };
+    switch (margins_mode)
+    {
+    case MarginsMode::Auto:
+        [[fallthrough]];
+    case MarginsMode::Simple:
+    {
+        // We can not rely on a pre-computed layout here, so we compute
+        // the best case layout and compute margins from that
+        const auto card_layout{ ComputeAutoCardLayout(config, page_size) };
+        const auto cards_size_vertical{ ComputeCardsSize(card_size_with_bleed,
+                                                         card_layout.m_CardLayoutVertical) };
+        const auto cards_size_horizontal{ ComputeCardsSize(dla::rotl(card_size_with_bleed),
+                                                           card_layout.m_CardLayoutHorizontal) };
+        const Size cards_size{
+            dla::math::max(cards_size_vertical.x, cards_size_horizontal.x),
+            cards_size_vertical.y +
+                cards_size_horizontal.y +
+                (card_layout.m_CardLayoutVertical.y != 0 && card_layout.m_CardLayoutHorizontal.y != 0 ? m_Spacing.y : 0_mm)
+        };
+
+        // With maximum margins the full card layout is pushed all the
+        // way to the edge of the page
+        const Size max_margins{ page_size - cards_size };
+        return max_margins;
+    }
+    case MarginsMode::Full:
+        // With maximum margins we can fit exactly one card, if possible,
+        // that is pushed all the way to the edge of the page
+        switch (m_CardOrientation)
+        {
+        case CardOrientation::Vertical:
+            return dla::max(0_mm, page_size - card_size_with_bleed);
+        case CardOrientation::Horizontal:
+            return dla::max(0_mm, page_size - dla::rotl(card_size_with_bleed));
+        case CardOrientation::Mixed:
+            return dla::max(0_mm,
+                            dla::max(page_size - card_size_with_bleed,
+                                     page_size - dla::rotl(card_size_with_bleed)));
+        }
+    case MarginsMode::Linked:
+        // With maximum margins we can fit exactly one card, if possible,
+        // that is centered on the page
+        switch (m_CardOrientation)
+        {
+        case CardOrientation::Vertical:
+            return dla::max(0_mm, page_size - card_size_with_bleed) / 2;
+        case CardOrientation::Horizontal:
+            return dla::max(0_mm, page_size - dla::rotl(card_size_with_bleed)) / 2;
+        case CardOrientation::Mixed:
+            // clang-format off
+            return dla::max(0_mm,
+                            dla::max(page_size - card_size_with_bleed,
+                                     page_size - dla::rotl(card_size_with_bleed))) / 2;
+            // clang-format on
+        }
+    }
+
+    // Fallthrough, we should not land here unless enum values are invalid
+    std::unreachable();
+}
+
+Size Project::ProjectData::ComputeDefaultMargins(const Config& config) const
+{
+    switch (m_MarginsMode)
+    {
+    case MarginsMode::Auto:
+        [[fallthrough]];
+    case MarginsMode::Simple:
+        [[fallthrough]];
+    case MarginsMode::Full:
+        // Center on page
+        return ComputeMaxMargins(config, MarginsMode::Auto) / 2.0f;
+    case MarginsMode::Linked:
+    {
+        // Pick smallest margins needed for centering
+        const auto center_margins{ ComputeMaxMargins(config, MarginsMode::Auto) / 2.0f };
+        const auto min_center_margins{ dla::math::min(center_margins.x, center_margins.y) };
+        return Size{ min_center_margins, min_center_margins };
+    }
+    }
+
+    // Fallthrough, we should not land here unless enum values are invalid
+    std::unreachable();
 }
 
 float Project::ProjectData::CardRatio(const Config& config) const

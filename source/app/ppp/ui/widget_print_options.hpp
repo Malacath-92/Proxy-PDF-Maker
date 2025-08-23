@@ -45,6 +45,7 @@ class PrintOptionsWidget : public QWidget
     void SetDefaults();
 
     void RefreshSizes();
+    void RefreshMargins(bool reset_margins);
     void RefreshCardLayout();
 
     static std::vector<std::string> GetBasePdfNames();

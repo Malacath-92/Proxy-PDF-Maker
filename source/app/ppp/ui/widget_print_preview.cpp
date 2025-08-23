@@ -461,31 +461,49 @@ void PrintPreview::Refresh()
         delete current_widget;
     }
 
+    const auto raw_pages{ DistributeCardsToPages(m_Project) };
+    const auto page_size{ m_Project.ComputePageSize() };
+
+    // Show empty preview when no cards can fit on the page
+    if (raw_pages.empty())
+    {
+        m_FrontsideTransforms.clear();
+
+        auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
+        empty_label->setAlignment(Qt::AlignCenter);
+        empty_label->setStyleSheet("QLabel { color : red; font-size: 14px; }");
+
+        auto* empty_layout{ new QVBoxLayout };
+        empty_layout->setSpacing(15);
+        empty_layout->setContentsMargins(60, 20, 60, 20);
+
+        empty_layout->addWidget(empty_label);
+        empty_layout->addWidget(new PagePreview{
+            m_Project,
+            Page{},
+            m_FrontsideTransforms,
+            PagePreview::Params{
+                .m_PageSize{ page_size },
+                .m_IsBackside = false,
+            },
+        });
+
+        auto* empty_widget{ new QWidget };
+        empty_widget->setLayout(empty_layout);
+
+        setWidget(empty_widget);
+
+        return;
+    }
+
+    m_FrontsideTransforms = ComputeTransforms(m_Project);
+
     struct TempPage
     {
         Page m_Page;
         std::reference_wrapper<const PageImageTransforms> m_Transforms;
         bool m_Backside;
     };
-
-    const auto raw_pages{ DistributeCardsToPages(m_Project) };
-
-    // Show empty preview when no cards can fit on the page
-    if (raw_pages.empty())
-    {
-        auto* empty_widget{ new QWidget };
-        auto* empty_layout{ new QVBoxLayout };
-        auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
-        empty_label->setAlignment(Qt::AlignCenter);
-        empty_label->setStyleSheet("QLabel { color : red; font-size: 14px; }");
-        empty_layout->addWidget(empty_label);
-        empty_widget->setLayout(empty_layout);
-        setWidget(empty_widget);
-        return;
-    }
-
-    m_FrontsideTransforms = ComputeTransforms(m_Project);
-
     auto pages{ raw_pages |
                 std::views::transform([this](const Page& page)
                                       { return TempPage{
@@ -515,7 +533,6 @@ void PrintPreview::Refresh()
         }
     }
 
-    const auto page_size{ m_Project.ComputePageSize() };
     auto page_widgets{
         pages |
         std::views::transform(

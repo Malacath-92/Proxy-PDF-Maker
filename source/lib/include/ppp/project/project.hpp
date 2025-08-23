@@ -132,6 +132,9 @@ class Project : public QObject
     Size ComputeCardsSizeHorizontal() const;
     Margins ComputeMargins() const;
     Size ComputeMaxMargins() const;
+    Size ComputeDefaultMargins() const;
+
+    void SetMarginsMode(MarginsMode margins_mode); 
 
     float CardRatio() const;
     Size CardSize() const;
@@ -225,6 +228,8 @@ class Project : public QObject
         Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
         Margins ComputeMargins(const Config& config) const;
         Size ComputeMaxMargins(const Config& config) const;
+        Size ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const;
+        Size ComputeDefaultMargins(const Config& config) const;
 
         float CardRatio(const Config& config) const;
         Size CardSize(const Config& config) const;
