@@ -54,7 +54,7 @@ class GuidesOverlay : public QWidget
     {
         QWidget::resizeEvent(event);
 
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size / m_Project.ComputePageSize() };
 
         const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
@@ -225,7 +225,7 @@ class BordersOverlay : public QWidget
     {
         QWidget::resizeEvent(event);
 
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size / m_Project.ComputePageSize() };
 
         const auto bleed_edge{ m_Project.m_Data.m_BleedEdge * pixel_ratio };
@@ -273,7 +273,7 @@ class MarginsOverlay : public QWidget
 
     void resizeEvent(QResizeEvent* event) override
     {
-        const dla::tvec2 size{ event->size().width(), event->size().height() };
+        const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size.x / m_Project.ComputePageSize().x };
 
         const auto margins{
@@ -327,8 +327,31 @@ class PrintPreview::PagePreview : public QWidget
             const auto& [image_name, backside_short_edge]{
                 page.m_Images[i]
             };
-            const auto& [position, size, rotation]{
+            const auto& [position, size, base_rotation]{
                 transforms[i]
+            };
+
+            const auto rotation{
+                [=]()
+                {
+                    if (!backside_short_edge || !params.m_IsBackside)
+                    {
+                        return base_rotation;
+                    }
+
+                    switch (base_rotation)
+                    {
+                    default:
+                    case Image::Rotation::None:
+                        return Image::Rotation::Degree180;
+                    case Image::Rotation::Degree90:
+                        return Image::Rotation::Degree270;
+                    case Image::Rotation::Degree180:
+                        return Image::Rotation::None;
+                    case Image::Rotation::Degree270:
+                        return Image::Rotation::Degree90;
+                    }
+                }()
             };
 
             auto* image_widget{
@@ -388,7 +411,7 @@ class PrintPreview::PagePreview : public QWidget
         const auto height{ heightForWidth(width) };
         setFixedHeight(height);
 
-        const dla::tvec2 size{ width, height };
+        const dla::ivec2 size{ width, height };
         const auto pixel_ratio{ size / m_PageSize };
 
         for (size_t i = 0; i < m_Images.size(); ++i)

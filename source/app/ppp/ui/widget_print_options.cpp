@@ -210,6 +210,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             RefreshMargins(true);
 
+            RefreshSizes();
             PageSizeChanged();
         }
     };

@@ -11,8 +11,6 @@
 
 #include <QPixmap>
 
-#include <ppp/color.hpp>
-
 namespace pngcrc
 {
 static uint32_t CRC(const uchar* buf, int len)
@@ -418,13 +416,47 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     return img;
 }
 
-Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
+Image Image::ApplyAlpha(const ColorRGB8& color) const
 {
-    if (corner_radius == 1_mm)
+    if (m_Impl.channels() != 4)
     {
-        return *this;
+        return Image{ m_Impl };
     }
 
+    std::vector<cv::Mat> out_channels;
+    cv::split(m_Impl, out_channels);
+
+    cv::Mat alpha{ std::move(out_channels.back()) };
+    alpha.convertTo(alpha, CV_32FC1, 1.0f / 255);
+    out_channels.pop_back();
+
+    std::vector<cv::Mat> plain_colors{
+        cv::Mat{ m_Impl.rows, m_Impl.cols, CV_32FC1, cv::Scalar{ static_cast<float>(color.b) } },
+        cv::Mat{ m_Impl.rows, m_Impl.cols, CV_32FC1, cv::Scalar{ static_cast<float>(color.g) } },
+        cv::Mat{ m_Impl.rows, m_Impl.cols, CV_32FC1, cv::Scalar{ static_cast<float>(color.r) } },
+    };
+
+    for (size_t i = 0; i < 3; ++i)
+    {
+        auto& channel{ out_channels[i] };
+        auto& plain_color{ plain_colors[i] };
+
+        cv::multiply(plain_color, cv::Scalar::all(1.0f) - alpha, plain_color);
+
+        channel.convertTo(channel, CV_32FC1);
+        cv::multiply(channel, alpha, channel);
+        cv::add(channel, plain_color, channel);
+        channel.convertTo(channel, CV_8UC1);
+    }
+
+    cv::Mat out_image;
+    cv::merge(out_channels, out_image);
+
+    return Image{ std::move(out_image) };
+}
+
+Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
+{
     const auto corner_radius_pixels{ static_cast<int>(dla::math::floor(Density(real_size) * corner_radius) / 1_pix) };
     if (corner_radius_pixels == 0)
     {

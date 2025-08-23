@@ -1,6 +1,7 @@
 #include <ppp/ui/widget_card_options.hpp>
 
 #include <QCheckBox>
+#include <QMainWindow>
 #include <QPushButton>
 #include <QSlider>
 #include <QToolButton>
@@ -314,7 +315,24 @@ void CardOptionsWidget::BaseUnitChanged()
     m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
     m_BacksideOffsetSpin->setValue(backside_offset / base_unit);
 }
-#include <QMainWindow>
+
+void CardOptionsWidget::BacksideEnabledChangedExternal()
+{
+    m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
+
+    m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
+
+    m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
+}
+
 void CardOptionsWidget::SetDefaults()
 {
     const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };

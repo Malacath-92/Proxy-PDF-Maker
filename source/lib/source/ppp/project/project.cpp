@@ -46,6 +46,7 @@ void Project::Load(const fs::path& json_path)
 
         m_Data.m_ImageDir = json["image_dir"].get<std::string>();
         m_Data.m_CropDir = m_Data.m_ImageDir / "crop";
+        m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
         for (const nlohmann::json& card_json : json["cards"])
@@ -637,16 +638,30 @@ Length Project::CardCornerRadius() const
 
 void Project::EnsureOutputFolder() const
 {
-    const auto output_dir{
-        GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
-    };
-    if (!fs::exists(output_dir))
-    {
-        std::error_code error_code;
-        if (!fs::create_directories(output_dir, error_code))
+    static constexpr auto c_CreateDirectories{
+        [](const auto& path)
         {
-            LogError("Failed to create directories: {}", error_code.message());
+            std::error_code error_code;
+            if (!fs::create_directories(path, error_code))
+            {
+                LogError("Failed to create directories: {}", error_code.message());
+            }
         }
+    };
+
+    {
+        const auto output_dir{
+            GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
+        };
+        if (!fs::exists(output_dir))
+        {
+            c_CreateDirectories(output_dir);
+        }
+    }
+
+    if (!fs::exists(m_Data.m_UncropDir))
+    {
+        c_CreateDirectories(m_Data.m_UncropDir);
     }
 }
 Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
@@ -682,6 +697,11 @@ dla::uvec2 Project::ProjectData::ComputeCardLayout(const Config& config,
                                                    Size available_space,
                                                    CardOrientation orientation) const
 {
+    if (available_space.x <= 0_mm || available_space.y <= 0_mm)
+    {
+        return {};
+    }
+
     const Size card_size_with_bleed{
         orientation == CardOrientation::Horizontal ? dla::rotl(CardSizeWithBleed(config))
                                                    : CardSizeWithBleed(config)
@@ -763,6 +783,11 @@ Size Project::ProjectData::ComputeCardsSize(const Config& config) const
 
 Size Project::ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const
 {
+    if (card_layout.x == 0 || card_layout.y == 0)
+    {
+        return {};
+    }
+
     return card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing;
 }
 

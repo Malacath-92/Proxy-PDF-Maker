@@ -36,7 +36,7 @@ std::optional<fs::path> OpenFolderDialog(const fs::path& root)
     }
     else
     {
-        return fs::relative(fs::path{ choice.toStdString() });
+        return fs::path{ choice.toStdString() };
     }
 }
 

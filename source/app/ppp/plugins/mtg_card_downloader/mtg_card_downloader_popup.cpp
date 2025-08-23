@@ -274,6 +274,7 @@ void MtgDownloaderPopup::FinalizeDownload()
             {
                 fs::remove(target_dir / img);
             }
+            m_Project.m_Data.m_Cards.erase(img);
         }
     }
 
@@ -304,6 +305,7 @@ void MtgDownloaderPopup::FinalizeDownload()
             if (const std::optional backside{ m_Downloader->GetBackside(card) })
             {
                 card_info.m_Backside = backside.value().toStdString();
+                m_Project.m_Data.m_Cards[card_info.m_Backside].m_Hidden++;
             }
         }
     }
@@ -340,6 +342,11 @@ void MtgDownloaderPopup::ValidateSettings()
     if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
     {
         m_Router.SetCardSizeChoice("Standard");
+    }
+
+    if (!m_Project.m_Data.m_BacksideEnabled)
+    {
+        m_Router.SetEnableBackside(true);
     }
 }
 

@@ -143,6 +143,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                 {
                     project.m_Data.m_ImageDir = new_image_dir.value();
                     project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
+                    project.m_Data.m_UncropDir = project.m_Data.m_ImageDir / "uncrop";
                     project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
 
                     project.Init();

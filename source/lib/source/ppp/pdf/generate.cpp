@@ -146,9 +146,9 @@ fs::path GeneratePdf(const Project& project)
     for (auto [p, page] : pages | std::views::enumerate)
     {
 #else
-    for (size_t p = 0; p < images.size(); p++)
+    for (size_t p = 0; p < pages.size(); p++)
     {
-        const Page& page_images{ images[p] };
+        const Page& page{ pages[p] };
 #endif
 
         const auto draw_image{

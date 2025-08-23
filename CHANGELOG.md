@@ -6,6 +6,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-19-08
+
+> [!NOTE]
+> Be sure to check the changelog as this version has some important changes!
+
+### Added
+- New options to control margins were added:
+    - `Auto`: Automatically compute the margins to be as small as possible.
+    - `Simple`: Allow changing top-left margins only, giving the option to offset the cards.
+    - `Full`: Gives control over all margins, allowing to offset the cards and also reduce the amount of cards on the page.
+    - `Linked`: Gives control over a single value and forces all margins to be that value. Useful for example when working with setups where specifications require specific margins.
+- When any option other than `Auto` is chosen for  margins the final margins are now visible in the print preview.
+- The option `Card Orientation` is now available to allow for more layout control:
+    - `Vertical`: Same as before, cards will be upright.
+    - `Horizontal`: Cards are rotated by 90 degrees.
+    - `Mixed`: First fill out as much as possible with vertical cards, then try to fill the rest of the space with horizontal cards.
+
+### Changed
+- Users should now place all images, with or without bleed edge, into the images folder. The app should then use the available information to determine whether the image has bleed edge or not.
+- The MtG decklist downloader will now automatically change the relevant settings instead of warning the user of invalid settings.
+- When downloading cards via the MtG decklist downloader the respective card backs will also be automatically downloaded and assigned to each card.
+
+### Removed
+- The `Allow Precropped` setting is no longer needed and has been removed.
+
+### Fixed
+- The MtG decklist downloader will no longer fail downloading cards with non-numeric collector numbers.
+- The card size `Standard x2` is now treated as a valid option for the MtG decklist downloader.
+- Extended guides are now rendered the same in the preview and the rendered pdf.
+- A rare crash during shutdown was fixed.
+- Folders are now always treated as absolute, which should fix issues with using image folders on other drives.
+- The `Rounded` card corners option now also works when exporting pdf files with embedded jpg files.
+
+### Contributors
+- Big props to @ahernandezjr for contributing the code for margin control.
+
 ## [0.12.2] - 2025-03-08
 
 ### Added

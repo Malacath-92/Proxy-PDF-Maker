@@ -24,6 +24,7 @@ TEST_CASE("Empty project", "[project_empty]")
     Project empty_project{};
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
+    empty_project.m_Data.m_UncropDir = "no_images/uncrop";
     empty_project.m_Data.m_ImageCache = "empty_project.cache";
     REQUIRE_NOTHROW(empty_project.Init());
     empty_project.CropperDone();
@@ -41,6 +42,7 @@ TEST_CASE("Empty project can be saved", "[project_save_empty]")
     Project empty_project{};
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
+    empty_project.m_Data.m_UncropDir = "no_images/uncrop";
     empty_project.m_Data.m_ImageCache = "empty_project.cache";
     REQUIRE_NOTHROW(empty_project.Dump("empty_project.json"));
     REQUIRE(fs::exists("empty_project.json"));
@@ -64,6 +66,7 @@ TEST_CASE("Non-empty project", "[project_non_empty]")
     Project project{};
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
+    project.m_Data.m_UncropDir = "no_images/uncrop";
     project.m_Data.m_ImageCache = "non_empty_project.cache";
     REQUIRE_NOTHROW(project.Init());
     project.CropperDone();
@@ -80,6 +83,7 @@ TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
     Project project{};
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
+    project.m_Data.m_UncropDir = "no_images/uncrop";
     project.m_Data.m_ImageCache = "non_empty_project.cache";
     project.Init();
     project.CropperDone();
