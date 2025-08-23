@@ -493,6 +493,8 @@ void PrintPreview::Refresh()
 
         setWidget(empty_widget);
 
+        verticalScrollBar()->setValue(current_scroll);
+
         return;
     }
 
