@@ -41,13 +41,24 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         card_border.addRect(rect);
     }
 
-    const auto pixel_ratio{ pixel_size / project.ComputeCardsSize() };
+    const auto cards_size{ project.ComputeCardsSize() };
+    const auto pixel_ratio{ pixel_size / cards_size };
 
     const auto transforms{ ComputeTransforms(project) };
     const auto bleed_edge{ project.m_Data.m_BleedEdge * pixel_ratio };
     const auto corner_radius{ project.CardCornerRadius() * pixel_ratio };
     const auto margins{ project.ComputeMargins() };
-    const auto cards_offset{ Position{ margins.m_Left, margins.m_Top } * pixel_ratio };
+
+    const auto page_size{ project.ComputePageSize() };
+    const Size available_space{
+        page_size.x - margins.m_Left - margins.m_Right,
+        page_size.y - margins.m_Top - margins.m_Bottom,
+    };
+    const Position cards_origin{
+        margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
+        margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
+    };
+    const auto cards_offset{ cards_origin * pixel_ratio };
 
     for (const auto& transform : transforms)
     {
@@ -158,8 +169,17 @@ ENTITIES
     const auto transforms{ ComputeTransforms(project) };
     const auto bleed_edge{ project.m_Data.m_BleedEdge / 1_mm };
     const auto radius{ project.CardCornerRadius() / 1_mm };
-    const auto margins{ project.ComputeMargins() };
-    const dla::vec2 cards_offset{ margins.m_Left / 1_mm, margins.m_Top / 1_mm };
+    const auto margins{ project.ComputeMargins() / 1_mm };
+    
+    const auto page_size{ project.ComputePageSize() / 1_mm };
+    const dla::vec2 available_space{
+        page_size.x - margins.m_Left - margins.m_Right,
+        page_size.y - margins.m_Top - margins.m_Bottom,
+    };
+    const dla::vec2 cards_offset{
+        margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
+        margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
+    };
 
     for (const auto& transform : transforms)
     {
