@@ -110,18 +110,20 @@ fs::path GeneratePdf(const Project& project)
                 {
                     const auto real_x{ x * g_Precision };
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ real_x, y_min },
-                        .m_To{ real_x, 0_mm },
+                        .m_From{ real_x, page_height - y_min },
+                        .m_To{ real_x, page_height },
                     });
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ real_x, y_max },
-                        .m_To{ real_x, page_height },
+                        .m_From{ real_x, page_height - y_max },
+                        .m_To{ real_x, 0_mm },
                     });
                 }
 
                 for (const auto& y : unique_y)
                 {
-                    const auto real_y{ y * g_Precision };
+                    const auto real_y{
+                        page_height -  y * g_Precision,
+                    };
                     guides.push_back(PdfPage::LineData{
                         .m_From{ x_min, real_y },
                         .m_To{ 0_mm, real_y },
