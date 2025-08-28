@@ -30,6 +30,19 @@ void Config::SetPdfBackend(PdfBackend backend)
     }
 }
 
+std::string_view Config::GetFirstValidPageSize() const
+{
+    for (const auto& [page_size, info] : g_Cfg.m_PageSizes)
+    {
+        if (page_size != Config::c_FitSize && page_size != Config::c_BasePDFSize)
+        {
+            return page_size;
+        }
+    }
+
+    return "No Valid Page Size";
+}
+
 Config LoadConfig()
 {
     Config config{};
@@ -230,6 +243,15 @@ Config LoadConfig()
 
         {
             settings.beginGroup("PAGE_SIZES");
+
+            if (settings.allKeys().size())
+            {
+                config.m_PageSizes.clear();
+                config.m_PageSizes[std::string{ Config::c_FitSize }] =
+                    config.m_DefaultPageSizes[std::string{ Config::c_FitSize }];
+                config.m_PageSizes[std::string{ Config::c_BasePDFSize }] =
+                    config.m_DefaultPageSizes[std::string{ Config::c_BasePDFSize }];
+            }
 
             for (const auto& key : settings.allKeys())
             {

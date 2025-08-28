@@ -25,6 +25,7 @@ class PrintOptionsWidget : public QWidget
 
   signals:
     void PageSizeChanged();
+    void PageSizesChanged();
     void CardSizeChanged();
     void MarginsChanged();
     void CardOrientationChanged();

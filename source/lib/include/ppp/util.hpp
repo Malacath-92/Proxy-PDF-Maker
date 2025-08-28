@@ -122,3 +122,6 @@ struct AtScopeExit
     }
     FunT m_Dtor;
 };
+
+template<class T>
+concept Enum = std::is_enum_v<T>;

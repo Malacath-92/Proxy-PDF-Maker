@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QDirIterator>
 #include <QHBoxLayout>
+#include <QToolButton>
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -14,7 +15,10 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/widget_combo_box.hpp>
 #include <ppp/ui/widget_label.hpp>
+
+#include <ppp/ui/popups/paper_size_popup.hpp>
 
 PrintOptionsWidget::PrintOptionsWidget(Project& project)
     : m_Project{ project }
@@ -36,24 +40,102 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.m_Data.m_FileName.string() } };
     m_PrintOutput = print_output->GetWidget();
 
-    auto* card_size{
-        new ComboBoxWithLabel{
-            "&Card Size",
-            g_Cfg.m_CardSizes | std::views::keys | std::ranges::to<std::vector>(),
-            g_Cfg.m_CardSizes |
+    WidgetWithLabel* card_size;
+    {
+        m_CardSize = MakeComboBox(
+            std::span<const std::string>{
+                g_Cfg.m_CardSizes |
+                std::views::keys |
+                std::ranges::to<std::vector>() },
+            std::span<const std::string>{
+                g_Cfg.m_CardSizes |
                 std::views::values |
                 std::views::transform(&Config::CardSizeInfo::m_Hint) |
-                std::ranges::to<std::vector>(),
-            project.m_Data.m_CardSizeChoice,
-        },
-    };
-    card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
-    m_CardSize = card_size->GetWidget();
+                std::ranges::to<std::vector>() },
+            project.m_Data.m_CardSizeChoice);
 
-    auto* paper_size{ new ComboBoxWithLabel{
-        "&Paper Size", std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>(), project.m_Data.m_PageSize } };
-    paper_size->setToolTip("Additional card sizes can be defined in config.ini");
-    m_PaperSize = paper_size->GetWidget();
+        auto* card_size_edit{ new QToolButton };
+        card_size_edit->setIcon(QIcon{ QPixmap{ ":/res/edit.png" } });
+        card_size_edit->setIconSize(card_size_edit->iconSize() - QSize{ 1, 1 }); // fixes awkward sizing of icon
+        card_size_edit->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonIconOnly);
+        card_size_edit->setToolTip("Edit, add, or remove available card sizes.");
+
+        auto* card_size_layout{ new QHBoxLayout };
+        card_size_layout->addWidget(m_CardSize);
+        card_size_layout->addWidget(card_size_edit);
+        card_size_layout->setContentsMargins(0, 0, 0, 0);
+
+        auto* card_size_widget{ new QWidget };
+        card_size_widget->setLayout(card_size_layout);
+
+        card_size = new WidgetWithLabel{
+            "&Card Size",
+            card_size_widget
+        };
+        card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
+    }
+
+    WidgetWithLabel* paper_size;
+    {
+        m_PaperSize = MakeComboBox(
+            std::span<const std::string>{ std::views::keys(g_Cfg.m_PageSizes) |
+                                          std::ranges::to<std::vector>() },
+            {},
+            project.m_Data.m_PageSize);
+
+        auto* paper_size_edit{ new QToolButton };
+        paper_size_edit->setIcon(QIcon{ QPixmap{ ":/res/edit.png" } });
+        paper_size_edit->setIconSize(paper_size_edit->iconSize() - QSize{ 1, 1 }); // fixes awkward sizing of icon
+        paper_size_edit->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonIconOnly);
+        paper_size_edit->setToolTip("Edit, add, or remove available card sizes.");
+
+        QObject::connect(paper_size_edit,
+                         &QToolButton::pressed,
+                         [this]()
+                         {
+                             window()->setEnabled(false);
+                             {
+                                 PaperSizePopup paper_size_popup{ nullptr, g_Cfg };
+
+                                 QObject::connect(&paper_size_popup,
+                                                  &PaperSizePopup::PageSizesChanged,
+                                                  [this](const std::map<std::string, Config::SizeInfo>& page_size)
+                                                  {
+                                                      g_Cfg.m_PageSizes = page_size;
+                                                      if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
+                                                      {
+                                                          m_Project.m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
+                                                          PageSizeChanged();
+                                                      }
+
+                                                      UpdateComboBox(
+                                                          m_PaperSize,
+                                                          std::span<const std::string>{ std::views::keys(g_Cfg.m_PageSizes) |
+                                                                                        std::ranges::to<std::vector>() },
+                                                          {},
+                                                          m_Project.m_Data.m_PageSize);
+                                                      PageSizesChanged();
+                                                  });
+
+                                 paper_size_popup.Show();
+                             }
+                             window()->setEnabled(true);
+                         });
+
+        auto* paper_size_layout{ new QHBoxLayout };
+        paper_size_layout->addWidget(m_PaperSize);
+        paper_size_layout->addWidget(paper_size_edit);
+        paper_size_layout->setContentsMargins(0, 0, 0, 0);
+
+        auto* paper_size_widget{ new QWidget };
+        paper_size_widget->setLayout(paper_size_layout);
+
+        paper_size = new WidgetWithLabel{
+            "&Paper Size",
+            paper_size_widget
+        };
+        paper_size->setToolTip("Additional card sizes can be defined in config.ini");
+    }
 
     m_BasePdf = new ComboBoxWithLabel{
         "&Base Pdf", GetBasePdfNames(), project.m_Data.m_BasePdf
@@ -485,11 +567,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QLineEdit::textChanged,
                      this,
                      change_output);
-    QObject::connect(card_size->GetWidget(),
+    QObject::connect(m_CardSize,
                      &QComboBox::currentTextChanged,
                      this,
                      change_cardsize);
-    QObject::connect(paper_size->GetWidget(),
+    QObject::connect(m_PaperSize,
                      &QComboBox::currentTextChanged,
                      this,
                      change_papersize);

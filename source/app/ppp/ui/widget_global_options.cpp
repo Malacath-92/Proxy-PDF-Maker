@@ -18,6 +18,7 @@
 #include <ppp/style.hpp>
 
 #include <ppp/ui/popups.hpp>
+#include <ppp/ui/widget_combo_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 class PluginsPopup : public PopupBase
@@ -151,6 +152,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
 
     auto* paper_sizes{ new ComboBoxWithLabel{
         "Default P&aper Size", std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>(), g_Cfg.m_DefaultPageSize } };
+    m_PageSizes = paper_sizes->GetWidget();
 
     auto* themes{ new ComboBoxWithLabel{
         "&Theme", GetStyles(), application.GetTheme() } };
@@ -333,6 +335,21 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
                      &QPushButton::clicked,
                      this,
                      open_plugins_popup);
+}
+
+void GlobalOptionsWidget::PageSizesChanged()
+{
+    if (!g_Cfg.m_PageSizes.contains(g_Cfg.m_DefaultPageSize))
+    {
+        g_Cfg.m_DefaultPageSize = g_Cfg.GetFirstValidPageSize();
+    }
+
+    UpdateComboBox(m_PageSizes,
+                   std::span<const std::string>(std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>()),
+                   {},
+                   g_Cfg.m_DefaultPageSize);
+
+    SaveConfig(g_Cfg);
 }
 
 #include <widget_global_options.moc>

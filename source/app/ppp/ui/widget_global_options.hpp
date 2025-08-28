@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+class QComboBox;
+
 class PrintProxyPrepApplication;
 class Project;
 
@@ -24,4 +26,10 @@ class GlobalOptionsWidget : public QWidget
 
     void PluginEnabled(std::string_view plugin_name);
     void PluginDisabled(std::string_view plugin_name);
+
+  public slots:
+    void PageSizesChanged();
+
+  private:
+    QComboBox* m_PageSizes{ nullptr };
 };

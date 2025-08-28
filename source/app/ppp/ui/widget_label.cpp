@@ -3,7 +3,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
-#include <ppp/qt_util.hpp>
+#include <ppp/ui/widget_combo_box.hpp>
 
 WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
@@ -33,8 +33,23 @@ QWidget* WidgetWithLabel::GetWidget() const
     return m_Widget;
 }
 
-ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const std::string> options, std::string_view default_option)
-    : ComboBoxWithLabel(label_text, options, default_option, DelegatingTag{})
+ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
+                                     std::span<const std::string> options,
+                                     std::string_view default_option)
+    : WidgetWithLabel{
+        label_text,
+        MakeComboBox(options, {}, default_option),
+    }
+{
+}
+
+ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
+                                     std::span<const std::string_view> options,
+                                     std::string_view default_option)
+    : WidgetWithLabel{
+        label_text,
+        MakeComboBox(options, {}, default_option),
+    }
 {
 }
 
@@ -42,38 +57,11 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
                                      std::span<const std::string> options,
                                      std::span<const std::string> tooltips,
                                      std::string_view default_option)
-    : ComboBoxWithLabel(label_text, options, default_option, DelegatingTag{})
-{
-    for (size_t i = 0; i < tooltips.size(); i++)
-    {
-        if (!tooltips[i].empty())
-        {
-            ComboBoxWithLabel::GetWidget()->setItemData(
-                static_cast<int>(i),
-                ToQString(tooltips[i]),
-                Qt::ToolTipRole);
-        }
+    : WidgetWithLabel{
+        label_text,
+        MakeComboBox(options, tooltips, default_option),
     }
-}
-
-ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const std::string_view> options, std::string_view default_option)
-    : ComboBoxWithLabel(label_text, options, default_option, DelegatingTag{})
 {
-}
-
-template<class StringT>
-ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text, std::span<const StringT> options, std::string_view default_option, DelegatingTag)
-    : WidgetWithLabel(label_text, new QComboBox)
-{
-    for (const auto& option : options)
-    {
-        ComboBoxWithLabel::GetWidget()->addItem(ToQString(option));
-    }
-
-    if (std::ranges::contains(options, default_option))
-    {
-        ComboBoxWithLabel::GetWidget()->setCurrentText(ToQString(default_option));
-    }
 }
 
 QComboBox* ComboBoxWithLabel::GetWidget() const

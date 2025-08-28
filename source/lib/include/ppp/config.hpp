@@ -26,11 +26,20 @@ enum class PageOrientation
     Landscape
 };
 
+enum class Unit
+{
+    Millimeter,
+    Centimeter,
+    Inches,
+    Points,
+};
+
 struct UnitInfo
 {
     std::string_view m_Name;
     std::string_view m_ShortName;
     Length m_Unit;
+    Unit m_Type;
 
     // clang-format off
     constexpr auto GetName() const { return m_Name; }
@@ -82,7 +91,7 @@ struct Config
         float m_CardSizeScale{ 1.0f };
     };
 
-    std::map<std::string, SizeInfo> m_PageSizes{
+    std::map<std::string, SizeInfo> m_DefaultPageSizes{
         { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
         { "Legal", { { 8.5_in, 14_in }, 1_in, 1u } },
         { "Ledger", { { 11_in, 17_in }, 1_in, 1u } },
@@ -94,6 +103,7 @@ struct Config
         { std::string{ c_FitSize }, {} },
         { std::string{ c_BasePDFSize }, {} },
     };
+    std::map<std::string, SizeInfo> m_PageSizes{ m_DefaultPageSizes };
 
     std::map<std::string, CardSizeInfo> m_CardSizes{
         {
@@ -146,29 +156,46 @@ struct Config
 
     void SetPdfBackend(PdfBackend backend);
 
+    std::string_view GetFirstValidPageSize() const;
+
     static inline constexpr std::array c_SupportedBaseUnits{
         UnitInfo{
             "mm",
             "mm",
             1_mm,
+            Unit::Millimeter,
         },
         UnitInfo{
             "cm",
             "cm",
             10_mm,
+            Unit::Centimeter,
         },
         UnitInfo{
             "inches",
             "in",
             1_in,
+            Unit::Inches,
         },
         UnitInfo{
             "points",
             "pts",
             1_pts,
+            Unit::Points,
         },
     };
 
+    static inline constexpr std::optional<UnitInfo> GetUnit(Unit unit_type)
+    {
+        for (const auto& unit_info : c_SupportedBaseUnits)
+        {
+            if (unit_info.m_Type == unit_type)
+            {
+                return unit_info;
+            }
+        }
+        return std::nullopt;
+    }
     static inline constexpr std::optional<UnitInfo> GetUnitFromName(std::string_view unit_name)
     {
         for (const auto& unit_info : c_SupportedBaseUnits)
