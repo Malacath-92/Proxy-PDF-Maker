@@ -47,10 +47,9 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                 }
 
                 const auto& [size, base, decimals]{ paper_size_info };
-                const auto unit{ Config::GetUnitFromValue(base)
-                                     .transform(&UnitInfo::GetName)
-                                     .value_or("mm") };
-                const auto [width, height]{ (size / base).pod() };
+                const auto unit_value{ UnitValue(base) };
+                const auto unit{ UnitShortName(base) };
+                const auto [width, height]{ (size / unit_value).pod() };
                 const auto width_string{ fmt::format("{:.{}f}", width, decimals) };
                 const auto height_string{ fmt::format("{:.{}f}", height, decimals) };
 
@@ -59,12 +58,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                 m_Table->setCellWidget(i, 0, new QLineEdit{ ToQString(paper_name) });
                 m_Table->setCellWidget(i, 1, c_MakeNumberEdit(ToQString(width_string)));
                 m_Table->setCellWidget(i, 2, c_MakeNumberEdit(ToQString(height_string)));
-                m_Table->setCellWidget(i,
-                                       3,
-                                       MakeComboBox(
-                                           Config::GetUnitFromName(unit)
-                                               .value_or(Config::c_SupportedBaseUnits[0])
-                                               .m_Type));
+                m_Table->setCellWidget(i, 3, MakeComboBox(base));
             }
         }
     };
@@ -223,9 +217,7 @@ void PaperSizePopup::Apply()
                 static_cast<QComboBox*>(m_Table->cellWidget(i, 3))->currentText().toStdString())
                 .value_or(Unit::Millimeter)
         };
-        const auto unit_value{
-            Config::GetUnit(unit).value_or(Config::c_SupportedBaseUnits[0]).m_Unit
-        };
+        const auto unit_value{ UnitValue(unit) };
         const auto decimals{
             static_cast<uint32_t>(std::max(c_GetDecimals(width_str), c_GetDecimals(height_str))),
         };
@@ -235,7 +227,7 @@ void PaperSizePopup::Apply()
                 unit_value * width,
                 unit_value * height,
             },
-            .m_BaseUnit{ unit_value },
+            .m_BaseUnit{ unit },
             .m_Decimals{ decimals },
         };
     }

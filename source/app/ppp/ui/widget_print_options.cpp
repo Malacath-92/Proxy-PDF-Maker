@@ -25,7 +25,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 {
     setObjectName("Print Options");
 
-    const auto initial_base_unit_name{ ToQString(g_Cfg.m_BaseUnit.m_ShortName) };
+    const auto initial_base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
 
     const bool initial_fit_size{ project.m_Data.m_PageSize == Config::c_FitSize };
     const bool initial_infer_size{ project.m_Data.m_PageSize == Config::c_BasePDFSize };
@@ -383,7 +383,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             const auto margin_value{ static_cast<float>(v) * base_unit };
             switch (margin)
             {
@@ -460,7 +460,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             // Convert UI value to internal units and update project data for all margins
             // This ensures the project data is properly synchronized with the UI
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             const auto margin_value{ static_cast<float>(v) * base_unit };
             custom_margins.m_TopLeft.x = margin_value;
             custom_margins.m_TopLeft.y = margin_value;
@@ -652,8 +652,8 @@ void PrintOptionsWidget::SpacingChanged()
 
 void PrintOptionsWidget::BaseUnitChanged()
 {
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-    const auto base_unit_name{ ToQString(g_Cfg.m_BaseUnit.m_ShortName) };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
 
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
@@ -758,7 +758,7 @@ void PrintOptionsWidget::SetDefaults()
     m_BasePdf->setEnabled(infer_size);
     m_BasePdf->setVisible(infer_size);
 
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
 
@@ -802,7 +802,7 @@ void PrintOptionsWidget::RefreshSizes()
 
 void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 {
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
 
@@ -941,7 +941,7 @@ std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()
 
 std::string PrintOptionsWidget::SizeToString(Size size)
 {
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-    const auto base_unit_name{ g_Cfg.m_BaseUnit.m_ShortName };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit_name{ UnitName(g_Cfg.m_BaseUnit) };
     return fmt::format("{:.1f} x {:.1f} {}", size.x / base_unit, size.y / base_unit, base_unit_name);
 }

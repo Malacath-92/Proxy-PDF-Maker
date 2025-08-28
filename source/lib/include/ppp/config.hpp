@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include <ppp/units.hpp>
 #include <ppp/util.hpp>
 
 enum class PdfBackend
@@ -26,28 +27,6 @@ enum class PageOrientation
     Landscape
 };
 
-enum class Unit
-{
-    Millimeter,
-    Centimeter,
-    Inches,
-    Points,
-};
-
-struct UnitInfo
-{
-    std::string_view m_Name;
-    std::string_view m_ShortName;
-    Length m_Unit;
-    Unit m_Type;
-
-    // clang-format off
-    constexpr auto GetName() const { return m_Name; }
-    constexpr auto GetShortName() const { return m_ShortName; }
-    constexpr auto GetUnit() const { return m_Unit; }
-    // clang-format on
-};
-
 struct Config
 {
     bool m_EnableFancyUncrop{ true };
@@ -62,7 +41,7 @@ struct Config
     ImageFormat m_PdfImageFormat{ ImageFormat::Png };
     std::optional<int> m_PngCompression{ std::nullopt };
     std::optional<int> m_JpgQuality{ std::nullopt };
-    UnitInfo m_BaseUnit{ c_SupportedBaseUnits[0] };
+    Unit m_BaseUnit{ Unit::Inches };
 
     std::unordered_map<std::string, bool> m_PluginsState;
 
@@ -72,13 +51,13 @@ struct Config
     struct SizeInfo
     {
         Size m_Dimensions;
-        Length m_BaseUnit;
+        Unit m_BaseUnit;
         uint32_t m_Decimals;
     };
     struct LengthInfo
     {
         Length m_Dimension;
-        Length m_BaseUnit;
+        Unit m_BaseUnit;
         uint32_t m_Decimals;
     };
 
@@ -92,14 +71,14 @@ struct Config
     };
 
     std::map<std::string, SizeInfo> m_DefaultPageSizes{
-        { "Letter", { { 8.5_in, 11_in }, 1_in, 1u } },
-        { "Legal", { { 8.5_in, 14_in }, 1_in, 1u } },
-        { "Ledger", { { 11_in, 17_in }, 1_in, 1u } },
-        { "A5", { { 148.5_mm, 210_mm }, 1_mm, 1u } },
-        { "A4", { { 210_mm, 297_mm }, 1_mm, 0u } },
-        { "A4+", { { 240_mm, 329_mm }, 1_mm, 0u } },
-        { "A3", { { 297_mm, 420_mm }, 1_mm, 0u } },
-        { "A3+", { { 329_mm, 483_mm }, 1_mm, 0u } },
+        { "Letter", { { 8.5_in, 11_in }, Unit::Inches, 1u } },
+        { "Legal", { { 8.5_in, 14_in }, Unit::Inches, 1u } },
+        { "Ledger", { { 11_in, 17_in }, Unit::Inches, 1u } },
+        { "A5", { { 148.5_mm, 210_mm }, Unit::Millimeter, 1u } },
+        { "A4", { { 210_mm, 297_mm }, Unit::Millimeter, 0u } },
+        { "A4+", { { 240_mm, 329_mm }, Unit::Millimeter, 0u } },
+        { "A3", { { 297_mm, 420_mm }, Unit::Millimeter, 0u } },
+        { "A3+", { { 329_mm, 483_mm }, Unit::Millimeter, 0u } },
         { std::string{ c_FitSize }, {} },
         { std::string{ c_BasePDFSize }, {} },
     };
@@ -109,27 +88,27 @@ struct Config
         {
             "Standard",
             {
-                .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
-                .m_InputBleed{ 0.12_in, 1_in, 2u },
-                .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
+                .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
+                .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. Magic the Gathering, Pokemon, and other TCGs" },
             },
         },
         {
             "Standard x2",
             {
-                .m_CardSize{ { 3.46_in, 4.96_in }, 1_in, 2u },
-                .m_InputBleed{ 0.12_in, 1_in, 2u },
-                .m_CornerRadius{ 5_mm, 1_mm, 1u },
+                .m_CardSize{ { 3.46_in, 4.96_in }, Unit::Inches, 2u },
+                .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
+                .m_CornerRadius{ 5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. oversized Magic the Gathering" },
             },
         },
         {
             "Standard Novelty",
             {
-                .m_CardSize{ { 2.48_in, 3.46_in }, 1_in, 2u },
-                .m_InputBleed{ 0.12_in, 1_in, 2u },
-                .m_CornerRadius{ 2.5_mm, 1_mm, 1u },
+                .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
+                .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
+                .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. novelty-sized Magic the Gathering" },
                 .m_CardSizeScale = 0.5f,
             },
@@ -137,18 +116,18 @@ struct Config
         {
             "Japanese",
             {
-                .m_CardSize{ { 59_mm, 86_mm }, 1_mm, 0u },
-                .m_InputBleed{ 2_mm, 1_mm, 0u },
-                .m_CornerRadius{ 1_mm, 1_mm, 0u },
+                .m_CardSize{ { 59_mm, 86_mm }, Unit::Millimeter, 0u },
+                .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
+                .m_CornerRadius{ 1_mm, Unit::Millimeter, 0u },
                 .m_Hint{ ".e.g. Yu-Gi-Oh!" },
             },
         },
         {
             "Poker",
             {
-                .m_CardSize{ { 2.5_in, 3.5_mm }, 1_in, 1u },
-                .m_InputBleed{ 2_mm, 1_mm, 0u },
-                .m_CornerRadius{ 3_cm, 1_mm, 0u },
+                .m_CardSize{ { 2.5_in, 3.5_mm }, Unit::Inches, 1u },
+                .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
+                .m_CornerRadius{ 3_cm, Unit::Millimeter, 0u },
                 .m_Hint{},
             },
         },
@@ -157,67 +136,6 @@ struct Config
     void SetPdfBackend(PdfBackend backend);
 
     std::string_view GetFirstValidPageSize() const;
-
-    static inline constexpr std::array c_SupportedBaseUnits{
-        UnitInfo{
-            "mm",
-            "mm",
-            1_mm,
-            Unit::Millimeter,
-        },
-        UnitInfo{
-            "cm",
-            "cm",
-            10_mm,
-            Unit::Centimeter,
-        },
-        UnitInfo{
-            "inches",
-            "in",
-            1_in,
-            Unit::Inches,
-        },
-        UnitInfo{
-            "points",
-            "pts",
-            1_pts,
-            Unit::Points,
-        },
-    };
-
-    static inline constexpr std::optional<UnitInfo> GetUnit(Unit unit_type)
-    {
-        for (const auto& unit_info : c_SupportedBaseUnits)
-        {
-            if (unit_info.m_Type == unit_type)
-            {
-                return unit_info;
-            }
-        }
-        return std::nullopt;
-    }
-    static inline constexpr std::optional<UnitInfo> GetUnitFromName(std::string_view unit_name)
-    {
-        for (const auto& unit_info : c_SupportedBaseUnits)
-        {
-            if (unit_info.m_Name == unit_name)
-            {
-                return unit_info;
-            }
-        }
-        return std::nullopt;
-    }
-    static inline constexpr std::optional<UnitInfo> GetUnitFromValue(Length unit_value)
-    {
-        for (const auto& unit_info : c_SupportedBaseUnits)
-        {
-            if (dla::math::abs(unit_info.m_Unit - unit_value) < 0.0001_mm)
-            {
-                return unit_info;
-            }
-        }
-        return std::nullopt;
-    }
 };
 
 Config LoadConfig();

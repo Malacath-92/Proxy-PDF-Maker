@@ -96,10 +96,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
 {
     setObjectName("Global Config");
 
-    const auto base_unit_name{ g_Cfg.m_BaseUnit.m_Name };
+    const auto base_unit_name{ UnitName(g_Cfg.m_BaseUnit) };
     auto* base_unit{ new ComboBoxWithLabel{
         "&Units",
-        g_Cfg.c_SupportedBaseUnits | std::views::transform(&UnitInfo::m_Name) | std::ranges::to<std::vector>(),
+        magic_enum::enum_values<Unit>() | std::views::transform(&UnitName) | std::ranges::to<std::vector>(),
         base_unit_name } };
     base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
@@ -176,8 +176,8 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto change_base_units{
         [this](const QString& t)
         {
-            const auto base_unit{ g_Cfg.GetUnitFromName(t.toStdString())
-                                      .value_or(Config::c_SupportedBaseUnits[0]) };
+            const auto base_unit{ UnitFromName(t.toStdString())
+                                      .value_or(Unit::Inches) };
             g_Cfg.m_BaseUnit = base_unit;
             SaveConfig(g_Cfg);
             BaseUnitChanged();

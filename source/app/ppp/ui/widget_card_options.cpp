@@ -71,7 +71,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 {
     setObjectName("Card Options");
 
-    const auto base_unit_name{ ToQString(g_Cfg.m_BaseUnit.m_ShortName) };
+    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
 
     auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
     m_BleedEdgeSpin = bleed_edge->GetWidget();
@@ -131,7 +131,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto change_bleed_edge{
         [this, &project, corners](double v)
         {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
             if (dla::math::abs(project.m_Data.m_BleedEdge - new_bleed_edge) < 0.001_mm)
             {
@@ -170,7 +170,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto change_horizontal_spacing{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             const auto new_spacing{ base_unit * static_cast<float>(v) };
             if (dla::math::abs(project.m_Data.m_Spacing.x - new_spacing) < 0.001_mm)
             {
@@ -185,7 +185,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto change_vertical_spacing{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             const auto new_spacing{ base_unit * static_cast<float>(v) };
             if (dla::math::abs(project.m_Data.m_Spacing.y - new_spacing) < 0.001_mm)
             {
@@ -237,7 +237,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto change_backside_offset{
         [this, &project](double v)
         {
-            const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             project.m_Data.m_BacksideOffset = base_unit * static_cast<float>(v);
             BacksideOffsetChanged();
         }
@@ -294,8 +294,8 @@ void CardOptionsWidget::ImageDirChanged()
 
 void CardOptionsWidget::BaseUnitChanged()
 {
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
-    const auto base_unit_name{ g_Cfg.m_BaseUnit.m_ShortName };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit_name{ UnitShortName(g_Cfg.m_BaseUnit) };
     const auto full_bleed{ m_Project.CardFullBleed() };
     const auto backside_offset{ m_Project.m_Data.m_BacksideOffset };
 
@@ -325,7 +325,7 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
 
@@ -335,7 +335,7 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
 void CardOptionsWidget::SetDefaults()
 {
-    const auto base_unit{ g_Cfg.m_BaseUnit.m_Unit };
+    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto full_bleed{ m_Project.CardFullBleed() };
 
     auto set_visible_safe{
