@@ -134,7 +134,7 @@ class Project : public QObject
     Size ComputeMaxMargins() const;
     Size ComputeDefaultMargins() const;
 
-    void SetMarginsMode(MarginsMode margins_mode); 
+    void SetMarginsMode(MarginsMode margins_mode);
 
     float CardRatio() const;
     Size CardSize() const;

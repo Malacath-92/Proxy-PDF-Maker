@@ -170,7 +170,7 @@ ENTITIES
     const auto bleed_edge{ project.m_Data.m_BleedEdge / 1_mm };
     const auto radius{ project.CardCornerRadius() / 1_mm };
     const auto margins{ project.ComputeMargins() / 1_mm };
-    
+
     const auto page_size{ project.ComputePageSize() / 1_mm };
     const dla::vec2 available_space{
         page_size.x - margins.m_Left - margins.m_Right,

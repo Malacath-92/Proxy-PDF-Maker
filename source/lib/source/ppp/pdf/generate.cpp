@@ -122,7 +122,7 @@ fs::path GeneratePdf(const Project& project)
                 for (const auto& y : unique_y)
                 {
                     const auto real_y{
-                        page_height -  y * g_Precision,
+                        page_height - y * g_Precision,
                     };
                     guides.push_back(PdfPage::LineData{
                         .m_From{ x_min, real_y },
