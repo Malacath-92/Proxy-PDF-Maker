@@ -1,5 +1,7 @@
 #include <ppp/ui/popups/paper_size_popup.hpp>
 
+#include <ranges>
+
 #include <magic_enum/magic_enum.hpp>
 
 #include <QDoubleValidator>
@@ -127,9 +129,20 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [this]()
                      {
-                         for (const auto& i : m_Table->selectionModel()->selectedRows())
+                         const auto selected_rows{ m_Table->selectionModel()->selectedRows() };
+                         for (const auto& i : selected_rows | std::views::reverse)
                          {
                              m_Table->removeRow(i.row());
+                         }
+
+                         const auto first_selected_row{ selected_rows[0].row() };
+                         if (m_Table->rowCount() > first_selected_row)
+                         {
+                             m_Table->selectRow(first_selected_row);
+                         }
+                         else if (first_selected_row > 0)
+                         {
+                             m_Table->selectRow(first_selected_row - 1);
                          }
                      });
     QObject::connect(restore_button,
