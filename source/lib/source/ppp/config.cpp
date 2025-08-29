@@ -319,6 +319,11 @@ Config LoadConfig()
                 settings.endGroup();
             }
         }
+
+        if (config.m_CardSizes.empty())
+        {
+            config.m_CardSizes = config.m_DefaultCardSizes;
+        }
     }
 
     return config;

@@ -19,7 +19,6 @@
 PaperSizePopup::PaperSizePopup(QWidget* parent,
                                const Config& config)
     : PopupBase{ parent }
-    , m_Config{ config }
 {
     m_AutoCenter = true;
     setWindowFlags(Qt::WindowType::Dialog);
@@ -63,11 +62,10 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
     };
 
     m_Table = new QTableWidget{ 0, 4 };
-    m_Table->setHorizontalHeaderLabels({ "Paper Name", "Width", "Height" });
+    m_Table->setHorizontalHeaderLabels({ "Paper Name", "Width", "Height", "Units" });
     m_Table->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     m_Table->setAlternatingRowColors(true);
-    m_Table->adjustSize();
-    build_table(m_Config.m_PageSizes);
+    build_table(config.m_PageSizes);
 
     auto* table_wrapper_layout{ new QHBoxLayout };
     table_wrapper_layout->setContentsMargins(0, 0, 0, 0);
@@ -136,9 +134,9 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      });
     QObject::connect(restore_button,
                      &QPushButton::clicked,
-                     [&, this]()
+                     [build_table]()
                      {
-                         build_table(m_Config.m_DefaultPageSizes);
+                         build_table(Config::m_DefaultPageSizes);
                      });
 
     QObject::connect(ok_button,

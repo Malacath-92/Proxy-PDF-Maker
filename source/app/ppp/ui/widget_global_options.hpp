@@ -29,6 +29,7 @@ class GlobalOptionsWidget : public QWidget
 
   public slots:
     void PageSizesChanged();
+    void CardSizesChanged();
 
   private:
     QComboBox* m_PageSizes{ nullptr };

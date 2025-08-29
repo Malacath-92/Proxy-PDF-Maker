@@ -352,4 +352,9 @@ void GlobalOptionsWidget::PageSizesChanged()
     SaveConfig(g_Cfg);
 }
 
+void GlobalOptionsWidget::CardSizesChanged()
+{
+    SaveConfig(g_Cfg);
+}
+
 #include <widget_global_options.moc>

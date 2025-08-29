@@ -70,7 +70,7 @@ struct Config
         float m_CardSizeScale{ 1.0f };
     };
 
-    std::map<std::string, SizeInfo> m_DefaultPageSizes{
+    inline static std::map<std::string, SizeInfo> m_DefaultPageSizes{
         { "Letter", { { 8.5_in, 11_in }, Unit::Inches, 1u } },
         { "Legal", { { 8.5_in, 14_in }, Unit::Inches, 1u } },
         { "Ledger", { { 11_in, 17_in }, Unit::Inches, 1u } },
@@ -84,7 +84,7 @@ struct Config
     };
     std::map<std::string, SizeInfo> m_PageSizes{ m_DefaultPageSizes };
 
-    std::map<std::string, CardSizeInfo> m_CardSizes{
+    inline static std::map<std::string, CardSizeInfo> m_DefaultCardSizes{
         {
             "Standard",
             {
@@ -95,7 +95,7 @@ struct Config
             },
         },
         {
-            "Standard x2",
+            "Oversized",
             {
                 .m_CardSize{ { 3.46_in, 4.96_in }, Unit::Inches, 2u },
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
@@ -104,7 +104,7 @@ struct Config
             },
         },
         {
-            "Standard Novelty",
+            "Novelty",
             {
                 .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
@@ -132,6 +132,7 @@ struct Config
             },
         },
     };
+    std::map<std::string, CardSizeInfo> m_CardSizes{};
 
     void SetPdfBackend(PdfBackend backend);
 

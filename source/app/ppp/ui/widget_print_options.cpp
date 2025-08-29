@@ -18,6 +18,7 @@
 #include <ppp/ui/widget_combo_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/ui/popups/card_size_popup.hpp>
 #include <ppp/ui/popups/paper_size_popup.hpp>
 
 PrintOptionsWidget::PrintOptionsWidget(Project& project)
@@ -60,6 +61,45 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         card_size_edit->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonIconOnly);
         card_size_edit->setToolTip("Edit, add, or remove available card sizes.");
 
+        QObject::connect(card_size_edit,
+                         &QToolButton::pressed,
+                         [this]()
+                         {
+                             window()->setEnabled(false);
+                             {
+                                 CardSizePopup card_size_popup{ nullptr, g_Cfg };
+
+                                 QObject::connect(&card_size_popup,
+                                                  &CardSizePopup::CardSizesChanged,
+                                                  [this](const std::map<std::string, Config::CardSizeInfo>& card_sizes)
+                                                  {
+                                                      if (card_sizes.empty())
+                                                      {
+                                                          LogError("User tried to remove all card sizes. Ignoring request.");
+                                                          return;
+                                                      }
+
+                                                      g_Cfg.m_CardSizes = card_sizes;
+                                                      if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+                                                      {
+                                                          m_Project.m_Data.m_CardSizeChoice = g_Cfg.m_CardSizes.begin()->first;
+                                                          CardSizeChanged();
+                                                      }
+
+                                                      UpdateComboBox(
+                                                          m_CardSize,
+                                                          std::span<const std::string>{ std::views::keys(g_Cfg.m_CardSizes) |
+                                                                                        std::ranges::to<std::vector>() },
+                                                          {},
+                                                          m_Project.m_Data.m_CardSizeChoice);
+                                                      CardSizesChanged();
+                                                  });
+
+                                 card_size_popup.Show();
+                             }
+                             window()->setEnabled(true);
+                         });
+
         auto* card_size_layout{ new QHBoxLayout };
         card_size_layout->addWidget(m_CardSize);
         card_size_layout->addWidget(card_size_edit);
@@ -99,9 +139,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
                                  QObject::connect(&paper_size_popup,
                                                   &PaperSizePopup::PageSizesChanged,
-                                                  [this](const std::map<std::string, Config::SizeInfo>& page_size)
+                                                  [this](const std::map<std::string, Config::SizeInfo>& page_sizes)
                                                   {
-                                                      g_Cfg.m_PageSizes = page_size;
+                                                      g_Cfg.m_PageSizes = page_sizes;
                                                       if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
                                                       {
                                                           m_Project.m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();

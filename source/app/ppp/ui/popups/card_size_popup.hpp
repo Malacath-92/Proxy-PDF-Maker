@@ -6,18 +6,18 @@
 
 class QTableWidget;
 
-class PaperSizePopup : public PopupBase
+class CardSizePopup : public PopupBase
 {
     Q_OBJECT
 
   public:
-    PaperSizePopup(QWidget* parent, const Config& config);
-    ~PaperSizePopup();
+    CardSizePopup(QWidget* parent, const Config& config);
+    ~CardSizePopup();
 
     virtual void showEvent(QShowEvent* event) override;
 
   signals:
-    void PageSizesChanged(const std::map<std::string, Config::SizeInfo>& page_sizes);
+    void CardSizesChanged(const std::map<std::string, Config::CardSizeInfo>& card_sizes);
 
   private:
     void Apply();
