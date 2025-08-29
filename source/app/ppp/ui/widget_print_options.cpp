@@ -69,31 +69,37 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                              {
                                  CardSizePopup card_size_popup{ nullptr, g_Cfg };
 
-                                 QObject::connect(&card_size_popup,
-                                                  &CardSizePopup::CardSizesChanged,
-                                                  [this](const std::map<std::string, Config::CardSizeInfo>& card_sizes)
-                                                  {
-                                                      if (card_sizes.empty())
-                                                      {
-                                                          LogError("User tried to remove all card sizes. Ignoring request.");
-                                                          return;
-                                                      }
+                                 QObject::connect(
+                                     &card_size_popup,
+                                     &CardSizePopup::CardSizesChanged,
+                                     [this](const std::map<std::string, Config::CardSizeInfo>& card_sizes)
+                                     {
+                                         if (card_sizes.empty())
+                                         {
+                                             LogError("User tried to remove all card sizes. Ignoring request.");
+                                             return;
+                                         }
 
-                                                      g_Cfg.m_CardSizes = card_sizes;
-                                                      if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
-                                                      {
-                                                          m_Project.m_Data.m_CardSizeChoice = g_Cfg.m_CardSizes.begin()->first;
-                                                          CardSizeChanged();
-                                                      }
+                                         g_Cfg.m_CardSizes = card_sizes;
+                                         if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+                                         {
+                                             m_Project.m_Data.m_CardSizeChoice = g_Cfg.m_CardSizes.begin()->first;
+                                             CardSizeChanged();
+                                         }
 
-                                                      UpdateComboBox(
-                                                          m_CardSize,
-                                                          std::span<const std::string>{ std::views::keys(g_Cfg.m_CardSizes) |
-                                                                                        std::ranges::to<std::vector>() },
-                                                          {},
-                                                          m_Project.m_Data.m_CardSizeChoice);
-                                                      CardSizesChanged();
-                                                  });
+                                         UpdateComboBox(
+                                             m_CardSize,
+                                             std::span<const std::string>{
+                                                 std::views::keys(g_Cfg.m_CardSizes) |
+                                                 std::ranges::to<std::vector>() },
+                                             std::span<const std::string>{
+                                                 g_Cfg.m_CardSizes |
+                                                 std::views::values |
+                                                 std::views::transform(&Config::CardSizeInfo::m_Hint) |
+                                                 std::ranges::to<std::vector>() },
+                                             m_Project.m_Data.m_CardSizeChoice);
+                                         CardSizesChanged();
+                                     });
 
                                  card_size_popup.Show();
                              }
@@ -137,25 +143,27 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                              {
                                  PaperSizePopup paper_size_popup{ nullptr, g_Cfg };
 
-                                 QObject::connect(&paper_size_popup,
-                                                  &PaperSizePopup::PageSizesChanged,
-                                                  [this](const std::map<std::string, Config::SizeInfo>& page_sizes)
-                                                  {
-                                                      g_Cfg.m_PageSizes = page_sizes;
-                                                      if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
-                                                      {
-                                                          m_Project.m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
-                                                          PageSizeChanged();
-                                                      }
+                                 QObject::connect(
+                                     &paper_size_popup,
+                                     &PaperSizePopup::PageSizesChanged,
+                                     [this](const std::map<std::string, Config::SizeInfo>& page_sizes)
+                                     {
+                                         g_Cfg.m_PageSizes = page_sizes;
+                                         if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
+                                         {
+                                             m_Project.m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
+                                             PageSizeChanged();
+                                         }
 
-                                                      UpdateComboBox(
-                                                          m_PaperSize,
-                                                          std::span<const std::string>{ std::views::keys(g_Cfg.m_PageSizes) |
-                                                                                        std::ranges::to<std::vector>() },
-                                                          {},
-                                                          m_Project.m_Data.m_PageSize);
-                                                      PageSizesChanged();
-                                                  });
+                                         UpdateComboBox(
+                                             m_PaperSize,
+                                             std::span<const std::string>{
+                                                 std::views::keys(g_Cfg.m_PageSizes) |
+                                                 std::ranges::to<std::vector>() },
+                                             {},
+                                             m_Project.m_Data.m_PageSize);
+                                         PageSizesChanged();
+                                     });
 
                                  paper_size_popup.Show();
                              }
