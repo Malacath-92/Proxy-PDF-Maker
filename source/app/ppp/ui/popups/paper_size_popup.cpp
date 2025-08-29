@@ -226,8 +226,8 @@ void PaperSizePopup::Apply()
                 unit_value * width,
                 unit_value * height,
             },
-            .m_BaseUnit{ unit },
-            .m_Decimals{ decimals },
+            .m_BaseUnit = unit,
+            .m_Decimals = decimals,
         };
     }
 
