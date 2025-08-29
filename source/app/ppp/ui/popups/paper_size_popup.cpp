@@ -48,7 +48,6 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
 
                 const auto& [size, base, decimals]{ paper_size_info };
                 const auto unit_value{ UnitValue(base) };
-                const auto unit{ UnitShortName(base) };
                 const auto [width, height]{ (size / unit_value).pod() };
                 const auto width_string{ fmt::format("{:.{}f}", width, decimals) };
                 const auto height_string{ fmt::format("{:.{}f}", height, decimals) };
