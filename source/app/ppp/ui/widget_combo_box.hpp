@@ -52,14 +52,6 @@ QComboBox* MakeComboBox(std::span<StringT> options,
 }
 
 template<Enum EnumT>
-static void UpdateComboBox(QComboBox* combo_box, EnumT default_option)
-{
-    return UpdateComboBox(std::span<const std::string_view>{ magic_enum::enum_names<EnumT>() },
-                          {},
-                          magic_enum::enum_name(default_option));
-}
-
-template<Enum EnumT>
 static QComboBox* MakeComboBox(EnumT default_option)
 {
     return MakeComboBox(std::span<const std::string_view>{ magic_enum::enum_names<EnumT>() },
