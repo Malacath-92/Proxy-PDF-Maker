@@ -250,9 +250,9 @@ Config LoadConfig()
             {
                 config.m_PageSizes.clear();
                 config.m_PageSizes[std::string{ Config::c_FitSize }] =
-                    config.m_DefaultPageSizes[std::string{ Config::c_FitSize }];
+                    Config::g_DefaultPageSizes.at(std::string{ Config::c_FitSize });
                 config.m_PageSizes[std::string{ Config::c_BasePDFSize }] =
-                    config.m_DefaultPageSizes[std::string{ Config::c_BasePDFSize }];
+                    Config::g_DefaultPageSizes.at(std::string{ Config::c_BasePDFSize });
             }
 
             for (const auto& key : settings.allKeys())
@@ -323,7 +323,7 @@ Config LoadConfig()
 
         if (config.m_CardSizes.empty())
         {
-            config.m_CardSizes = config.m_DefaultCardSizes;
+            config.m_CardSizes = Config::g_DefaultCardSizes;
         }
     }
 

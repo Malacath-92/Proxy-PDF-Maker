@@ -67,10 +67,10 @@ struct Config
         LengthInfo m_InputBleed;
         LengthInfo m_CornerRadius;
         std::string m_Hint;
-        float m_CardSizeScale{ 1.0f };
+        float m_CardSizeScale;
     };
 
-    inline static std::map<std::string, SizeInfo> m_DefaultPageSizes{
+    inline static const std::map<std::string, SizeInfo> g_DefaultPageSizes{
         { "Letter", { { 8.5_in, 11_in }, Unit::Inches, 1u } },
         { "Legal", { { 8.5_in, 14_in }, Unit::Inches, 1u } },
         { "Ledger", { { 11_in, 17_in }, Unit::Inches, 1u } },
@@ -82,9 +82,9 @@ struct Config
         { std::string{ c_FitSize }, {} },
         { std::string{ c_BasePDFSize }, {} },
     };
-    std::map<std::string, SizeInfo> m_PageSizes{ m_DefaultPageSizes };
+    std::map<std::string, SizeInfo> m_PageSizes{ g_DefaultPageSizes };
 
-    inline static std::map<std::string, CardSizeInfo> m_DefaultCardSizes{
+    inline static const std::map<std::string, CardSizeInfo> g_DefaultCardSizes{
         {
             "Standard",
             {
@@ -92,6 +92,7 @@ struct Config
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
                 .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. Magic the Gathering, Pokemon, and other TCGs" },
+                .m_CardSizeScale = 1.0f,
             },
         },
         {
@@ -101,6 +102,7 @@ struct Config
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
                 .m_CornerRadius{ 5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. oversized Magic the Gathering" },
+                .m_CardSizeScale = 1.0f,
             },
         },
         {
@@ -120,6 +122,7 @@ struct Config
                 .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
                 .m_CornerRadius{ 1_mm, Unit::Millimeter, 0u },
                 .m_Hint{ ".e.g. Yu-Gi-Oh!" },
+                .m_CardSizeScale = 1.0f,
             },
         },
         {
@@ -129,10 +132,11 @@ struct Config
                 .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
                 .m_CornerRadius{ 3_cm, Unit::Millimeter, 0u },
                 .m_Hint{},
+                .m_CardSizeScale = 1.0f,
             },
         },
     };
-    std::map<std::string, CardSizeInfo> m_CardSizes{ m_DefaultCardSizes };
+    std::map<std::string, CardSizeInfo> m_CardSizes{ g_DefaultCardSizes };
 
     void SetPdfBackend(PdfBackend backend);
 

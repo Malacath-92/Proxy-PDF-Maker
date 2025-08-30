@@ -149,7 +149,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [build_table]()
                      {
-                         build_table(Config::m_DefaultPageSizes);
+                         build_table(Config::g_DefaultPageSizes);
                      });
 
     QObject::connect(ok_button,

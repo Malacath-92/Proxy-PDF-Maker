@@ -211,7 +211,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [build_table]()
                      {
-                         build_table(Config::m_DefaultCardSizes);
+                         build_table(Config::g_DefaultCardSizes);
                      });
 
     QObject::connect(ok_button,
