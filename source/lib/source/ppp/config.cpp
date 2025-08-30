@@ -303,6 +303,7 @@ Config LoadConfig()
             }
         };
 
+        config.m_CardSizes.clear();
         for (const QString& group : settings.childGroups())
         {
             if (group.startsWith("CARD_SIZE") && group.indexOf("-") != -1)

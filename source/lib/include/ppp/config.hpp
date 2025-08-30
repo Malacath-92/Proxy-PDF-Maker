@@ -132,7 +132,7 @@ struct Config
             },
         },
     };
-    std::map<std::string, CardSizeInfo> m_CardSizes{};
+    std::map<std::string, CardSizeInfo> m_CardSizes{ m_DefaultCardSizes };
 
     void SetPdfBackend(PdfBackend backend);
 
