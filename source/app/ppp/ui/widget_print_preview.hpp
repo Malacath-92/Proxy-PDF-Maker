@@ -8,10 +8,15 @@ class Project;
 
 class PrintPreview : public QScrollArea
 {
+    Q_OBJECT
+
   public:
     PrintPreview(const Project& project);
 
     void Refresh();
+
+  signals:
+    void ReorderCards(size_t from, size_t to);
 
   private:
     class PagePreview;

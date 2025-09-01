@@ -26,6 +26,11 @@ class CardImage : public QLabel
 
     void Refresh(const fs::path& image_name, const Project& project, Params params);
 
+    const fs::path& GetImageName() const
+    {
+        return m_ImageName;
+    }
+
     virtual bool hasHeightForWidth() const override
     {
         return true;

@@ -23,6 +23,13 @@ struct CardInfo
 };
 using CardMap = std::map<fs::path, CardInfo>;
 
+struct CardReorderOperation
+{
+    size_t m_From;
+    size_t m_To;
+};
+using CardReordering = std::vector<CardReorderOperation>;
+
 struct ImagePreview
 {
     Image m_UncroppedImage;
@@ -164,6 +171,7 @@ class Project : public QObject
 
         // List of all cards
         CardMap m_Cards{};
+        CardReordering m_Reorder{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};
 

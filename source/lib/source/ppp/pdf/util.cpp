@@ -186,8 +186,29 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     std::vector<Page> pages;
     pages.emplace_back();
 
-    for (const auto& [img, info] : project.m_Data.m_Cards)
+    auto card_names{
+        project.m_Data.m_Cards |
+        std::views::transform([](const auto& entry)
+                              { return std::cref(entry.first); }) |
+        std::ranges::to<std::vector>()
+    };
+
+    for (const auto& [from, to] : project.m_Data.m_Reorder)
     {
+        const auto from_card{ card_names[from] };
+
+        auto from_it{ card_names.begin() + from };
+        card_names.erase(from_it);
+
+        auto to_it{ card_names.begin() + to };
+        card_names.insert(to_it, from_card);
+    }
+
+    size_t index{ 0 };
+    for (const auto& img : card_names)
+    {
+        const auto& info{ project.m_Data.m_Cards.at(img) };
+
         for (uint32_t i = 0; i < info.m_Num; i++)
         {
             // make new page if last page is full
@@ -201,6 +222,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
             page.m_Images.push_back({
                 img,
                 info.m_BacksideShortEdge,
+                index++,
             });
         }
     }
@@ -215,7 +237,8 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
         {
             return PageImage{
                 project.GetBacksideImage(image.m_Image),
-                image.m_BacksideShortEdge
+                image.m_BacksideShortEdge,
+                image.m_Index,
             };
         }
     };

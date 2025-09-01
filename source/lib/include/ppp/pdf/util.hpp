@@ -21,6 +21,7 @@ struct PageImage
 {
     std::reference_wrapper<const fs::path> m_Image;
     bool m_BacksideShortEdge;
+    size_t m_Index;
 };
 struct Page
 {
@@ -36,5 +37,3 @@ PageImageTransforms ComputeBacksideTransforms(
 
 std::vector<Page> DistributeCardsToPages(const Project& project);
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);
-
-// Image::Rotation GetCardRotation(bool is_backside, bool is_short_edge);

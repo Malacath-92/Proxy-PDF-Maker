@@ -277,6 +277,19 @@ int main(int argc, char** argv)
         QObject::connect(global_options, &GlobalOptionsWidget::PluginDisabled, options_area, &OptionsAreaWidget::PluginDisabled);
     }
 
+    {
+        QObject::connect(
+            print_preview,
+            &PrintPreview::ReorderCards,
+            &project,
+            [&](size_t from, size_t to)
+            {
+                project.m_Data.m_Reorder.push_back({ from, to });
+                print_preview->Refresh();
+            },
+            Qt::ConnectionType::QueuedConnection);
+    }
+
     app.SetMainWindow(main_window);
     main_window->show();
 

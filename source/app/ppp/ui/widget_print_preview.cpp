@@ -2,13 +2,17 @@
 
 #include <ranges>
 
+#include <QDrag>
 #include <QGridLayout>
+#include <QMimeData>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
 #include <QResizeEvent>
 #include <QScrollBar>
 
 #include <ppp/constants.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 #include <ppp/pdf/util.hpp>
@@ -35,6 +39,7 @@ class GuidesOverlay : public QWidget
 
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
     }
 
     virtual void paintEvent(QPaintEvent* /*event*/) override
@@ -212,6 +217,7 @@ class BordersOverlay : public QWidget
     {
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
     }
 
     virtual void paintEvent(QPaintEvent* /*event*/) override
@@ -286,6 +292,7 @@ class MarginsOverlay : public QWidget
     {
         setAttribute(Qt::WA_NoSystemBackground);
         setAttribute(Qt::WA_TranslucentBackground);
+        setAttribute(Qt::WA_TransparentForMouseEvents);
     }
 
     virtual void paintEvent(QPaintEvent* /*event*/) override
@@ -328,8 +335,121 @@ class MarginsOverlay : public QWidget
     QPainterPath m_Margins;
 };
 
+class PrintPreviewCardImage : public CardImage
+{
+    Q_OBJECT
+
+  public:
+    PrintPreviewCardImage(const fs::path& image_name,
+                          const Project& project,
+                          CardImage::Params params,
+                          size_t idx,
+                          QWidget* companion)
+        : CardImage{
+            image_name,
+            project,
+            params,
+        }
+        , m_Index{ idx }
+        , m_Companion{ companion }
+    {
+        setAcceptDrops(true);
+    }
+
+    virtual void resizeEvent(QResizeEvent* event) override
+    {
+        CardImage::resizeEvent(event);
+
+        m_Companion->resize(event->size() + 2 * QSize{ c_CompanionSizeDelta, c_CompanionSizeDelta });
+    }
+
+    virtual void moveEvent(QMoveEvent* event) override
+    {
+        CardImage::moveEvent(event);
+
+        m_Companion->move(event->pos() - QPoint{ c_CompanionSizeDelta, c_CompanionSizeDelta });
+    }
+
+    virtual void mousePressEvent(QMouseEvent* event) override
+    {
+        CardImage::mousePressEvent(event);
+
+        QMimeData* mime_data{ new QMimeData };
+        mime_data->setData(
+            "data/size_t",
+            QByteArray::fromRawData(reinterpret_cast<const char*>(&m_Index),
+                                    sizeof(m_Index)));
+
+        QDrag drag{ this };
+        drag.setMimeData(mime_data);
+        drag.setPixmap(pixmap().scaledToWidth(width() / 2));
+
+        Qt::DropAction drop_action{ drag.exec() };
+        (void)drop_action;
+    }
+
+    virtual void dropEvent(QDropEvent* event) override
+    {
+        const auto raw_data{ event->mimeData()->data("data/size_t") };
+        const auto other_index{ *reinterpret_cast<const size_t*>(raw_data.constData()) };
+        ReorderCards(other_index, m_Index);
+        event->acceptProposedAction();
+    }
+
+    virtual void enterEvent(QEnterEvent* event) override
+    {
+        CardImage::enterEvent(event);
+        OnEnter();
+    }
+
+    virtual void dragEnterEvent(QDragEnterEvent* event) override
+    {
+        if (event->mimeData()->hasFormat("data/size_t"))
+        {
+            event->acceptProposedAction();
+        }
+
+        CardImage::dragEnterEvent(event);
+        OnEnter();
+    }
+
+    virtual void leaveEvent(QEvent* event) override
+    {
+        CardImage::leaveEvent(event);
+        OnLeave();
+    }
+
+    virtual void dragLeaveEvent(QDragLeaveEvent* event) override
+    {
+        CardImage::dragLeaveEvent(event);
+        OnLeave();
+    }
+
+  signals:
+    void ReorderCards(size_t form, size_t to);
+
+  private:
+    void OnEnter()
+    {
+        m_Companion->setVisible(true);
+        m_Companion->raise();
+        raise();
+    }
+    void OnLeave()
+    {
+        m_Companion->setVisible(false);
+    }
+
+    size_t m_Index{ 0 };
+
+    static inline constexpr int c_CompanionSizeDelta{ 4 };
+    QWidget* m_Companion{ nullptr };
+};
+
 class PrintPreview::PagePreview : public QWidget
 {
+    Q_OBJECT
+
   public:
     struct Params
     {
@@ -346,9 +466,12 @@ class PrintPreview::PagePreview : public QWidget
 
         const bool rounded_corners{ project.m_Data.m_Corners == CardCorners::Rounded };
 
+        m_ImageContainer = new QWidget;
+        m_ImageContainer->setParent(this);
+
         for (size_t i = 0; i < page.m_Images.size(); ++i)
         {
-            const auto& [image_name, backside_short_edge]{
+            const auto& [image_name, backside_short_edge, index]{
                 page.m_Images[i]
             };
             const auto& [position, size, base_rotation]{
@@ -378,8 +501,13 @@ class PrintPreview::PagePreview : public QWidget
                 }()
             };
 
+            auto* image_companion{ new QWidget };
+            image_companion->setVisible(false);
+            image_companion->setStyleSheet("background-color: purple;");
+            image_companion->setParent(m_ImageContainer);
+
             auto* image_widget{
-                new CardImage{
+                new PrintPreviewCardImage{
                     image_name,
                     project,
                     CardImage::Params{
@@ -387,9 +515,16 @@ class PrintPreview::PagePreview : public QWidget
                         .m_Rotation = rotation,
                         .m_BleedEdge{ project.m_Data.m_BleedEdge },
                     },
+                    index,
+                    image_companion,
                 },
             };
-            image_widget->setParent(this);
+            image_widget->setParent(m_ImageContainer);
+
+            QObject::connect(image_widget,
+                             &PrintPreviewCardImage::ReorderCards,
+                             this,
+                             &PagePreview::ReorderCards);
 
             m_Images.push_back(image_widget);
         }
@@ -430,6 +565,7 @@ class PrintPreview::PagePreview : public QWidget
     virtual void resizeEvent(QResizeEvent* event) override
     {
         QWidget::resizeEvent(event);
+        m_ImageContainer->resize(event->size());
 
         const auto width{ event->size().width() };
         const auto height{ heightForWidth(width) };
@@ -462,22 +598,22 @@ class PrintPreview::PagePreview : public QWidget
 
         if (m_Guides != nullptr)
         {
-            m_Guides->setFixedWidth(width);
-            m_Guides->setFixedHeight(height);
+            m_Guides->resize(event->size());
         }
 
         if (m_Borders != nullptr)
         {
-            m_Borders->setFixedWidth(width);
-            m_Borders->setFixedHeight(height);
+            m_Borders->resize(event->size());
         }
 
         if (m_Margins != nullptr)
         {
-            m_Margins->setFixedWidth(width);
-            m_Margins->setFixedHeight(height);
+            m_Margins->resize(event->size());
         }
     }
+
+  signals:
+    void ReorderCards(size_t form, size_t to);
 
   private:
     const PageImageTransforms& m_Transforms;
@@ -485,7 +621,8 @@ class PrintPreview::PagePreview : public QWidget
     Size m_PageSize;
     float m_PageRatio;
 
-    std::vector<CardImage*> m_Images;
+    QWidget* m_ImageContainer{ nullptr };
+    std::vector<PrintPreviewCardImage*> m_Images;
 
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
@@ -600,6 +737,14 @@ void PrintPreview::Refresh()
         std::ranges::to<std::vector>()
     };
 
+    for (auto* page : page_widgets)
+    {
+        QObject::connect(page,
+                         &PagePreview::ReorderCards,
+                         this,
+                         &PrintPreview::ReorderCards);
+    }
+
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
@@ -629,3 +774,5 @@ void PrintPreview::Refresh()
 
     verticalScrollBar()->setValue(current_scroll);
 }
+
+#include <widget_print_preview.moc>
