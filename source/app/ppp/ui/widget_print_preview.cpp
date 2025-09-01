@@ -8,6 +8,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPainterPath>
+#include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollBar>
 
@@ -745,9 +746,23 @@ void PrintPreview::Refresh()
                          &PrintPreview::ReorderCards);
     }
 
+    auto* restore_order_button{ new QPushButton{ "Restore Alphabetical Order" } };
+    QObject::connect(restore_order_button,
+                     &QPushButton::clicked,
+                     this,
+                     &PrintPreview::RestoreCardsOrder);
+    restore_order_button->setVisible(!m_Project.m_Data.m_CardsList.empty());
+    {
+        QSizePolicy size_policy{ restore_order_button->sizePolicy() };
+        size_policy.setRetainSizeWhenHidden(true);
+        restore_order_button->setSizePolicy(size_policy);
+    }
+
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
+    header_layout->addWidget(restore_order_button);
+    header_layout->addStretch();
 
     if (g_Cfg.m_ColorCube != "None")
     {

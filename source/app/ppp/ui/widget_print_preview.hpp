@@ -16,6 +16,7 @@ class PrintPreview : public QScrollArea
     void Refresh();
 
   signals:
+    void RestoreCardsOrder();
     void ReorderCards(size_t from, size_t to);
 
   private:

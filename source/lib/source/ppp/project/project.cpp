@@ -453,6 +453,11 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
     return 0;
 }
 
+void Project::RestoreCardsOrder()
+{
+    m_Data.m_CardsList.clear();
+}
+
 void Project::ReorderCards(size_t from, size_t to)
 {
     if (m_Data.m_CardsList.empty())

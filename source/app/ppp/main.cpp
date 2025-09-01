@@ -280,6 +280,16 @@ int main(int argc, char** argv)
     {
         QObject::connect(
             print_preview,
+            &PrintPreview::RestoreCardsOrder,
+            &project,
+            [&]()
+            {
+                project.RestoreCardsOrder();
+                print_preview->Refresh();
+            },
+            Qt::ConnectionType::QueuedConnection);
+        QObject::connect(
+            print_preview,
             &PrintPreview::ReorderCards,
             &project,
             [&](size_t from, size_t to)
