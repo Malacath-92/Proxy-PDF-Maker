@@ -38,6 +38,7 @@ class SpinnerWidget : public QSvgWidget
 
 CardImage::CardImage(const fs::path& image_name, const Project& project, Params params)
 {
+    setStyleSheet("background-color: transparent;");
     Refresh(image_name, project, params);
 }
 
