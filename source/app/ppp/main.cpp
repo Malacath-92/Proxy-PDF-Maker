@@ -284,7 +284,7 @@ int main(int argc, char** argv)
             &project,
             [&](size_t from, size_t to)
             {
-                project.m_Data.m_Reorder.push_back({ from, to });
+                project.ReorderCards(from, to);
                 print_preview->Refresh();
             },
             Qt::ConnectionType::QueuedConnection);

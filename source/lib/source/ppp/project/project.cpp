@@ -1,5 +1,6 @@
 #include <ppp/project/project.hpp>
 
+#include <cmath>
 #include <ranges>
 #include <utility>
 
@@ -56,6 +57,15 @@ void Project::Load(const fs::path& json_path)
             card.m_Hidden = card_json["hidden"];
             card.m_Backside = card_json["backside"].get<std::string>();
             card.m_BacksideShortEdge = card_json["backside_short_edge"];
+        }
+
+        if (json.contains("cards_order"))
+        {
+            for (const size_t idx : json["cards_order"])
+            {
+                const auto it{ std::next(m_Data.m_Cards.begin(), idx) };
+                m_Data.m_CardsList.push_back(std::cref(it->first));
+            }
         }
 
         m_Data.m_BleedEdge.value = json["bleed_edge"];
@@ -220,6 +230,19 @@ void Project::Dump(const fs::path& json_path) const
         }
         json["cards"] = cards;
 
+        if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsList())
+        {
+            std::vector<size_t> cards_list;
+            cards_list.reserve(m_Data.m_CardsList.size());
+            for (const auto& name : m_Data.m_CardsList)
+            {
+                const auto idx{ std::distance(m_Data.m_Cards.begin(), m_Data.m_Cards.find(name)) };
+                cards_list.push_back(idx);
+            }
+
+            json["cards_order"] = cards_list;
+        }
+
         json["bleed_edge"] = m_Data.m_BleedEdge.value;
         json["spacing"] = nlohmann::json{
             { "width", m_Data.m_Spacing.x / 1_mm },
@@ -337,6 +360,114 @@ void Project::InitProperties()
     }
 }
 
+bool Project::HideCard(const fs::path& card_name)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const bool was_visible{ it->second.m_Hidden == 0 };
+        it->second.m_Hidden++;
+        it->second.m_Num = 0;
+        if (was_visible)
+        {
+            RemoveCardFromList(card_name);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Project::UnhideCard(const fs::path& card_name)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        it->second.m_Hidden--;
+        const bool visible{ it->second.m_Hidden == 0 };
+        if (visible)
+        {
+            AppendCardToList(card_name);
+        }
+    }
+    return false;
+}
+
+uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const bool visible{ it->second.m_Hidden == 0 };
+        if (visible)
+        {
+            const auto previous_num{ it->second.m_Num };
+            const auto clamped_num{ std::max(std::min(num, 999u), 0u) };
+            it->second.m_Num = clamped_num;
+
+            if (clamped_num > previous_num)
+            {
+                AppendCardToList(card_name);
+            }
+            else
+            {
+                RemoveCardFromList(card_name);
+            }
+
+            return clamped_num;
+        }
+    }
+    return 0;
+}
+
+uint32_t Project::IncrementCardCount(const fs::path& card_name)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const bool visible{ it->second.m_Hidden == 0 };
+        if (visible)
+        {
+            ++it->second.m_Num;
+            AppendCardToList(card_name);
+            return it->second.m_Num;
+        }
+    }
+
+    return 0;
+}
+
+uint32_t Project::DecrementCardCount(const fs::path& card_name)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const bool visible{ it->second.m_Hidden == 0 };
+        if (visible)
+        {
+            --it->second.m_Num;
+            RemoveCardFromList(card_name);
+            return it->second.m_Num;
+        }
+    }
+
+    return 0;
+}
+
+void Project::ReorderCards(size_t from, size_t to)
+{
+    if (m_Data.m_CardsList.empty())
+    {
+        m_Data.m_CardsList = GenerateDefaultCardsList();
+    }
+
+    const auto from_it{ m_Data.m_CardsList.begin() + from };
+    const auto from_card{ *from_it };
+    m_Data.m_CardsList.erase(from_it);
+
+    const auto to_it{ m_Data.m_CardsList.begin() + to };
+    m_Data.m_CardsList.insert(to_it, from_card);
+}
+
 void Project::CardAdded(const fs::path& card_name)
 {
     auto it{ m_Data.m_Cards.find(card_name) };
@@ -362,6 +493,8 @@ void Project::CardAdded(const fs::path& card_name)
         --it->second.m_Hidden;
         it->second.m_Transient = false;
     }
+
+    AppendCardToList(card_name);
 }
 
 void Project::CardRemoved(const fs::path& card_name)
@@ -372,6 +505,8 @@ void Project::CardRemoved(const fs::path& card_name)
         ++it->second.m_Hidden;
         it->second.m_Transient = true;
     }
+
+    RemoveCardFromList(card_name);
 }
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
@@ -1001,4 +1136,85 @@ void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
 void Project::CropperDone()
 {
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
+}
+
+CardList Project::GenerateDefaultCardsList() const
+{
+    CardList default_cards_list;
+    for (const auto& [name, card] : m_Data.m_Cards)
+    {
+        for (uint32_t i = 0; i < card.m_Num; i++)
+        {
+            if (card.m_Hidden == 0)
+            {
+                default_cards_list.push_back(std::cref(name));
+            }
+        }
+    }
+    return default_cards_list;
+}
+
+void Project::AppendCardToList(const fs::path& image_name)
+{
+    // Empty list implies auto-sorting
+    if (m_Data.m_CardsList.empty())
+    {
+        return;
+    }
+
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const auto& card_info{ it->second };
+
+        if (card_info.m_Hidden == 0)
+        {
+            // Use key from list to avoid allocating these a lot
+            // and the key in the list is stable
+            const auto card_name{ std::cref(it->first) };
+
+            const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
+            for (auto i = current_count; i < card_info.m_Num; ++i)
+            {
+                m_Data.m_CardsList.push_back(card_name);
+            }
+        }
+    }
+}
+
+void Project::RemoveCardFromList(const fs::path& image_name)
+{
+    // Empty list implies auto-sorting
+    if (m_Data.m_CardsList.empty())
+    {
+        return;
+    }
+
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it == m_Data.m_Cards.end() || it->second.m_Num == 0)
+    {
+        std::erase(m_Data.m_CardsList, image_name);
+    }
+    else
+    {
+        const auto& card_info{ it->second };
+
+        const auto current_count{ std::ranges::count(m_Data.m_CardsList, image_name) };
+        const auto to_remove{ current_count - card_info.m_Num };
+
+        auto removed{ 0 };
+        for (auto jt = m_Data.m_CardsList.rbegin(); jt != m_Data.m_CardsList.rend() && removed < to_remove;)
+        {
+            if (*jt == image_name)
+            {
+                using iter_t = decltype(jt);
+                jt = iter_t{ m_Data.m_CardsList.erase(std::next(jt).base()) };
+                ++removed;
+            }
+            else
+            {
+                ++jt;
+            }
+        }
+    }
 }

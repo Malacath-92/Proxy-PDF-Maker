@@ -186,30 +186,8 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     std::vector<Page> pages;
     pages.emplace_back();
 
-    auto card_names{
-        project.m_Data.m_Cards |
-        std::views::transform([](const auto& entry)
-                              { return std::cref(entry.first); }) |
-        std::ranges::to<std::vector>()
-    };
-
-    for (const auto& [from, to] : project.m_Data.m_Reorder)
-    {
-        const auto from_card{ card_names[from] };
-
-        auto from_it{ card_names.begin() + from };
-        card_names.erase(from_it);
-
-        auto to_it{ card_names.begin() + to };
-        card_names.insert(to_it, from_card);
-    }
-
-    size_t index{ 0 };
-    for (const auto& img : card_names)
-    {
-        const auto& info{ project.m_Data.m_Cards.at(img) };
-
-        for (uint32_t i = 0; i < info.m_Num; i++)
+    auto push_card{
+        [&, index = size_t{ 0 }](const auto& img, const auto& info) mutable
         {
             // make new page if last page is full
             if (pages.back().m_Images.size() == images_per_page)
@@ -224,6 +202,26 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
                 info.m_BacksideShortEdge,
                 index++,
             });
+        }
+    };
+
+    if (!project.m_Data.m_CardsList.empty())
+    {
+        // Pre-expanded list of cards with custom sorting
+        for (const auto& img : project.m_Data.m_CardsList)
+        {
+            const auto& info{ project.m_Data.m_Cards.at(img) };
+            push_card(img, info);
+        }
+    }
+    else
+    {
+        for (const auto& [img, info] : project.m_Data.m_Cards)
+        {
+            for (uint32_t i = 0; i < info.m_Num; i++)
+            {
+                push_card(img, info);
+            }
         }
     }
 

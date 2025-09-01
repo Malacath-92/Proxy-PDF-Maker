@@ -23,12 +23,7 @@ struct CardInfo
 };
 using CardMap = std::map<fs::path, CardInfo>;
 
-struct CardReorderOperation
-{
-    size_t m_From;
-    size_t m_To;
-};
-using CardReordering = std::vector<CardReorderOperation>;
+using CardList = std::vector<std::reference_wrapper<const fs::path>>;
 
 struct ImagePreview
 {
@@ -123,6 +118,15 @@ class Project : public QObject
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
 
+    bool HideCard(const fs::path& card_name);
+    bool UnhideCard(const fs::path& card_name);
+
+    uint32_t SetCardCount(const fs::path& card_name, uint32_t num);
+    uint32_t IncrementCardCount(const fs::path& card_name);
+    uint32_t DecrementCardCount(const fs::path& card_name);
+
+    void ReorderCards(size_t from, size_t to);
+
     bool HasPreview(const fs::path& image_name) const;
     const Image& GetCroppedPreview(const fs::path& image_name) const;
     const Image& GetUncroppedPreview(const fs::path& image_name) const;
@@ -171,9 +175,12 @@ class Project : public QObject
 
         // List of all cards
         CardMap m_Cards{};
-        CardReordering m_Reorder{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};
+
+        // Possibly empty list of all cards, determines user-provided order of cards
+        // or if empty implies automatic ordering
+        CardList m_CardsList{};
 
         // Card options
         Length m_BleedEdge{ 0_mm };
@@ -254,4 +261,8 @@ class Project : public QObject
     Project(Project&&) = delete;
     Project& operator=(const Project&) = delete;
     Project& operator=(Project&&) = delete;
+
+    CardList GenerateDefaultCardsList() const;
+    void AppendCardToList(const fs::path& image_name);
+    void RemoveCardFromList(const fs::path& image_name);
 };

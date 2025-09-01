@@ -30,7 +30,7 @@ class CardWidget : public QFrame
         const uint32_t initial_number{ card_name.empty() ? 1 : project.m_Data.m_Cards[card_name].m_Num };
 
         auto* number_edit{ new QLineEdit };
-        number_edit->setValidator(new QIntValidator{ 0, 100, this });
+        number_edit->setValidator(new QIntValidator{ 0, 999, this });
         number_edit->setText(QString{}.setNum(initial_number));
         number_edit->setFixedWidth(40);
 
@@ -115,8 +115,8 @@ class CardWidget : public QFrame
 
     void ApplyNumber(Project& project, int64_t number)
     {
-        project.m_Data.m_Cards[m_CardName].m_Num = static_cast<uint32_t>(std::max(std::min(number, int64_t{ 999 }), int64_t{ 0 }));
-        m_NumberEdit->setText(QString{}.setNum(project.m_Data.m_Cards[m_CardName].m_Num));
+        uint32_t final_number{ project.SetCardCount(m_CardName, static_cast<uint32_t>(number)) };
+        m_NumberEdit->setText(QString{}.setNum(final_number));
     }
 
     virtual void Refresh(Project& project)
@@ -185,16 +185,10 @@ class CardWidget : public QFrame
                     project.m_Data.m_Cards[m_CardName].m_Backside.clear();
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
-
-                    auto it{ project.m_Data.m_Cards.find(old_backside) };
-                    if (it != project.m_Data.m_Cards.end())
+                    
+                    if (project.UnhideCard(old_backside))
                     {
-                        it->second.m_Hidden--;
-                        const bool is_shown{ it->second.m_Hidden == 0 };
-                        if (is_shown)
-                        {
-                            CardShown();
-                        }
+                        CardShown();
                     }
                 }
             };
@@ -211,16 +205,10 @@ class CardWidget : public QFrame
                             auto* new_backside_image{ new BacksideImage{ backside, project } };
                             stacked_widget->RefreshBackside(new_backside_image);
 
-                            auto it{ project.m_Data.m_Cards.find(backside) };
-                            if (it != project.m_Data.m_Cards.end())
+                            project.HideCard(backside);
+                            if (project.HideCard(backside))
                             {
-                                const bool was_visible{ it->second.m_Hidden == 0 };
-                                it->second.m_Hidden++;
-                                it->second.m_Num = 0;
-                                if (was_visible)
-                                {
-                                    CardHidden();
-                                }
+                                CardHidden();
                             }
                         }
                     }
