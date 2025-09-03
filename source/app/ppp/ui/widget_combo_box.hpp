@@ -3,10 +3,14 @@
 #include <span>
 #include <string_view>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <QComboBox>
 
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
+
+QComboBox* MakeComboBox();
 
 template<class StringT>
 static void UpdateComboBox(QComboBox* combo_box,
@@ -46,7 +50,7 @@ QComboBox* MakeComboBox(std::span<StringT> options,
                         std::span<StringT> tooltips,
                         std::string_view default_option)
 {
-    auto* combo_box{ new QComboBox };
+    auto* combo_box{ MakeComboBox() };
     UpdateComboBox(combo_box, options, tooltips, default_option);
     return combo_box;
 }

@@ -16,6 +16,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/widget_combo_box.hpp>
+#include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/ui/popups/card_size_popup.hpp>
@@ -204,25 +205,25 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_CardsInfo = cards_info->GetWidget();
     m_CardsInfo->setToolTip("Size of the cards area in the final rendered PDF (excluding margins)");
 
-    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", new QDoubleSpinBox } };
+    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", MakeDoubleSpinBox() } };
     m_LeftMarginSpin = static_cast<QDoubleSpinBox*>(left_margin->GetWidget());
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
     m_LeftMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", new QDoubleSpinBox } };
+    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", MakeDoubleSpinBox() } };
     m_TopMarginSpin = static_cast<QDoubleSpinBox*>(top_margin->GetWidget());
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
     m_TopMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", new QDoubleSpinBox } };
+    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", MakeDoubleSpinBox() } };
     m_RightMarginSpin = static_cast<QDoubleSpinBox*>(right_margin->GetWidget());
     m_RightMarginSpin->setDecimals(2);
     m_RightMarginSpin->setSingleStep(0.1);
     m_RightMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", new QDoubleSpinBox } };
+    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", MakeDoubleSpinBox() } };
     m_BottomMarginSpin = static_cast<QDoubleSpinBox*>(bottom_margin->GetWidget());
     m_BottomMarginSpin->setDecimals(2);
     m_BottomMarginSpin->setSingleStep(0.1);
@@ -234,7 +235,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
     m_MarginsMode = margins_mode->GetWidget();
 
-    auto* all_margins{ new WidgetWithLabel{ "&All Margins", new QDoubleSpinBox } };
+    auto* all_margins{ new WidgetWithLabel{ "&All Margins", MakeDoubleSpinBox() } };
     m_AllMarginsSpin = static_cast<QDoubleSpinBox*>(all_margins->GetWidget());
     m_AllMarginsSpin->setDecimals(2);
     m_AllMarginsSpin->setSingleStep(0.1);
@@ -247,11 +248,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_CardOrientation = card_orientation->GetWidget();
 
     {
-        m_CardsWidthVertical = new QDoubleSpinBox;
+        m_CardsWidthVertical = MakeDoubleSpinBox();
         m_CardsWidthVertical->setDecimals(0);
         m_CardsWidthVertical->setRange(1, 10);
         m_CardsWidthVertical->setSingleStep(1);
-        m_CardsHeightVertical = new QDoubleSpinBox;
+        m_CardsHeightVertical = MakeDoubleSpinBox();
         m_CardsHeightVertical->setDecimals(0);
         m_CardsHeightVertical->setRange(1, 10);
         m_CardsHeightVertical->setSingleStep(1);
@@ -267,11 +268,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     }
 
     {
-        m_CardsWidthHorizontal = new QDoubleSpinBox;
+        m_CardsWidthHorizontal = MakeDoubleSpinBox();
         m_CardsWidthHorizontal->setDecimals(0);
         m_CardsWidthHorizontal->setRange(1, 10);
         m_CardsWidthHorizontal->setSingleStep(1);
-        m_CardsHeightHorizontal = new QDoubleSpinBox;
+        m_CardsHeightHorizontal = MakeDoubleSpinBox();
         m_CardsHeightHorizontal->setDecimals(0);
         m_CardsHeightHorizontal->setRange(1, 10);
         m_CardsHeightHorizontal->setSingleStep(1);
