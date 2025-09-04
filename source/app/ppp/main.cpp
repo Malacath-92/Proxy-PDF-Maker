@@ -73,6 +73,27 @@ int main(int argc, char** argv)
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
 
+#ifdef PPP_DEBUG_CHILDLESS_WIDGETS
+    class ParentCheckFilter : public QObject
+    {
+        bool eventFilter(QObject* obj, QEvent* event) override
+        {
+            if (event->type() == QEvent::Show)
+            {
+                QWidget* w = qobject_cast<QWidget*>(obj);
+                if (w && !w->parentWidget())
+                {
+                    qDebug() << "Top-level widget shown:" << w << w->metaObject()->className();
+                }
+            }
+            return QObject::eventFilter(obj, event);
+        }
+    };
+
+    ParentCheckFilter filter{};
+    app.installEventFilter(&filter);
+#endif
+
     Project project{};
     project.Load(app.GetProjectPath());
 
