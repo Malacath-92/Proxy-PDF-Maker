@@ -119,7 +119,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto* image_format{ new ComboBoxWithLabel{
         "Image &Format", magic_enum::enum_names<ImageFormat>(), magic_enum::enum_name(g_Cfg.m_PdfImageFormat) } };
     image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Jpg to reduce output size.");
-    image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
 
     auto* jpg_quality_spin_box{ MakeDoubleSpinBox() };
     jpg_quality_spin_box->setDecimals(0);
@@ -128,7 +127,6 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     jpg_quality_spin_box->setValue(g_Cfg.m_JpgQuality.value_or(100));
     auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Quality", jpg_quality_spin_box } };
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
-    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
 
     auto* color_cube{ new ComboBoxWithLabel{
         "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube } };
@@ -173,6 +171,9 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     layout->addWidget(themes);
     layout->addWidget(plugins);
     setLayout(layout);
+
+    image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
+    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
 
     auto change_base_units{
         [this](const QString& t)

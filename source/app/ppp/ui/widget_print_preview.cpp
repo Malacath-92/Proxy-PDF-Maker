@@ -751,7 +751,6 @@ void PrintPreview::Refresh()
                      &QPushButton::clicked,
                      this,
                      &PrintPreview::RestoreCardsOrder);
-    restore_order_button->setVisible(!m_Project.m_Data.m_CardsList.empty());
     {
         QSizePolicy size_policy{ restore_order_button->sizePolicy() };
         size_policy.setRetainSizeWhenHidden(true);
@@ -773,6 +772,8 @@ void PrintPreview::Refresh()
 
     auto* header{ new QWidget };
     header->setLayout(header_layout);
+
+    restore_order_button->setVisible(!m_Project.m_Data.m_CardsList.empty());
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(header);

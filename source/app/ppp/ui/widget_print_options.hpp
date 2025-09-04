@@ -66,7 +66,7 @@ class PrintOptionsWidget : public QWidget
     WidgetWithLabel* m_CardsLayoutHorizontal{ nullptr };
     QDoubleSpinBox* m_CardsWidthHorizontal{ nullptr };
     QDoubleSpinBox* m_CardsHeightHorizontal{ nullptr };
-    QComboBox* m_Orientation{ nullptr };
+    ComboBoxWithLabel* m_Orientation{ nullptr };
     QComboBox* m_FlipOn{ nullptr };
     QLabel* m_PaperInfo{ nullptr };
     QLabel* m_CardsInfo{ nullptr };

@@ -115,8 +115,6 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     m_BacksideOffset = new WidgetWithLabel{ "Off&set", m_BacksideOffsetSpin };
 
-    SetDefaults();
-
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
     layout->addWidget(spacing);
@@ -128,6 +126,8 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     setLayout(layout);
+
+    SetDefaults();
 
     auto change_bleed_edge{
         [this, &project, corners](double v)
@@ -339,17 +339,6 @@ void CardOptionsWidget::SetDefaults()
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto full_bleed{ m_Project.CardFullBleed() };
 
-    auto set_visible_safe{
-        [](QWidget* widget, bool visible)
-        {
-            const auto* window{ widget->window() };
-            if ((window != nullptr && dynamic_cast<const QMainWindow*>(window)) || !visible)
-            {
-                widget->setVisible(visible);
-            }
-        }
-    };
-
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
 
@@ -364,13 +353,13 @@ void CardOptionsWidget::SetDefaults()
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    set_visible_safe(m_BacksideDefaultButton, m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    set_visible_safe(m_BacksideDefaultPreview, m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    set_visible_safe(m_BacksideOffset, m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
