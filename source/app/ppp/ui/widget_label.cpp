@@ -4,6 +4,7 @@
 #include <QLabel>
 
 #include <ppp/ui/widget_combo_box.hpp>
+#include <ppp/ui/widget_double_spin_box.hpp>
 
 WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }
@@ -90,7 +91,7 @@ QLabel* LabelWithLabel::GetWidget() const
 }
 
 DoubleSpinBoxWithLabel::DoubleSpinBoxWithLabel(std::string_view label_text)
-    : WidgetWithLabel(label_text, new QDoubleSpinBox)
+    : WidgetWithLabel(label_text, MakeDoubleSpinBox())
 {
 }
 

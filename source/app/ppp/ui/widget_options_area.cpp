@@ -33,15 +33,17 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);
     AddCollapsible(layout, global_options);
+    layout->setContentsMargins(0, 0, 0, 0);
 
     auto* widget{ new QWidget };
     widget->setLayout(layout);
-    widget->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::MinimumExpanding);
+    widget->setSizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::MinimumExpanding);
 
     setWidget(widget);
     setWidgetResizable(true);
     setMinimumHeight(400);
-    setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Expanding);
+    setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 
     for (const auto& plugin_name : GetPluginNames())

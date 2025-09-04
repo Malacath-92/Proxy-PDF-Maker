@@ -5,14 +5,16 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <ppp/ui/widget_double_spin_box.hpp>
+
 LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
 {
     m_LinkedIcon = QIcon{ QPixmap{ ":/res/linked.png" } };
     m_UnLinkedIcon = QIcon{ QPixmap{ ":/res/unlinked.png" } };
 
-    m_First = new QDoubleSpinBox;
+    m_First = MakeDoubleSpinBox();
 
-    m_Second = new QDoubleSpinBox;
+    m_Second = MakeDoubleSpinBox();
     m_Second->setEnabled(!initially_linked);
 
     auto* inner_layout{ new QVBoxLayout };

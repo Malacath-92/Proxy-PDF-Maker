@@ -19,6 +19,7 @@
 
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_combo_box.hpp>
+#include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 class PluginsPopup : public PopupBase
@@ -103,7 +104,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         base_unit_name } };
     base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
-    auto* display_columns_spin_box{ new QDoubleSpinBox };
+    auto* display_columns_spin_box{ MakeDoubleSpinBox() };
     display_columns_spin_box->setDecimals(0);
     display_columns_spin_box->setRange(2, 10);
     display_columns_spin_box->setSingleStep(1);
@@ -120,7 +121,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Jpg to reduce output size.");
     image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
 
-    auto* jpg_quality_spin_box{ new QDoubleSpinBox };
+    auto* jpg_quality_spin_box{ MakeDoubleSpinBox() };
     jpg_quality_spin_box->setDecimals(0);
     jpg_quality_spin_box->setRange(1, 100);
     jpg_quality_spin_box->setSingleStep(1);
@@ -133,7 +134,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube } };
     color_cube->GetWidget()->setToolTip("Requires rerunning cropper");
 
-    auto* preview_width_spin_box{ new QDoubleSpinBox };
+    auto* preview_width_spin_box{ MakeDoubleSpinBox() };
     preview_width_spin_box->setDecimals(0);
     preview_width_spin_box->setRange(120, 1000);
     preview_width_spin_box->setSingleStep(60);
@@ -142,7 +143,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto* preview_width{ new WidgetWithLabel{ "&Preview Width", preview_width_spin_box } };
     preview_width->setToolTip("Requires rerunning cropper to take effect");
 
-    auto* max_dpi_spin_box{ new QDoubleSpinBox };
+    auto* max_dpi_spin_box{ MakeDoubleSpinBox() };
     max_dpi_spin_box->setDecimals(0);
     max_dpi_spin_box->setRange(300, 1200);
     max_dpi_spin_box->setSingleStep(100);

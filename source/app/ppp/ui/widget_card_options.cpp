@@ -17,6 +17,7 @@
 #include <ppp/ui/linked_spin_boxes.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
+#include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 class DefaultBacksidePreview : public QWidget
@@ -107,7 +108,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
 
-    m_BacksideOffsetSpin = new QDoubleSpinBox;
+    m_BacksideOffsetSpin = MakeDoubleSpinBox();
     m_BacksideOffsetSpin->setDecimals(2);
     m_BacksideOffsetSpin->setSingleStep(0.1);
     m_BacksideOffsetSpin->setSuffix(base_unit_name);
