@@ -185,7 +185,7 @@ class CardWidget : public QFrame
                     project.m_Data.m_Cards[m_CardName].m_Backside.clear();
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
-                    
+
                     if (project.UnhideCard(old_backside))
                     {
                         CardShown();
