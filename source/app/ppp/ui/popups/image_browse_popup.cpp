@@ -97,7 +97,8 @@ class SelectableCardGrid : public QWidget
     Q_OBJECT
 
   public:
-    SelectableCardGrid(const Project& project)
+    SelectableCardGrid(const Project& project,
+                       std::span<const fs::path> ignored_images)
     {
         auto* grid_layout{ new QGridLayout };
         {
@@ -105,6 +106,11 @@ class SelectableCardGrid : public QWidget
 
             for (auto& [card_name, card_info] : project.m_Data.m_Cards)
             {
+                if (std::ranges::contains(ignored_images, card_name))
+                {
+                    continue;
+                }
+
                 const auto i{ m_Cards.size() };
                 auto* card_widget{ new SelectableCard(card_name, project) };
                 card_widget->installEventFilter(this);
@@ -224,16 +230,21 @@ class SelectableCardGrid : public QWidget
 };
 
 ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
-                                   const Project& project)
+                                   const Project& project,
+                                   std::span<const fs::path> ignored_images)
     : PopupBase{ parent }
 {
     m_AutoCenter = true;
     setWindowFlags(Qt::WindowType::Dialog);
 
-    const bool has_cards{ !project.m_Data.m_Cards.empty() };
+    const auto num_valid_ignored_images{
+        std::ranges::count_if(ignored_images, [&](const auto& img)
+                              { return project.m_Data.m_Cards.contains(img); })
+    };
+    const auto has_cards{ project.m_Data.m_Cards.size() > static_cast<size_t>(num_valid_ignored_images) };
     if (has_cards)
     {
-        m_Grid = new SelectableCardGrid{ project };
+        m_Grid = new SelectableCardGrid{ project, ignored_images };
     }
 
     auto* grid{
