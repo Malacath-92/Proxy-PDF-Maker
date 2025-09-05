@@ -31,6 +31,8 @@ class CardOptionsWidget : public QWidget
     void ImageDirChanged();
     void BaseUnitChanged();
 
+    void AdvancedModeChanged();
+
     void BacksideEnabledChangedExternal();
 
   private:

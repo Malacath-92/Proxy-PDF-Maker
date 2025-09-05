@@ -38,6 +38,8 @@ class PrintOptionsWidget : public QWidget
     void NewProjectOpened();
     void BleedChanged();
     void SpacingChanged();
+
+    void AdvancedModeChanged();
     void BaseUnitChanged();
     void RenderBackendChanged();
 

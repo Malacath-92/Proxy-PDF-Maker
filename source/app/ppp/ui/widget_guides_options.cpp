@@ -37,15 +37,15 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
     m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
 
-    auto* guides_offset{ new DoubleSpinBoxWithLabel{ "Guides O&ffset" } };
-    m_GuidesOffsetSpin = guides_offset->GetWidget();
+    m_GuidesOffset = new DoubleSpinBoxWithLabel{ "Guides O&ffset" };
+    m_GuidesOffsetSpin = m_GuidesOffset->GetWidget();
     m_GuidesOffsetSpin->setDecimals(3);
     m_GuidesOffsetSpin->setSingleStep(0.1);
     m_GuidesOffsetSpin->setSuffix(base_unit_name);
     m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
 
-    auto* guides_length{ new DoubleSpinBoxWithLabel{ "Guides &Length" } };
-    m_GuidesLengthSpin = guides_length->GetWidget();
+    m_GuidesLength = new DoubleSpinBoxWithLabel{ "Guides &Length" };
+    m_GuidesLengthSpin = m_GuidesLength->GetWidget();
     m_GuidesLengthSpin->setDecimals(2);
     m_GuidesLengthSpin->setSingleStep(0.1);
     m_GuidesLengthSpin->setSuffix(base_unit_name);
@@ -60,8 +60,8 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     auto* guides_color_b_button{ new QPushButton };
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
 
-    auto* guides_thickness{ new DoubleSpinBoxWithLabel{ "Guides Thic&kness" } };
-    m_GuidesThicknessSpin = guides_thickness->GetWidget();
+    m_GuidesThickness = new DoubleSpinBoxWithLabel{ "Guides Thic&kness" };
+    m_GuidesThicknessSpin = m_GuidesThickness->GetWidget();
     m_GuidesThicknessSpin->setDecimals(4);
     m_GuidesThicknessSpin->setSingleStep(0.01);
     m_GuidesThicknessSpin->setSuffix(base_unit_name);
@@ -75,12 +75,12 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_EnableBacksideGuidesCheckbox);
     layout->addWidget(m_CornerGuidesCheckbox);
     layout->addWidget(m_CrossGuidesCheckbox);
-    layout->addWidget(guides_offset);
-    layout->addWidget(guides_length);
+    layout->addWidget(m_GuidesOffset);
+    layout->addWidget(m_GuidesLength);
     layout->addWidget(m_ExtendedGuidesCheckbox);
     layout->addWidget(m_GuidesColorA);
     layout->addWidget(m_GuidesColorB);
-    layout->addWidget(guides_thickness);
+    layout->addWidget(m_GuidesThickness);
     setLayout(layout);
 
     auto change_export_exact_guides{
@@ -296,6 +296,18 @@ void GuidesOptionsWidget::BacksideEnabledChanged()
     m_EnableBacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
 
+void GuidesOptionsWidget::AdvancedModeChanged()
+{
+    // Always enabled: m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
+    m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
+    m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
+}
+
 void GuidesOptionsWidget::BaseUnitChanged()
 {
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
@@ -335,7 +347,7 @@ void GuidesOptionsWidget::SetDefaults()
     m_ExtendedGuidesCheckbox->setEnabled(m_Project.m_Data.m_EnableGuides);
 
     m_GuidesColorA->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.m_Data.m_GuidesColorA));
-    m_GuidesColorA->setEnabled(m_Project.m_Data.m_EnableGuides && m_Project.m_Data.m_EnableGuides);
+    m_GuidesColorA->setEnabled(m_Project.m_Data.m_EnableGuides);
 
     m_GuidesColorB->GetWidget()->setStyleSheet(ColorToBackgroundStyle(m_Project.m_Data.m_GuidesColorB));
     m_GuidesColorB->setEnabled(m_Project.m_Data.m_EnableGuides);
@@ -356,6 +368,16 @@ void GuidesOptionsWidget::SetDefaults()
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
     m_GuidesThicknessSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
+
+    // Advanced mode settings
+    // Always enabled: m_EnableGuidesCheckbox, m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
+    m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
+    m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)

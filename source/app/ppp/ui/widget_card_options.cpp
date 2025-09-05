@@ -296,6 +296,11 @@ void CardOptionsWidget::ImageDirChanged()
     m_BacksideDefaultPreview->Refresh();
 }
 
+void CardOptionsWidget::AdvancedModeChanged()
+{
+    // Note: Everything currently available in basic mode
+}
+
 void CardOptionsWidget::BaseUnitChanged()
 {
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };

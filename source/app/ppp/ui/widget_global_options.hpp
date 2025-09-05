@@ -15,6 +15,8 @@ class GlobalOptionsWidget : public QWidget
     GlobalOptionsWidget(PrintProxyPrepApplication& application);
 
   signals:
+    void AdvancedModeChanged();
+
     void BaseUnitChanged();
     void DisplayColumnsChanged();
     void RenderBackendChanged();

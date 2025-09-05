@@ -9,6 +9,7 @@ class QCheckBox;
 class QDoubleSpinBox;
 
 class Project;
+class DoubleSpinBoxWithLabel;
 class WidgetWithLabel;
 
 class GuidesOptionsWidget : public QWidget
@@ -35,6 +36,8 @@ class GuidesOptionsWidget : public QWidget
     void CardSizeChanged();
     void BleedChanged();
     void BacksideEnabledChanged();
+
+    void AdvancedModeChanged();
     void BaseUnitChanged();
 
   private:
@@ -49,10 +52,13 @@ class GuidesOptionsWidget : public QWidget
     QCheckBox* m_EnableBacksideGuidesCheckbox{ nullptr };
     QCheckBox* m_CornerGuidesCheckbox{ nullptr };
     QCheckBox* m_CrossGuidesCheckbox{ nullptr };
+    DoubleSpinBoxWithLabel* m_GuidesOffset{ nullptr };
     QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
+    DoubleSpinBoxWithLabel* m_GuidesLength{ nullptr };
     QDoubleSpinBox* m_GuidesLengthSpin{ nullptr };
     QCheckBox* m_ExtendedGuidesCheckbox{ nullptr };
     WidgetWithLabel* m_GuidesColorA{ nullptr };
     WidgetWithLabel* m_GuidesColorB{ nullptr };
+    DoubleSpinBoxWithLabel* m_GuidesThickness{ nullptr };
     QDoubleSpinBox* m_GuidesThicknessSpin{ nullptr };
 };

@@ -97,6 +97,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
 {
     setObjectName("Global Config");
 
+    auto* advanced_checkbox{ new QCheckBox{ "Advanced Mode" } };
+    advanced_checkbox->setChecked(g_Cfg.m_AdvancedMode);
+    advanced_checkbox->setToolTip("Enables advanced features such as custom margins, guides controls, and card orientation.");
+
     const auto base_unit_name{ UnitName(g_Cfg.m_BaseUnit) };
     auto* base_unit{ new ComboBoxWithLabel{
         "&Units",
@@ -159,6 +163,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto* plugins{ new QPushButton{ "Plugins" } };
 
     auto* layout{ new QVBoxLayout };
+    layout->addWidget(advanced_checkbox);
     layout->addWidget(base_unit);
     layout->addWidget(display_columns);
     layout->addWidget(backend);
@@ -174,6 +179,15 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
 
     image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
     jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+
+    auto change_advanced_mode{
+        [this](Qt::CheckState s)
+        {
+            g_Cfg.m_AdvancedMode = s == Qt::CheckState::Checked;
+            SaveConfig(g_Cfg);
+            AdvancedModeChanged();
+        }
+    };
 
     auto change_base_units{
         [this](const QString& t)
@@ -293,6 +307,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         }
     };
 
+    QObject::connect(advanced_checkbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_advanced_mode);
     QObject::connect(base_unit->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,

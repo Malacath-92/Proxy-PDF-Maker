@@ -685,6 +685,18 @@ void PrintOptionsWidget::SpacingChanged()
     RefreshMargins(false);
 }
 
+void PrintOptionsWidget::AdvancedModeChanged()
+{
+    // Always enabled: m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
+    //m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
+    //m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
+}
+
 void PrintOptionsWidget::BaseUnitChanged()
 {
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
@@ -828,6 +840,16 @@ void PrintOptionsWidget::SetDefaults()
 
     // Set up margin mode toggle
     m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
+
+    // Advanced mode settings
+    // Always enabled: m_EnableGuidesCheckbox, m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
+    //m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
+    //m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
+    //m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
 }
 
 void PrintOptionsWidget::RefreshSizes()

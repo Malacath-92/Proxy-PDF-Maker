@@ -299,6 +299,12 @@ int main(int argc, char** argv)
     }
 
     {
+        QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, print_options, &PrintOptionsWidget::AdvancedModeChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, guides_options, &GuidesOptionsWidget::AdvancedModeChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, card_options, &CardOptionsWidget::AdvancedModeChanged);
+    }
+
+    {
         QObject::connect(
             print_preview,
             &PrintPreview::RestoreCardsOrder,
