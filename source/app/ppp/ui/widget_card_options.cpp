@@ -232,6 +232,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             if (const auto default_backside_choice{ ImageBrowsePopup{ nullptr, project }.Show() })
             {
                 project.m_Data.m_BacksideDefault = default_backside_choice.value();
+                m_BacksideDefaultPreview->Refresh();
                 BacksideDefaultChanged();
             }
         }
