@@ -3,6 +3,7 @@
 #include <ranges>
 
 #include <QDrag>
+#include <QGraphicsOpacityEffect>
 #include <QGridLayout>
 #include <QMimeData>
 #include <QMouseEvent>
@@ -11,6 +12,7 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollBar>
+#include <QStyleOptionFrame>
 
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
@@ -385,8 +387,10 @@ class PrintPreviewCardImage : public CardImage
         drag.setMimeData(mime_data);
         drag.setPixmap(pixmap().scaledToWidth(width() / 2));
 
+        DragStarted();
         Qt::DropAction drop_action{ drag.exec() };
         (void)drop_action;
+        DragFinished();
     }
 
     virtual void dropEvent(QDropEvent* event) override
@@ -427,6 +431,8 @@ class PrintPreviewCardImage : public CardImage
     }
 
   signals:
+    void DragStarted();
+    void DragFinished();
     void ReorderCards(size_t form, size_t to);
 
   private:
@@ -523,6 +529,14 @@ class PrintPreview::PagePreview : public QWidget
             image_widget->setParent(m_ImageContainer);
 
             QObject::connect(image_widget,
+                             &PrintPreviewCardImage::DragStarted,
+                             this,
+                             &PagePreview::DragStarted);
+            QObject::connect(image_widget,
+                             &PrintPreviewCardImage::DragFinished,
+                             this,
+                             &PagePreview::DragFinished);
+            QObject::connect(image_widget,
                              &PrintPreviewCardImage::ReorderCards,
                              this,
                              &PagePreview::ReorderCards);
@@ -614,6 +628,8 @@ class PrintPreview::PagePreview : public QWidget
     }
 
   signals:
+    void DragStarted();
+    void DragFinished();
     void ReorderCards(size_t form, size_t to);
 
   private:
@@ -630,12 +646,167 @@ class PrintPreview::PagePreview : public QWidget
     MarginsOverlay* m_Margins{ nullptr };
 };
 
+class ArrowWidget : public QFrame
+{
+    Q_OBJECT
+
+  public:
+    enum class ArrowDir
+    {
+        Up = -1,
+        Down = +1,
+    };
+
+    ArrowWidget(ArrowDir dir)
+        : m_Dir{ dir }
+    {
+        setStyleSheet("background-color: purple;");
+
+        setFrameStyle(QFrame::Shape::Panel | QFrame::Shadow::Sunken);
+        setLineWidth(5);
+
+        setAcceptDrops(true);
+
+        QGraphicsOpacityEffect* effect{ new QGraphicsOpacityEffect{ this } };
+        effect->setOpacity(0.75);
+        setGraphicsEffect(effect);
+    }
+
+    virtual void paintEvent(QPaintEvent* event) override
+    {
+        QFrame::paintEvent(event);
+
+        const auto height{ geometry().height() };
+
+        const auto arrow_height{ static_cast<int>(height / 2) };
+        const auto arrow_side{ static_cast<int>(2 * arrow_height / std::sqrtf(3)) };
+        const QPoint arrow_base{
+            geometry().center().x(), (height - arrow_height) / 2 + (m_Dir == ArrowDir::Up ? arrow_height : 0)
+        };
+
+        const auto dir{ static_cast<int>(m_Dir) };
+
+        const QPoint p1{ arrow_base.x(), arrow_base.y() + dir * arrow_height };
+        const QPoint p2{ arrow_base.x() + arrow_side / 2, arrow_base.y() };
+        const QPoint p3{ arrow_base.x() - arrow_side / 2, arrow_base.y() };
+
+        const auto arrow_center{ (p1 + p2 + p3) / 3 };
+        const auto arrow_outer_side{ static_cast<int>(arrow_side + lineWidth() * 3) };
+        const auto p1_outer{ arrow_center + (p1 - arrow_center) * arrow_outer_side / arrow_side };
+        const auto p2_outer{ arrow_center + (p2 - arrow_center) * arrow_outer_side / arrow_side };
+        const auto p3_outer{ arrow_center + (p3 - arrow_center) * arrow_outer_side / arrow_side };
+
+        QPainterPath arrow_path{};
+        arrow_path.addPolygon(QPolygon{ p1, p2, p3, p1 });
+
+        QPainterPath light_path{};
+        QPainterPath midlight_path{};
+        QPainterPath dark_path{};
+
+        if ((frameShadow() & QFrame::Shadow::Sunken) == QFrame::Shadow::Sunken)
+        {
+            light_path.addPolygon(QPolygon{ p2_outer, p3_outer, arrow_center, p2_outer });
+            midlight_path.addPolygon(QPolygon{ p1_outer, p2_outer, arrow_center, p1_outer });
+            dark_path.addPolygon(QPolygon{ p3_outer, p1_outer, arrow_center, p3_outer });
+        }
+        else
+        {
+            dark_path.addPolygon(QPolygon{ p2_outer, p3_outer, arrow_center, p2_outer });
+            midlight_path.addPolygon(QPolygon{ p1_outer, p2_outer, arrow_center, p1_outer });
+            light_path.addPolygon(QPolygon{ p3_outer, p1_outer, arrow_center, p3_outer });
+        }
+
+        QColor color_base{ QColor{ Qt::GlobalColor::darkMagenta } };
+        QBrush light_brush{ color_base.lighter(130) };
+        QBrush midlight_brush{ color_base.lighter(115) };
+        QBrush mid_brush{ color_base };
+        QBrush dark_brush{ color_base.darker(125) };
+
+        QPainter painter{ this };
+        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
+        painter.fillPath(light_path, light_brush);
+        painter.fillPath(midlight_path, midlight_brush);
+        painter.fillPath(dark_path, dark_brush);
+        painter.fillPath(arrow_path, mid_brush);
+        painter.end();
+    }
+
+    virtual void dragEnterEvent(QDragEnterEvent* event) override
+    {
+        QFrame::dragEnterEvent(event);
+        setFrameShadow(QFrame::Shadow::Raised);
+        OnEnter();
+    }
+
+    virtual void dragLeaveEvent(QDragLeaveEvent* event) override
+    {
+        QFrame::dragLeaveEvent(event);
+        setFrameShadow(QFrame::Shadow::Sunken);
+        OnLeave();
+    }
+
+  signals:
+    void OnEnter();
+    void OnLeave();
+
+  private:
+    ArrowDir m_Dir;
+};
+
 PrintPreview::PrintPreview(const Project& project)
     : m_Project{ project }
 {
     Refresh();
+
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
+
+    // We only do this to get QDragMoveEvent
+    setAcceptDrops(true);
+
+    m_ScrollTimer.setInterval(1);
+    m_ScrollTimer.setSingleShot(false);
+
+    m_ScrollUpWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Up };
+    m_ScrollUpWidget->setParent(this);
+    m_ScrollUpWidget->setVisible(false);
+
+    m_ScrollDownWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Down };
+    m_ScrollDownWidget->setParent(this);
+    m_ScrollDownWidget->setVisible(false);
+
+    QObject::connect(&m_ScrollTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         if (m_ScrollUpWidget->underMouse())
+                         {
+                             verticalScrollBar()->setValue(verticalScrollBar()->value() - m_ScrollSpeed);
+                         }
+                         else
+                         {
+                             verticalScrollBar()->setValue(verticalScrollBar()->value() + m_ScrollSpeed);
+                         }
+                     });
+
+    QObject::connect(static_cast<ArrowWidget*>(m_ScrollUpWidget),
+                     &ArrowWidget::OnEnter,
+                     &m_ScrollTimer,
+                     static_cast<void (QTimer::*)()>(&QTimer::start));
+    QObject::connect(static_cast<ArrowWidget*>(m_ScrollUpWidget),
+                     &ArrowWidget::OnLeave,
+                     &m_ScrollTimer,
+                     &QTimer::stop);
+
+    QObject::connect(static_cast<ArrowWidget*>(m_ScrollDownWidget),
+                     &ArrowWidget::OnEnter,
+                     &m_ScrollTimer,
+                     static_cast<void (QTimer::*)()>(&QTimer::start));
+    QObject::connect(static_cast<ArrowWidget*>(m_ScrollDownWidget),
+                     &ArrowWidget::OnLeave,
+                     &m_ScrollTimer,
+                     &QTimer::stop);
 }
 
 void PrintPreview::Refresh()
@@ -741,6 +912,22 @@ void PrintPreview::Refresh()
     for (auto* page : page_widgets)
     {
         QObject::connect(page,
+                         &PagePreview::DragStarted,
+                         this,
+                         [this]()
+                         {
+                             m_ScrollUpWidget->setVisible(true);
+                             m_ScrollDownWidget->setVisible(true);
+                         });
+        QObject::connect(page,
+                         &PagePreview::DragFinished,
+                         this,
+                         [this]()
+                         {
+                             m_ScrollUpWidget->setVisible(false);
+                             m_ScrollDownWidget->setVisible(false);
+                         });
+        QObject::connect(page,
                          &PagePreview::ReorderCards,
                          this,
                          &PrintPreview::ReorderCards);
@@ -789,6 +976,28 @@ void PrintPreview::Refresh()
     setWidget(pages_widget);
 
     verticalScrollBar()->setValue(current_scroll);
+}
+
+void PrintPreview::resizeEvent(QResizeEvent* event)
+{
+    QScrollArea::resizeEvent(event);
+
+    const auto scroll_widget_size{ event->size().height() / 8 };
+
+    m_ScrollUpWidget->resize(QSize{ event->size().width(), scroll_widget_size });
+    m_ScrollDownWidget->resize(QSize{ event->size().width(), scroll_widget_size });
+
+    m_ScrollUpWidget->move(QPoint{ 0, 0 });
+    m_ScrollDownWidget->move(QPoint{ 0, event->size().height() - scroll_widget_size });
+}
+
+void PrintPreview::wheelEvent(QWheelEvent* event)
+{
+    // Don't use wheel events if the scroll widgets are visible
+    if (!m_ScrollUpWidget->isVisible())
+    {
+        QScrollArea::wheelEvent(event);
+    }
 }
 
 #include <widget_print_preview.moc>
