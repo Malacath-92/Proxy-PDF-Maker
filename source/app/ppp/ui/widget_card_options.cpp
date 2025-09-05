@@ -15,10 +15,12 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/linked_spin_boxes.hpp>
-#include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
+
+#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/image_browse_popup.hpp>
 
 class DefaultBacksidePreview : public QWidget
 {
@@ -227,7 +229,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto pick_backside{
         [this, &project]()
         {
-            if (const auto default_backside_choice{ OpenImageDialog(project.m_Data.m_ImageDir) })
+            if (const auto default_backside_choice{ ImageBrowsePopup{ nullptr, project }.Show() })
             {
                 project.m_Data.m_BacksideDefault = default_backside_choice.value();
                 BacksideDefaultChanged();

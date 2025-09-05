@@ -17,6 +17,8 @@
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 
+#include <ppp/ui/popups/image_browse_popup.hpp>
+
 class CardWidget : public QFrame
 {
     Q_OBJECT
@@ -196,7 +198,7 @@ class CardWidget : public QFrame
             auto backside_choose{
                 [=, this, &project]()
                 {
-                    if (const auto backside_choice{ OpenImageDialog(project.m_Data.m_ImageDir) })
+                    if (const auto backside_choice{ ImageBrowsePopup{ nullptr, project }.Show() })
                     {
                         const auto& backside{ backside_choice.value() };
                         if (backside != project.m_Data.m_Cards[m_CardName].m_Backside && backside != m_CardName)
