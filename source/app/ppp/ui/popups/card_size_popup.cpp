@@ -166,12 +166,12 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          // input bleed
-                         m_Table->setCellWidget(i, 4, c_MakeNumberEdit("0.1"));
-                         m_Table->setCellWidget(i, 5, MakeComboBox(Unit::Inches));
+                         m_Table->setCellWidget(i, 6, c_MakeNumberEdit("0.1"));
+                         m_Table->setCellWidget(i, 7, MakeComboBox(Unit::Inches));
 
                          // corner radius
-                         m_Table->setCellWidget(i, 4, c_MakeNumberEdit("0.1"));
-                         m_Table->setCellWidget(i, 5, MakeComboBox(Unit::Inches));
+                         m_Table->setCellWidget(i, 8, c_MakeNumberEdit("0.1"));
+                         m_Table->setCellWidget(i, 9, MakeComboBox(Unit::Inches));
 
                          // scale
                          auto* scale_spin_box{ new QDoubleSpinBox };
