@@ -45,6 +45,7 @@ CardImage::CardImage(const fs::path& image_name, const Project& project, Params 
 void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
     delete layout();
+    setLayout(nullptr);
 
     m_ImageName = image_name;
     m_OriginalParams = params;
@@ -144,6 +145,9 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
     {
         if (m_Spinner != nullptr)
         {
+            delete layout();
+            setLayout(nullptr);
+
             delete m_Spinner;
             m_Spinner = nullptr;
         }
