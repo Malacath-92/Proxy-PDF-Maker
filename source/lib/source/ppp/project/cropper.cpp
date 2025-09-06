@@ -642,7 +642,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                         image_preview.m_UncroppedImage = image;
                         image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
-                        image_preview.m_BadAspectRatio = with_bleed_diff > 0.01f;
+                        image_preview.m_BadAspectRatio = with_bleed_diff > 0.001f;
                     }
                     else
                     {
