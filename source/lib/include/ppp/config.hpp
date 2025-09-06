@@ -130,9 +130,9 @@ struct Config
         {
             "Poker",
             {
-                .m_CardSize{ { 2.5_in, 3.5_mm }, Unit::Inches, 1u },
-                .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
-                .m_CornerRadius{ 3_cm, Unit::Millimeter, 0u },
+                .m_CardSize{ { 2.5_in, 3.5_in }, Unit::Inches, 1u },
+                .m_InputBleed{ 3_mm, Unit::Millimeter, 0u },
+                .m_CornerRadius{ 3_mm, Unit::Millimeter, 0u },
                 .m_Hint{},
                 .m_CardSizeScale = 1.0f,
             },
