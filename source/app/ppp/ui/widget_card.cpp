@@ -98,6 +98,12 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     if (has_image)
     {
         m_Spinner = nullptr;
+
+        const bool bad_format{ project.HasBadAspectRatio(image_name) };
+        if (bad_format)
+        {
+            AddBadFormatWarning();
+        }
     }
     else
     {
@@ -161,6 +167,12 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
             }()
         };
         setPixmap(FinalizePixmap(pixmap));
+
+        const bool bad_format{ preview.m_BadAspectRatio };
+        if (bad_format)
+        {
+            AddBadFormatWarning();
+        }
     }
 }
 
@@ -212,6 +224,28 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
     }
 
     return finalized_pixmap;
+}
+
+void CardImage::AddBadFormatWarning()
+{
+    const int warning_size{ 48 };
+    QCommonStyle style{};
+    QPixmap warning_pixmap{
+        style
+            .standardIcon(QStyle::StandardPixmap::SP_MessageBoxWarning)
+            .pixmap(warning_size)
+    };
+
+    auto* format_warning{ new QLabel };
+    format_warning->setPixmap(std::move(warning_pixmap));
+    format_warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
+    format_warning->setFixedWidth(warning_size);
+    format_warning->setFixedHeight(warning_size);
+
+    QBoxLayout* layout = new QBoxLayout(QBoxLayout::TopToBottom);
+    layout->addWidget(format_warning, 0, Qt::AlignLeft);
+    layout->addStretch();
+    setLayout(layout);
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)

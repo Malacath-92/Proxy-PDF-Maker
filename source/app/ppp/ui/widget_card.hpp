@@ -42,6 +42,7 @@ class CardImage : public QLabel
 
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
+    void AddBadFormatWarning();
 
     fs::path m_ImageName;
     Params m_OriginalParams;

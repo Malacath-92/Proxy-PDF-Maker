@@ -29,6 +29,7 @@ struct ImagePreview
 {
     Image m_UncroppedImage;
     Image m_CroppedImage;
+    bool m_BadAspectRatio;
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
@@ -129,6 +130,7 @@ class Project : public QObject
     void ReorderCards(size_t from, size_t to);
 
     bool HasPreview(const fs::path& image_name) const;
+    bool HasBadAspectRatio(const fs::path& image_name) const;
     const Image& GetCroppedPreview(const fs::path& image_name) const;
     const Image& GetUncroppedPreview(const fs::path& image_name) const;
     const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;

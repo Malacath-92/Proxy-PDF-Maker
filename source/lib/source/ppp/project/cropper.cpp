@@ -625,9 +625,14 @@ bool Cropper::DoPreviewWork(T* signaller)
                     const Image source_image{ Image::Read(input_file) };
 
                     const auto image_aspect_ratio{ source_image.AspectRatio() };
-                    const bool image_has_bleed{
-                        std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio) <
+                    const auto with_bleed_diff{
+                        std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio)
+                    };
+                    const auto without_bleed_diff{
                         std::abs(image_aspect_ratio - card_aspect_ratio)
+                    };
+                    const bool image_has_bleed{
+                        with_bleed_diff < without_bleed_diff
                     };
 
                     ImagePreview image_preview{};
@@ -637,6 +642,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                         image_preview.m_UncroppedImage = image;
                         image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
+                        image_preview.m_BadAspectRatio = with_bleed_diff > 0.01f;
                     }
                     else
                     {
@@ -655,6 +661,7 @@ bool Cropper::DoPreviewWork(T* signaller)
 
                         image_preview.m_CroppedImage = image;
                         image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
+                        image_preview.m_BadAspectRatio = without_bleed_diff > 0.01f;
                     }
 
                     {

@@ -533,6 +533,14 @@ bool Project::HasPreview(const fs::path& image_name) const
 {
     return m_Data.m_Previews.contains(image_name);
 }
+bool Project::HasBadAspectRatio(const fs::path& image_name) const
+{
+    if (m_Data.m_Previews.contains(image_name))
+    {
+        return m_Data.m_Previews.at(image_name).m_BadAspectRatio;
+    }
+    return false;
+}
 
 const Image& Project::GetCroppedPreview(const fs::path& image_name) const
 {

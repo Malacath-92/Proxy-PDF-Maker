@@ -176,6 +176,8 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                     img.m_UncroppedImage = Image::Decode(img_buf);
                 }
 
+                img.m_BadAspectRatio = read(c_Tag<bool>);
+
                 img_dict[img_name] = std::move(img);
             }
 
@@ -232,6 +234,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
                 const auto buf{ image.m_UncroppedImage.EncodeJpg(50) };
                 write_arr(buf.data(), buf.size());
             }
+            write(image.m_BadAspectRatio);
         }
     }
 }
