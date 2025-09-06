@@ -228,19 +228,22 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 
 void CardImage::AddBadFormatWarning()
 {
-    const int warning_size{ 48 };
-    QCommonStyle style{};
-    QPixmap warning_pixmap{
-        style
-            .standardIcon(QStyle::StandardPixmap::SP_MessageBoxWarning)
-            .pixmap(warning_size)
+    static constexpr int c_WarningSize{ 48 };
+    const static QPixmap s_WarningPixmap{
+        []()
+        {
+            QCommonStyle style{};
+            return style
+                .standardIcon(QStyle::StandardPixmap::SP_MessageBoxWarning)
+                .pixmap(c_WarningSize);
+        }()
     };
 
     auto* format_warning{ new QLabel };
-    format_warning->setPixmap(std::move(warning_pixmap));
+    format_warning->setPixmap(s_WarningPixmap);
     format_warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
-    format_warning->setFixedWidth(warning_size);
-    format_warning->setFixedHeight(warning_size);
+    format_warning->setFixedWidth(c_WarningSize);
+    format_warning->setFixedHeight(c_WarningSize);
 
     QBoxLayout* layout = new QBoxLayout(QBoxLayout::TopToBottom);
     layout->addWidget(format_warning, 0, Qt::AlignLeft);

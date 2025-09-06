@@ -41,37 +41,38 @@ CardSizePopup::CardSizePopup(QWidget* parent,
             m_Table->clearContents();
             m_Table->setRowCount(0);
 
+            QLocale locale{};
             for (const auto& [card_name, card_size_info] : card_sizes)
             {
                 const auto& [card_size, card_base, card_decimals]{ card_size_info.m_CardSize };
                 const auto card_unit_value{ UnitValue(card_base) };
                 const auto [card_width, card_height]{ (card_size / card_unit_value).pod() };
-                const auto card_width_string{ fmt::format("{:.{}f}", card_width, card_decimals) };
-                const auto card_height_string{ fmt::format("{:.{}f}", card_height, card_decimals) };
+                const auto card_width_string{ locale.toString(card_width, 'f', card_decimals) };
+                const auto card_height_string{ locale.toString(card_height, 'f', card_decimals) };
 
                 const auto& [bleed_size, bleed_base, bleed_decimals]{ card_size_info.m_InputBleed };
                 const auto bleed_unit_value{ UnitValue(bleed_base) };
-                const auto bleed_size_string{ fmt::format("{:.{}f}", bleed_size / bleed_unit_value, bleed_decimals) };
+                const auto bleed_size_string{ locale.toString(bleed_size / bleed_unit_value, 'f', bleed_decimals) };
 
                 const auto& [corner_size, corner_base, corner_decimals]{ card_size_info.m_CornerRadius };
                 const auto corner_unit_value{ UnitValue(corner_base) };
-                const auto corner_size_string{ fmt::format("{:.{}f}", corner_size / corner_unit_value, corner_decimals) };
+                const auto corner_size_string{ locale.toString(corner_size / corner_unit_value, 'f', corner_decimals) };
 
                 int i{ m_Table->rowCount() };
                 m_Table->insertRow(i);
                 m_Table->setCellWidget(i, 0, new QLineEdit{ ToQString(card_name) });
 
                 // card size
-                m_Table->setCellWidget(i, 1, c_MakeNumberEdit(ToQString(card_width_string)));
-                m_Table->setCellWidget(i, 2, c_MakeNumberEdit(ToQString(card_height_string)));
+                m_Table->setCellWidget(i, 1, c_MakeNumberEdit(card_width_string));
+                m_Table->setCellWidget(i, 2, c_MakeNumberEdit(card_height_string));
                 m_Table->setCellWidget(i, 3, MakeComboBox(card_base));
 
                 // input bleed
-                m_Table->setCellWidget(i, 4, c_MakeNumberEdit(ToQString(bleed_size_string)));
+                m_Table->setCellWidget(i, 4, c_MakeNumberEdit(bleed_size_string));
                 m_Table->setCellWidget(i, 5, MakeComboBox(bleed_base));
 
                 // corner radius
-                m_Table->setCellWidget(i, 6, c_MakeNumberEdit(ToQString(corner_size_string)));
+                m_Table->setCellWidget(i, 6, c_MakeNumberEdit(corner_size_string));
                 m_Table->setCellWidget(i, 7, MakeComboBox(corner_base));
 
                 // scale
@@ -161,16 +162,16 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                          m_Table->setCellWidget(i, 0, new QLineEdit{ "New Card" });
 
                          // card size
-                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("3.3"));
-                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("4.4"));
+                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("3,3"));
+                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("4,4"));
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          // input bleed
-                         m_Table->setCellWidget(i, 6, c_MakeNumberEdit("0.1"));
+                         m_Table->setCellWidget(i, 6, c_MakeNumberEdit("0,1"));
                          m_Table->setCellWidget(i, 7, MakeComboBox(Unit::Inches));
 
                          // corner radius
-                         m_Table->setCellWidget(i, 8, c_MakeNumberEdit("0.1"));
+                         m_Table->setCellWidget(i, 8, c_MakeNumberEdit("0,1"));
                          m_Table->setCellWidget(i, 9, MakeComboBox(Unit::Inches));
 
                          // scale
@@ -260,10 +261,11 @@ void CardSizePopup::Apply()
 {
     std::map<std::string, Config::CardSizeInfo> card_sizes{};
 
-    static constexpr auto c_GetDecimals{
-        [](const QString& value)
+    QLocale locale{};
+    auto get_decimals{
+        [&locale](const QString& value)
         {
-            const auto value_split{ value.split(".") };
+            const auto value_split{ value.split(locale.decimalPoint()) };
             return value_split.size() == 2 ? value_split[1].size() : 0;
         }
     };
@@ -277,11 +279,11 @@ void CardSizePopup::Apply()
         const auto card_width_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 1))->text()
         };
-        const auto card_width{ card_width_str.toFloat() };
+        const auto card_width{ locale.toFloat(card_width_str) };
         const auto card_height_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 2))->text()
         };
-        const auto card_height{ card_height_str.toFloat() };
+        const auto card_height{ locale.toFloat(card_height_str) };
         const auto card_unit{
             magic_enum::enum_cast<Unit>(
                 static_cast<QComboBox*>(m_Table->cellWidget(i, 3))->currentText().toStdString())
@@ -289,32 +291,32 @@ void CardSizePopup::Apply()
         };
         const auto card_unit_value{ UnitValue(card_unit) };
         const auto card_decimals{
-            static_cast<uint32_t>(std::max(c_GetDecimals(card_width_str), c_GetDecimals(card_height_str))),
+            static_cast<uint32_t>(std::max(get_decimals(card_width_str), get_decimals(card_height_str))),
         };
 
         const auto bleed_size_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 4))->text()
         };
-        const auto bleed_size{ bleed_size_str.toFloat() };
+        const auto bleed_size{ locale.toFloat(bleed_size_str) };
         const auto bleed_unit{
             magic_enum::enum_cast<Unit>(
                 static_cast<QComboBox*>(m_Table->cellWidget(i, 5))->currentText().toStdString())
                 .value_or(Unit::Millimeter)
         };
         const auto bleed_unit_value{ UnitValue(bleed_unit) };
-        const auto bleed_decimals{ static_cast<uint32_t>(c_GetDecimals(bleed_size_str)) };
+        const auto bleed_decimals{ static_cast<uint32_t>(get_decimals(bleed_size_str)) };
 
         const auto corner_size_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 6))->text()
         };
-        const auto corner_size{ corner_size_str.toFloat() };
+        const auto corner_size{ locale.toFloat(corner_size_str) };
         const auto corner_unit{
             magic_enum::enum_cast<Unit>(
                 static_cast<QComboBox*>(m_Table->cellWidget(i, 7))->currentText().toStdString())
                 .value_or(Unit::Millimeter)
         };
         const auto corner_unit_value{ UnitValue(corner_unit) };
-        const auto corner_decimals{ static_cast<uint32_t>(c_GetDecimals(corner_size_str)) };
+        const auto corner_decimals{ static_cast<uint32_t>(get_decimals(corner_size_str)) };
 
         const auto scale{
             static_cast<QDoubleSpinBox*>(m_Table->cellWidget(i, 8))->value()

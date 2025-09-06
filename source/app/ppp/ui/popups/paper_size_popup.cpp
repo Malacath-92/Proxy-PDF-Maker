@@ -40,6 +40,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
             m_Table->clearContents();
             m_Table->setRowCount(0);
 
+            QLocale locale{};
             for (const auto& [paper_name, paper_size_info] : paper_sizes)
             {
                 if (paper_name == Config::c_FitSize || paper_name == Config::c_BasePDFSize)
@@ -50,14 +51,14 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                 const auto& [size, base, decimals]{ paper_size_info };
                 const auto unit_value{ UnitValue(base) };
                 const auto [width, height]{ (size / unit_value).pod() };
-                const auto width_string{ fmt::format("{:.{}f}", width, decimals) };
-                const auto height_string{ fmt::format("{:.{}f}", height, decimals) };
+                const auto width_string{ locale.toString(width, 'f', decimals) };
+                const auto height_string{ locale.toString(height, 'f', decimals) };
 
                 int i{ m_Table->rowCount() };
                 m_Table->insertRow(i);
                 m_Table->setCellWidget(i, 0, new QLineEdit{ ToQString(paper_name) });
-                m_Table->setCellWidget(i, 1, c_MakeNumberEdit(ToQString(width_string)));
-                m_Table->setCellWidget(i, 2, c_MakeNumberEdit(ToQString(height_string)));
+                m_Table->setCellWidget(i, 1, c_MakeNumberEdit(width_string));
+                m_Table->setCellWidget(i, 2, c_MakeNumberEdit(height_string));
                 m_Table->setCellWidget(i, 3, MakeComboBox(base));
             }
         }
@@ -118,8 +119,8 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                          int i{ m_Table->rowCount() };
                          m_Table->insertRow(i);
                          m_Table->setCellWidget(i, 0, new QLineEdit{ "New Paper" });
-                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("40.4"));
-                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("40.4"));
+                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("40,4"));
+                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("40,4"));
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          m_Table->selectRow(i);
@@ -201,10 +202,11 @@ void PaperSizePopup::Apply()
         { std::string{ Config::c_BasePDFSize }, {} },
     };
 
-    static constexpr auto c_GetDecimals{
-        [](const QString& value)
+    QLocale locale{};
+    auto get_decimals{
+        [&locale](const QString& value)
         {
-            const auto value_split{ value.split(".") };
+            const auto value_split{ value.split(locale.decimalPoint()) };
             return value_split.size() == 2 ? value_split[1].size() : 0;
         }
     };
@@ -217,11 +219,11 @@ void PaperSizePopup::Apply()
         const auto width_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 1))->text()
         };
-        const auto width{ width_str.toFloat() };
+        const auto width{ locale.toFloat(width_str) };
         const auto height_str{
             static_cast<QLineEdit*>(m_Table->cellWidget(i, 2))->text()
         };
-        const auto height{ height_str.toFloat() };
+        const auto height{ locale.toFloat(height_str) };
         const auto unit{
             magic_enum::enum_cast<Unit>(
                 static_cast<QComboBox*>(m_Table->cellWidget(i, 3))->currentText().toStdString())
@@ -229,7 +231,7 @@ void PaperSizePopup::Apply()
         };
         const auto unit_value{ UnitValue(unit) };
         const auto decimals{
-            static_cast<uint32_t>(std::max(c_GetDecimals(width_str), c_GetDecimals(height_str))),
+            static_cast<uint32_t>(std::max(get_decimals(width_str), get_decimals(height_str))),
         };
 
         page_sizes[std::move(name)] = {
