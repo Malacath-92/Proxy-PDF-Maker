@@ -687,14 +687,7 @@ void PrintOptionsWidget::SpacingChanged()
 
 void PrintOptionsWidget::AdvancedModeChanged()
 {
-    // Always enabled: m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
-    //m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
-    //m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
+    SetAdvancedWidgetsVisibility();
 }
 
 void PrintOptionsWidget::BaseUnitChanged()
@@ -840,16 +833,21 @@ void PrintOptionsWidget::SetDefaults()
 
     // Set up margin mode toggle
     m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
+    
+    SetAdvancedWidgetsVisibility();
+}
 
-    // Advanced mode settings
-    // Always enabled: m_EnableGuidesCheckbox, m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
-    //m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesOffset->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesLength->setVisible(g_Cfg.m_AdvancedMode);
-    //m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    //m_GuidesThickness->setVisible(g_Cfg.m_AdvancedMode);
+void PrintOptionsWidget::SetAdvancedWidgetsVisibility()
+{
+    // Always enabled: m_PrintOutput, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
+    m_LeftMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_TopMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_RightMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_BottomMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_MarginsMode->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_AllMarginsSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_CardOrientation->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_FlipOn->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
 }
 
 void PrintOptionsWidget::RefreshSizes()

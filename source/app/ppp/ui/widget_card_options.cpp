@@ -298,7 +298,7 @@ void CardOptionsWidget::ImageDirChanged()
 
 void CardOptionsWidget::AdvancedModeChanged()
 {
-    // Note: Everything currently available in basic mode
+    SetAdvancedWidgetsVisibility();
 }
 
 void CardOptionsWidget::BaseUnitChanged()
@@ -370,4 +370,9 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
+}
+
+void CardOptionsWidget::SetAdvancedWidgetsVisibility()
+{
+    // Note: Everything currently available in basic mode
 }

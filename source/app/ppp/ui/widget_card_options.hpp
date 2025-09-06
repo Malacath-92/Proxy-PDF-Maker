@@ -37,6 +37,7 @@ class CardOptionsWidget : public QWidget
 
   private:
     void SetDefaults();
+    void SetAdvancedWidgetsVisibility();
 
     Project& m_Project;
 

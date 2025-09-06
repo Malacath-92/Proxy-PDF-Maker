@@ -47,6 +47,7 @@ class PrintOptionsWidget : public QWidget
 
   private:
     void SetDefaults();
+    void SetAdvancedWidgetsVisibility();
 
     void RefreshSizes();
     void RefreshMargins(bool reset_margins);
