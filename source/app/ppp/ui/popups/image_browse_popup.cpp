@@ -1,5 +1,7 @@
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ranges>
+
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -106,7 +108,8 @@ class SelectableCardGrid : public QWidget
 
             for (auto& [card_name, card_info] : project.m_Data.m_Cards)
             {
-                if (std::ranges::contains(ignored_images, card_name))
+                if (std::ranges::contains(ignored_images, card_name) ||
+                    card_info.m_Transient)
                 {
                     continue;
                 }
@@ -241,7 +244,13 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
         std::ranges::count_if(ignored_images, [&](const auto& img)
                               { return project.m_Data.m_Cards.contains(img); })
     };
-    const auto has_cards{ project.m_Data.m_Cards.size() > static_cast<size_t>(num_valid_ignored_images) };
+    const auto num_valid_images{
+        std::ranges::count_if(project.m_Data.m_Cards |
+                                  std::views::values,
+                              [&](const auto& img)
+                              { return !img.m_Transient; })
+    };
+    const auto has_cards{ num_valid_images > num_valid_ignored_images };
     if (has_cards)
     {
         m_Grid = new SelectableCardGrid{ project, ignored_images };
