@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2025-07-09
+
+> [!NOTE]
+> Many features are now hidden behind the `Advanced Mode`. Be sure to check that if you are missing anything!
+
+### Added
+- A new global option named `Advanced Mode`, defaulting to off, that is used to hide a bunch of advanced options. Note that this only hides options, it does not reset any options to defaults.
+- Two popups for editing, adding, and removing paper and card sizes have been added.
+- In the preview you can now sort cards via drag-n-drop. The alphabetical order can also be restored with a button on top of the preview.
+- After generating previews the user will now be notified of images that have bad aspect ratios and will thus lead to distorted images in the final output.
+
+### Changed
+- Maximum values for margins are now more sensible in `Full` and `Linked` control.
+- Cards are now always centered within the available margins.
+- Browsing for images with native file dialogs has been replaced with a dedicated dialog in order to avoid confusion when users selected images outside of their images folder.
+
+### Fixed
+- In `Full` margins control, when reaching margins so tight that only one card fits the opposing margins will be moved to always allow a full card.
+- The cards border appears again in the preview when the `Export Exact Guides` option is enabled.
+- Extended guides are now positioned correctly with assymmetric margins.
+- Exported exact guides are now correct again with assymmetric margins.
+- The options are is now sized correctly to avoid vertical scrolling on initial startup.
+- Combo boxes and spin boxes inside the options area now consume mouse wheel input when focused, aka selected by the user.
+- Shortly flickering windows that could appear on startup and in some rare corner cases no longer appear.
+- The default `Poker` card size has been fixed to have correct units.
+
 ## [0.13.0] - 2025-19-08
 
 > [!NOTE]
