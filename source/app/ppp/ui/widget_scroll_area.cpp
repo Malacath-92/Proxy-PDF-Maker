@@ -510,6 +510,11 @@ class CardScrollArea::CardGrid : public QWidget
         adjustSize();
     }
 
+    bool HasCard(const fs::path& card_name) const
+    {
+        return m_Cards.contains(card_name);
+    }
+
     std::unordered_map<fs::path, CardWidget*>& GetCards()
     {
         return m_Cards;
@@ -635,18 +640,33 @@ void CardScrollArea::DisplayColumnsChanged()
     m_Grid->DisplayColumnsChanged();
 }
 
-void CardScrollArea::CardAdded()
+void CardScrollArea::CardAdded(const fs::path& card_name)
 {
+    if (m_Grid->HasCard(card_name))
+    {
+        return;
+    }
+
     FullRefresh();
 }
 
-void CardScrollArea::CardRemoved()
+void CardScrollArea::CardRemoved(const fs::path& card_name)
 {
+    if (!m_Grid->HasCard(card_name))
+    {
+        return;
+    }
+
     FullRefresh();
 }
 
-void CardScrollArea::CardRenamed()
+void CardScrollArea::CardRenamed(const fs::path& old_card_name, const fs::path& /*new_card_name*/)
 {
+    if (!m_Grid->HasCard(old_card_name))
+    {
+        return;
+    }
+
     FullRefresh();
 }
 
