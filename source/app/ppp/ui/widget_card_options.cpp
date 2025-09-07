@@ -229,7 +229,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto pick_backside{
         [this, &project]()
         {
-            if (const auto default_backside_choice{ ImageBrowsePopup{ nullptr, project }.Show() })
+            ImageBrowsePopup image_browser{ nullptr, project };
+            image_browser.setWindowTitle("Choose default backside");
+            if (const auto default_backside_choice{ image_browser.Show() })
             {
                 project.m_Data.m_BacksideDefault = default_backside_choice.value();
                 m_BacksideDefaultPreview->Refresh();
