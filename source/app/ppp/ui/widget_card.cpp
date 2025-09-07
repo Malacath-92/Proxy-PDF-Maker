@@ -282,11 +282,17 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
 
 StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backside)
 {
-    QCommonStyle style{};
+    const static QIcon s_ClearIcon{
+        []()
+        {
+            QCommonStyle style{};
+            return style
+                .standardIcon(QStyle::StandardPixmap::SP_DialogResetButton);
+        }()
+    };
 
     auto* reset_button{ new QPushButton };
-    reset_button->setIcon(
-        style.standardIcon(QStyle::StandardPixmap::SP_DialogResetButton));
+    reset_button->setIcon(s_ClearIcon);
     reset_button->setToolTip("Reset Backside to Default");
     reset_button->setFixedWidth(20);
     reset_button->setFixedHeight(20);
