@@ -239,6 +239,7 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
 {
     m_AutoCenter = true;
     setWindowFlags(Qt::WindowType::Dialog);
+    setWindowTitle("Choose Image");
 
     const auto num_valid_ignored_images{
         std::ranges::count_if(ignored_images, [&](const auto& img)

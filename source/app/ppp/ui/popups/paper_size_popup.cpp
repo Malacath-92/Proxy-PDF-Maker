@@ -24,6 +24,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
 {
     m_AutoCenter = true;
     setWindowFlags(Qt::WindowType::Dialog);
+    setWindowTitle("Edit Paper Sizes");
 
     static constexpr auto c_MakeNumberEdit{
         [](QString initial_string)

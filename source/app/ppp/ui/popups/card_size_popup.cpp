@@ -25,6 +25,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 {
     m_AutoCenter = true;
     setWindowFlags(Qt::WindowType::Dialog);
+    setWindowTitle("Edit Card Sizes");
 
     static constexpr auto c_MakeNumberEdit{
         [](QString initial_string)
