@@ -232,7 +232,7 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
 
 void CardImage::AddBadFormatWarning()
 {
-    static constexpr int c_WarningSize{ 48 };
+    static constexpr int c_WarningSize{ 24 };
     const static QPixmap s_WarningPixmap{
         []()
         {
