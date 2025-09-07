@@ -833,7 +833,7 @@ void PrintOptionsWidget::SetDefaults()
 
     // Set up margin mode toggle
     m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
-    
+
     SetAdvancedWidgetsVisibility();
 }
 
