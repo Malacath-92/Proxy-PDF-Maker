@@ -66,8 +66,13 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
     const bool waiting_for_infos{ m_CardInfos.size() < cards_in_deck };
     if (waiting_for_infos)
     {
+        const auto& card{ m_Cards[m_CardInfos.size()] };
         auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
-        if (!m_Cards[m_CardInfos.size()].m_CollectorNumber.has_value())
+        if (!card.m_Set.has_value())
+        {
+            m_CardInfos.push_back(std::move(reply_json));
+        }
+        else if (!card.m_CollectorNumber.has_value())
         {
             m_CardInfos.push_back(QJsonDocument{
                 reply_json["data"][0].toObject(),
