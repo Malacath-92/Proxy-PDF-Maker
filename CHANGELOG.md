@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2025-08-09
+
+### Changed
+- The MTG decklist downloader now also supports MODO, MTGA, and simple card name lists.
+
+### Fixed
+- The app will no longer crash when switching image folders in some corner cases.
+- The image browser wll no longer have weird layout when less than six images are available.
+- On the default backside, the spinner will now correctly disappear when changing the backside.
+
 ## [0.14.0] - 2025-07-09
 
 > [!NOTE]
