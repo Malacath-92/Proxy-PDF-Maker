@@ -5,6 +5,7 @@
 
 #include <QFile>
 #include <QJsonDocument>
+#include <QJsonObject>
 #include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -65,7 +66,17 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
     const bool waiting_for_infos{ m_CardInfos.size() < cards_in_deck };
     if (waiting_for_infos)
     {
-        m_CardInfos.push_back(QJsonDocument::fromJson(reply->readAll()));
+        auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
+        if (!m_Cards[m_CardInfos.size()].m_CollectorNumber.has_value())
+        {
+            m_CardInfos.push_back(QJsonDocument{
+                reply_json["data"][0].toObject(),
+            });
+        }
+        else
+        {
+            m_CardInfos.push_back(std::move(reply_json));
+        }
 
         Progress(static_cast<int>(m_CardInfos.size()),
                  static_cast<int>(m_TotalRequests));
@@ -204,15 +215,24 @@ bool ScryfallDownloader::NextRequest()
     if (want_more_infos)
     {
         const auto& card{ m_Cards[m_CardInfos.size()] };
+        LogInfo("Requesting info for card {}", card.m_Name.toStdString());
+
         if (!card.m_Set.has_value())
         {
-            // TODO
-            return false;
+            auto request_uri{
+                QString("https://api.scryfall.com/cards/named?exact=%1")
+                    .arg(card.m_Name),
+            };
+            do_request(std::move(request_uri));
         }
         else if (!card.m_CollectorNumber.has_value())
         {
-            // TODO
-            return false;
+            auto request_uri{
+                QString(R"(https://api.scryfall.com/cards/search?q=!"%1"+set:%2&unique=prints)")
+                    .arg(card.m_Name)
+                    .arg(card.m_Set.value()),
+            };
+            do_request(std::move(request_uri));
         }
         else
         {
@@ -221,10 +241,9 @@ bool ScryfallDownloader::NextRequest()
                     .arg(card.m_Set.value())
                     .arg(card.m_CollectorNumber.value()),
             };
-            LogInfo("Requesting info for card {}", card.m_Name.toStdString());
             do_request(std::move(request_uri));
-            return true;
         }
+        return true;
     }
     else if (want_more_arts)
     {
