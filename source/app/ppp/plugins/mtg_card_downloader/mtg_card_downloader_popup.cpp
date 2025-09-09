@@ -40,7 +40,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     setWindowFlags(Qt::WindowType::Dialog);
 
     m_TextInput = new QTextEdit;
-    m_TextInput->setPlaceholderText("Paste decklist or MPC Autofill xml");
+    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA) or MPC Autofill xml");
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
@@ -91,7 +91,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             switch (m_InputType)
             {
             case InputType::Decklist:
-                m_Hint->setText("Input inferred as Moxfield or Archidekt list...");
+                m_Hint->setText("Input inferred as decklist...");
                 break;
             case InputType::MPCAutofill:
                 m_Hint->setText("Input inferred as MPC Autofill xml...");
