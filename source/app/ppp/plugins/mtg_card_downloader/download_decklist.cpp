@@ -11,17 +11,7 @@
 
 #include <ppp/util/log.hpp>
 
-struct ScryfallDownloader::DecklistCard
-{
-    QString m_Name;
-    QString m_FileName;
-    uint32_t m_Amount;
-
-    std::optional<QString> m_Set;
-    std::optional<QString> m_CollectorNumber;
-
-    bool m_HasBackside{ false };
-};
+#include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
 
 struct ScryfallDownloader::BacksideRequest
 {
@@ -47,19 +37,12 @@ ScryfallDownloader::~ScryfallDownloader() = default;
 
 bool ScryfallDownloader::ParseInput(const QString& decklist)
 {
-    const auto decklist_regex{ GetDecklistRegex() };
-    const auto lines{
-        decklist.split(QRegularExpression{ "[\r\n]" }, Qt::SplitBehaviorFlags::SkipEmptyParts)
-    };
+    auto decklist_type{ InferDecklistType(decklist) };
+    m_Cards = ParseDecklist(decklist_type, decklist);
 
-    for (const auto& line : lines)
+    for (size_t i = 0; i < m_Cards.size(); i++)
     {
-        const auto match{ decklist_regex.match(line) };
-        if (match.hasMatch())
-        {
-            m_Cards.push_back(ParseDeckline(match));
-            m_FileNameIndexMap[m_Cards.back().m_FileName] = m_Cards.size() - 1;
-        }
+        m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
     }
 
     return true;
@@ -168,63 +151,6 @@ std::vector<QString> ScryfallDownloader::GetDuplicates(const QString& /*file_nam
 bool ScryfallDownloader::ProvidesBleedEdge() const
 {
     return false;
-}
-
-QRegularExpression ScryfallDownloader::GetDecklistRegex()
-{
-    /*
-        Supports following formats with
-            - N is amount,
-            - NAME is Name,
-            - S is Set,
-            - CN is Collector Number,
-            - and ... is ignored stuff
-
-        Moxfield:
-        Nx Name (S) CN
-
-        Arkidekt:
-        N Name (S) CN ...
-    */
-    return QRegularExpression{ R"'((\d+)x? "?(.*)"? \(([^ ]+)\) (\S*\d+\S*))'" };
-}
-
-ScryfallDownloader::DecklistCard ScryfallDownloader::ParseDeckline(const QRegularExpressionMatch& deckline)
-{
-    DecklistCard card{
-        .m_Name{ deckline.captured(2) },
-        .m_FileName{},
-        .m_Amount = deckline.capturedView(1).toUInt(),
-
-        .m_Set{ deckline.captured(3) },
-        .m_CollectorNumber = deckline.captured(4),
-    };
-
-    if (card.m_Set.has_value())
-    {
-        if (card.m_CollectorNumber.has_value())
-        {
-            card.m_FileName = QString{ "%1 (%2) %3.png" }
-                                  .arg(card.m_Name)
-                                  .arg(card.m_Set.value())
-                                  .arg(card.m_CollectorNumber.value())
-                                  .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-        }
-        else
-        {
-            card.m_FileName = QString{ "%1 (%2).png" }
-                                  .arg(card.m_Name)
-                                  .arg(card.m_Set.value())
-                                  .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-        }
-    }
-    else
-    {
-        card.m_FileName = QString{ "%1.png" }
-                              .arg(card.m_Name)
-                              .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-    }
-    return card;
 }
 
 bool ScryfallDownloader::HasBackside(const QJsonDocument& card_info)

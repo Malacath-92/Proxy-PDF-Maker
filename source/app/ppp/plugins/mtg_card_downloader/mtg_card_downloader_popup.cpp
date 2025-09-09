@@ -24,6 +24,7 @@
 
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
@@ -357,29 +358,7 @@ InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
         return InputType::MPCAutofill;
     }
 
-    const auto decklist_regex{ ScryfallDownloader::GetDecklistRegex() };
-    const auto is_decklist{
-        [&]()
-        {
-            const auto lines{
-                text.split(QRegularExpression{ "[\r\n]" }, Qt::SplitBehaviorFlags::SkipEmptyParts)
-            };
-            for (const auto& line : lines)
-            {
-                if (line.endsWith(":"))
-                {
-                    continue;
-                }
-
-                if (!decklist_regex.match(line).hasMatch())
-                {
-                    return false;
-                }
-            }
-            return true;
-        }()
-    };
-    if (is_decklist)
+    if (InferDecklistType(text) != DecklistType::None)
     {
         return InputType::Decklist;
     }

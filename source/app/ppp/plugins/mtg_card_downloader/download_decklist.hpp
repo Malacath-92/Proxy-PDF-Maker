@@ -12,6 +12,8 @@ class QNetworkAccessManager;
 class QNetworkReply;
 class QJsonDocument;
 
+struct DecklistCard;
+
 class ScryfallDownloader : public CardArtDownloader
 {
     Q_OBJECT
@@ -32,13 +34,8 @@ class ScryfallDownloader : public CardArtDownloader
 
     virtual bool ProvidesBleedEdge() const override;
 
-    static QRegularExpression GetDecklistRegex();
-
   private:
-    struct DecklistCard;
     struct BacksideRequest;
-
-    static DecklistCard ParseDeckline(const QRegularExpressionMatch& deckline);
 
     static bool HasBackside(const QJsonDocument& card_info);
     static QString BacksideFilename(const QString& file_name);
