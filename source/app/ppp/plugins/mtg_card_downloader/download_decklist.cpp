@@ -41,11 +41,6 @@ ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files)
                      [this]()
                      {
                          NextRequest();
-                         // TODO: More asynch
-                         // if (NextRequest())
-                         //{
-                         //    m_ScryfallTimer.start();
-                         //}
                      });
 }
 ScryfallDownloader::~ScryfallDownloader() = default;
