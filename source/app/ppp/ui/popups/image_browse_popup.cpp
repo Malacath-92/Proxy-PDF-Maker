@@ -104,8 +104,6 @@ class SelectableCardGrid : public QWidget
     {
         auto* grid_layout{ new QGridLayout };
         {
-            static constexpr auto c_DisplayColumns{ 7 };
-
             for (auto& [card_name, card_info] : project.m_Data.m_Cards)
             {
                 if (std::ranges::contains(ignored_images, card_name) ||
@@ -115,16 +113,16 @@ class SelectableCardGrid : public QWidget
                 }
 
                 const auto i{ m_Cards.size() };
-                auto* card_widget{ new SelectableCard(card_name, project) };
+                auto* card_widget{ new SelectableCard{ card_name, project } };
                 card_widget->installEventFilter(this);
-                const auto x{ static_cast<int>(i / c_DisplayColumns) };
-                const auto y{ static_cast<int>(i % c_DisplayColumns) };
+                const auto x{ static_cast<int>(i / c_Columns) };
+                const auto y{ static_cast<int>(i % c_Columns) };
                 grid_layout->addWidget(card_widget, x, y);
 
                 m_Cards.push_back(card_widget);
             }
 
-            for (size_t j = m_Cards.size(); j < c_DisplayColumns; j++)
+            for (size_t j = m_Cards.size(); j < c_Columns; j++)
             {
                 auto* card_widget{ new QWidget };
                 grid_layout->addWidget(card_widget, 0, static_cast<int>(j));
@@ -132,10 +130,15 @@ class SelectableCardGrid : public QWidget
                 QSizePolicy size_policy{ card_widget->sizePolicy() };
                 size_policy.setRetainSizeWhenHidden(true);
                 card_widget->setSizePolicy(size_policy);
+                card_widget->setVisible(false);
             }
 
-            m_Columns = c_DisplayColumns;
-            m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(m_Cards.size()) / m_Columns));
+            for (int c = 0; c < grid_layout->columnCount(); c++)
+            {
+                grid_layout->setColumnStretch(c, 1);
+            }
+
+            m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(m_Cards.size()) / c_Columns));
         }
 
         setLayout(grid_layout);
@@ -150,7 +153,7 @@ class SelectableCardGrid : public QWidget
         const auto margins{ layout()->contentsMargins() };
         const auto spacing{ layout()->spacing() };
 
-        return item_width * m_Columns + margins.left() + margins.right() + spacing * (m_Columns - 1);
+        return item_width * c_Columns + margins.left() + margins.right() + spacing * (c_Columns - 1);
     }
 
     std::optional<fs::path> GetSelectedImageName() const
@@ -172,7 +175,7 @@ class SelectableCardGrid : public QWidget
         const auto margins{ layout()->contentsMargins() };
         const auto spacing{ layout()->spacing() };
 
-        const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (m_Columns - 1)) / m_Columns };
+        const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (c_Columns - 1)) / c_Columns };
         const auto item_height{ m_Cards[0]->heightForWidth(static_cast<int>(item_width)) };
 
         const auto height{ item_height * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1) };
@@ -228,7 +231,7 @@ class SelectableCardGrid : public QWidget
 
     std::vector<SelectableCard*> m_Cards;
 
-    uint32_t m_Columns;
+    static inline constexpr uint32_t c_Columns{ 6 };
     uint32_t m_Rows;
 };
 
