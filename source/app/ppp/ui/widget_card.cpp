@@ -44,8 +44,28 @@ CardImage::CardImage(const fs::path& image_name, const Project& project, Params 
 
 void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
 {
-    delete layout();
-    setLayout(nullptr);
+    if (auto* current_layout{ static_cast<QVBoxLayout*>(layout()) })
+    {
+        while (current_layout->count() != 0)
+        {
+            auto* child{ current_layout->itemAt(0) };
+            current_layout->removeItem(child);
+
+            if (child->layout())
+            {
+                delete child->layout();
+            }
+            if (child->widget())
+            {
+                delete child->widget();
+            }
+
+            delete child;
+        }
+
+        delete current_layout;
+        m_Spinner = nullptr;
+    }
 
     m_ImageName = image_name;
     m_OriginalParams = params;
