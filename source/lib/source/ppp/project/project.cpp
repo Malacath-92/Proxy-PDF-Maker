@@ -327,12 +327,12 @@ void Project::InitProperties()
     LogInfo("Collecting images...");
 
     // Get all image files in the images directory
-    const std::vector crop_list{
+    const std::vector img_list{
         ListImageFiles(m_Data.m_ImageDir)
     };
 
     // Check that we have all our cards accounted for
-    for (const auto& img : crop_list)
+    for (const auto& img : img_list)
     {
         if (!m_Data.m_Cards.contains(img) && img != g_Cfg.m_FallbackName)
         {
@@ -351,13 +351,13 @@ void Project::InitProperties()
             std::views::transform([](const auto& item)
                                   { return std::ref(item.first); }) |
             std::views::filter([&](const auto& img)
-                               { return !std::ranges::contains(crop_list, img); }) |
+                               { return !std::ranges::contains(img_list, img); }) |
             std::ranges::to<std::vector>(),
     };
     for (const fs::path& img : stale_images)
     {
-        m_Data.m_Cards.erase(img);
         m_Data.m_Previews.erase(img);
+        m_Data.m_Cards.erase(img);
     }
 }
 
