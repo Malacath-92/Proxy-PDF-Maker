@@ -36,7 +36,7 @@ class DefaultBacksidePreview : public QWidget
         backside_default_image->setFixedWidth(c_MinimumWidth.value);
         backside_default_image->setFixedHeight(backside_height);
 
-        auto* backside_default_label{ new QLabel{ ToQString(backside_name.c_str()) } };
+        auto* backside_default_label{ new QLabel{ ClampName(ToQString(backside_name.c_str())) } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
@@ -57,10 +57,19 @@ class DefaultBacksidePreview : public QWidget
     {
         const fs::path& backside_name{ m_Project.m_Data.m_BacksideDefault };
         m_DefaultImage->Refresh(backside_name, c_MinimumWidth, m_Project);
-        m_DefaultLabel->setText(ToQString(backside_name.c_str()));
+        m_DefaultLabel->setText(ClampName(ToQString(backside_name.c_str())));
     }
 
   private:
+    static QString ClampName(const QString& name)
+    {
+        static constexpr auto c_MaxNameLength{ 20 };
+        static constexpr auto c_EllipsisSize{ 3 };
+        return name.size() > c_MaxNameLength + c_EllipsisSize
+                   ? name.left(c_MaxNameLength / 2) + "..." + name.right(c_MaxNameLength / 2)
+                   : name;
+    }
+
     inline static constexpr auto c_MinimumWidth{ 60_pix };
 
     const Project& m_Project;
