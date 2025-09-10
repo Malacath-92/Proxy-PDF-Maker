@@ -45,6 +45,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
 
+    m_FillCornersCheckbox = new QCheckBox{ "Fill Corners" };
+    m_FillCornersCheckbox->setChecked(true);
+
     m_Hint = new QLabel;
     m_Hint->setVisible(false);
 
@@ -75,6 +78,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
     layout->addWidget(m_ClearCheckbox);
+    layout->addWidget(m_FillCornersCheckbox);
     layout->addWidget(m_Hint);
     layout->addWidget(m_ProgressBar);
     layout->addWidget(buttons);
@@ -87,6 +91,8 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             m_InputType = StupidInferSource(text);
 
             m_Hint->setVisible(true);
+            m_FillCornersCheckbox->setEnabled(true);
+
             ValidateSettings();
             switch (m_InputType)
             {
@@ -95,6 +101,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                 break;
             case InputType::MPCAutofill:
                 m_Hint->setText("Input inferred as MPC Autofill xml...");
+                m_FillCornersCheckbox->setEnabled(false);
                 break;
             case InputType::None:
             default:
@@ -137,6 +144,20 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
 {
     LogInfo("Received data for card {}", file_name.toStdString());
 
+    if (m_FillCornersCheckbox->isChecked() && !m_Downloader->ProvidesBleedEdge())
+    {
+        auto image{
+            Image::Decode(EncodedImageView{
+                reinterpret_cast<const std::byte*>(image_data.constData()),
+                static_cast<size_t>(image_data.size()),
+            }),
+        };
+        const auto image_with_corners{
+            image.FillCorners(m_Project.CardCornerRadius(), m_Project.CardSize())
+        };
+        image_with_corners.Write(m_OutputDir.filePath(file_name).toStdString());
+    }
+    else
     {
         QFile file(m_OutputDir.filePath(file_name));
         file.open(QIODevice::WriteOnly);

@@ -510,6 +510,68 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
     return Image{ out_impl };
 }
 
+Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) const
+{
+    if (m_Impl.channels() != 4)
+    {
+        Image copy{};
+        copy.m_Impl = m_Impl.clone();
+        return copy;
+    }
+
+    std::vector<cv::Mat> channels{};
+    cv::split(m_Impl, channels);
+
+    // Threshold alpha so we only have those pixels left that were completely opaque
+    cv::threshold(channels[3], channels[3], 254, 255, cv::THRESH_BINARY);
+
+    // Convert to float image so we can use channels in cv::multiply
+    for (size_t i = 0; i < 4; ++i)
+    {
+        channels[i].convertTo(channels[i], CV_32FC1, 1.0f / 255);
+    }
+    
+    // Cut off anything from the source image that isn't part of the threshold area
+    for (size_t i = 0; i < 3; ++i)
+    {
+        cv::multiply(channels[i], channels[3], channels[i]);
+    }
+
+    // Repeatedly dilate all channels and merge with current iteration until corners
+    // are fully filled
+    for (int radius = 1; channels[3].at<float>(0, 0) < 1.0f; radius *= 2)
+    {
+        cv::Mat kernel{
+            cv::getStructuringElement(cv::MORPH_RECT,
+                                      cv::Size(2 * radius + 1, 2 * radius + 1),
+                                      cv::Point(radius, radius)),
+        };
+
+        for (size_t i = 0; i < 3; ++i)
+        {
+            cv::Mat blurred{};
+            cv::dilate(channels[i], blurred, kernel);
+
+            cv::multiply(channels[i], channels[3], channels[i]);
+            cv::multiply(blurred, cv::Scalar::all(1.0f) - channels[3], blurred);
+            cv::add(blurred, channels[i], channels[i]);
+        }
+
+        cv::dilate(channels[3], channels[3], kernel);
+    }
+
+    // Convert back to a uchar image
+    for (size_t i = 0; i < 4; ++i)
+    {
+        channels[i].convertTo(channels[i], CV_8UC1, 255.0f);
+    }
+
+    // Merge channels back and return
+    Image corners_filled{};
+    cv::merge(channels, corners_filled.m_Impl);
+    return corners_filled;
+}
+
 template<int Channels>
 struct CubeFilter
 {
