@@ -307,7 +307,7 @@ std::optional<QString> MPCFillDownloader::GetBackside(const QString& file_name) 
     {
         return card->m_Backside.value().m_Name;
     }
-    return std::nullopt;
+    return "__back.png";
 }
 
 std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) const
