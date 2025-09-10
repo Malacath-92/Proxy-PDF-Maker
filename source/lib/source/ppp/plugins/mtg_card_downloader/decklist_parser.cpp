@@ -220,6 +220,9 @@ std::optional<DecklistCard> RawNamesParser::LineToCard(const QString& line) cons
         .m_Name{ line },
         .m_FileName{},
         .m_Amount = 1,
+
+        .m_Set{},
+        .m_CollectorNumber{},
     };
     return card;
 }
