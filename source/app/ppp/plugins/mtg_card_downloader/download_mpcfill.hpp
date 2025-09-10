@@ -49,15 +49,25 @@ class MPCFillDownloader : public CardArtDownloader
         MPCFillCard m_Card;
         QList<uint32_t> m_Slots;
     };
+    struct PendingRequest
+    {
+        QString m_Name;
+        QString m_Uri;
+    };
 
     static QString MPCFillIdFromUrl(const QString& url);
     static CardParseResult ParseMPCFillCard(const QDomElement& element);
+
+    bool PushSingleRequest();
 
     std::vector<QString> m_SkipFiles;
 
     MPCFillSet m_Set{};
     std::unordered_map<QString, std::vector<QString>> m_Duplicates;
 
+    QNetworkAccessManager* m_NetworkManager{ nullptr };
+
     size_t m_TotalRequests{};
-    std::vector<QNetworkReply*> m_Requests{};
+    size_t m_FinishedRequests{};
+    std::vector<PendingRequest> m_PendingRequests{};
 };

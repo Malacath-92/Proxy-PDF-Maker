@@ -182,8 +182,10 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
         return false;
     }
 
+    m_NetworkManager = &network_manager;
+
     std::vector<QString> requested_ids{};
-    auto do_download{
+    auto queue_download{
         [this, &network_manager, &requested_ids](const QString& name, const QString& id)
         {
             if (std::ranges::contains(requested_ids, id))
@@ -202,38 +204,32 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
                 "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec"
             };
             auto request_uri{ QString("%1?id=%2").arg(c_DownloadScript).arg(id) };
-            LogInfo("Requesting card {}", name.toStdString());
-
-            QNetworkRequest get_request{ std::move(request_uri) };
-            QNetworkReply* reply{ network_manager.get(std::move(get_request)) };
-
-            QObject::connect(reply,
-                             &QNetworkReply::errorOccurred,
-                             reply,
-                             [reply](QNetworkReply::NetworkError error)
-                             {
-                                 LogError("Error during request {}: {}",
-                                          reply->request().url().toString().toStdString(),
-                                          QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
-                             });
-
+            m_PendingRequests.push_back({
+                name,
+                request_uri,
+            });
             requested_ids.push_back(id);
-            m_Requests.push_back(reply);
         }
     };
 
     for (const auto& card : m_Set.m_Frontsides)
     {
-        do_download(card.m_Name, card.m_Id);
+        queue_download(card.m_Name, card.m_Id);
         if (card.m_Backside.has_value())
         {
-            do_download(card.m_Backside.value().m_Name, card.m_Backside.value().m_Id);
+            queue_download(card.m_Backside.value().m_Name, card.m_Backside.value().m_Id);
         }
     }
-    do_download("__back.png", m_Set.m_BacksideId);
+    queue_download("__back.png", m_Set.m_BacksideId);
 
-    m_TotalRequests = m_Requests.size();
+    m_TotalRequests = m_PendingRequests.size();
     Progress(0, static_cast<int>(m_TotalRequests));
+
+    const auto c_MaxDownloadsInFlight{ 15 };
+    for (size_t i = 0; i < c_MaxDownloadsInFlight; ++i)
+    {
+        PushSingleRequest();
+    }
 
     return true;
 }
@@ -263,18 +259,35 @@ void MPCFillDownloader::HandleReply(QNetworkReply* reply)
 
     ImageAvailable(QByteArray::fromBase64(reply->readAll()), file_name);
 
-    std::erase(m_Requests, reply);
-    Progress(static_cast<int>(m_TotalRequests - m_Requests.size()),
+    ++m_FinishedRequests;
+    Progress(static_cast<int>(m_FinishedRequests),
              static_cast<int>(m_TotalRequests));
 
     reply->deleteLater();
+
+    PushSingleRequest();
 }
 
 std::vector<QString> MPCFillDownloader::GetFiles() const
 {
-    return m_Set.m_Frontsides |
-           std::views::transform(&MPCFillCard::m_Name) |
-           std::ranges::to<std::vector>();
+    auto frontsides{
+        m_Set.m_Frontsides |
+        std::views::transform(&MPCFillCard::m_Name)
+    };
+    auto backsides{
+        m_Set.m_Frontsides |
+        std::views::transform(&MPCFillCard::m_Backside) |
+        std::views::filter([](const auto& back)
+                           { return back.has_value(); }) |
+        std::views::transform([](const auto& back)
+                              { return back.value().m_Name; })
+    };
+    std::vector<QString> files{
+        "__back.png"
+    };
+    files.insert(files.end(), frontsides.begin(), frontsides.end());
+    files.insert(files.end(), backsides.begin(), backsides.end());
+    return files;
 }
 
 uint32_t MPCFillDownloader::GetAmount(const QString& file_name) const
@@ -340,4 +353,32 @@ MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDo
         },
         .m_Slots = std::move(slots_uint),
     };
+}
+
+bool MPCFillDownloader::PushSingleRequest()
+{
+    if (m_PendingRequests.empty())
+    {
+        return false;
+    }
+
+    auto [name, request_uri]{ m_PendingRequests.back() };
+    m_PendingRequests.pop_back();
+
+    LogInfo("Requesting card {}", name.toStdString());
+
+    QNetworkRequest get_request{ std::move(request_uri) };
+    QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+
+    QObject::connect(reply,
+                     &QNetworkReply::errorOccurred,
+                     reply,
+                     [reply](QNetworkReply::NetworkError error)
+                     {
+                         LogError("Error during request {}: {}",
+                                  reply->request().url().toString().toStdString(),
+                                  QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
+                     });
+
+    return true;
 }
