@@ -261,6 +261,7 @@ void MtgDownloaderPopup::DoDownload()
 
     m_DownloadButton->setDisabled(true);
     m_ClearCheckbox->setDisabled(true);
+    m_FillCornersCheckbox->setDisabled(true);
 }
 
 void MtgDownloaderPopup::FinalizeDownload()
