@@ -6,10 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.14.1] - 2025-08-09
+## [0.14.1] - 2025-10-09
 
 ### Changed
 - The MTG decklist downloader now also supports MODO, MTGA, and simple card name lists.
+- After downloading images from Scryfall the corners will be filled with some good approximation that should not be visible after rounding corners.
 
 ### Fixed
 - The app will no longer crash when switching image folders in some corner cases.
