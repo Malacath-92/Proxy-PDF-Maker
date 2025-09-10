@@ -67,8 +67,6 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesThicknessSpin->setSuffix(base_unit_name);
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
 
-    SetDefaults();
-
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_ExportExactGuidesCheckbox);
     layout->addWidget(m_EnableGuidesCheckbox);
@@ -82,6 +80,8 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     layout->addWidget(m_GuidesColorB);
     layout->addWidget(guides_thickness);
     setLayout(layout);
+
+    SetDefaults();
 
     auto change_export_exact_guides{
         [this](Qt::CheckState s)
