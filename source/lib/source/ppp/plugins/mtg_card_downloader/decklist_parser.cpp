@@ -239,6 +239,9 @@ std::optional<DecklistCard> MODOParser::LineToCard(const QString& line) const
         .m_Name{ deckline.captured(2) },
         .m_FileName{},
         .m_Amount = deckline.capturedView(1).toUInt(),
+
+        .m_Set{},
+        .m_CollectorNumber{},
     };
     return card;
 }
@@ -262,6 +265,7 @@ std::optional<DecklistCard> NamesAndSetParser::LineToCard(const QString& line) c
                 ? std::optional<QString>{}
                 : deckline.captured(3),
         },
+        .m_CollectorNumber{},
     };
     return card;
 }
