@@ -186,7 +186,7 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 
     std::vector<QString> requested_ids{};
     auto queue_download{
-        [this, &network_manager, &requested_ids](const QString& name, const QString& id)
+        [this, &requested_ids](const QString& name, const QString& id)
         {
             if (std::ranges::contains(requested_ids, id))
             {
