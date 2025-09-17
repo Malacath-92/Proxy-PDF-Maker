@@ -356,6 +356,7 @@ void Project::InitProperties()
     };
     for (const fs::path& img : stale_images)
     {
+        std::erase(m_Data.m_CardsList, img);
         m_Data.m_Previews.erase(img);
         m_Data.m_Cards.erase(img);
     }
