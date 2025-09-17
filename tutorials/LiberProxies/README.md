@@ -16,21 +16,9 @@ Then collect all images of cards you want to order and a back-side you like. Ren
 
 If you want to follow along this tutorial exactly, download the images in the folder `tutorial_cards` folder.
 
-### Notes on Bleed Edge
-Ideally your input images should have a 3mm bleed edge, which means they should be 3mm bigger than a printed card. To find out if they do you can check the dimensions of the image, divide the width by the height:
-- if the ratio is roughly `0.74` then the image has a 3mm bleed edge,
--  if the ratio is roughly `0.72` then it does not have a 3mm bleed edge,
-- and if it has any other ratio your image will be stretched or squished, you should find a better image.
-
-<p align="center">
-    <img src="./images/bleed_example.png" alt="Bleed Example"/>
-    <br>
-    Example calculation for a card that has a 3mm Bleed Edge
-</p>
-
 ### Card Images
 
-Next to the `proxy_pdf` executable, create a new folder and name it `liberproxies` and inside that folder create another folder named `crop`. Paste all your cards with a 3mm Bleed Edge into the `liberproxies` folder and all without into the `crop` folder.
+Next to the `proxy_pdf` executable, create a new folder and name it `liberproxies` and paste all your cards into it.
 
 ## App Setup
 
@@ -59,7 +47,6 @@ To start us off, expand the bottom section. Here we want to make sure to:
 - set `Rendering Backend` to either `LibHaru` or `PoDoFo`,
 - set `Image Format` to `Jpg`,
 - set `Jpg Quality` to `100`,
-- tick `Allow Precropped` (technically only necessary if you have images without 3mm Bleed Edge),
 - set `Color Cube` to `None` and
 - set `Max DPI` to `800`.
 
@@ -91,8 +78,9 @@ Expand the section and set the following:
 - Untick `Export Exact Guides`,
 - tick `Enable Guides`,
 - untick `Enable Backside Guides`,
-- untick `Extended Guides`,
+- tick `Enable Corner Guides`,
 - tick `Cross Guides`,
+- untick `Extended Guides`,
 - set both colors to pure white (in reality you should adjust these to make sure the guides are well visible for the cards you have),
 - set `Guides Offset` to `0mm`,
 - set `Guides Thickness` to `0.1mm`,
@@ -108,10 +96,12 @@ Now collapse this section.
 
 Expand the section and set the following:
 - Set `Output Filename` to whatever you like (this will be the name of your pdf),
-- set `Card Size` to `Magic the Gathering`,
+- set `Card Size` to `Standard`,
 - set `Paper Size` to `A4`,
-- untick `Custom Margins`,
-- set `Orientation` to `Portrait`.
+- set `Orientation` to `Portrait`,
+- set `Margin Mode` to `Auto`,
+- set `Card Orientation` to `Vertical`,
+- set `Flip On Orientation` to `Left Edge`.
 
 <p align="center">
     <img src="./images/options_print.png" alt="Print Options"/>
