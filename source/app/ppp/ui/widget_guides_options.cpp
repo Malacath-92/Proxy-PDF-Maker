@@ -373,7 +373,6 @@ void GuidesOptionsWidget::SetAdvancedWidgetsVisibility()
     m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
     m_GuidesOffsetSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
     m_GuidesLengthSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_ExtendedGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
     m_GuidesThicknessSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
 }
 
