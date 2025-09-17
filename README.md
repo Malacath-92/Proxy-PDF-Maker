@@ -22,14 +22,50 @@ On Windows you will additionally have to install Visual Studio Redistributable: 
 # Running the Program
 
 > [!NOTE]
-> This app was initially designed to work with card images that include a bleed edge. However it should be able to handle images without bleed edge by generating it on the fly. Be aware though that this is done based on aspect-ratio, so the images need to align as good as possible to avoid stretching and squishing. Card size and bleed edge can be further configured by users and changed per-game. 
+> This app was initially designed to work with card images that include a bleed edge. However it should be able to handle images without bleed edge by generating it on the fly. Be aware though that this is done based on aspect-ratio, so the images need to align as good as possible to avoid stretching and squishing. Card size and bleed edge can be further configured by users and changed per-game.
 
-First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping
+First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping.
+
+<p align="center">
+    <img src="./readme_images/sample_project.png" alt="Sample Project"/>
+    <br>
+    This is how a project may look like once images are loaded
+</p>
+
+<p align="center">
+    <img src="./readme_images/sample_preview.png" alt="Sample Preview"/>
+    <br>
+    This is the corresponding preview, giving an idea of how the pdf looks like when rendered
+</p>
+
+<p align="center">
+    <img src="./readme_images/sample_preview_rounded.png" alt="Sample Preview Rounded"/>
+    <br>
+    Here the user has changed some settings, set corners to be rounded and added spacing between cards, they are able to see the changes live in the preview
+</p>
 
 > [!NOTE]
 > Images starting with `__` will not be visible in the program. These can however still be used as backsides for other cards.
 
 Below is an outline of the different parts of the app and most importantly the many options that you can work with.
+
+<p align="center">
+    <img src="./readme_images/sample_project_backsides.png" alt="Sample Project with Backsides"/>
+    <br>
+    The project shown here has backsides selected for some cards
+</p>
+
+<p align="center">
+    <img src="./readme_images/sample_preview_backsides.png" alt="Sample Preview with Backsides"/>
+    <br>
+    And here is the preview for the generated pdf with chosen backsides
+</p>
+
+<p align="center">
+    <img src="./readme_images/sample_yugioh.png" alt="Sample YuGiOh"/>
+    <br>
+    The app supports arbitrary card sizes, here shown with YuGiOh cards
+</p>
 
 ## Cards
 The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a +/-, use these to adjust how many copies for each card you want. On the top you have global controls to +/- all cards or reset them back to 1.
