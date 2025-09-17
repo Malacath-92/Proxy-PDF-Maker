@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.2] - 2025-17-09
+
+### Changed
+- Extended guides are no longer hidden behind `Advanced Mode`.
+
+### Fixed
+- Backsides are hidden correctly again once selected.
+- The preview will now correctly ignore the `Rounded` card corners when bleed is non-zero.
+- The app will no longer experience a crash when custom sorting has been saved with images that were since deleted.
+
 ## [0.14.1] - 2025-11-09
 
 ### Changed
