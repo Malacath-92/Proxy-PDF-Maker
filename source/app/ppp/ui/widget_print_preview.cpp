@@ -471,7 +471,7 @@ class PrintPreview::PagePreview : public QWidget
     {
         setStyleSheet("background-color: white;");
 
-        const bool rounded_corners{ project.m_Data.m_Corners == CardCorners::Rounded };
+        const bool rounded_corners{ project.m_Data.m_Corners == CardCorners::Rounded && project.m_Data.m_BleedEdge <= 0_mm };
 
         m_ImageContainer = new QWidget;
         m_ImageContainer->setParent(this);
