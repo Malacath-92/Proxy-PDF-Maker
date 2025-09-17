@@ -209,7 +209,6 @@ class CardWidget : public QFrame
                             auto* new_backside_image{ new BacksideImage{ backside, project } };
                             stacked_widget->RefreshBackside(new_backside_image);
 
-                            project.HideCard(backside);
                             if (project.HideCard(backside))
                             {
                                 CardHidden();
