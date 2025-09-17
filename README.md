@@ -27,19 +27,14 @@ On Windows you will additionally have to install Visual Studio Redistributable: 
 First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping.
 
 <p align="center">
-    <img src="./readme_images/sample_project.png" alt="Sample Project"/>
+    <img src="./readme_images/sample_project.png" alt="Sample Project" width=400/>
+    <img src="./readme_images/sample_preview.png" alt="Sample Preview" width=400/>
     <br>
-    This is how a project may look like once images are loaded
+    This is how a project may look like once images are loaded and the corresponding preview, giving an idea of how the pdf looks like when rendered
 </p>
 
 <p align="center">
-    <img src="./readme_images/sample_preview.png" alt="Sample Preview"/>
-    <br>
-    This is the corresponding preview, giving an idea of how the pdf looks like when rendered
-</p>
-
-<p align="center">
-    <img src="./readme_images/sample_preview_rounded.png" alt="Sample Preview Rounded"/>
+    <img src="./readme_images/sample_preview_rounded.png" alt="Sample Preview Rounded" width=400/>
     <br>
     Here the user has changed some settings, set corners to be rounded and added spacing between cards, they are able to see the changes live in the preview
 </p>
@@ -50,19 +45,14 @@ First, throw some images in the `images` folder. Then start the program to start
 Below is an outline of the different parts of the app and most importantly the many options that you can work with.
 
 <p align="center">
-    <img src="./readme_images/sample_project_backsides.png" alt="Sample Project with Backsides"/>
+    <img src="./readme_images/sample_project_backsides.png" alt="Sample Project with Backsides" width=400/>
+    <img src="./readme_images/sample_preview_backsides.png" alt="Sample Preview with Backsides" width=400/>
     <br>
-    The project shown here has backsides selected for some cards
+    The project shown here has backsides selected for some cards and the preview for the generated pdf with chosen backsides
 </p>
 
 <p align="center">
-    <img src="./readme_images/sample_preview_backsides.png" alt="Sample Preview with Backsides"/>
-    <br>
-    And here is the preview for the generated pdf with chosen backsides
-</p>
-
-<p align="center">
-    <img src="./readme_images/sample_yugioh.png" alt="Sample YuGiOh"/>
+    <img src="./readme_images/sample_yugioh.png" alt="Sample YuGiOh" width=400/>
     <br>
     The app supports arbitrary card sizes, here shown with YuGiOh cards
 </p>

@@ -326,5 +326,5 @@ install(TARGETS
 	DESTINATION .)
 install(FILES
 	fallback.png
-	README.md
+	README.pdf
 	DESTINATION .)
