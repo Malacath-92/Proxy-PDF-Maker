@@ -117,11 +117,19 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [this]()
                      {
+                         static constexpr auto c_MakeNumberEditFromNumber{
+                             [](double number)
+                             {
+                                 QLocale locale{};
+                                 return c_MakeNumberEdit(locale.toString(number, 'f', 1));
+                             }
+                         };
+
                          int i{ m_Table->rowCount() };
                          m_Table->insertRow(i);
                          m_Table->setCellWidget(i, 0, new QLineEdit{ "New Paper" });
-                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("40,4"));
-                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("40,4"));
+                         m_Table->setCellWidget(i, 1, c_MakeNumberEditFromNumber(40.4));
+                         m_Table->setCellWidget(i, 2, c_MakeNumberEditFromNumber(40.4));
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          m_Table->selectRow(i);
