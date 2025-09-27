@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.4] - 2025-27-09
+
+### Fixed
+- When adding a new paper/card size the initial values will now respect system locale
+- When attempting to delete a paper/card size the
+
 ## [0.14.3] - 2025-27-09
 
 ### Fixed
