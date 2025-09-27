@@ -59,10 +59,10 @@ fs::path GeneratePdf(const Project& project)
     std::vector<PdfPage::LineData> backside_extended_guides;
     if (project.m_Data.m_ExtendedGuides)
     {
-        static constexpr auto g_Precision{ 0.1_pts };
+        static constexpr auto c_Precision{ 0.01_pts };
 
         const auto generate_extended_guides{
-            [page_width, page_height, bleed](const auto& transforms)
+            [page_width, page_height, bleed, corner_guides_offset](const auto& transforms)
             {
                 std::vector<PdfPage::LineData> guides;
                 if (transforms.empty())
@@ -70,67 +70,87 @@ fs::path GeneratePdf(const Project& project)
                     return guides;
                 }
 
-                std::vector<int32_t> unique_x;
-                std::vector<int32_t> unique_y;
+                struct ApproximatePosition
+                {
+                    int64_t m_Approximate;
+                    Length m_Exact;
+                };
+
+                std::vector<ApproximatePosition> unique_x;
+                std::vector<ApproximatePosition> unique_y;
                 for (const auto& transform : transforms)
                 {
-                    const auto top_left_corner{
-                        static_cast<dla::ivec2>((transform.m_Position + bleed) / g_Precision)
+                    using lvec2 = dla::tvec2<int64_t>;
+                    const auto top_left_corner_exact{
+                        transform.m_Position + corner_guides_offset
                     };
-                    if (!std::ranges::contains(unique_x, top_left_corner.x))
+                    const auto top_left_corner{
+                        static_cast<lvec2>(top_left_corner_exact / c_Precision)
+                    };
+                    if (!std::ranges::contains(unique_x, top_left_corner.x, &ApproximatePosition::m_Approximate))
                     {
-                        unique_x.push_back(top_left_corner.x);
+                        unique_x.push_back({ top_left_corner.x, top_left_corner_exact.x });
                     }
-                    if (!std::ranges::contains(unique_y, top_left_corner.y))
+                    if (!std::ranges::contains(unique_y, top_left_corner.y, &ApproximatePosition::m_Approximate))
                     {
-                        unique_y.push_back(top_left_corner.y);
+                        unique_y.push_back({ top_left_corner.y, top_left_corner_exact.y });
                     }
 
-                    const auto card_size{
-                        static_cast<dla::ivec2>((transform.m_Size - bleed * 2) / g_Precision)
+                    const auto bottom_right_corner_exact{
+                        transform.m_Position + transform.m_Size - corner_guides_offset
                     };
-                    const auto bottom_right_corner{ top_left_corner + card_size };
-                    if (!std::ranges::contains(unique_x, bottom_right_corner.x))
+                    const auto bottom_right_corner{
+                        static_cast<lvec2>(bottom_right_corner_exact / c_Precision)
+                    };
+                    if (!std::ranges::contains(unique_x, bottom_right_corner.x, &ApproximatePosition::m_Approximate))
                     {
-                        unique_x.push_back(bottom_right_corner.x);
+                        unique_x.push_back({ bottom_right_corner.x, bottom_right_corner_exact.x });
                     }
-                    if (!std::ranges::contains(unique_y, bottom_right_corner.y))
+                    if (!std::ranges::contains(unique_y, bottom_right_corner.y, &ApproximatePosition::m_Approximate))
                     {
-                        unique_y.push_back(bottom_right_corner.y);
+                        unique_y.push_back({ bottom_right_corner.y, bottom_right_corner_exact.y });
                     }
                 }
 
                 const auto extended_offset{ bleed + 1_mm };
-                const auto x_min{ std::ranges::min(unique_x) * g_Precision - extended_offset };
-                const auto x_max{ std::ranges::max(unique_x) * g_Precision + extended_offset };
-                const auto y_min{ std::ranges::min(unique_y) * g_Precision - extended_offset };
-                const auto y_max{ std::ranges::max(unique_y) * g_Precision + extended_offset };
+                const auto min_by_approximation{
+                    [](const auto& vec)
+                    {
+                        return std::ranges::min(vec, {}, &ApproximatePosition::m_Approximate).m_Exact;
+                    }
+                };
+                const auto max_by_approximation{
+                    [](const auto& vec)
+                    {
+                        return std::ranges::max(vec, {}, &ApproximatePosition::m_Approximate).m_Exact;
+                    }
+                };
+                const auto x_min{ min_by_approximation(unique_x) - extended_offset };
+                const auto x_max{ max_by_approximation(unique_x) + extended_offset };
+                const auto y_min{ min_by_approximation(unique_y) - extended_offset };
+                const auto y_max{ max_by_approximation(unique_y) + extended_offset };
 
-                for (const auto& x : unique_x)
+                for (const auto& [_, x] : unique_x)
                 {
-                    const auto real_x{ x * g_Precision };
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ real_x, page_height - y_min },
-                        .m_To{ real_x, page_height },
+                        .m_From{ x, page_height - y_min },
+                        .m_To{ x, page_height },
                     });
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ real_x, page_height - y_max },
-                        .m_To{ real_x, 0_mm },
+                        .m_From{ x, page_height - y_max },
+                        .m_To{ x, 0_mm },
                     });
                 }
 
-                for (const auto& y : unique_y)
+                for (const auto& [_, y] : unique_y)
                 {
-                    const auto real_y{
-                        page_height - y * g_Precision,
-                    };
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ x_min, real_y },
-                        .m_To{ 0_mm, real_y },
+                        .m_From{ x_min, y },
+                        .m_To{ 0_mm, y },
                     });
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ x_max, real_y },
-                        .m_To{ page_width, real_y },
+                        .m_From{ x_max, y },
+                        .m_To{ page_width, y },
                     });
                 }
 
