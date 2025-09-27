@@ -4,6 +4,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <QCursor>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -12,6 +13,7 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QTableWidget>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <ppp/qt_util.hpp>
@@ -142,6 +144,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                          const auto selected_rows{ m_Table->selectionModel()->selectedRows() };
                          if (selected_rows.isEmpty())
                          {
+                             QToolTip::showText(QCursor::pos(), "No row selected", this);
                              return;
                          }
 
