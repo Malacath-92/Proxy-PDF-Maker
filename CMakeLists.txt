@@ -65,14 +65,15 @@ string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
 
 # --------------------------------------------------
 # Find packages
-find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
-find_package(OpenCV REQUIRED)
-find_package(libharu REQUIRED)
-find_package(podofo REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(efsw REQUIRED)
+find_package(fmt REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(podofo REQUIRED)
+find_package(libharu REQUIRED)
+find_package(efsw REQUIRED)
+find_package(onnxruntime REQUIRED)
 
 # --------------------------------------------------
 # Workaround for conan not exposing this plugin
@@ -184,12 +185,12 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Xml
 	Qt6::Network
 	Qt6::TlsBackendOpenSSLPlugin
-	opencv::opencv
-	libharu::libharu
-	podofo::podofo
+	magic_enum::magic_enum
 	nlohmann_json::nlohmann_json
-	efsw::efsw
-	magic_enum::magic_enum)
+	opencv::opencv
+	podofo::podofo
+	libharu::libharu
+	efsw::efsw)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
@@ -283,7 +284,8 @@ else()
 	qt_add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 endif()
 target_link_libraries(proxy_pdf PRIVATE
-	proxy_pdf_lib)
+	proxy_pdf_lib
+	onnxruntime::onnxruntime)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES

@@ -6,8 +6,10 @@
 
 #include <fmt/ranges.h>
 
+#include <QApplication>
 #include <QCheckBox>
 #include <QLabel>
+#include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QProgressBar>
@@ -19,8 +21,10 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/app.hpp>
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
+#include <ppp/upscale_models.hpp>
 
 #include <ppp/ui/widget_label.hpp>
 
@@ -47,6 +51,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
     m_FillCornersCheckbox = new QCheckBox{ "Fill Corners" };
     m_FillCornersCheckbox->setChecked(true);
+
+    auto* upscale{ new ComboBoxWithLabel{ "Upscale", GetModelNames(), "None" } };
+    m_UpscaleModel = upscale->GetWidget();
 
     m_Hint = new QLabel;
     m_Hint->setVisible(false);
@@ -79,6 +86,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     layout->addWidget(m_TextInput);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
+    layout->addWidget(upscale);
     layout->addWidget(m_Hint);
     layout->addWidget(m_ProgressBar);
     layout->addWidget(buttons);
@@ -92,6 +100,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
             m_Hint->setVisible(true);
             m_FillCornersCheckbox->setEnabled(true);
+            m_UpscaleModel->setEnabled(true);
 
             ValidateSettings();
             switch (m_InputType)
@@ -102,6 +111,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             case InputType::MPCAutofill:
                 m_Hint->setText("Input inferred as MPC Autofill xml...");
                 m_FillCornersCheckbox->setEnabled(false);
+                m_UpscaleModel->setEnabled(false);
                 break;
             case InputType::None:
             default:
@@ -110,11 +120,29 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             }
         }
     };
+    auto change_upscale_model{
+        [this](const QString& t)
+        {
+            if (ModelRequiresDownload(t.toStdString()))
+            {
+                m_Hint->setVisible(true);
+                m_Hint->setText("Upscale model will have to be downloaded.");
+            }
+            else
+            {
+                m_Hint->setVisible(false);
+            }
+        }
+    };
 
     QObject::connect(m_TextInput,
                      &QTextEdit::textChanged,
                      this,
                      text_changed);
+    QObject::connect(m_UpscaleModel,
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_upscale_model);
 
     m_OutputDir.setAutoRemove(true);
 
@@ -164,11 +192,24 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
         file.write(image_data);
     }
 
+    if (m_InputType == InputType::Decklist)
+    {
+        const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
+        if (upscale_model != "None")
+        {
+            const auto image{ Image::Read(m_OutputDir.filePath(file_name).toStdString()) };
+            QFile::rename(m_OutputDir.filePath(file_name),
+                          m_OutputDir.filePath("orig_" + file_name));
+
+            auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+            auto upscaled_image{ RunModel(*app, upscale_model, image) };
+            upscaled_image.Write(m_OutputDir.filePath(file_name).toStdString());
+        }
+    }
+
     for (const QString& dupe_file_name : m_Downloader->GetDuplicates(file_name))
     {
-        QFile file(m_OutputDir.filePath(dupe_file_name));
-        file.open(QIODevice::WriteOnly);
-        file.write(image_data);
+        QFile::copy(m_OutputDir.filePath(file_name), m_OutputDir.filePath(dupe_file_name));
     }
 }
 
@@ -189,9 +230,65 @@ void MtgDownloaderPopup::DoDownload()
         return;
     }
 
+    m_NetworkManager = std::make_unique<QNetworkAccessManager>(this);
     InstallLogHook();
 
-    m_NetworkManager = std::make_unique<QNetworkAccessManager>(this);
+    if (m_InputType == InputType::Decklist)
+    {
+        const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
+        if (ModelRequiresDownload(upscale_model))
+        {
+            if (auto url{ GetModelUrl(upscale_model) })
+            {
+                LogInfo("Downloading model {}", upscale_model);
+                m_ProgressBar->setVisible(true);
+
+                QNetworkRequest get_request{ ToQString(url.value()) };
+                QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+
+                QObject::connect(reply,
+                                 &QNetworkReply::finished,
+                                 this,
+                                 [this, upscale_model, reply]()
+                                 {
+                                     {
+                                         QFile file(ToQString(GetModelFilename(upscale_model)));
+                                         file.open(QIODevice::WriteOnly);
+                                         file.write(reply->readAll());
+                                     }
+
+                                     m_ProgressBar->setVisible(false);
+                                     reply->deleteLater();
+
+                                     // Initiate the download again
+                                     DoDownload();
+                                 });
+                QObject::connect(reply,
+                                 &QNetworkReply::downloadProgress,
+                                 this,
+                                 [this](qint64 bytes_received, qint64 bytes_total)
+                                 {
+                                     m_ProgressBar->setValue(bytes_received);
+                                     m_ProgressBar->setMaximum(bytes_total);
+                                 });
+                QObject::connect(reply,
+                                 &QNetworkReply::errorOccurred,
+                                 reply,
+                                 [](QNetworkReply::NetworkError error)
+                                 {
+                                     LogError("Failed downloading model: {}",
+                                              QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
+                                 });
+
+                return;
+            }
+        }
+
+        LogInfo("Preloading upscaling model...");
+        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        LoadModel(*app, upscale_model);
+    }
+
     connect(m_NetworkManager.get(),
             &QNetworkAccessManager::sslErrors,
             this,
@@ -262,10 +359,21 @@ void MtgDownloaderPopup::DoDownload()
     m_DownloadButton->setDisabled(true);
     m_ClearCheckbox->setDisabled(true);
     m_FillCornersCheckbox->setDisabled(true);
+    m_UpscaleModel->setDisabled(true);
 }
 
 void MtgDownloaderPopup::FinalizeDownload()
 {
+    if (m_InputType == InputType::Decklist)
+    {
+        const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
+        if (upscale_model != "None")
+        {
+            auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+            UnloadModel(*app, upscale_model);
+        }
+    }
+
     const auto downloaded_files{
         m_Downloader->GetFiles()
     };

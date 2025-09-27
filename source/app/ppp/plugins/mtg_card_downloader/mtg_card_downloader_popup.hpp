@@ -10,6 +10,7 @@
 #include <ppp/ui/popups.hpp>
 
 class QCheckBox;
+class QComboBox;
 class QTextEdit;
 class QProgressBar;
 class QPushButton;
@@ -56,6 +57,7 @@ class MtgDownloaderPopup : public PopupBase
     QTextEdit* m_TextInput{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
+    QComboBox* m_UpscaleModel{ nullptr };
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
     QPushButton* m_DownloadButton{ nullptr };

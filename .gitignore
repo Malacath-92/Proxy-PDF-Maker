@@ -10,6 +10,7 @@ config.ini
 *.cache
 *.json
 *.pdf
+*.onnx
 
 # Intermediate file created from resource build
 *.aps
