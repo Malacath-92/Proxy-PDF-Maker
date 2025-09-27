@@ -225,7 +225,7 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
     m_TotalRequests = m_PendingRequests.size();
     Progress(0, static_cast<int>(m_TotalRequests));
 
-    const auto c_MaxDownloadsInFlight{ 15 };
+    constexpr auto c_MaxDownloadsInFlight{ 15 };
     for (size_t i = 0; i < c_MaxDownloadsInFlight; ++i)
     {
         PushSingleRequest();
