@@ -140,6 +140,11 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      [this]()
                      {
                          const auto selected_rows{ m_Table->selectionModel()->selectedRows() };
+                         if (selected_rows.isEmpty())
+                         {
+                             return;
+                         }
+
                          for (const auto& i : selected_rows | std::views::reverse)
                          {
                              m_Table->removeRow(i.row());
