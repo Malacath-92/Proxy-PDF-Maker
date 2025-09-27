@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.3] - 2025-27-09
+
+### Fixed
+- Fixed some precision issues with guides offset.
+- Fixed other precision issues with extended guides.
+
 ## [0.14.2] - 2025-17-09
 
 ### Changed
