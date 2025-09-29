@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
@@ -60,7 +61,7 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
     json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
 }
 
-ImageDataBase ImageDataBase::Read(const fs::path& path)
+ImageDataBase ImageDataBase::FromFile(const fs::path& path)
 {
     try
     {
@@ -70,21 +71,50 @@ ImageDataBase ImageDataBase::Read(const fs::path& path)
             throw std::logic_error{ "Image databse version not compatible with App version..." };
         }
 
-        ImageDataBase image_db{};
-        image_db.m_DataBase = json["db"].get<decltype(image_db.m_DataBase)>();
-        return image_db;
+        return ImageDataBase{ json["db"].get<DataBaseMap>(), path };
     }
     catch (const std::exception& e)
     {
         fmt::print("{}", e.what());
+
         // Failed loading image database, continuing with an empty image databse...
-        return ImageDataBase{};
+        return ImageDataBase{ path };
     }
 }
 
-void ImageDataBase::Write(const fs::path& path)
+ImageDataBase& ImageDataBase::Read(const fs::path& path)
 {
-    if (std::ofstream file{ path })
+    try
+    {
+        const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
+        if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
+        {
+            throw std::logic_error{ "Image databse version not compatible with App version..." };
+        }
+
+        std::lock_guard lock{ m_Mutex };
+        m_DataBase = json["db"].get<DataBaseMap>();
+        m_Path = path;
+    }
+    catch (const std::exception& e)
+    {
+        fmt::print("{}", e.what());
+
+        // Failed loading image database, continuing with an empty image databse...
+        std::lock_guard lock{ m_Mutex };
+        m_DataBase.clear();
+        m_Path.clear();
+    }
+
+    return *this;
+}
+
+void ImageDataBase::Write()
+{
+    LogInfo("Writing image database to {}", m_Path.string());
+
+    std::lock_guard lock{ m_Mutex };
+    if (std::ofstream file{ m_Path })
     {
         nlohmann::json json{};
         json["version"] = ImageDbFormatVersion();
@@ -97,6 +127,7 @@ void ImageDataBase::Write(const fs::path& path)
 
 bool ImageDataBase::FindEntry(const fs::path& destination) const
 {
+    std::lock_guard lock{ m_Mutex };
     return m_DataBase.contains(destination);
 }
 
@@ -122,6 +153,7 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
         return cur_hash;
     }
 
+    std::lock_guard lock{ m_Mutex };
     auto it{ m_DataBase.find(destination) };
     if (it != m_DataBase.end())
     {
@@ -143,8 +175,21 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
 
 void ImageDataBase::PutEntry(const fs::path& destination, QByteArray source_hash, ImageParameters params)
 {
+    std::lock_guard lock{ m_Mutex };
     m_DataBase[destination] = ImageDataBaseEntry{
         .m_SourceHash{ std::move(source_hash) },
         .m_Params{ params },
     };
+}
+
+ImageDataBase::ImageDataBase(fs::path path)
+    : m_Path{ std::move(path) }
+{
+}
+
+ImageDataBase::ImageDataBase(DataBaseMap database,
+                             fs::path path)
+    : m_DataBase{ std::move(database) }
+    , m_Path{ std::move(path) }
+{
 }

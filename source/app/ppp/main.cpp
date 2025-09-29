@@ -1,7 +1,7 @@
 #include <fmt/format.h>
 
 #include <QApplication>
-#include <QPushButton>
+#include <QThreadPool>
 
 #include <QtPlugin>
 #ifdef WIN32
@@ -16,7 +16,6 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
-#include <ppp/project/cropper_thread_router.hpp>
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
@@ -72,6 +71,11 @@ int main(int argc, char** argv)
 
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
+
+    {
+        const int max_worker_threads{ std::max(QThread::idealThreadCount() - 2, 2) };
+        QThreadPool::globalInstance()->setMaxThreadCount(max_worker_threads);
+    }
 
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
@@ -182,33 +186,9 @@ int main(int argc, char** argv)
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
     }
 
-    CropperThreadRouter cropper_router{ project };
     {
-        QObject::connect(&cropper_router, &CropperThreadRouter::NewProjectOpenedDiff, &cropper, &Cropper::ClearCropWork);
-        QObject::connect(&cropper_router, &CropperThreadRouter::ImageDirChangedDiff, &cropper, &Cropper::ClearCropWork);
-        QObject::connect(&cropper_router, &CropperThreadRouter::CardSizeChangedDiff, &cropper, &Cropper::ClearCropWork);
-        QObject::connect(&cropper_router, &CropperThreadRouter::BleedChangedDiff, &cropper, &Cropper::ClearCropWork);
-
-        QObject::connect(&cropper_router, &CropperThreadRouter::BasePreviewWidthChangedDiff, &cropper, &Cropper::ClearPreviewWork);
-
-        QObject::connect(&cropper_router, &CropperThreadRouter::NewProjectOpenedDiff, &cropper, &Cropper::NewProjectOpenedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::ImageDirChangedDiff, &cropper, &Cropper::ImageDirChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::CardSizeChangedDiff, &cropper, &Cropper::CardSizeChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::BleedChangedDiff, &cropper, &Cropper::BleedChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::ColorCubeChangedDiff, &cropper, &Cropper::ColorCubeChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::BasePreviewWidthChangedDiff, &cropper, &Cropper::BasePreviewWidthChangedDiff);
-        QObject::connect(&cropper_router, &CropperThreadRouter::MaxDPIChangedDiff, &cropper, &Cropper::MaxDPIChangedDiff);
-    }
-
-    {
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper_router, &CropperThreadRouter::NewProjectOpened);
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper_router, &CropperThreadRouter::ImageDirChanged);
-        QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &cropper_router, &CropperThreadRouter::CardSizeChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &cropper_router, &CropperThreadRouter::BleedChanged);
-
-        QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &cropper_router, &CropperThreadRouter::ColorCubeChanged);
-        QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &cropper_router, &CropperThreadRouter::BasePreviewWidthChanged);
-        QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &cropper_router, &CropperThreadRouter::MaxDPIChanged);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
     }
 
     {

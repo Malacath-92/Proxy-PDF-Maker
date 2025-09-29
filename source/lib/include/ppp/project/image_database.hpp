@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include <QByteArray>
 
 #include <ppp/util.hpp>
@@ -22,8 +24,10 @@ struct ImageDataBaseEntry
 class ImageDataBase
 {
   public:
-    static ImageDataBase Read(const fs::path& path);
-    void Write(const fs::path& path);
+    static ImageDataBase FromFile(const fs::path& path);
+
+    ImageDataBase& Read(const fs::path& path);
+    void Write();
 
     // Checks if the given file is part of the database at all, indicating that
     // we previously touched this file
@@ -39,5 +43,14 @@ class ImageDataBase
     void PutEntry(const fs::path& destination, QByteArray source_hash, ImageParameters params);
 
   private:
-    std::unordered_map<fs::path, ImageDataBaseEntry> m_DataBase;
+    using DataBaseMap = std::unordered_map<fs::path, ImageDataBaseEntry>;
+
+    ImageDataBase(fs::path path);
+    ImageDataBase(DataBaseMap database,
+                  fs::path path);
+
+    mutable std::mutex m_Mutex;
+    DataBaseMap m_DataBase;
+
+    fs::path m_Path;
 };

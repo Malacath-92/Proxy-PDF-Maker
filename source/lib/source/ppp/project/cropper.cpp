@@ -3,7 +3,7 @@
 #include <ranges>
 
 #include <QDebug>
-#include <QThread>
+#include <QThreadPool>
 #include <QTimer>
 
 #include <fmt/chrono.h>
@@ -12,153 +12,72 @@
 
 #include <ppp/util/log.hpp>
 
-#include <ppp/project/cropper_signal_router.hpp>
-#include <ppp/project/image_ops.hpp>
+#include <ppp/project/cropper_work.hpp>
 
-Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project)
-    : m_GetColorCube{ std::move(get_color_cube) }
-    , m_ImageDB{ ImageDataBase::Read(project.m_Data.m_CropDir / ".image.db") }
-    , m_Data{ project.m_Data }
-    , m_Cfg{ g_Cfg }
-    , m_LoadedPreviews{ project.m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>() }
+Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
+                 const Project& project)
+    : m_Project{ project }
+    , m_GetColorCube{ std::move(get_color_cube) }
+    , m_ImageDB{ ImageDataBase::FromFile(project.m_Data.m_CropDir / ".image.db") }
 {
+    m_CropFinishedTimer.setSingleShot(true);
+    m_CropFinishedTimer.setInterval(c_IdleTimeBeforeDoneTrigger);
+
+    QObject::connect(&m_CropFinishedTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         m_TotalCropWorkToDo = 0;
+                         m_TotalCropWorkDone = 0;
+
+                         const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
+                         const auto crop_work_duration{ crop_work_end_point - m_CropWorkStartPoint };
+                         LogInfo("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
+                                 m_TotalCropWorkDone,
+                                 std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
+
+                         CropWorkDone();
+                     });
 }
 Cropper::~Cropper()
 {
-    m_Quit.store(true, std::memory_order_relaxed);
-    while (m_ThreadsDone != 2)
+    for (auto& [_, work] : m_CropWork)
+    {
+        work->Cancel();
+    }
+    for (auto& [_, work] : m_PreviewWork)
+    {
+        work->Cancel();
+    }
+
+    while (m_AliveCropperWork.load(std::memory_order_acquire))
         /* spin */;
 
-    m_CropThread->quit();
-    m_PreviewThread->quit();
-
-    m_CropThread->wait();
-    m_PreviewThread->wait();
-
-    delete m_CropTimer;
-    delete m_PreviewTimer;
-
-    delete m_CropThread;
-    delete m_PreviewThread;
-
-    delete m_Router;
-
-    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
+    m_ImageDB.Write();
 }
 
 void Cropper::Start()
 {
-    m_Router = new CropperSignalRouter;
-    m_Router->SetWork(std::bind_front(&Cropper::PreviewWork, this));
-    QObject::connect(m_Router, &CropperSignalRouter::CropWorkStart, this, &Cropper::CropWorkStart);
-    QObject::connect(m_Router, &CropperSignalRouter::CropWorkDone, this, &Cropper::CropWorkDone);
-    QObject::connect(m_Router, &CropperSignalRouter::PreviewWorkStart, this, &Cropper::PreviewWorkStart);
-    QObject::connect(m_Router, &CropperSignalRouter::PreviewWorkDone, this, &Cropper::PreviewWorkDone);
-    QObject::connect(m_Router, &CropperSignalRouter::CropProgress, this, &Cropper::CropProgress);
-    QObject::connect(m_Router, &CropperSignalRouter::PreviewUpdated, this, &Cropper::PreviewUpdated);
+    OnStart();
 
-    m_CropThread = new QThread{};
-    m_CropThread->setObjectName("Cropper Crop Work Thread");
-    this->moveToThread(m_CropThread);
-
-    m_PreviewThread = new QThread{};
-    m_PreviewThread->setObjectName("Cropper Preview Work Thread");
-    m_Router->moveToThread(m_PreviewThread);
-
-    using QTimerStart = void (QTimer::*)();
-    static constexpr QTimerStart timer_start{ &QTimer::start };
-
-    m_CropTimer = new QTimer;
-    m_CropTimer->setInterval(5);
-    m_CropTimer->setSingleShot(true);
-    QObject::connect(m_CropTimer, &QTimer::timeout, this, &Cropper::CropWork);
-    QObject::connect(this, &Cropper::RestartTimers, m_CropTimer, timer_start);
-    m_CropTimer->start();
-    m_CropTimer->moveToThread(m_CropThread);
-
-    m_PreviewTimer = new QTimer;
-    m_PreviewTimer->setInterval(5);
-    m_PreviewTimer->setSingleShot(true);
-    QObject::connect(m_PreviewTimer, &QTimer::timeout, m_Router, &CropperSignalRouter::DoWork);
-    QObject::connect(this, &Cropper::RestartTimers, m_PreviewTimer, timer_start);
-    m_PreviewTimer->start();
-    m_PreviewTimer->moveToThread(m_PreviewThread);
-
-    m_CropThread->start();
-    m_PreviewThread->start();
+    m_State = State::Running;
 }
 
 void Cropper::ClearCropWork()
 {
-    std::lock_guard work_lock{ m_PendingCropWorkMutex };
-    m_PendingCropWork.clear();
+    OnClearCropWork();
 }
 
 void Cropper::ClearPreviewWork()
 {
-    std::lock_guard work_lock{ m_PendingPreviewWorkMutex };
-    m_PendingPreviewWork.clear();
+    OnClearPreviewWork();
 }
 
-void Cropper::NewProjectOpenedDiff(const Project::ProjectData& data)
+void Cropper::CropDirChanged()
 {
-    {
-        std::unique_lock lock{ m_ImageDBMutex };
-        m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
-        m_ImageDB = ImageDataBase::Read(data.m_CropDir / ".image.db");
-    }
-
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Data = data;
-    m_LoadedPreviews = m_Data.m_Previews | std::views::keys | std::ranges::to<std::vector>();
-}
-
-void Cropper::ImageDirChangedDiff(const fs::path& image_dir,
-                                  const fs::path& crop_dir,
-                                  const fs::path& uncrop_dir,
-                                  const std::vector<fs::path>& loaded_previews)
-{
-    {
-        std::unique_lock lock{ m_ImageDBMutex };
-        m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
-        m_ImageDB = ImageDataBase::Read(crop_dir / ".image.db");
-    }
-
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Data.m_ImageDir = image_dir;
-    m_Data.m_CropDir = crop_dir;
-    m_Data.m_UncropDir = uncrop_dir;
-    m_LoadedPreviews = loaded_previews;
-}
-
-void Cropper::CardSizeChangedDiff(std::string card_size)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Data.m_CardSizeChoice = std::move(card_size);
-}
-
-void Cropper::BleedChangedDiff(Length bleed)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Data.m_BleedEdge = bleed;
-}
-
-void Cropper::ColorCubeChangedDiff(const std::string& cube_name)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.m_ColorCube = cube_name;
-}
-
-void Cropper::BasePreviewWidthChangedDiff(Pixel base_preview_width)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.m_BasePreviewWidth = base_preview_width;
-}
-
-void Cropper::MaxDPIChangedDiff(PixelDensity dpi)
-{
-    std::unique_lock lock{ m_PropertyMutex };
-    m_Cfg.m_MaxDPI = dpi;
+    m_ImageDB.Write();
+    m_ImageDB.Read(m_Project.m_Data.m_CropDir / ".image.db");
 }
 
 void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview)
@@ -170,20 +89,17 @@ void Cropper::CardRemoved(const fs::path& card_name)
 {
     RemoveWork(card_name);
 
-    std::erase(m_LoadedPreviews, card_name);
-
-    if (m_Pause.load(std::memory_order_relaxed))
+    if (m_State == State::Paused)
     {
         return;
     }
 
-    std::shared_lock lock{ m_PropertyMutex };
-    if (fs::exists(m_Data.m_CropDir / card_name))
+    if (fs::exists(m_Project.m_Data.m_CropDir / card_name))
     {
-        fs::remove(m_Data.m_CropDir / card_name);
-        fs::remove(m_Data.m_UncropDir / card_name);
+        fs::remove(m_Project.m_Data.m_CropDir / card_name);
+        fs::remove(m_Project.m_Data.m_UncropDir / card_name);
 
-        for (const auto& entry : fs::recursive_directory_iterator(m_Data.m_CropDir))
+        for (const auto& entry : fs::recursive_directory_iterator(m_Project.m_Data.m_CropDir))
         {
             if (entry.is_directory() && fs::exists(entry.path() / card_name))
             {
@@ -197,13 +113,12 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
 {
     RemoveWork(old_card_name);
 
-    std::shared_lock lock{ m_PropertyMutex };
-    if (fs::exists(m_Data.m_CropDir / old_card_name))
+    if (fs::exists(m_Project.m_Data.m_CropDir / old_card_name))
     {
-        fs::rename(m_Data.m_CropDir / old_card_name, m_Data.m_CropDir / new_card_name);
+        fs::rename(m_Project.m_Data.m_CropDir / old_card_name, m_Project.m_Data.m_CropDir / new_card_name);
     }
 
-    for (const auto& entry : fs::recursive_directory_iterator(m_Data.m_CropDir))
+    for (const auto& entry : fs::recursive_directory_iterator(m_Project.m_Data.m_CropDir))
     {
         if (entry.is_directory() && fs::exists(entry.path() / old_card_name))
         {
@@ -219,481 +134,162 @@ void Cropper::CardModified(const fs::path& card_name)
 
 void Cropper::PauseWork()
 {
-    m_Pause.store(true, std::memory_order_relaxed);
-    while (m_ThreadsPaused != 2)
+    m_State = State::Paused;
+
+    for (auto& [_, work] : m_CropWork)
+    {
+        work->Pause();
+    }
+    for (auto& [_, work] : m_PreviewWork)
+    {
+        work->Pause();
+    }
+
+    while (m_RunningCropperWork.load(std::memory_order_acquire))
         /* spin */;
 }
 
 void Cropper::RestartWork()
 {
-    if (m_Pause.load(std::memory_order_relaxed))
+    for (auto& [_, work] : m_CropWork)
     {
-        m_ThreadsPaused.store(0, std::memory_order_relaxed);
-        m_Pause.store(false, std::memory_order_relaxed);
-        RestartTimers(QPrivateSignal{});
+        work->Unpause();
     }
+    for (auto& [_, work] : m_PreviewWork)
+    {
+        work->Unpause();
+    }
+
+    m_State = State::Running;
 }
 
 void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview)
 {
     if (needs_crop)
     {
-        std::lock_guard lock{ m_PendingCropWorkMutex };
-        if (!std::ranges::contains(m_PendingCropWork, card_name))
+        if (!m_CropWork.contains(card_name))
         {
-            m_PendingCropWork.push_back(card_name);
+            auto* crop_work{
+                new CropperCropWork{
+                    m_AliveCropperWork,
+                    m_RunningCropperWork,
+                    card_name,
+                    m_GetColorCube,
+                    m_ImageDB,
+                    m_Project.m_Data }
+            };
+
+            QObject::connect(this,
+                             &Cropper::OnStart,
+                             crop_work,
+                             &CropperWork::Start);
+            QObject::connect(this,
+                             &Cropper::OnClearCropWork,
+                             crop_work,
+                             &CropperWork::Cancel);
+
+            QObject::connect(crop_work,
+                             &CropperPreviewWork::Finished,
+                             this,
+                             [this, card_name, crop_work]()
+                             {
+                                 if (m_CropWork.contains(card_name) &&
+                                     m_CropWork[card_name] == crop_work)
+                                 {
+                                     m_CropWork.erase(card_name);
+                                 }
+
+                                 m_TotalCropWorkDone++;
+                                 if (m_TotalCropWorkDone == m_TotalCropWorkToDo)
+                                 {
+                                     m_CropFinishedTimer.start();
+                                 }
+                                 else
+                                 {
+                                     const float progress{
+                                         float(m_TotalCropWorkDone) / m_TotalCropWorkToDo,
+                                     };
+                                     CropProgress(progress);
+                                 }
+                             });
+
+            if (m_TotalCropWorkToDo == 0)
+            {
+                m_CropWorkStartPoint = std::chrono::high_resolution_clock::now();
+                CropWorkStart();
+            }
+
+            m_CropWork[card_name] = crop_work;
+            m_TotalCropWorkToDo++;
+
+            m_CropFinishedTimer.stop();
+
+            if (m_State == State::Running)
+            {
+                crop_work->Start();
+            }
         }
     }
+
     if (needs_preview)
     {
-        std::lock_guard lock{ m_PendingPreviewWorkMutex };
-        if (!std::ranges::contains(m_PendingPreviewWork, card_name))
+        if (!m_PreviewWork.contains(card_name))
         {
-            m_PendingPreviewWork.push_back(card_name);
+            auto* preview_work{
+                new CropperPreviewWork{
+                    m_AliveCropperWork,
+                    card_name,
+                    !m_Project.m_Data.m_Previews.contains(card_name),
+                    m_ImageDB,
+                    m_Project.m_Data }
+            };
+
+            QObject::connect(this,
+                             &Cropper::OnStart,
+                             preview_work,
+                             &CropperWork::Start);
+            QObject::connect(this,
+                             &Cropper::OnClearPreviewWork,
+                             preview_work,
+                             &CropperWork::Cancel);
+
+            QObject::connect(preview_work,
+                             &CropperPreviewWork::PreviewUpdated,
+                             this,
+                             &Cropper::PreviewUpdated);
+            QObject::connect(preview_work,
+                             &CropperPreviewWork::Finished,
+                             this,
+                             [this, card_name, preview_work]()
+                             {
+                                 if (m_PreviewWork.contains(card_name) &&
+                                     m_PreviewWork[card_name] == preview_work)
+                                 {
+                                     m_PreviewWork.erase(card_name);
+                                 }
+                             });
+
+            m_PreviewWork[card_name] = preview_work;
+
+            if (m_State == State::Running)
+            {
+                preview_work->Start();
+            }
         }
     }
 }
 
 void Cropper::RemoveWork(const fs::path& card_name)
 {
+    if (m_CropWork.contains(card_name))
     {
-        std::lock_guard lock{ m_PendingCropWorkMutex };
-        auto it{ std::ranges::find(m_PendingCropWork, card_name) };
-        if (it != m_PendingCropWork.end())
-        {
-            m_PendingCropWork.erase(it);
-        }
+        m_CropWork[card_name]->Cancel();
     }
+    if (m_PreviewWork.contains(card_name))
     {
-        std::lock_guard lock{ m_PendingPreviewWorkMutex };
-        auto it{ std::ranges::find(m_PendingPreviewWork, card_name) };
-        if (it != m_PendingPreviewWork.end())
-        {
-            m_PendingPreviewWork.erase(it);
-        }
-    }
-}
-
-void Cropper::CropWork()
-{
-    if (m_Pause.load(std::memory_order_relaxed))
-    {
-        m_ThreadsPaused++;
-        return;
+        m_PreviewWork[card_name]->Cancel();
     }
 
-    if (m_Quit.load(std::memory_order_relaxed))
-    {
-        m_ThreadsDone++;
-        return;
-    }
-
-    if (DoCropWork(this))
-    {
-        if (m_CropDone.load(std::memory_order_relaxed) == 0)
-        {
-            m_CropWorkStartPoint = std::chrono::high_resolution_clock::now();
-            this->CropWorkStart();
-            m_TotalWorkDone.store(0, std::memory_order_relaxed);
-            m_CropDone.store(c_UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
-        }
-    }
-    else
-    {
-        if (m_CropDone.load(std::memory_order_relaxed) != 0)
-        {
-            if (m_CropDone.fetch_sub(1, std::memory_order_relaxed) == 1)
-            {
-                this->CropWorkDone();
-
-                {
-                    std::shared_lock image_db_lock{ m_ImageDBMutex };
-                    std::shared_lock property_lock{ m_PropertyMutex };
-                    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
-                }
-
-                const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
-                const auto crop_work_duration{ crop_work_end_point - m_CropWorkStartPoint };
-                LogInfo("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
-                        m_TotalWorkDone.load(std::memory_order_relaxed),
-                        std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
-            }
-        }
-
-        // Steal work from preview thread, only if that thread is already working on it
-        // so we don't miss the done signal
-        if (m_PreviewDone.load(std::memory_order_relaxed) != 0)
-        {
-            DoPreviewWork(this);
-        }
-    }
-
-    m_CropTimer->start();
-}
-
-void Cropper::PreviewWork()
-{
-    if (m_Pause.load(std::memory_order_relaxed))
-    {
-        m_ThreadsPaused++;
-        return;
-    }
-
-    if (m_Quit.load(std::memory_order_relaxed))
-    {
-        m_ThreadsDone++;
-        return;
-    }
-
-    if (DoPreviewWork(m_Router))
-    {
-        if (m_PreviewDone.load(std::memory_order_relaxed) == 0)
-        {
-            m_Router->PreviewWorkStart();
-            m_PreviewDone.store(c_UpdatesBeforeDoneTrigger, std::memory_order_relaxed);
-        }
-    }
-    else
-    {
-        if (m_PreviewDone.load(std::memory_order_relaxed) != 0)
-        {
-            if (m_PreviewDone.fetch_sub(1, std::memory_order_relaxed) == 1)
-            {
-                m_Router->PreviewWorkDone();
-
-                {
-                    std::shared_lock image_db_lock{ m_ImageDBMutex };
-                    std::shared_lock property_lock{ m_PropertyMutex };
-                    m_ImageDB.Write(m_Data.m_CropDir / ".image.db");
-                }
-            }
-        }
-
-        // Steal work from crop thread, only if that thread is already working on it
-        // so we don't miss the done signal
-        if (m_CropDone.load(std::memory_order_relaxed) != 0)
-        {
-            DoCropWork(m_Router);
-        }
-    }
-
-    m_PreviewTimer->start();
-}
-
-template<class T>
-bool Cropper::DoCropWork(T* signaller)
-{
-    struct Work
-    {
-        fs::path m_CardName;
-        float m_Progress;
-    };
-    auto pop_work{
-        [this]() -> std::optional<Work>
-        {
-            fs::path first_work_to_do;
-            float work_left;
-            {
-                std::lock_guard lock{ m_PendingCropWorkMutex };
-                if (m_PendingCropWork.empty())
-                {
-                    return std::nullopt;
-                }
-
-                first_work_to_do = std::move(m_PendingCropWork.front());
-                m_PendingCropWork.erase(m_PendingCropWork.begin());
-                work_left = static_cast<float>(m_PendingCropWork.size());
-            }
-
-            const float work_done{ static_cast<float>(m_TotalWorkDone.fetch_add(1, std::memory_order_relaxed)) };
-            return Work{
-                std::move(first_work_to_do),
-                work_done / (work_done + work_left),
-            };
-        },
-    };
-
-    if (auto crop_work_to_do{ pop_work() })
-    {
-        auto [card_name, progress]{ std::move(crop_work_to_do).value() };
-
-        try
-        {
-            std::shared_lock lock{ m_PropertyMutex };
-            const Length bleed_edge{ m_Data.m_BleedEdge };
-            const PixelDensity max_density{ m_Cfg.m_MaxDPI };
-
-            const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
-            const auto card_size{ m_Data.CardSize(m_Cfg) };
-            const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
-            const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
-
-            const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
-
-            const std::string color_cube_name{ m_Cfg.m_ColorCube };
-
-            const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
-
-            const fs::path input_file{ m_Data.m_ImageDir / card_name };
-            const fs::path crop_dir{ m_Data.m_CropDir };
-            const fs::path uncrop_dir{ m_Data.m_UncropDir };
-            lock.unlock();
-
-            const fs::path crop_file{ crop_dir / card_name };
-            const fs::path output_file{ output_dir / card_name };
-
-            const auto card_aspect_ratio{ card_size.x / card_size.y };
-            const auto card_with_full_bleed_aspect_ratio{
-                card_size_with_full_bleed.x / card_size_with_full_bleed.y
-            };
-
-            const bool do_color_correction{ color_cube_name != "None" };
-            const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
-
-            ImageParameters image_params{
-                .m_DPI{ max_density },
-                .m_CardSize{ card_size },
-                .m_FullBleedEdge{ full_bleed_edge },
-            };
-
-            AtScopeExit update_progress{
-                [&]()
-                {
-                    signaller->CropProgress(progress);
-                }
-            };
-
-            QByteArray input_file_hash{
-                [&, this]()
-                {
-                    std::shared_lock image_db_lock{ m_ImageDBMutex };
-                    return m_ImageDB.TestEntry(output_file, input_file, image_params);
-                }()
-            };
-
-            // empty hash indicates that the source has not changed
-            if (input_file_hash.isEmpty())
-            {
-                return true;
-            }
-
-            Image source_image{ Image::Read(input_file) };
-
-            const auto image_aspect_ratio{ source_image.AspectRatio() };
-            const bool image_has_bleed{
-                std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio) <
-                std::abs(image_aspect_ratio - card_aspect_ratio)
-            };
-            const bool image_is_precropped{ !image_has_bleed };
-
-            if (image_is_precropped)
-            {
-                const auto uncropped_file_path{ uncrop_dir / card_name };
-
-                QByteArray uncrop_input_file_hash{
-                    [&, this]()
-                    {
-                        std::shared_lock image_db_lock{ m_ImageDBMutex };
-                        return m_ImageDB.TestEntry(uncropped_file_path, input_file, image_params);
-                    }()
-                };
-
-                // empty hash indicates that the source has not changed
-                if (uncrop_input_file_hash.isEmpty())
-                {
-                    // load the uncropped file
-                    source_image = Image::Read(uncropped_file_path);
-                }
-                else
-                {
-                    // do the uncrop, write the file, and copy to source_image
-                    const Image uncropped_image{ UncropImage(source_image, card_name, card_size, fancy_uncrop) };
-                    uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
-                    source_image = std::move(uncropped_image);
-
-                    std::unique_lock image_db_lock{ m_ImageDBMutex };
-                    m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
-                }
-            }
-
-            const Image cropped_image{ CropImage(source_image, card_name, card_size, full_bleed_edge, bleed_edge, max_density) };
-            if (do_color_correction)
-            {
-                const Image vibrant_image{ cropped_image.ApplyColorCube(*color_cube) };
-                vibrant_image.Write(output_file, 3, 100, card_size_with_bleed);
-            }
-            else
-            {
-                cropped_image.Write(output_file, 3, 100, card_size_with_bleed);
-            }
-
-            // If there are any early-exists we need to move this into a RAII wrapper
-            std::unique_lock image_db_lock{ m_ImageDBMutex };
-            m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
-
-            return true;
-        }
-        catch (...)
-        {
-            // If user updated the file we may be reading it's still being written to,
-            // Hopefully that's the only reason to end up here...
-            std::lock_guard lock{ m_PendingCropWorkMutex };
-            if (!std::ranges::contains(m_PendingCropWork, card_name))
-            {
-                m_PendingCropWork.push_back(std::move(card_name));
-            }
-
-            // We have failed, but we tried doing work, so we return true
-            return true;
-        }
-    }
-
-    return false;
-}
-
-template<class T>
-bool Cropper::DoPreviewWork(T* signaller)
-{
-    auto pop_work{
-        [this]() -> std::optional<fs::path>
-        {
-            std::lock_guard lock{ m_PendingPreviewWorkMutex };
-            if (m_PendingPreviewWork.empty())
-            {
-                return std::nullopt;
-            }
-
-            fs::path first_work_to_do{ std::move(m_PendingPreviewWork.front()) };
-            m_PendingPreviewWork.erase(m_PendingPreviewWork.begin());
-            return first_work_to_do;
-        },
-    };
-
-    if (auto preview_work_to_do{ pop_work() })
-    {
-        fs::path card_name{ std::move(preview_work_to_do).value() };
-
-        try
-        {
-            std::shared_lock lock{ m_PropertyMutex };
-            const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
-            const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
-            const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
-            const Size card_size{ m_Data.CardSize(m_Cfg) };
-            const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
-
-            const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
-
-            const fs::path input_file{ m_Data.m_ImageDir / card_name };
-            const fs::path crop_file{ m_Data.m_CropDir / card_name };
-
-            const bool has_preview{ std::ranges::contains(m_LoadedPreviews, card_name) };
-            lock.unlock();
-
-            const auto card_aspect_ratio{ card_size.x / card_size.y };
-            const auto card_with_full_bleed_aspect_ratio{
-                card_size_with_full_bleed.x / card_size_with_full_bleed.y
-            };
-
-            const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
-
-            // Fake image parameters
-            ImageParameters image_params{
-                .m_Width{ preview_width },
-                .m_CardSize{ card_size },
-                .m_FullBleedEdge{ full_bleed_edge },
-                .m_WillWriteOutput = false,
-            };
-
-            {
-                // ... and generate Preview ...
-                if (fs::exists(input_file))
-                {
-                    QByteArray input_file_hash{
-                        [&, this]()
-                        {
-                            std::shared_lock image_db_lock{ m_ImageDBMutex };
-                            return m_ImageDB.TestEntry(output_file, input_file, image_params);
-                        }()
-                    };
-
-                    // empty hash indicates that the source has not changed
-                    if (input_file_hash.isEmpty() && has_preview)
-                    {
-                        return true;
-                    }
-
-                    const Image source_image{ Image::Read(input_file) };
-
-                    const auto image_aspect_ratio{ source_image.AspectRatio() };
-                    const auto with_bleed_diff{
-                        std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio)
-                    };
-                    const auto without_bleed_diff{
-                        std::abs(image_aspect_ratio - card_aspect_ratio)
-                    };
-                    const bool image_has_bleed{
-                        with_bleed_diff < without_bleed_diff
-                    };
-
-                    ImagePreview image_preview{};
-                    if (image_has_bleed)
-                    {
-                        const Image image{ source_image.Resize(uncropped_size) };
-
-                        image_preview.m_UncroppedImage = image;
-                        image_preview.m_CroppedImage = CropImage(image, card_name, card_size, full_bleed_edge, 0_mm, 1200_dpi);
-                        image_preview.m_BadAspectRatio = with_bleed_diff > 0.001f;
-                    }
-                    else
-                    {
-                        const PixelSize cropped_size{
-                            [&]() -> PixelSize
-                            {
-                                const auto [w, h]{ uncropped_size.pod() };
-                                const auto [bw, bh]{ card_size_with_full_bleed.pod() };
-                                const auto density{ dla::math::min(w / bw, h / bh) };
-                                const auto crop{ dla::math::round(0.12_in * density) };
-                                return uncropped_size - 2.0f * crop;
-                            }()
-                        };
-
-                        const Image image{ source_image.Resize(cropped_size) };
-
-                        image_preview.m_CroppedImage = image;
-                        image_preview.m_UncroppedImage = UncropImage(image, card_name, card_size, fancy_uncrop);
-                        image_preview.m_BadAspectRatio = without_bleed_diff > 0.01f;
-                    }
-
-                    {
-                        std::unique_lock image_db_lock{ m_ImageDBMutex };
-                        m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
-                    }
-
-                    signaller->PreviewUpdated(card_name, image_preview);
-                }
-            }
-
-            if (!has_preview)
-            {
-                m_LoadedPreviews.push_back(card_name);
-            }
-            return true;
-        }
-        catch (...)
-        {
-            // If user updated the file we may be reading it's still being written to,
-            // Hopefully that's the only reason to end up here...
-            std::lock_guard lock{ m_PendingPreviewWorkMutex };
-            if (!std::ranges::contains(m_PendingPreviewWork, card_name))
-            {
-                m_PendingPreviewWork.push_back(std::move(card_name));
-            }
-
-            // We have failed, but we tried doing work, so we return true
-            return true;
-        }
-    }
-
-    return false;
+    m_CropWork.erase(card_name);
+    m_PreviewWork.erase(card_name);
 }
