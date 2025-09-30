@@ -52,7 +52,9 @@ Cropper::~Cropper()
     }
 
     while (m_AliveCropperWork.load(std::memory_order_acquire))
-        /* spin */;
+    {
+        QThread::yieldCurrentThread();
+    }
 
     m_ImageDB.Write();
 }
@@ -146,7 +148,9 @@ void Cropper::PauseWork()
     }
 
     while (m_RunningCropperWork.load(std::memory_order_acquire))
-        /* spin */;
+    {
+        QThread::yieldCurrentThread();
+    }
 }
 
 void Cropper::RestartWork()
