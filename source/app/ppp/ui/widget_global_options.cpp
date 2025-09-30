@@ -6,6 +6,7 @@
 #include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QPushButton>
+#include <QThread>
 #include <QVBoxLayout>
 
 #include <magic_enum/magic_enum.hpp>
@@ -153,6 +154,21 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     auto* max_dpi{ new WidgetWithLabel{ "&Max DPI", max_dpi_spin_box } };
     max_dpi->setToolTip("Requires rerunning cropper");
 
+    const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
+    if (g_Cfg.m_MaxWorkerThreads >= ideal_thread_count)
+    {
+        g_Cfg.m_MaxWorkerThreads = ideal_thread_count - 2;
+        SaveConfig(g_Cfg);
+    }
+
+    auto* max_worker_threads_spin_box{ MakeDoubleSpinBox() };
+    max_worker_threads_spin_box->setDecimals(0);
+    max_worker_threads_spin_box->setRange(1, ideal_thread_count - 1);
+    max_worker_threads_spin_box->setSingleStep(1);
+    max_worker_threads_spin_box->setValue(g_Cfg.m_MaxWorkerThreads);
+    auto* max_worker_threads{ new WidgetWithLabel{ "Max &Worker Threads", max_worker_threads_spin_box } };
+    max_worker_threads->setToolTip("Higher numbers speed up cropping and pdf generation, but cost more system resources");
+
     auto* paper_sizes{ new ComboBoxWithLabel{
         "Default P&aper Size", std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>(), g_Cfg.m_DefaultPageSize } };
     m_PageSizes = paper_sizes->GetWidget();
@@ -172,6 +188,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     layout->addWidget(color_cube);
     layout->addWidget(preview_width);
     layout->addWidget(max_dpi);
+    layout->addWidget(max_worker_threads);
     layout->addWidget(paper_sizes);
     layout->addWidget(themes);
     layout->addWidget(plugins);
@@ -271,6 +288,15 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         }
     };
 
+    auto change_max_worker_threads{
+        [this](double v)
+        {
+            g_Cfg.m_MaxWorkerThreads = static_cast<uint32_t>(v);
+            SaveConfig(g_Cfg);
+            MaxWorkerThreadsChanged();
+        }
+    };
+
     auto change_papersize{
         [=](const QString& t)
         {
@@ -343,6 +369,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_max_dpi);
+    QObject::connect(max_worker_threads_spin_box,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_max_worker_threads);
     QObject::connect(paper_sizes->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,

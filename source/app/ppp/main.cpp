@@ -72,11 +72,6 @@ int main(int argc, char** argv)
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app, app.GetTheme());
 
-    {
-        const int max_worker_threads{ std::max(QThread::idealThreadCount() - 2, 2) };
-        QThreadPool::globalInstance()->setMaxThreadCount(max_worker_threads);
-    }
-
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
     {
@@ -320,6 +315,17 @@ int main(int argc, char** argv)
 
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
+
+    {
+        auto apply_max_worker_threads{
+            []()
+            {
+                QThreadPool::globalInstance()->setMaxThreadCount(g_Cfg.m_MaxWorkerThreads);
+            }
+        };
+        apply_max_worker_threads();
+        QObject::connect(global_options, &GlobalOptionsWidget::MaxWorkerThreadsChanged, main_window, apply_max_worker_threads);
+    }
 
     cropper.Start();
     card_provider.Start();

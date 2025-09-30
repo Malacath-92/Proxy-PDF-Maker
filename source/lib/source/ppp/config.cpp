@@ -184,6 +184,7 @@ Config LoadConfig()
             config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
             config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
+            config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
             config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
             config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
             config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
@@ -368,6 +369,7 @@ void SaveConfig(Config config)
 
             settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
+            settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
             settings.setValue("Page.Size", ToQString(config.m_DefaultPageSize));
             settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
