@@ -2,6 +2,11 @@
 
 #include <ranges>
 
+#include <QRunnable>
+#include <QThreadPool>
+
+#include <fmt/chrono.h>
+
 #include <dla/scalar_math.h>
 
 #include <ppp/util/log.hpp>
@@ -14,6 +19,16 @@
 
 fs::path GeneratePdf(const Project& project)
 {
+    AtScopeExit log_generate_time{
+        [start_point = std::chrono::high_resolution_clock::now()]()
+        {
+            const auto end_point{ std::chrono::high_resolution_clock::now() };
+            const auto duration{ end_point - start_point };
+            LogInfo("PDF Generation finished in {}...",
+                    std::chrono::duration_cast<std::chrono::seconds>(duration));
+        }
+    };
+
     using CrossSegment = PdfPage::CrossSegment;
 
     const auto output_dir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) };
@@ -163,94 +178,87 @@ fs::path GeneratePdf(const Project& project)
     }
 
     auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
+    pdf->ReservePages(pages.size() +
+                      (project.m_Data.m_BacksideEnabled ? pages.size() : 0));
 
-#if __cpp_lib_ranges_enumerate
-    for (auto [p, page] : pages | std::views::enumerate)
-    {
-#else
-    for (size_t p = 0; p < pages.size(); p++)
-    {
-        const Page& page{ pages[p] };
-#endif
-
-        const auto draw_image{
-            [&](PdfPage* page,
-                const PageImage& image,
-                const PageImageTransform& transform)
+    const auto draw_image{
+        [&](PdfPage* page,
+            const PageImage& image,
+            const PageImageTransform& transform)
+        {
+            const auto img_path{ output_dir / image.m_Image };
+            if (fs::exists(img_path))
             {
-                const auto img_path{ output_dir / image.m_Image };
-                if (fs::exists(img_path))
+                PdfPage::ImageData image_data{
+                    .m_Path{ img_path },
+                    .m_Pos{
+                        transform.m_Position.x,
+                        page_height - transform.m_Position.y - transform.m_Size.y,
+                    },
+                    .m_Size{ transform.m_Size },
+                    .m_Rotation = transform.m_Rotation,
+                };
+                page->DrawImage(image_data);
+            }
+        }
+    };
+
+    const auto draw_corner_guides{
+        [&](PdfPage* page, const PageImageTransform& transform)
+        {
+            const auto draw_cross_at_grid{
+                [&](PdfPage* page, Position pos, CrossSegment s)
                 {
-                    PdfPage::ImageData image_data{
-                        .m_Path{ img_path },
-                        .m_Pos{
-                            transform.m_Position.x,
-                            page_height - transform.m_Position.y - transform.m_Size.y,
-                        },
-                        .m_Size{ transform.m_Size },
-                        .m_Rotation = transform.m_Rotation,
+                    PdfPage::CrossData cross{
+                        .m_Pos{ pos },
+                        .m_Length{ project.m_Data.m_GuidesLength },
+                        .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
                     };
-                    page->DrawImage(image_data);
+                    page->DrawDashedCross(cross, line_style);
                 }
-            }
-        };
+            };
 
-        const auto draw_corner_guides{
-            [&](PdfPage* page, const PageImageTransform& transform)
-            {
-                const auto draw_cross_at_grid{
-                    [&](PdfPage* page, Position pos, CrossSegment s)
-                    {
-                        PdfPage::CrossData cross{
-                            .m_Pos{ pos },
-                            .m_Length{ project.m_Data.m_GuidesLength },
-                            .m_Segment = project.m_Data.m_CrossGuides ? CrossSegment::FullCross : s,
-                        };
-                        page->DrawDashedCross(cross, line_style);
-                    }
-                };
+            const Position position{
+                transform.m_Position.x,
+                page_height - transform.m_Position.y - transform.m_Size.y,
+            };
+            const auto bottom_left{ position + corner_guides_offset };
+            const auto top_right{ position + transform.m_Size - corner_guides_offset };
 
-                const Position position{
-                    transform.m_Position.x,
-                    page_height - transform.m_Position.y - transform.m_Size.y,
-                };
-                const auto bottom_left{ position + corner_guides_offset };
-                const auto top_right{ position + transform.m_Size - corner_guides_offset };
+            draw_cross_at_grid(page,
+                               Position{
+                                   bottom_left.x,
+                                   top_right.y,
+                               },
+                               CrossSegment::TopLeft);
+            draw_cross_at_grid(page,
+                               bottom_left,
+                               CrossSegment::BottomLeft);
+            draw_cross_at_grid(page,
+                               Position{
+                                   top_right.x,
+                                   bottom_left.y,
+                               },
+                               CrossSegment::BottomRight);
+            draw_cross_at_grid(page,
+                               top_right,
+                               CrossSegment::TopRight);
+        }
+    };
 
-                draw_cross_at_grid(page,
-                                   Position{
-                                       bottom_left.x,
-                                       top_right.y,
-                                   },
-                                   CrossSegment::TopLeft);
-                draw_cross_at_grid(page,
-                                   bottom_left,
-                                   CrossSegment::BottomLeft);
-                draw_cross_at_grid(page,
-                                   Position{
-                                       top_right.x,
-                                       bottom_left.y,
-                                   },
-                                   CrossSegment::BottomRight);
-                draw_cross_at_grid(page,
-                                   top_right,
-                                   CrossSegment::TopRight);
-            }
-        };
-
+    const auto draw_front_page{
+        [&](PdfPage* front_page, const Page& page, size_t page_index)
         {
             static constexpr const char c_RenderFmt[]{
                 "Rendering page {}...\nImage number {} - {}"
             };
-
-            PdfPage* front_page{ pdf->NextPage() };
 
             for (size_t i = 0; i < page.m_Images.size(); ++i)
             {
                 const auto& card{ page.m_Images[i] };
                 const auto& transform{ transforms[i] };
 
-                LogInfo(c_RenderFmt, p + 1, i + 1, card.m_Image.get().string());
+                LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.get().string());
                 draw_image(front_page, card, transform);
             }
 
@@ -275,22 +283,21 @@ fs::path GeneratePdf(const Project& project)
 
             front_page->Finish();
         }
+    };
 
-        if (project.m_Data.m_BacksideEnabled)
+    const auto draw_back_page{
+        [&](PdfPage* back_page, const Page& backside_page, size_t page_index)
         {
             static constexpr const char c_RenderFmt[]{
                 "Rendering backside for page {}...\nImage number {} - {}"
             };
 
-            PdfPage* back_page{ pdf->NextPage() };
-
-            const auto& backside_page{ backside_pages[p] };
             for (size_t i = 0; i < backside_page.m_Images.size(); ++i)
             {
                 const auto& card{ backside_page.m_Images[i] };
                 const auto& transform{ backside_transforms[i] };
 
-                LogInfo(c_RenderFmt, p + 1, i + 1, card.m_Image.get().string());
+                LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.get().string());
                 draw_image(back_page, card, transform);
             }
 
@@ -314,6 +321,74 @@ fs::path GeneratePdf(const Project& project)
             }
 
             back_page->Finish();
+        }
+    };
+
+    std::vector<std::function<void()>> generate_work;
+
+#if __cpp_lib_ranges_enumerate
+    for (auto [p, page] : pages | std::views::enumerate)
+    {
+#else
+    for (size_t p = 0; p < pages.size(); p++)
+    {
+        const Page& page{ pages[p] };
+#endif
+
+        PdfPage* front_page{ pdf->NextPage() };
+        generate_work.push_back([draw_front_page, front_page, &page, p]()
+                                { draw_front_page(front_page, page, p); });
+
+        if (project.m_Data.m_BacksideEnabled)
+        {
+            PdfPage* back_page{ pdf->NextPage() };
+            const auto& backside_page{ backside_pages[p] };
+            generate_work.push_back([draw_back_page, back_page, &backside_page, p]()
+                                    { draw_back_page(back_page, backside_page, p); });
+        }
+    }
+
+    if (generate_work.size() < 4)
+    {
+        for (const auto& work : generate_work)
+        {
+            work();
+        }
+    }
+    else
+    {
+        class Worker : public QRunnable
+        {
+          public:
+            Worker(
+                std::atomic_uint32_t& work_done,
+                std::function<void()> work)
+                : m_WorkDone{ work_done }
+                , m_Work{ std::move(work) }
+            {
+            }
+
+            virtual void run() override
+            {
+                m_Work();
+                m_WorkDone.fetch_add(1, std::memory_order::release);
+            }
+
+          private:
+            std::atomic_uint32_t& m_WorkDone;
+            std::function<void()> m_Work;
+        };
+
+        std::atomic_uint32_t work_done{ 0 };
+        for (const auto& work : generate_work)
+        {
+            auto* worker{ new Worker{ work_done, work } };
+            QThreadPool::globalInstance()->start(worker);
+        }
+
+        while (work_done.load(std::memory_order_acquire) < generate_work.size())
+        {
+            QThread::yieldCurrentThread();
         }
     }
 

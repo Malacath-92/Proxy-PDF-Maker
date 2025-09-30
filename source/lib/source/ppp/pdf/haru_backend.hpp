@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include <hpdf.h>
 
 #include <ppp/pdf/backend.hpp>
@@ -24,7 +26,7 @@ class HaruPdfPage final : public PdfPage
 
     virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     HPDF_Page m_Page{ nullptr };
@@ -35,12 +37,14 @@ class HaruPdfPage final : public PdfPage
 class HaruPdfImageCache
 {
   public:
-    HaruPdfImageCache(HPDF_Doc document, const Project& project);
+    HaruPdfImageCache(HaruPdfDocument& document, const Project& project);
 
     HPDF_Image GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    HPDF_Doc m_Document;
+    mutable std::mutex m_Mutex;
+
+    HaruPdfDocument& m_Document;
     const Project& m_Project;
 
     struct ImageCacheEntry
@@ -58,13 +62,17 @@ class HaruPdfDocument final : public PdfDocument
     HaruPdfDocument(const Project& project);
     virtual ~HaruPdfDocument() override;
 
+    virtual void ReservePages(size_t pages) override;
     virtual HaruPdfPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 
     HPDF_Font GetFont();
+    HPDF_Image MakeImage(bool use_png, std::span<const std::byte> encoded_image);
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     HPDF_Doc m_Document;

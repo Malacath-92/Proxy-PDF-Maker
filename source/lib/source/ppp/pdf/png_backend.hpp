@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include <opencv2/opencv.hpp>
 
 #include <ppp/image.hpp>
@@ -24,12 +26,11 @@ class PngPage final : public PdfPage
 
     virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     const Project* m_Project;
     cv::Mat m_Page{};
-    PngDocument* m_Document{};
     bool m_PerfectFit{};
     PixelSize m_CardSize{};
     PixelSize m_PageSize{};
@@ -41,9 +42,11 @@ class PngImageCache
   public:
     PngImageCache(const Project& project);
 
-    const cv::Mat& GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
+    cv::Mat GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     struct ImageCacheEntry
@@ -63,11 +66,14 @@ class PngDocument final : public PdfDocument
     PngDocument(const Project& project);
     virtual ~PngDocument() override;
 
+    virtual void ReservePages(size_t pages) override;
     virtual PngPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     PixelSize m_PrecomputedCardSize;

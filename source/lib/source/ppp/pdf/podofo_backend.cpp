@@ -146,7 +146,7 @@ void PoDoFoPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
     painter.FinishPage();
 }
 
-PoDoFoImageCache::PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project)
+PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& project)
     : m_Document{ document }
     , m_Project{ project }
 {
@@ -154,13 +154,16 @@ PoDoFoImageCache::PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Proje
 
 PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
 {
-    const auto it{
-        std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
-                             { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
-    };
-    if (it != m_Cache.end())
     {
-        return it->m_PoDoFoImage.get();
+        std::lock_guard lock{ m_Mutex };
+        const auto it{
+            std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
+                                 { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
+        };
+        if (it != m_Cache.end())
+        {
+            return it->m_PoDoFoImage.get();
+        }
     }
 
     const bool rounded_corners{
@@ -199,9 +202,10 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 
     const auto encoded_image{ encoder(loaded_image) };
 
-    std::unique_ptr podofo_image{ std::make_unique<PoDoFo::PdfImage>(m_Document) };
+    std::unique_ptr podofo_image{ m_Document.MakeImage() };
     (podofo_image.get()->*loader)(reinterpret_cast<const unsigned char*>(encoded_image.data()), encoded_image.size());
 
+    std::lock_guard lock{ m_Mutex };
     m_Cache.push_back({
         std::move(image_path),
         rotation,
@@ -218,7 +222,7 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
             : nullptr
     }
 {
-    m_ImageCache = std::make_unique<PoDoFoImageCache>(&m_Document, project);
+    m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project);
 
     if (m_BaseDocument != nullptr)
     {
@@ -243,8 +247,16 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
     }
 }
 
+void PoDoFoDocument::ReservePages(size_t pages)
+{
+    std::lock_guard lock{ m_Mutex };
+    m_Pages.reserve(pages);
+}
+
 PoDoFoPage* PoDoFoDocument::NextPage()
 {
+    std::lock_guard lock{ m_Mutex };
+
     auto& new_page{ m_Pages.emplace_back() };
     const int new_page_idx{ static_cast<int>(m_Pages.size() - 1) };
     if (m_BaseDocument != nullptr)
@@ -278,6 +290,8 @@ fs::path PoDoFoDocument::Write(fs::path path)
         const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
+
+        std::lock_guard lock{ m_Mutex };
         m_Document.Write(pdf_path.c_str());
         return pdf_path;
     }
@@ -290,9 +304,16 @@ fs::path PoDoFoDocument::Write(fs::path path)
 
 PoDoFo::PdfFont* PoDoFoDocument::GetFont()
 {
+    std::lock_guard lock{ m_Mutex };
     if (m_Font == nullptr)
     {
         m_Font = m_Document.CreateFont("arial");
     }
     return m_Font;
+}
+
+std::unique_ptr<PoDoFo::PdfImage> PoDoFoDocument::MakeImage()
+{
+    std::lock_guard lock{ m_Mutex };
+    return std::make_unique<PoDoFo::PdfImage>(&m_Document);
 }

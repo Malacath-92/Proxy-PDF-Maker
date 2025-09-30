@@ -102,7 +102,7 @@ void HaruPdfPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
     HPDF_Page_EndText(m_Page);
 }
 
-HaruPdfImageCache::HaruPdfImageCache(HPDF_Doc document, const Project& project)
+HaruPdfImageCache::HaruPdfImageCache(HaruPdfDocument& document, const Project& project)
     : m_Document{ document }
     , m_Project{ project }
 {
@@ -110,13 +110,16 @@ HaruPdfImageCache::HaruPdfImageCache(HPDF_Doc document, const Project& project)
 
 HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
 {
-    const auto it{
-        std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
-                             { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
-    };
-    if (it != m_Cache.end())
     {
-        return it->m_HaruImage;
+        std::lock_guard lock{ m_Mutex };
+        const auto it{
+            std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
+                                 { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
+        };
+        if (it != m_Cache.end())
+        {
+            return it->m_HaruImage;
+        }
     }
 
     const bool rounded_corners{
@@ -141,11 +144,6 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
                           { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
     };
     // clang-format on
-    const auto loader{
-        use_png
-            ? &HPDF_LoadPngImageFromMem
-            : &HPDF_LoadJpegImageFromMem
-    };
 
     const Image loaded_image{
         Image::Read(image_path)
@@ -155,10 +153,10 @@ HPDF_Image HaruPdfImageCache::GetImage(fs::path image_path, Image::Rotation rota
 
     const auto encoded_image{ encoder(loaded_image) };
     const auto libharu_image{
-        loader(m_Document,
-               reinterpret_cast<const HPDF_BYTE*>(encoded_image.data()),
-               static_cast<HPDF_UINT>(encoded_image.size())),
+        m_Document.MakeImage(use_png, encoded_image)
     };
+
+    std::lock_guard lock{ m_Mutex };
     m_Cache.push_back({
         std::move(image_path),
         rotation,
@@ -182,16 +180,24 @@ HaruPdfDocument::HaruPdfDocument(const Project& project)
     m_Document = HPDF_New(c_ErrorHandler, nullptr);
     HPDF_SetCompressionMode(m_Document, HPDF_COMP_ALL);
 
-    m_ImageCache = std::make_unique<HaruPdfImageCache>(m_Document, project);
+    m_ImageCache = std::make_unique<HaruPdfImageCache>(*this, project);
 }
 HaruPdfDocument::~HaruPdfDocument()
 {
     HPDF_Free(m_Document);
 }
 
+void HaruPdfDocument::ReservePages(size_t pages)
+{
+    std::lock_guard lock{ m_Mutex };
+    m_Pages.reserve(pages);
+}
+
 HaruPdfPage* HaruPdfDocument::NextPage()
 {
     const auto page_size{ m_Project.ComputePageSize() };
+
+    std::lock_guard lock{ m_Mutex };
     auto& new_page{ m_Pages.emplace_back() };
     new_page.m_Page = HPDF_AddPage(m_Document);
     new_page.m_Document = this;
@@ -206,11 +212,14 @@ fs::path HaruPdfDocument::Write(fs::path path)
     const fs::path pdf_path{ fs::path{ path }.replace_extension(".pdf") };
     const auto pdf_path_string{ pdf_path.string() };
     LogInfo("Saving to {}...", pdf_path_string);
+
+    std::lock_guard lock{ m_Mutex };
     HPDF_SaveToFile(m_Document, pdf_path_string.c_str());
     return pdf_path;
 }
 HPDF_Font HaruPdfDocument::GetFont()
 {
+    std::lock_guard lock{ m_Mutex };
     if (m_Font == nullptr)
     {
         const auto arial_path{ QStandardPaths::locate(QStandardPaths::FontsLocation, "arial.ttf") };
@@ -218,4 +227,18 @@ HPDF_Font HaruPdfDocument::GetFont()
         m_Font = HPDF_GetFont(m_Document, arial_font_name, HPDF_ENCODING_FONT_SPECIFIC);
     }
     return m_Font;
+}
+
+HPDF_Image HaruPdfDocument::MakeImage(bool use_png, std::span<const std::byte> encoded_image)
+{
+    const auto loader{
+        use_png
+            ? &HPDF_LoadPngImageFromMem
+            : &HPDF_LoadJpegImageFromMem
+    };
+
+    std::lock_guard lock{ m_Mutex };
+    return loader(m_Document,
+                  reinterpret_cast<const HPDF_BYTE*>(encoded_image.data()),
+                  static_cast<HPDF_UINT>(encoded_image.size()));
 }

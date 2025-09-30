@@ -124,21 +124,24 @@ PngImageCache::PngImageCache(const Project& project)
 {
 }
 
-const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
+cv::Mat PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
 {
-    // clang-format off
-    const auto it{
-        std::ranges::find_if(m_Cache,
-                             [&](const ImageCacheEntry& entry)
-                             { return entry.m_ImageRotation == rotation &&
-                                      entry.m_Width == w &&
-                                      entry.m_Height == h &&
-                                      entry.m_ImagePath == image_path; })
-    };
-    // clang-format on
-    if (it != m_Cache.end())
     {
-        return it->m_PngImage;
+        std::lock_guard lock{ m_Mutex };
+        // clang-format off
+        const auto it{
+            std::ranges::find_if(m_Cache,
+                                 [&](const ImageCacheEntry& entry)
+                                 { return entry.m_ImageRotation == rotation &&
+                                          entry.m_Width == w &&
+                                          entry.m_Height == h &&
+                                          entry.m_ImagePath == image_path; })
+        };
+        // clang-format on
+        if (it != m_Cache.end())
+        {
+            return it->m_PngImage;
+        }
     }
 
     const bool rounded_corners{
@@ -162,6 +165,8 @@ const cv::Mat& PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h
     cv::Mat four_channel_image{};
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
     const auto encoded_image{ loaded_image.EncodePng() };
+
+    std::lock_guard lock{ m_Mutex };
     m_Cache.push_back({
         std::move(image_path),
         w,
@@ -212,11 +217,17 @@ PngDocument::~PngDocument()
 {
 }
 
+void PngDocument::ReservePages(size_t pages)
+{
+    std::lock_guard lock{ m_Mutex };
+    m_Pages.reserve(pages);
+}
+
 PngPage* PngDocument::NextPage()
 {
+    std::lock_guard lock{ m_Mutex };
     auto& new_page{ m_Pages.emplace_back() };
     new_page.m_Project = &m_Project;
-    new_page.m_Document = this;
     new_page.m_PerfectFit = m_Project.m_Data.m_PageSize == Config::c_FitSize;
     new_page.m_CardSize = m_PrecomputedCardSize;
     new_page.m_PageSize = m_PrecomputedPageSize;
@@ -241,6 +252,7 @@ fs::path PngDocument::Write(fs::path path)
         fs::create_directories(png_folder);
     }
 
+    std::lock_guard lock{ m_Mutex };
 #if __cpp_lib_ranges_enumerate
     for (const auto& [i, page] : m_Pages | std::views::enumerate)
     {

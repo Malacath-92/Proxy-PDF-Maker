@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 
 #include <podofo/doc/PdfImage.h>
 #include <podofo/doc/PdfMemDocument.h>
@@ -25,7 +26,7 @@ class PoDoFoPage final : public PdfPage
 
     virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override {};
 
   private:
     PoDoFo::PdfPage* m_Page{ nullptr };
@@ -36,12 +37,14 @@ class PoDoFoPage final : public PdfPage
 class PoDoFoImageCache
 {
   public:
-    PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project);
+    PoDoFoImageCache(PoDoFoDocument& document, const Project& project);
 
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    PoDoFo::PdfMemDocument* m_Document;
+    mutable std::mutex m_Mutex;
+
+    PoDoFoDocument& m_Document;
     const Project& m_Project;
 
     struct ImageCacheEntry
@@ -59,13 +62,17 @@ class PoDoFoDocument final : public PdfDocument
     PoDoFoDocument(const Project& project);
     virtual ~PoDoFoDocument() override = default;
 
+    virtual void ReservePages(size_t pages) override;
     virtual PoDoFoPage* NextPage() override;
 
     virtual fs::path Write(fs::path path) override;
 
     PoDoFo::PdfFont* GetFont();
+    std::unique_ptr<PoDoFo::PdfImage> MakeImage();
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     std::unique_ptr<PoDoFo::PdfMemDocument> m_BaseDocument;
