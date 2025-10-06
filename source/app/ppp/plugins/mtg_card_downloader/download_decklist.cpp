@@ -20,8 +20,9 @@ struct ScryfallDownloader::BacksideRequest
     DecklistCard m_Front;
 };
 
-ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files)
-    : m_SkipFiles{ std::move(skip_files) }
+ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files,
+                                       const QString& backside_pattern)
+    : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
     m_ScryfallTimer.setInterval(100);
     m_ScryfallTimer.setSingleShot(true);
@@ -127,7 +128,8 @@ std::vector<QString> ScryfallDownloader::GetFiles() const
         m_Backsides |
         std::views::transform(&BacksideRequest::m_Front) |
         std::views::transform(&DecklistCard::m_FileName) |
-        std::views::transform(&ScryfallDownloader::BacksideFilename)
+        std::views::transform([this](const QString& n)
+                              { return BacksideFilename(n); })
     };
     cards.insert(cards.end(), backsides.begin(), backsides.end());
     return cards;
@@ -135,16 +137,16 @@ std::vector<QString> ScryfallDownloader::GetFiles() const
 
 uint32_t ScryfallDownloader::GetAmount(const QString& file_name) const
 {
+    if (!m_FileNameIndexMap.contains(file_name))
+    {
+        return 0;
+    }
+
     return m_Cards[m_FileNameIndexMap.at(file_name)].m_Amount;
 }
 
 std::optional<QString> ScryfallDownloader::GetBackside(const QString& file_name) const
 {
-    if (HasBackside(m_CardInfos[m_FileNameIndexMap.at(file_name)]))
-    {
-        return BacksideFilename(file_name);
-    }
-
     const auto it{ std::ranges::find(m_Cards, file_name, &DecklistCard::m_FileName) };
     if (it != m_Cards.end())
     {
@@ -181,11 +183,6 @@ bool ScryfallDownloader::HasBackside(const QJsonDocument& card_info)
 
     const auto layout{ card_info["layout"].toString() };
     return std::ranges::contains(c_DoubleSidedLayouts, layout);
-}
-
-QString ScryfallDownloader::BacksideFilename(const QString& file_name)
-{
-    return "__back_" + file_name;
 }
 
 QString ScryfallDownloader::CardBackFilename(const QString& card_back_id)

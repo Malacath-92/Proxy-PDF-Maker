@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <shared_mutex>
+#include <optional>
 #include <unordered_map>
 
 #include <QObject>
@@ -18,6 +18,7 @@ struct CardInfo
     uint32_t m_Hidden{ 0 };
     fs::path m_Backside{};
     bool m_BacksideShortEdge{ false };
+    bool m_BacksideAutoAssigned{ false };
 
     bool m_Transient{ false };
 };
@@ -138,12 +139,12 @@ class Project : public QObject
     const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
-    fs::path ExchangeBacksideImage(const fs::path& image_name, fs::path new_backside_image);
-    fs::path ResetBacksideImage(const fs::path& image_name);
+    bool SetBacksideImage(const fs::path& image_name, fs::path backside_image);
 
     bool HasCardBacksideShortEdge(const fs::path& image_name) const;
     void SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge);
 
+    void SetBacksideAutoPattern(std::string pattern);
 
     bool CacheCardLayout();
 
@@ -216,6 +217,7 @@ class Project : public QObject
         bool m_BacksideEnabled{ false };
         fs::path m_BacksideDefault{ "__back.png" };
         Length m_BacksideOffset{ 0_mm };
+        std::string m_BacksideAutoPattern{ "__back_$" };
 
         // PDF generation options
         std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
@@ -289,4 +291,7 @@ class Project : public QObject
     CardList GenerateDefaultCardsList() const;
     void AppendCardToList(const fs::path& image_name);
     void RemoveCardFromList(const fs::path& image_name);
+
+    std::optional<fs::path> FindCardAutoBackside(const fs::path& image_name) const;
+    std::optional<fs::path> MatchAsAutoBackside(const fs::path& image_name) const;
 };

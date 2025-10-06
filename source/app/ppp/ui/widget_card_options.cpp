@@ -126,6 +126,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     m_BacksideOffset = new WidgetWithLabel{ "Off&set", m_BacksideOffsetSpin };
 
+    m_BacksideAutoPattern = new QLineEdit{ ToQString(project.m_Data.m_BacksideAutoPattern) };
+    m_BacksideAuto = new WidgetWithLabel{ "Auto-&Pattern", m_BacksideAutoPattern };
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
     layout->addWidget(spacing);
@@ -134,6 +137,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
     layout->addWidget(m_BacksideOffset);
+    layout->addWidget(m_BacksideAuto);
 
     layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     setLayout(layout);
@@ -231,6 +235,8 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             m_BacksideDefaultPreview->setVisible(project.m_Data.m_BacksideEnabled);
             m_BacksideOffset->setEnabled(project.m_Data.m_BacksideEnabled);
             m_BacksideOffset->setVisible(project.m_Data.m_BacksideEnabled);
+            m_BacksideAuto->setEnabled(project.m_Data.m_BacksideEnabled);
+            m_BacksideAuto->setVisible(project.m_Data.m_BacksideEnabled);
             BacksideEnabledChanged();
         }
     };
@@ -255,6 +261,35 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
             project.m_Data.m_BacksideOffset = base_unit * static_cast<float>(v);
             BacksideOffsetChanged();
+        }
+    };
+
+    auto change_backside_auto_pattern{
+        [this, &project](const QString& pattern)
+        {
+            static constexpr const char c_WarningStyle[]{
+                "border-style: solid;"
+                "border-width: 2px;"
+                "border-color: red"
+            };
+            if (pattern.count('$') != 1)
+            {
+                m_BacksideAutoPattern->setToolTip("Pattern must include exactly one $");
+                m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
+                return;
+            }
+
+            if (pattern == '$')
+            {
+                m_BacksideAutoPattern->setToolTip("Pattern can't be only $");
+                m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
+                return;
+            }
+
+            m_BacksideAutoPattern->setToolTip("");
+            m_BacksideAutoPattern->setStyleSheet("");
+
+            project.SetBacksideAutoPattern(pattern.toStdString());
         }
     };
 
@@ -294,6 +329,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_backside_offset);
+    QObject::connect(m_BacksideAutoPattern,
+                     &QLineEdit::textChanged,
+                     this,
+                     change_backside_auto_pattern);
 }
 
 void CardOptionsWidget::NewProjectOpened()
@@ -351,6 +390,16 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
+
+    m_BacksideAuto->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideAuto->setVisible(m_Project.m_Data.m_BacksideEnabled);
+}
+
+void CardOptionsWidget::BacksideAutoPatternChangedExternal(const std::string& pattern)
+{
+    m_BacksideAutoPattern->setText(ToQString(pattern));
 }
 
 void CardOptionsWidget::SetDefaults()

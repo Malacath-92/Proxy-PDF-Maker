@@ -10,8 +10,9 @@
 
 #include <ppp/util/log.hpp>
 
-MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files)
-    : m_SkipFiles{ std::move(skip_files) }
+MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files,
+                                     const QString& backside_pattern)
+    : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
 }
 
@@ -86,7 +87,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
                             auto& card{ temporary_card_list[slot] };
                             assert(!card.m_Backside.has_value());
                             card.m_Backside = MPCFillBackside{
-                                .m_Name{ backside.m_Name },
+                                .m_Name{ BacksideFilename(card.m_Name) },
                                 .m_Id{ backside.m_Id },
                             };
                         }
@@ -305,7 +306,7 @@ std::optional<QString> MPCFillDownloader::GetBackside(const QString& file_name) 
     auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
     if (card != m_Set.m_Frontsides.end() && card->m_Backside.has_value())
     {
-        return card->m_Backside.value().m_Name;
+        return std::nullopt;
     }
     return "__back.png";
 }

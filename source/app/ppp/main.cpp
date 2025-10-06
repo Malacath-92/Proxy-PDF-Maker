@@ -152,6 +152,15 @@ int main(int argc, char** argv)
             }
         });
 
+    QObject::connect(
+        &plugin_router,
+        &PluginRouter::SetBacksideAutoPattern,
+        [&](const std::string& pattern)
+        {
+            project.SetBacksideAutoPattern(pattern);
+            card_options->BacksideAutoPatternChangedExternal(pattern);
+        });
+
     auto* options_area{
         new OptionsAreaWidget{
             app,

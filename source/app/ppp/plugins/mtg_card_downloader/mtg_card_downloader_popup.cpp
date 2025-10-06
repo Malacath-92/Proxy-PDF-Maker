@@ -221,11 +221,15 @@ void MtgDownloaderPopup::DoDownload()
     default:
     case InputType::Decklist:
         LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<ScryfallDownloader>(std::move(skip_images));
+        m_Downloader = std::make_unique<ScryfallDownloader>(
+            std::move(skip_images),
+            ToQString(m_Project.m_Data.m_BacksideAutoPattern));
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<MPCFillDownloader>(std::move(skip_images));
+        m_Downloader = std::make_unique<MPCFillDownloader>(
+            std::move(skip_images),
+            ToQString(m_Project.m_Data.m_BacksideAutoPattern));
         break;
     }
 
@@ -297,7 +301,7 @@ void MtgDownloaderPopup::FinalizeDownload()
             {
                 fs::remove(target_dir / img);
             }
-            m_Project.m_Data.m_Cards.erase(img);
+            m_Project.CardRemoved(img);
         }
     }
 
@@ -312,24 +316,12 @@ void MtgDownloaderPopup::FinalizeDownload()
             fs::rename(output_dir / path, target_dir / path);
         }
 
-        auto& card_info{
-            m_Project.m_Data.m_Cards[path]
-        };
+        m_Project.CardAdded(path);
+        m_Project.SetCardCount(path, m_Downloader->GetAmount(card));
 
-        const bool hidden{ card.startsWith("__") };
-        if (hidden)
+        if (const std::optional backside{ m_Downloader->GetBackside(card) })
         {
-            card_info.m_Num = 0;
-        }
-        else
-        {
-            card_info.m_Num = m_Downloader->GetAmount(card);
-
-            if (const std::optional backside{ m_Downloader->GetBackside(card) })
-            {
-                card_info.m_Backside = backside.value().toStdString();
-                m_Project.m_Data.m_Cards[card_info.m_Backside].m_Hidden++;
-            }
+            m_Project.SetBacksideImage(path, backside.value().toStdString());
         }
     }
     m_Project.m_Data.m_BacksideDefault = "__back.png";
@@ -370,6 +362,11 @@ void MtgDownloaderPopup::ValidateSettings()
     if (!m_Project.m_Data.m_BacksideEnabled)
     {
         m_Router.SetEnableBackside(true);
+    }
+
+    if (m_Project.m_Data.m_BacksideAutoPattern.empty())
+    {
+        m_Router.SetBacksideAutoPattern("__back_$");
     }
 }
 

@@ -57,6 +57,10 @@ void Project::Load(const fs::path& json_path)
             card.m_Hidden = card_json["hidden"];
             card.m_Backside = card_json["backside"].get<std::string>();
             card.m_BacksideShortEdge = card_json["backside_short_edge"];
+            if (card_json.contains("backside_auto_assigned"))
+            {
+                card.m_BacksideAutoAssigned = card_json["backside_auto_assigned"];
+            }
         }
 
         if (json.contains("cards_order"))
@@ -94,6 +98,10 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_BacksideEnabled = json["backside_enabled"];
         m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
         m_Data.m_BacksideOffset.value = json["backside_offset"];
+        if (json.contains("backside_auto_pattern"))
+        {
+            m_Data.m_BacksideAutoPattern = json["backside_auto_pattern"];
+        }
 
         m_Data.m_CardSizeChoice = json["card_size"];
         if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
@@ -226,6 +234,7 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["hidden"] = card.m_Hidden;
                 card_json["backside"] = card.m_Backside.string();
                 card_json["backside_short_edge"] = card.m_BacksideShortEdge;
+                card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
             }
         }
         json["cards"] = cards;
@@ -254,6 +263,7 @@ void Project::Dump(const fs::path& json_path) const
         json["backside_enabled"] = m_Data.m_BacksideEnabled;
         json["backside_default"] = m_Data.m_BacksideDefault.string();
         json["backside_offset"] = m_Data.m_BacksideOffset.value;
+        json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
         json["card_size"] = m_Data.m_CardSizeChoice;
         json["page_size"] = m_Data.m_PageSize;
@@ -389,6 +399,7 @@ bool Project::UnhideCard(const fs::path& card_name)
         if (visible)
         {
             AppendCardToList(card_name);
+            return true;
         }
     }
     return false;
@@ -505,11 +516,40 @@ void Project::CardAdded(const fs::path& card_name)
                 .m_Hidden = 0,
             };
         }
+
+        auto& card{ m_Data.m_Cards.at(card_name) };
+        for (const auto& [name, other_card] : m_Data.m_Cards)
+        {
+            if (other_card.m_Backside == card_name)
+            {
+                card.m_Hidden++;
+            }
+        }
     }
     else if (it->second.m_Transient)
     {
         --it->second.m_Hidden;
         it->second.m_Transient = false;
+    }
+
+    if (auto frontside{ MatchAsAutoBackside(card_name) })
+    {
+        SetBacksideImage(frontside.value(), card_name);
+
+        auto& card{ m_Data.m_Cards.at(frontside.value()) };
+        card.m_BacksideAutoAssigned = true;
+    }
+    else
+    {
+        auto& card{ m_Data.m_Cards.at(card_name) };
+        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+        {
+            if (auto backside{ FindCardAutoBackside(card_name) })
+            {
+                SetBacksideImage(card_name, backside.value());
+                card.m_BacksideAutoAssigned = true;
+            }
+        }
     }
 
     AppendCardToList(card_name);
@@ -522,6 +562,14 @@ void Project::CardRemoved(const fs::path& card_name)
     {
         ++it->second.m_Hidden;
         it->second.m_Transient = true;
+
+        if (const auto& frontside{ MatchAsAutoBackside(card_name) })
+        {
+            SetBacksideImage(frontside.value(), "");
+
+            auto& card{ m_Data.m_Cards.at(frontside.value()) };
+            card.m_BacksideAutoAssigned = false;
+        }
     }
 
     RemoveCardFromList(card_name);
@@ -594,41 +642,31 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
     }
     return m_Data.m_BacksideDefault;
 }
-
-fs::path Project::ExchangeBacksideImage(const fs::path& image_name, fs::path new_backside_image)
+bool Project::SetBacksideImage(const fs::path& image_name, fs::path backside_image)
 {
-    if (image_name == new_backside_image)
+    if (image_name == backside_image)
     {
-        return "";
+        return false;
     }
 
     const auto it{ m_Data.m_Cards.find(image_name) };
     if (it != m_Data.m_Cards.end())
     {
         CardInfo& card{ it->second };
-        if (card.m_Backside == new_backside_image)
+        if (card.m_Backside == backside_image)
         {
-            return "";
+            return false;
         }
 
         auto old_backside{ std::move(card.m_Backside) };
-        card.m_Backside = std::move(new_backside_image);
-        return old_backside;
-    }
-    return "";
-}
+        card.m_Backside = std::move(backside_image);
 
-fs::path Project::ResetBacksideImage(const fs::path& image_name)
-{
-    const auto it{ m_Data.m_Cards.find(image_name) };
-    if (it != m_Data.m_Cards.end())
-    {
-        CardInfo& card{ it->second };
-        auto old_backside{ std::move(card.m_Backside) };
-        card.m_Backside.clear();
-        return old_backside;
+        const bool old_backside_shown{ UnhideCard(old_backside) };
+        const bool new_backside_hidden{ HideCard(card.m_Backside) };
+        return old_backside_shown || new_backside_hidden;
     }
-    return "";
+
+    return false;
 }
 
 bool Project::HasCardBacksideShortEdge(const fs::path& image_name) const
@@ -649,6 +687,38 @@ void Project::SetCardBacksideShortEdge(const fs::path& image_name, bool has_back
     {
         CardInfo& card{ it->second };
         card.m_BacksideShortEdge = has_backside_short_edge;
+    }
+}
+
+void Project::SetBacksideAutoPattern(std::string pattern)
+{
+    const auto placeholder_pos{ pattern.find('$') };
+    if (placeholder_pos == std::string::npos)
+    {
+        return;
+    }
+
+    if (pattern == m_Data.m_BacksideAutoPattern)
+    {
+        return;
+    }
+
+    m_Data.m_BacksideAutoPattern = std::move(pattern);
+
+    for (auto& [name, card] : m_Data.m_Cards)
+    {
+        if (card.m_BacksideAutoAssigned)
+        {
+            // try find backside
+            if (auto auto_backside{ FindCardAutoBackside(name) })
+            {
+            }
+            else
+            {
+                card.m_Backside.clear();
+                card.m_BacksideAutoAssigned = false;
+            }
+        }
     }
 }
 
@@ -1301,4 +1371,60 @@ void Project::RemoveCardFromList(const fs::path& image_name)
             }
         }
     }
+}
+
+std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name) const
+{
+    if (m_Data.m_BacksideAutoPattern.empty())
+    {
+        return std::nullopt;
+    }
+
+    std::string auto_backside{ m_Data.m_BacksideAutoPattern };
+    const auto placeholder_pos{ auto_backside.find('$') };
+    auto_backside.replace(placeholder_pos, 1, image_name.filename().string());
+
+    for (auto& [name, _] : m_Data.m_Cards)
+    {
+        if (name.filename() == auto_backside)
+        {
+            return name;
+        }
+    }
+
+    return std::nullopt;
+}
+std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& image_name) const
+{
+    const auto pattern{ std::string_view{ m_Data.m_BacksideAutoPattern } };
+    if (pattern.empty())
+    {
+        return std::nullopt;
+    }
+
+    const auto placeholder_pos{ pattern.find('$') };
+    const auto front{ pattern.substr(0, placeholder_pos) };
+    const auto back{ pattern.substr(placeholder_pos + 1, std::string::npos) };
+
+    const auto name_str{ image_name.filename().string() };
+    if (name_str.starts_with(front) && name_str.ends_with(back))
+    {
+        const auto front_name{
+            std::string_view{ name_str }
+                .substr(0, name_str.size() - back.size())
+                .substr(front.size()),
+        };
+        for (auto& [name, card] : m_Data.m_Cards)
+        {
+            if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+            {
+                if (name.filename() == front_name)
+                {
+                    return name;
+                }
+            }
+        }
+    }
+
+    return std::nullopt;
 }

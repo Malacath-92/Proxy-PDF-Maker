@@ -7,6 +7,7 @@ class QComboBox;
 class QDoubleSpinBox;
 class QPushButton;
 class QSlider;
+class QLineEdit;
 
 class DefaultBacksidePreview;
 class Project;
@@ -34,6 +35,7 @@ class CardOptionsWidget : public QWidget
     void AdvancedModeChanged();
 
     void BacksideEnabledChangedExternal();
+    void BacksideAutoPatternChangedExternal(const std::string& pattern);
 
   private:
     void SetDefaults();
@@ -50,4 +52,6 @@ class CardOptionsWidget : public QWidget
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
     QDoubleSpinBox* m_BacksideOffsetSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
+    QLineEdit* m_BacksideAutoPattern{ nullptr };
+    QWidget* m_BacksideAuto{ nullptr };
 };

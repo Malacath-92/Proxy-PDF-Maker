@@ -166,8 +166,7 @@ class CardWidget : public QFrame
     }
 
   signals:
-    void CardHidden();
-    void CardShown();
+    void CardVisbilityChanged();
 
   private:
     QWidget* MakeCardWidget(Project& project)
@@ -183,14 +182,13 @@ class CardWidget : public QFrame
             auto backside_reset{
                 [=, this, &project]()
                 {
-                    const auto old_backside{ project.ResetBacksideImage(m_CardName) };
+                    if (project.SetBacksideImage(m_CardName, ""))
+                    {
+                        CardVisbilityChanged();
+                    }
+
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
-
-                    if (project.UnhideCard(old_backside))
-                    {
-                        CardShown();
-                    }
                 }
             };
 
@@ -202,17 +200,13 @@ class CardWidget : public QFrame
                     if (const auto backside_choice{ image_browser.Show() })
                     {
                         const auto& backside{ backside_choice.value() };
-                        const auto old_backside{ project.ExchangeBacksideImage(m_CardName, backside) };
-                        if (!old_backside.empty())
+                        if (project.SetBacksideImage(m_CardName, backside))
                         {
-                            auto* new_backside_image{ new BacksideImage{ backside, project } };
-                            stacked_widget->RefreshBackside(new_backside_image);
-
-                            if (project.HideCard(backside))
-                            {
-                                CardHidden();
-                            }
+                            CardVisbilityChanged();
                         }
+
+                        auto* new_backside_image{ new BacksideImage{ backside, project } };
+                        stacked_widget->RefreshBackside(new_backside_image);
                     }
                 }
             };
@@ -433,11 +427,7 @@ class CardScrollArea::CardGrid : public QWidget
                 {
                     CardWidget* new_card{ ctor(card_name, m_Project) };
                     QObject::connect(new_card,
-                                     &CardWidget::CardShown,
-                                     this,
-                                     &CardGrid::FullRefresh);
-                    QObject::connect(new_card,
-                                     &CardWidget::CardHidden,
+                                     &CardWidget::CardVisbilityChanged,
                                      this,
                                      &CardGrid::FullRefresh);
                     return new_card;
