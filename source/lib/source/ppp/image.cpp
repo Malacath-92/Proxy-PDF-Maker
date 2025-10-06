@@ -530,7 +530,7 @@ Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) c
     {
         channels[i].convertTo(channels[i], CV_32FC1, 1.0f / 255);
     }
-    
+
     // Cut off anything from the source image that isn't part of the threshold area
     for (size_t i = 0; i < 3; ++i)
     {
