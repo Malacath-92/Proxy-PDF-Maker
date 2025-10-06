@@ -960,7 +960,7 @@ void PrintPreview::Refresh()
     auto* header{ new QWidget };
     header->setLayout(header_layout);
 
-    restore_order_button->setVisible(!m_Project.m_Data.m_CardsList.empty());
+    restore_order_button->setVisible(m_Project.IsManuallySorted());
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(header);

@@ -122,6 +122,7 @@ class Project : public QObject
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
+    uint32_t GetCardCount(const fs::path& card_name) const;
     uint32_t SetCardCount(const fs::path& card_name, uint32_t num);
     uint32_t IncrementCardCount(const fs::path& card_name);
     uint32_t DecrementCardCount(const fs::path& card_name);
@@ -137,6 +138,12 @@ class Project : public QObject
     const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
 
     const fs::path& GetBacksideImage(const fs::path& image_name) const;
+    fs::path ExchangeBacksideImage(const fs::path& image_name, fs::path new_backside_image);
+    fs::path ResetBacksideImage(const fs::path& image_name);
+
+    bool HasCardBacksideShortEdge(const fs::path& image_name) const;
+    void SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge);
+
 
     bool CacheCardLayout();
 
@@ -158,6 +165,20 @@ class Project : public QObject
     Length CardCornerRadius() const;
 
     void EnsureOutputFolder() const;
+
+    const auto& GetCards() const
+    {
+        return m_Data.m_Cards;
+    }
+
+    bool IsManuallySorted() const
+    {
+        return !m_Data.m_CardsList.empty();
+    }
+    auto GetManualSorting() const
+    {
+        return m_Data.m_CardsList;
+    }
 
   public slots:
     void SetPreview(const fs::path& image_name, ImagePreview preview);

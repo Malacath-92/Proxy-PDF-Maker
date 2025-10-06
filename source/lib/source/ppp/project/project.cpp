@@ -394,6 +394,17 @@ bool Project::UnhideCard(const fs::path& card_name)
     return false;
 }
 
+uint32_t Project::GetCardCount(const fs::path& card_name) const
+{
+
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        return it->second.m_Num;
+    }
+    return 0;
+}
+
 uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
 {
     auto it{ m_Data.m_Cards.find(card_name) };
@@ -572,15 +583,73 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) co
 
 const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
 {
-    if (m_Data.m_Cards.contains(image_name))
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
     {
-        const CardInfo& card{ m_Data.m_Cards.at(image_name) };
+        const CardInfo& card{ it->second };
         if (!card.m_Backside.empty())
         {
             return card.m_Backside;
         }
     }
     return m_Data.m_BacksideDefault;
+}
+
+fs::path Project::ExchangeBacksideImage(const fs::path& image_name, fs::path new_backside_image)
+{
+    if (image_name == new_backside_image)
+    {
+        return "";
+    }
+
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        CardInfo& card{ it->second };
+        if (card.m_Backside == new_backside_image)
+        {
+            return "";
+        }
+
+        auto old_backside{ std::move(card.m_Backside) };
+        card.m_Backside = std::move(new_backside_image);
+        return old_backside;
+    }
+    return "";
+}
+
+fs::path Project::ResetBacksideImage(const fs::path& image_name)
+{
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        CardInfo& card{ it->second };
+        auto old_backside{ std::move(card.m_Backside) };
+        card.m_Backside.clear();
+        return old_backside;
+    }
+    return "";
+}
+
+bool Project::HasCardBacksideShortEdge(const fs::path& image_name) const
+{
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        const CardInfo& card{ it->second };
+        return card.m_BacksideShortEdge;
+    }
+    return false;
+}
+
+void Project::SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge)
+{
+    const auto it{ m_Data.m_Cards.find(image_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        CardInfo& card{ it->second };
+        card.m_BacksideShortEdge = has_backside_short_edge;
+    }
 }
 
 bool Project::CacheCardLayout()

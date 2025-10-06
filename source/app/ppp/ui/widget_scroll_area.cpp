@@ -29,7 +29,7 @@ class CardWidget : public QFrame
         , m_BacksideEnabled{ project.m_Data.m_BacksideEnabled }
         , m_Backside{ project.GetBacksideImage(card_name) }
     {
-        const uint32_t initial_number{ card_name.empty() ? 1 : project.m_Data.m_Cards[card_name].m_Num };
+        const uint32_t initial_number{ card_name.empty() ? 1 : project.GetCardCount(card_name) };
 
         auto* number_edit{ new QLineEdit };
         number_edit->setValidator(new QIntValidator{ 0, 999, this });
@@ -183,8 +183,7 @@ class CardWidget : public QFrame
             auto backside_reset{
                 [=, this, &project]()
                 {
-                    const auto old_backside{ project.m_Data.m_Cards[m_CardName].m_Backside };
-                    project.m_Data.m_Cards[m_CardName].m_Backside.clear();
+                    const auto old_backside{ project.ResetBacksideImage(m_CardName) };
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
 
@@ -203,9 +202,9 @@ class CardWidget : public QFrame
                     if (const auto backside_choice{ image_browser.Show() })
                     {
                         const auto& backside{ backside_choice.value() };
-                        if (backside != project.m_Data.m_Cards[m_CardName].m_Backside && backside != m_CardName)
+                        const auto old_backside{ project.ExchangeBacksideImage(m_CardName, backside) };
+                        if (!old_backside.empty())
                         {
-                            project.m_Data.m_Cards[m_CardName].m_Backside = backside;
                             auto* new_backside_image{ new BacksideImage{ backside, project } };
                             stacked_widget->RefreshBackside(new_backside_image);
 
@@ -249,7 +248,7 @@ class CardWidget : public QFrame
 
         if (m_BacksideEnabled)
         {
-            const bool is_short_edge{ m_CardName.empty() ? false : project.m_Data.m_Cards[m_CardName].m_BacksideShortEdge };
+            const bool is_short_edge{ project.HasCardBacksideShortEdge(m_CardName) };
 
             auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
             short_edge_checkbox->setChecked(is_short_edge);
@@ -287,20 +286,20 @@ class CardWidget : public QFrame
 
     virtual void IncrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.m_Data.m_Cards[m_CardName].m_Num) + 1 };
+        const auto number{ static_cast<int64_t>(project.GetCardCount(m_CardName)) + 1 };
         ApplyNumber(project, number);
     }
 
     virtual void DecrementNumber(Project& project)
     {
-        const auto number{ static_cast<int64_t>(project.m_Data.m_Cards[m_CardName].m_Num) - 1 };
+        const auto number{ static_cast<int64_t>(project.GetCardCount(m_CardName)) - 1 };
         ApplyNumber(project, number);
     }
 
     virtual void SetShortEdge(Project& project, Qt::CheckState s)
     {
-        auto& card{ project.m_Data.m_Cards[m_CardName] };
-        card.m_BacksideShortEdge = s == Qt::CheckState::Checked;
+        project.SetCardBacksideShortEdge(m_CardName,
+                                         s == Qt::CheckState::Checked);
     }
 
   protected:
@@ -467,7 +466,7 @@ class CardScrollArea::CardGrid : public QWidget
 
         size_t i{ 0 };
         const auto cols{ g_Cfg.m_DisplayColumns };
-        for (auto& [card_name, card_info] : m_Project.m_Data.m_Cards)
+        for (const auto& [card_name, card_info] : m_Project.GetCards())
         {
             if (card_info.m_Hidden > 0)
             {

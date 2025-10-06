@@ -205,18 +205,18 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
         }
     };
 
-    if (!project.m_Data.m_CardsList.empty())
+    if (project.IsManuallySorted())
     {
         // Pre-expanded list of cards with custom sorting
-        for (const auto& img : project.m_Data.m_CardsList)
+        for (const auto& img : project.GetManualSorting())
         {
-            const auto& info{ project.m_Data.m_Cards.at(img) };
+            const auto& info{ project.GetCards().at(img) };
             push_card(img, info);
         }
     }
     else
     {
-        for (const auto& [img, info] : project.m_Data.m_Cards)
+        for (const auto& [img, info] : project.GetCards())
         {
             for (uint32_t i = 0; i < info.m_Num; i++)
             {
