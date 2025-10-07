@@ -1392,11 +1392,11 @@ std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name
 
     std::string auto_backside{ m_Data.m_BacksideAutoPattern };
     const auto placeholder_pos{ auto_backside.find('$') };
-    auto_backside.replace(placeholder_pos, 1, image_name.filename().string());
+    auto_backside.replace(placeholder_pos, 1, image_name.stem().string());
 
     for (auto& [name, _] : m_Data.m_Cards)
     {
-        if (name.filename() == auto_backside)
+        if (name.stem() == auto_backside)
         {
             return name;
         }
@@ -1416,7 +1416,7 @@ std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& image_name)
     const auto front{ pattern.substr(0, placeholder_pos) };
     const auto back{ pattern.substr(placeholder_pos + 1, std::string::npos) };
 
-    const auto name_str{ image_name.filename().string() };
+    const auto name_str{ image_name.stem().string() };
     if (name_str.starts_with(front) && name_str.ends_with(back))
     {
         const auto front_name{
@@ -1428,7 +1428,7 @@ std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& image_name)
         {
             if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
             {
-                if (name.filename() == front_name)
+                if (name.stem() == front_name)
                 {
                     return name;
                 }
