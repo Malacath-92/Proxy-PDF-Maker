@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2025-07-10
+
+### Added
+- New auto backside setting that makes front-back matching automatic based on file names.
+
+### Changed
+- Run cropper and pdf generation in a configurable thread pool for much faster turnaround.
+
+### Fixed
+- Increased tolerance for bad aspect ratio warning.
+
 ## [0.14.4] - 2025-27-09
 
 ### Fixed
