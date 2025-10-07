@@ -144,7 +144,7 @@ class Project : public QObject
     bool HasCardBacksideShortEdge(const fs::path& image_name) const;
     void SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge);
 
-    void SetBacksideAutoPattern(std::string pattern);
+    bool SetBacksideAutoPattern(std::string pattern);
 
     bool CacheCardLayout();
 
@@ -292,6 +292,7 @@ class Project : public QObject
     void AppendCardToList(const fs::path& image_name);
     void RemoveCardFromList(const fs::path& image_name);
 
+    bool AutoMatchBackside(const fs::path& image_name);
     std::optional<fs::path> FindCardAutoBackside(const fs::path& image_name) const;
     std::optional<fs::path> MatchAsAutoBackside(const fs::path& image_name) const;
 };

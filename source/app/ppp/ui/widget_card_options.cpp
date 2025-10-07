@@ -289,7 +289,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             m_BacksideAutoPattern->setToolTip("");
             m_BacksideAutoPattern->setStyleSheet("");
 
-            project.SetBacksideAutoPattern(pattern.toStdString());
+            if (project.SetBacksideAutoPattern(pattern.toStdString()))
+            {
+                CardBacksideChanged();
+            }
         }
     };
 

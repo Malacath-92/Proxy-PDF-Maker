@@ -532,26 +532,7 @@ void Project::CardAdded(const fs::path& card_name)
         it->second.m_Transient = false;
     }
 
-    if (auto frontside{ MatchAsAutoBackside(card_name) })
-    {
-        SetBacksideImage(frontside.value(), card_name);
-
-        auto& card{ m_Data.m_Cards.at(frontside.value()) };
-        card.m_BacksideAutoAssigned = true;
-    }
-    else
-    {
-        auto& card{ m_Data.m_Cards.at(card_name) };
-        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
-        {
-            if (auto backside{ FindCardAutoBackside(card_name) })
-            {
-                SetBacksideImage(card_name, backside.value());
-                card.m_BacksideAutoAssigned = true;
-            }
-        }
-    }
-
+    AutoMatchBackside(card_name);
     AppendCardToList(card_name);
 }
 
@@ -690,36 +671,31 @@ void Project::SetCardBacksideShortEdge(const fs::path& image_name, bool has_back
     }
 }
 
-void Project::SetBacksideAutoPattern(std::string pattern)
+bool Project::SetBacksideAutoPattern(std::string pattern)
 {
     const auto placeholder_pos{ pattern.find('$') };
     if (placeholder_pos == std::string::npos)
     {
-        return;
+        return false;
     }
 
     if (pattern == m_Data.m_BacksideAutoPattern)
     {
-        return;
+        return false;
     }
 
     m_Data.m_BacksideAutoPattern = std::move(pattern);
 
+    bool any_backside_change{ false };
     for (auto& [name, card] : m_Data.m_Cards)
     {
-        if (card.m_BacksideAutoAssigned)
+        if (AutoMatchBackside(name))
         {
-            // try find backside
-            if (auto auto_backside{ FindCardAutoBackside(name) })
-            {
-            }
-            else
-            {
-                card.m_Backside.clear();
-                card.m_BacksideAutoAssigned = false;
-            }
+            any_backside_change = true;
         }
     }
+
+    return any_backside_change;
 }
 
 bool Project::CacheCardLayout()
@@ -1373,6 +1349,40 @@ void Project::RemoveCardFromList(const fs::path& image_name)
     }
 }
 
+bool Project::AutoMatchBackside(const fs::path& image_name)
+{
+    if (auto frontside{ MatchAsAutoBackside(image_name) })
+    {
+        auto& card{ m_Data.m_Cards.at(frontside.value()) };
+        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+        {
+            SetBacksideImage(frontside.value(), image_name);
+            card.m_BacksideAutoAssigned = true;
+            return true;
+        }
+    }
+    else
+    {
+        auto& card{ m_Data.m_Cards.at(image_name) };
+        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+        {
+            if (auto backside{ FindCardAutoBackside(image_name) })
+            {
+                SetBacksideImage(image_name, backside.value());
+                card.m_BacksideAutoAssigned = true;
+                return true;
+            }
+            else if (!card.m_Backside.empty())
+            {
+                SetBacksideImage(image_name, "");
+                card.m_BacksideAutoAssigned = false;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
 std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name) const
 {
     if (m_Data.m_BacksideAutoPattern.empty())

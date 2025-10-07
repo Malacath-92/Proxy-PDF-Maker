@@ -26,6 +26,7 @@ class CardOptionsWidget : public QWidget
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
+    void CardBacksideChanged();
 
   public slots:
     void NewProjectOpened();

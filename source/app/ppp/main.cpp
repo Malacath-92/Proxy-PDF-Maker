@@ -215,6 +215,7 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, scroll_area, &CardScrollArea::ImageDirChanged);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, scroll_area, &CardScrollArea::BacksideEnabledChanged);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, scroll_area, &CardScrollArea::BacksideDefaultChanged);
+        QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, scroll_area, &CardScrollArea::FullRefresh);
         QObject::connect(global_options, &GlobalOptionsWidget::DisplayColumnsChanged, scroll_area, &CardScrollArea::DisplayColumnsChanged);
     }
 
