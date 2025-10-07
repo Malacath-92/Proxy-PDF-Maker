@@ -41,6 +41,7 @@ class CardOptionsWidget : public QWidget
   private:
     void SetDefaults();
     void SetAdvancedWidgetsVisibility();
+    void SetBacksideAutoPatternTooltip();
 
     Project& m_Project;
 

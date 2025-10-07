@@ -286,7 +286,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                 return;
             }
 
-            m_BacksideAutoPattern->setToolTip("");
+            SetBacksideAutoPatternTooltip();
             m_BacksideAutoPattern->setStyleSheet("");
 
             if (project.SetBacksideAutoPattern(pattern.toStdString()))
@@ -395,6 +395,7 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
+    SetBacksideAutoPatternTooltip();
 
     m_BacksideAuto->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideAuto->setVisible(m_Project.m_Data.m_BacksideEnabled);
@@ -403,6 +404,7 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 void CardOptionsWidget::BacksideAutoPatternChangedExternal(const std::string& pattern)
 {
     m_BacksideAutoPattern->setText(ToQString(pattern));
+    SetBacksideAutoPatternTooltip();
 }
 
 void CardOptionsWidget::SetDefaults()
@@ -433,9 +435,25 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
+    SetBacksideAutoPatternTooltip();
+
+    m_BacksideAuto->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideAuto->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
 
 void CardOptionsWidget::SetAdvancedWidgetsVisibility()
 {
     // Note: Everything currently available in basic mode
+}
+
+void CardOptionsWidget::SetBacksideAutoPatternTooltip()
+{
+    QString auto_hint{
+        QString{ "Matches e.g. Esika.png with %1.png" }
+            .arg(m_BacksideAutoPattern->text())
+            .replace("$", "Esika"),
+    };
+    m_BacksideAutoPattern->setToolTip(std::move(auto_hint));
 }
