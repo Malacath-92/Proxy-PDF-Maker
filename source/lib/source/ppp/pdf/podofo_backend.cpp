@@ -291,7 +291,7 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                        << 0.0 << " " // rot-1
                        << 0.0 << " " // rot-2
                        << 1.0 << " " // scale-y
-                       << -dx << " "  // trans-x
+                       << -dx << " " // trans-x
                        << dy << " "  // trans-y
                        << "cm " << std::endl;
                 transform_state->GetStream()->Append(stream.str());
