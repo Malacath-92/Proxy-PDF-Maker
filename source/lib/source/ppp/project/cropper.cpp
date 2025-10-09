@@ -28,16 +28,20 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
                      this,
                      [this]()
                      {
-                         m_TotalCropWorkToDo = 0;
-                         m_TotalCropWorkDone = 0;
-
                          const auto crop_work_end_point{ std::chrono::high_resolution_clock::now() };
                          const auto crop_work_duration{ crop_work_end_point - m_CropWorkStartPoint };
+                         const auto crop_work_seconds{ std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration) };
                          LogInfo("Cropper finished...\nTotal Work Items: {}\nTotal Time Taken: {}",
                                  m_TotalCropWorkDone,
-                                 std::chrono::duration_cast<std::chrono::seconds>(crop_work_duration));
+                                 crop_work_seconds);
 
-                         CropWorkDone();
+                         CropWorkDone(crop_work_seconds,
+                                      m_TotalCropWorkDone - m_TotalCropWorkSkipped,
+                                      m_TotalCropWorkSkipped);
+
+                         m_TotalCropWorkToDo = 0;
+                         m_TotalCropWorkDone = 0;
+                         m_TotalCropWorkSkipped = 0;
                      });
 }
 Cropper::~Cropper()
@@ -195,7 +199,7 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
             QObject::connect(crop_work,
                              &CropperPreviewWork::Finished,
                              this,
-                             [this, card_name, crop_work]()
+                             [this, card_name, crop_work](CropperWork::Conclusion conclusion)
                              {
                                  if (m_CropWork.contains(card_name) &&
                                      m_CropWork[card_name] == crop_work)
@@ -204,6 +208,11 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                                  }
 
                                  m_TotalCropWorkDone++;
+                                 if (conclusion == CropperWork::Conclusion::Skipped)
+                                 {
+                                     m_TotalCropWorkSkipped++;
+                                 }
+
                                  if (m_TotalCropWorkDone == m_TotalCropWorkToDo)
                                  {
                                      m_CropFinishedTimer.start();

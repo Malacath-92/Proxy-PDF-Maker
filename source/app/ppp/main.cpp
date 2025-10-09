@@ -14,6 +14,8 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 
 Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 
+#include <fmt/chrono.h>
+
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/project.hpp>
@@ -326,6 +328,27 @@ int main(int argc, char** argv)
 
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
+
+    // Toast to user when crop work is done
+    QObject::connect(&cropper,
+                     &Cropper::CropWorkDone,
+                     main_window,
+                     [main_window](std::chrono::seconds time,
+                                   uint32_t work_done,
+                                   uint32_t work_skipped)
+                     {
+                         main_window->Toast(
+                             ToastType::Info,
+                             "Cropper finished",
+                             QString{
+                                 "Took %1 seconds to "
+                                 "crop %2 images "
+                                 "(an addtional %3 images were verified)",
+                             }
+                                 .arg(fmt::format("{}", time).c_str())
+                                 .arg(work_done)
+                                 .arg(work_skipped));
+                     });
 
     {
         auto apply_max_worker_threads{

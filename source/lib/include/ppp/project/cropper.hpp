@@ -30,7 +30,9 @@ class Cropper : public QObject
 
   signals:
     void CropWorkStart();
-    void CropWorkDone();
+    void CropWorkDone(std::chrono::seconds time,
+                      uint32_t work_done,
+                      uint32_t work_skipped);
 
     void PreviewWorkStart();
     void PreviewWorkDone();
@@ -75,6 +77,7 @@ class Cropper : public QObject
 
     uint32_t m_TotalCropWorkToDo{ 0 };
     uint32_t m_TotalCropWorkDone{ 0 };
+    uint32_t m_TotalCropWorkSkipped{ 0 };
 
     std::atomic_uint32_t m_AliveCropperWork{};
     std::atomic_uint32_t m_RunningCropperWork{};
