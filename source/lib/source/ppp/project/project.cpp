@@ -97,7 +97,20 @@ void Project::Load(const fs::path& json_path)
 
         m_Data.m_BacksideEnabled = json["backside_enabled"];
         m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
-        m_Data.m_BacksideOffset.value = json["backside_offset"];
+        {
+            auto backside_offset{ json["backside_offset"] };
+            if (json["backside_offset"].is_object())
+            {
+
+                m_Data.m_BacksideOffset.x = backside_offset["width"].get<float>() * 1_mm;
+                m_Data.m_BacksideOffset.y = backside_offset["height"].get<float>() * 1_mm;
+            }
+            else
+            {
+                m_Data.m_BacksideOffset.x.value = backside_offset;
+                m_Data.m_BacksideOffset.y = 0_mm;
+            }
+        }
         if (json.contains("backside_auto_pattern"))
         {
             m_Data.m_BacksideAutoPattern = json["backside_auto_pattern"];
@@ -262,7 +275,10 @@ void Project::Dump(const fs::path& json_path) const
 
         json["backside_enabled"] = m_Data.m_BacksideEnabled;
         json["backside_default"] = m_Data.m_BacksideDefault.string();
-        json["backside_offset"] = m_Data.m_BacksideOffset.value;
+        json["backside_offset"] = nlohmann::json{
+            { "width", m_Data.m_BacksideOffset.x / 1_mm },
+            { "height", m_Data.m_BacksideOffset.y / 1_mm },
+        };
         json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
         json["card_size"] = m_Data.m_CardSizeChoice;

@@ -177,8 +177,8 @@ The default backside is `__back.png`, if that file is not available a question m
 
 To change the backside for an individual card, click on the backside for that card in the card grid and browse to the image you want.
 
-#### Offset
-In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Offset` field.
+#### Backside Offset
+In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Backside Offset` field.
 
 ### Global Config
 

@@ -216,7 +216,7 @@ class Project : public QObject
         // Backside options
         bool m_BacksideEnabled{ false };
         fs::path m_BacksideDefault{ "__back.png" };
-        Length m_BacksideOffset{ 0_mm };
+        Position m_BacksideOffset{ 0_mm, 0_mm };
         std::string m_BacksideAutoPattern{ "__back_$" };
 
         // PDF generation options

@@ -136,10 +136,12 @@ PageImageTransforms ComputeBacksideTransforms(
             const auto backside_position_x{ page_size.x -
                                             frontside_position.x -
                                             frontside_size.x -
-                                            backside_offset };
+                                            backside_offset.x };
+            const auto backside_position_y{ frontside_position.y -
+                                            backside_offset.y };
             const Position backside_position{
                 backside_position_x,
-                frontside_position.y,
+                backside_position_y,
             };
             backside_transforms.push_back(PageImageTransform{
                 backside_position,
@@ -149,11 +151,14 @@ PageImageTransforms ComputeBacksideTransforms(
         }
         else
         {
+            const auto backside_position_x{ frontside_position.x -
+                                            backside_offset.x };
             const auto backside_position_y{ page_size.y -
                                             frontside_position.y -
-                                            frontside_size.y };
+                                            frontside_size.y -
+                                            backside_offset.y };
             const Position backside_position{
-                frontside_position.x - backside_offset,
+                backside_position_x,
                 backside_position_y,
             };
             backside_transforms.push_back(PageImageTransform{

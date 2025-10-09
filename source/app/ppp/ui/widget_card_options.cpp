@@ -119,12 +119,29 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
 
-    m_BacksideOffsetSpin = MakeDoubleSpinBox();
-    m_BacksideOffsetSpin->setDecimals(2);
-    m_BacksideOffsetSpin->setSingleStep(0.1);
-    m_BacksideOffsetSpin->setSuffix(base_unit_name);
+    {
+        m_BacksideOffsetWidthSpin = MakeDoubleSpinBox();
+        m_BacksideOffsetWidthSpin->setDecimals(2);
+        m_BacksideOffsetWidthSpin->setSingleStep(0.1);
+        m_BacksideOffsetWidthSpin->setSuffix(base_unit_name);
 
-    m_BacksideOffset = new WidgetWithLabel{ "Off&set", m_BacksideOffsetSpin };
+        m_BacksideOffsetHeightSpin = MakeDoubleSpinBox();
+        m_BacksideOffsetHeightSpin->setDecimals(2);
+        m_BacksideOffsetHeightSpin->setSingleStep(0.1);
+        m_BacksideOffsetHeightSpin->setSuffix(base_unit_name);
+
+        auto* inner_layout{ new QVBoxLayout };
+        inner_layout->addWidget(m_BacksideOffsetWidthSpin);
+        inner_layout->addWidget(m_BacksideOffsetHeightSpin);
+        inner_layout->setContentsMargins(0, 0, 0, 0);
+
+        auto* inner_widget{ new QWidget };
+        inner_widget->setLayout(inner_layout);
+
+        auto* backside_offset_widget{ new WidgetWithLabel{ "Backside Off&set", inner_widget } };
+        backside_offset_widget->layout()->setAlignment(backside_offset_widget->GetLabel(), Qt::AlignTop);
+        m_BacksideOffset = backside_offset_widget;
+    }
 
     m_BacksideAutoPattern = new QLineEdit{ ToQString(project.m_Data.m_BacksideAutoPattern) };
     m_BacksideAuto = new WidgetWithLabel{ "Auto-&Pattern", m_BacksideAutoPattern };
@@ -255,11 +272,20 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         }
     };
 
-    auto change_backside_offset{
+    auto change_backside_offset_width{
         [this, &project](double v)
         {
             const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            project.m_Data.m_BacksideOffset = base_unit * static_cast<float>(v);
+            project.m_Data.m_BacksideOffset.x = base_unit * static_cast<float>(v);
+            BacksideOffsetChanged();
+        }
+    };
+
+    auto change_backside_offset_height{
+        [this, &project](double v)
+        {
+            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+            project.m_Data.m_BacksideOffset.y = base_unit * static_cast<float>(v);
             BacksideOffsetChanged();
         }
     };
@@ -328,10 +354,14 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      pick_backside);
-    QObject::connect(m_BacksideOffsetSpin,
+    QObject::connect(m_BacksideOffsetWidthSpin,
                      &QDoubleSpinBox::valueChanged,
                      this,
-                     change_backside_offset);
+                     change_backside_offset_width);
+    QObject::connect(m_BacksideOffsetHeightSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_backside_offset_height);
     QObject::connect(m_BacksideAutoPattern,
                      &QLineEdit::textChanged,
                      this,
@@ -373,9 +403,13 @@ void CardOptionsWidget::BaseUnitChanged()
     m_VerticalSpacingSpin->setSuffix(ToQString(base_unit_name));
     m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
 
-    m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetSpin->setSuffix(ToQString(base_unit_name));
-    m_BacksideOffsetSpin->setValue(backside_offset / base_unit);
+    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetWidthSpin->setSuffix(ToQString(base_unit_name));
+    m_BacksideOffsetWidthSpin->setValue(backside_offset.x / base_unit);
+
+    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetHeightSpin->setSuffix(ToQString(base_unit_name));
+    m_BacksideOffsetHeightSpin->setValue(backside_offset.y / base_unit);
 }
 
 void CardOptionsWidget::BacksideEnabledChangedExternal()
@@ -388,8 +422,10 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
+    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetWidthSpin->setValue(m_Project.m_Data.m_BacksideOffset.x / base_unit);
+    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetHeightSpin->setValue(m_Project.m_Data.m_BacksideOffset.y / base_unit);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
@@ -430,8 +466,11 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideOffsetSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetSpin->setValue(m_Project.m_Data.m_BacksideOffset / base_unit);
+    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetWidthSpin->setValue(m_Project.m_Data.m_BacksideOffset.x / base_unit);
+
+    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
+    m_BacksideOffsetHeightSpin->setValue(m_Project.m_Data.m_BacksideOffset.y / base_unit);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);

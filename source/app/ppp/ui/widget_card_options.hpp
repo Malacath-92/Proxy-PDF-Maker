@@ -52,7 +52,8 @@ class CardOptionsWidget : public QWidget
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
-    QDoubleSpinBox* m_BacksideOffsetSpin{ nullptr };
+    QDoubleSpinBox* m_BacksideOffsetWidthSpin{ nullptr };
+    QDoubleSpinBox* m_BacksideOffsetHeightSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
     QLineEdit* m_BacksideAutoPattern{ nullptr };
     QWidget* m_BacksideAuto{ nullptr };

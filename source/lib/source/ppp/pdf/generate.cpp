@@ -459,7 +459,7 @@ fs::path GenerateTestPdf(const Project& project)
     {
         auto* back_page{ pdf->NextPage() };
 
-        const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset };
+        const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset.x };
         const PdfPage::LineData line{
             .m_From{ backside_left_line_x, 0_mm },
             .m_To{ backside_left_line_x, page_height },

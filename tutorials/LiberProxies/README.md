@@ -64,7 +64,7 @@ Extend this section and set the following options:
 - `Bleed Edge` to `1.5mm`,
 - `Spacing` to `1mm`,
 - tick `Enable Backside` and
-- `Offset` to `0mm`.
+- both `Backside Offset` values to `0mm`.
 
 <p align="center">
     <img src="./images/options_card.png" alt="Card Options"/>
