@@ -275,8 +275,8 @@ set_target_properties(proxy_pdf_lib PROPERTIES
 
 # --------------------------------------------------
 # Create executable
-file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
-file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
+file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp" "submodules/qt-toast/src/*.cpp")
+file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl" "submodules/qt-toast/src/*.h")
 if (WIN32)
 	qt_add_executable(proxy_pdf WIN32 ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 else()
@@ -285,7 +285,8 @@ endif()
 target_link_libraries(proxy_pdf PRIVATE
 	proxy_pdf_lib)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
-target_include_directories(proxy_pdf PRIVATE "source/app" "res")
+target_compile_definitions(proxy_pdf PRIVATE QT_TOAST_PACKAGED_RESOURCES=qt-toast)
+target_include_directories(proxy_pdf PRIVATE "source/app" "res" "submodules/qt-toast/src")
 set_target_properties(proxy_pdf PROPERTIES
     VS_GLOBAL_RunCodeAnalysis false
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false

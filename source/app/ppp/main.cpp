@@ -21,6 +21,7 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/app.hpp>
 #include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
+#include <ppp/version_check.hpp>
 
 #include <ppp/util/log.hpp>
 
@@ -340,7 +341,21 @@ int main(int argc, char** argv)
     cropper.Start();
     card_provider.Start();
 
-    const int return_code{ app.exec() };
+    if (g_Cfg.m_CheckVersionOnStartup)
+    {
+        if (auto new_version{ NewAvailableVersion() })
+        {
+            main_window->Toast(
+                ToastType::Info,
+                "New version available",
+                QString{ "<a href=\"%1\">"
+                         "Download the new version from GitHub"
+                         "</a>" }
+                    .arg(ReleaseURL(new_version.value()).c_str()));
+        }
+    }
+
+    const int return_code{ QApplication::exec() };
     project.Dump(app.GetProjectPath());
     return return_code;
 }

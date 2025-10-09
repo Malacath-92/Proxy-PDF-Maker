@@ -31,6 +31,8 @@ struct Config
 {
     bool m_AdvancedMode{ false };
 
+    bool m_CheckVersionOnStartup{ true };
+
     bool m_EnableFancyUncrop{ true };
     Pixel m_BasePreviewWidth{ 248_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
