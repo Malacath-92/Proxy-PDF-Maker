@@ -7,7 +7,7 @@
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
 {
-    setWindowTitle("PDF Proxy Printer");
+    setWindowTitle("Proxy-PDF-Maker");
 
     auto* window_layout{ new QHBoxLayout };
     window_layout->addWidget(tabs);
