@@ -59,7 +59,7 @@ std::optional<std::string> NewAvailableVersion()
     {
         return std::nullopt;
     }
- 
+
     return latest_version;
 }
 

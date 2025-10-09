@@ -47,8 +47,7 @@ SemanticVersion ProxyPdfToSemanticVersion(std::string_view version)
         }
     };
 
-    const auto parts
-    {
+    const auto parts{
         version |
             std::views::split('.') |
             std::views::transform([](auto part)
