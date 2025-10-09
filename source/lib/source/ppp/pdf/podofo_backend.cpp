@@ -2,6 +2,7 @@
 
 #include <dla/vector_math.h>
 
+#include <podofo/base/PdfLocale.h>
 #include <podofo/podofo.h>
 
 #include <ppp/pdf/util.hpp>
@@ -266,6 +267,45 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                                         0,
                                         new_page_idx)
                               .GetPage(new_page_idx);
+
+        const bool is_backside{ m_Project.m_Data.m_BacksideEnabled &&
+                                m_Pages.size() % 2 == 0 };
+        if (is_backside)
+        {
+            auto* page{ new_page.m_Page };
+            PoDoFo::PdfObject* save_graphics_state = page->GetObject()->GetOwner()->CreateObject();
+            save_graphics_state->GetStream()->Set("q");
+
+            PoDoFo::PdfObject* transform_state = page->GetObject()->GetOwner()->CreateObject();
+            {
+                transform_state->GetStream()->BeginAppend();
+
+                const auto dx{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.x) };
+                const auto dy{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.y) };
+
+                std::ostringstream stream;
+                stream.flags(std::ios_base::fixed);
+                stream.precision(15);
+                PoDoFo::PdfLocaleImbue(stream);
+                stream << 1.0 << " " // scale-x
+                       << 0.0 << " " // rot-1
+                       << 0.0 << " " // rot-2
+                       << 1.0 << " " // scale-y
+                       << -dx << " "  // trans-x
+                       << dy << " "  // trans-y
+                       << "cm " << std::endl;
+                transform_state->GetStream()->Append(stream.str());
+
+                transform_state->GetStream()->EndAppend();
+            }
+            PoDoFo::PdfObject* restore_graphics_state = page->GetObject()->GetOwner()->CreateObject();
+            restore_graphics_state->GetStream()->Set("Q");
+
+            auto contents{ page->GetContents() };
+            contents->GetArray().insert(contents->GetArray().begin(), transform_state->Reference());
+            contents->GetArray().insert(contents->GetArray().begin(), save_graphics_state->Reference());
+            contents->GetArray().push_back(restore_graphics_state->Reference());
+        }
     }
     else
     {
