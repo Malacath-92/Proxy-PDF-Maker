@@ -22,6 +22,7 @@
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
+#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
@@ -328,6 +329,11 @@ void MtgDownloaderPopup::FinalizeDownload()
 
     m_Router.RefreshCardGrid();
     m_Router.UnpauseCropper();
+
+    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+    main_window->Toast(ToastType::Info,
+                       "MtG Download done",
+                       "All files have been downloaded, you can now close the plugin.");
 }
 
 void MtgDownloaderPopup::InstallLogHook()
