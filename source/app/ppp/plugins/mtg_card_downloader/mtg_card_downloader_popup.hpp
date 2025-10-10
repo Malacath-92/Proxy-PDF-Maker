@@ -59,6 +59,7 @@ class MtgDownloaderPopup : public PopupBase
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
     QPushButton* m_DownloadButton{ nullptr };
+    QPushButton* m_CancelButton{ nullptr };
 
     QTemporaryDir m_OutputDir{};
 

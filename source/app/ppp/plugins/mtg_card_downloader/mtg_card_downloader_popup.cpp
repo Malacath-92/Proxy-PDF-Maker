@@ -59,18 +59,18 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     auto* buttons{ new QWidget{} };
     {
         m_DownloadButton = new QPushButton{ "Download" };
-        auto* cancel_button{ new QPushButton{ "Cancel" } };
+        m_CancelButton = new QPushButton{ "Cancel" };
 
         auto* layout{ new QHBoxLayout };
         layout->addWidget(m_DownloadButton);
-        layout->addWidget(cancel_button);
+        layout->addWidget(m_CancelButton);
         buttons->setLayout(layout);
 
         QObject::connect(m_DownloadButton,
                          &QPushButton::clicked,
                          this,
                          &MtgDownloaderPopup::DoDownload);
-        QObject::connect(cancel_button,
+        QObject::connect(m_CancelButton,
                          &QPushButton::clicked,
                          this,
                          &QDialog::close);
@@ -329,6 +329,8 @@ void MtgDownloaderPopup::FinalizeDownload()
 
     m_Router.RefreshCardGrid();
     m_Router.UnpauseCropper();
+
+    m_CancelButton->setText("Close");
 
     auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
     main_window->Toast(ToastType::Info,
