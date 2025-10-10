@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QHBoxLayout>
+#include <QStyleHints>
 
 #include <Toast.h>
 
@@ -47,20 +48,29 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString title,
                                      QString message)
 {
+    Q_INIT_RESOURCE(toast_resources);
+
     auto* toast{ new ::Toast(this) };
     toast->setDuration(8000);
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
+
+    const bool dark_mode{
+        QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark
+    };
     switch (type)
     {
     case ToastType::Info:
-        toast->applyPreset(ToastPreset::INFORMATION);
+        toast->applyPreset(dark_mode ? ToastPreset::INFORMATION_DARK
+                                     : ToastPreset::INFORMATION);
         break;
     case ToastType::Warning:
-        toast->applyPreset(ToastPreset::WARNING);
+        toast->applyPreset(dark_mode ? ToastPreset::WARNING_DARK
+                                     : ToastPreset::WARNING);
         break;
     case ToastType::Error:
-        toast->applyPreset(ToastPreset::ERROR);
+        toast->applyPreset(dark_mode ? ToastPreset::ERROR_DARK
+                                     : ToastPreset::ERROR);
         break;
     }
 

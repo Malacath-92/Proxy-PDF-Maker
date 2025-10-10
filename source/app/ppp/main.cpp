@@ -337,17 +337,32 @@ int main(int argc, char** argv)
                                    uint32_t work_done,
                                    uint32_t work_skipped)
                      {
-                         main_window->Toast(
-                             ToastType::Info,
-                             "Cropper finished",
+                         if (work_done == 0)
+                         {
+                             return;
+                         }
+
+                         // clang-formt off
+                         QString message{
                              QString{
                                  "Took %1 seconds to "
-                                 "crop %2 images "
-                                 "(an addtional %3 images were verified)",
+                                 "crop %2 images.",
                              }
                                  .arg(fmt::format("{}", time).c_str())
                                  .arg(work_done)
-                                 .arg(work_skipped));
+                         };
+                         if (work_skipped > 0)
+                         {
+                             message += QString{
+                                 " An addtional %1 images were verified.",
+                             }
+                                            .arg(work_skipped);
+                         }
+                         // clang-formt on
+                         main_window->Toast(
+                             ToastType::Info,
+                             "Cropper finished",
+                             std::move(message));
                      });
 
     {
@@ -371,10 +386,11 @@ int main(int argc, char** argv)
             main_window->Toast(
                 ToastType::Info,
                 "New version available",
-                QString{ "<a href=\"%1\">"
-                         "Download the new version from GitHub"
+                QString{ "<a style=\"color:CornflowerBlue\" href=\"%1\">"
+                         "Download the new version %2 from GitHub"
                          "</a>" }
-                    .arg(ReleaseURL(new_version.value()).c_str()));
+                    .arg(ReleaseURL(new_version.value()).c_str())
+                    .arg(new_version.value().c_str()));
         }
     }
 

@@ -10,12 +10,5 @@
         <file>res/styles/Material Dark.qss</file>
         <file compress="1" compress-algo="zstd">res/spinner.svg</file>
         <file compress="1" compress-algo="zstd">res/cubes/Foils Vibrance.CUBE</file>
-
-        <file alias="qt-toast/css/toast.css">submodules/qt-toast/src/css/toast.css</file>
-        <file alias="qt-toast/icons/close.png">submodules/qt-toast/src/icons/close.png</file>
-        <file alias="qt-toast/icons/error.png">submodules/qt-toast/src/icons/error.png</file>
-        <file alias="qt-toast/icons/information.png">submodules/qt-toast/src/icons/information.png</file>
-        <file alias="qt-toast/icons/success.png">submodules/qt-toast/src/icons/success.png</file>
-        <file alias="qt-toast/icons/warning.png">submodules/qt-toast/src/icons/warning.png</file>
     </qresource>
 </RCC>
