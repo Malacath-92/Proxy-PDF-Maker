@@ -54,6 +54,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
     toast->setDuration(8000);
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
+    toast->setPosition(ToastPosition::BOTTOM_LEFT);
 
     const bool dark_mode{
         QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark
