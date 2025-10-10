@@ -68,8 +68,9 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
             GenericPopup render_window{ main_window, "Rendering PDF..." };
 
+            bool do_error_toast{ false };
             const auto render_work{
-                [=, &project, &render_window]()
+                [=, &project, &render_window, &do_error_toast]()
                 {
                     const auto uninstall_log_hook{ render_window.InstallLogHook() };
 
@@ -87,15 +88,10 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        if (main_window->hasFocus())
+                        do_error_toast = !main_window->hasFocus();
+                        if (!do_error_toast)
                         {
                             render_window.Sleep(3_s);
-                        }
-                        else
-                        {
-                            main_window->Toast(ToastType::Error,
-                                               "PDF Rendering Error",
-                                               "Failure while creating pdf, please check logs for details.");
                         }
                     }
                 }
@@ -104,6 +100,13 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
             main_window->setEnabled(false);
             render_window.ShowDuringWork(render_work);
             main_window->setEnabled(true);
+
+            if (do_error_toast && !main_window->hasFocus())
+            {
+                main_window->Toast(ToastType::Error,
+                                   "PDF Rendering Error",
+                                   "Failure while creating pdf, please check logs for details.");
+            }
         }
     };
 
@@ -178,8 +181,9 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
             GenericPopup render_align_window{ main_window, "Rendering alignment PDF..." };
 
+            bool do_error_toast{ false };
             const auto render_work{
-                [=, &project, &render_align_window]()
+                [=, &project, &render_align_window, &do_error_toast]()
                 {
                     const auto uninstall_log_hook{ render_align_window.InstallLogHook() };
                     try
@@ -190,15 +194,10 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        if (main_window->hasFocus())
+                        do_error_toast = !main_window->hasFocus();
+                        if (!do_error_toast)
                         {
                             render_align_window.Sleep(3_s);
-                        }
-                        else
-                        {
-                            main_window->Toast(ToastType::Error,
-                                               "PDF Rendering Error",
-                                               "Failure while creating pdf, please check logs for details.");
                         }
                     }
                 }
@@ -207,6 +206,13 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
             main_window->setEnabled(false);
             render_align_window.ShowDuringWork(render_work);
             main_window->setEnabled(true);
+
+            if (do_error_toast && !main_window->hasFocus())
+            {
+                main_window->Toast(ToastType::Error,
+                                   "PDF Rendering Error",
+                                   "Failure while creating pdf, please check logs for details.");
+            }
         }
     };
 
