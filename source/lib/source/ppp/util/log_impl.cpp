@@ -295,7 +295,7 @@ void Log::LogImpl::CreateLogFile()
         }
     }
 
-    static constexpr std::size_t c_MaxNumLogFiles = 256;
+    static constexpr std::size_t c_MaxNumLogFiles{ 16 };
     const std::size_t num_files = files_sorted_by_modify_time.size();
     if (num_files > c_MaxNumLogFiles)
     {
