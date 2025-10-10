@@ -42,7 +42,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
 }
 
 Image CropImage(const Image& image,
-                const fs::path& image_name,
+                const fs::path& card_name,
                 Size card_size,
                 Length full_bleed,
                 Length bleed_edge,
@@ -54,7 +54,7 @@ Image CropImage(const Image& image,
     // Safety check: if density is zero or very small, return the original image
     if (density <= 0_dpi)
     {
-        LogInfo("Cropping images...\n{} - DPI calculated: 0, skipping cropping for image", image_name.string());
+        LogInfo("Cropping images...\n{} - DPI calculated: 0, skipping cropping for image", card_name.string());
         return image;
     }
 
@@ -66,7 +66,7 @@ Image CropImage(const Image& image,
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(dla::math::max(0_pix, c - bleed_pixels));
             LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
-                    image_name.string(),
+                    card_name.string(),
                     dpi.value,
                     c,
                     bleed_edge);
@@ -74,7 +74,7 @@ Image CropImage(const Image& image,
         else
         {
             c = dla::math::round(c);
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", card_name.string(), dpi.value, c);
         }
     }
 
@@ -83,19 +83,19 @@ Image CropImage(const Image& image,
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", image_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
+        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", card_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
 }
 
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop)
+Image UncropImage(const Image& image, const fs::path& card_name, Size card_size, bool fancy_uncrop)
 {
     const PixelDensity density{ image.Density(card_size) };
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
+    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", card_name.string(), dpi.value, c);
 
     if (fancy_uncrop)
     {

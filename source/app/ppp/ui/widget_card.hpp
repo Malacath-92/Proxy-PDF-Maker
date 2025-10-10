@@ -22,13 +22,13 @@ class CardImage : public QLabel
         Pixel m_MinimumWidth{ 130_pix };
     };
 
-    CardImage(const fs::path& image_name, const Project& project, Params params);
+    CardImage(const fs::path& card_name, const Project& project, Params params);
 
-    void Refresh(const fs::path& image_name, const Project& project, Params params);
+    void Refresh(const fs::path& card_name, const Project& project, Params params);
 
-    const fs::path& GetImageName() const
+    const fs::path& GetCardName() const
     {
-        return m_ImageName;
+        return m_CardName;
     }
 
     virtual bool hasHeightForWidth() const override
@@ -38,13 +38,13 @@ class CardImage : public QLabel
     virtual int heightForWidth(int width) const override;
 
   private slots:
-    void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
+    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
     void AddBadFormatWarning();
 
-    fs::path m_ImageName;
+    fs::path m_CardName;
     Params m_OriginalParams;
 
     bool m_Rotated;

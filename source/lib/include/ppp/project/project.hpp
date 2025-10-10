@@ -131,18 +131,18 @@ class Project : public QObject
     void RestoreCardsOrder();
     void ReorderCards(size_t from, size_t to);
 
-    bool HasPreview(const fs::path& image_name) const;
-    bool HasBadAspectRatio(const fs::path& image_name) const;
-    const Image& GetCroppedPreview(const fs::path& image_name) const;
-    const Image& GetUncroppedPreview(const fs::path& image_name) const;
-    const Image& GetCroppedBacksidePreview(const fs::path& image_name) const;
-    const Image& GetUncroppedBacksidePreview(const fs::path& image_name) const;
+    bool HasPreview(const fs::path& card_name) const;
+    bool HasBadAspectRatio(const fs::path& card_name) const;
+    const Image& GetCroppedPreview(const fs::path& card_name) const;
+    const Image& GetUncroppedPreview(const fs::path& card_name) const;
+    const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
+    const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
-    const fs::path& GetBacksideImage(const fs::path& image_name) const;
-    bool SetBacksideImage(const fs::path& image_name, fs::path backside_image);
+    const fs::path& GetBacksideImage(const fs::path& card_name) const;
+    bool SetBacksideImage(const fs::path& card_name, fs::path backside_image);
 
-    bool HasCardBacksideShortEdge(const fs::path& image_name) const;
-    void SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge);
+    bool HasCardBacksideShortEdge(const fs::path& card_name) const;
+    void SetCardBacksideShortEdge(const fs::path& card_name, bool has_backside_short_edge);
 
     bool SetBacksideAutoPattern(std::string pattern);
 
@@ -182,12 +182,12 @@ class Project : public QObject
     }
 
   public slots:
-    void SetPreview(const fs::path& image_name, ImagePreview preview);
+    void SetPreview(const fs::path& card_name, ImagePreview preview);
 
     void CropperDone();
 
   signals:
-    void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
+    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
   public:
     struct ProjectData
@@ -289,10 +289,10 @@ class Project : public QObject
     Project& operator=(Project&&) = delete;
 
     CardList GenerateDefaultCardsList() const;
-    void AppendCardToList(const fs::path& image_name);
-    void RemoveCardFromList(const fs::path& image_name);
+    void AppendCardToList(const fs::path& card_name);
+    void RemoveCardFromList(const fs::path& card_name);
 
-    bool AutoMatchBackside(const fs::path& image_name);
-    std::optional<fs::path> FindCardAutoBackside(const fs::path& image_name) const;
-    std::optional<fs::path> MatchAsAutoBackside(const fs::path& image_name) const;
+    bool AutoMatchBackside(const fs::path& card_name);
+    std::optional<fs::path> FindCardAutoBackside(const fs::path& card_name) const;
+    std::optional<fs::path> MatchAsAutoBackside(const fs::path& card_name) const;
 };

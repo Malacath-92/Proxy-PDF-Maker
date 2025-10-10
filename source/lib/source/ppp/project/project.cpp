@@ -587,48 +587,48 @@ void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     }
 }
 
-bool Project::HasPreview(const fs::path& image_name) const
+bool Project::HasPreview(const fs::path& card_name) const
 {
-    return m_Data.m_Previews.contains(image_name);
+    return m_Data.m_Previews.contains(card_name);
 }
-bool Project::HasBadAspectRatio(const fs::path& image_name) const
+bool Project::HasBadAspectRatio(const fs::path& card_name) const
 {
-    if (m_Data.m_Previews.contains(image_name))
+    if (m_Data.m_Previews.contains(card_name))
     {
-        return m_Data.m_Previews.at(image_name).m_BadAspectRatio;
+        return m_Data.m_Previews.at(card_name).m_BadAspectRatio;
     }
     return false;
 }
 
-const Image& Project::GetCroppedPreview(const fs::path& image_name) const
+const Image& Project::GetCroppedPreview(const fs::path& card_name) const
 {
-    if (m_Data.m_Previews.contains(image_name))
+    if (m_Data.m_Previews.contains(card_name))
     {
-        return m_Data.m_Previews.at(image_name).m_CroppedImage;
+        return m_Data.m_Previews.at(card_name).m_CroppedImage;
     }
     return m_Data.m_FallbackPreview.m_CroppedImage;
 }
-const Image& Project::GetUncroppedPreview(const fs::path& image_name) const
+const Image& Project::GetUncroppedPreview(const fs::path& card_name) const
 {
-    if (m_Data.m_Previews.contains(image_name))
+    if (m_Data.m_Previews.contains(card_name))
     {
-        return m_Data.m_Previews.at(image_name).m_UncroppedImage;
+        return m_Data.m_Previews.at(card_name).m_UncroppedImage;
     }
     return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
-const Image& Project::GetCroppedBacksidePreview(const fs::path& image_name) const
+const Image& Project::GetCroppedBacksidePreview(const fs::path& card_name) const
 {
-    return GetCroppedPreview(GetBacksideImage(image_name));
+    return GetCroppedPreview(GetBacksideImage(card_name));
 }
-const Image& Project::GetUncroppedBacksidePreview(const fs::path& image_name) const
+const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) const
 {
-    return GetUncroppedPreview(GetBacksideImage(image_name));
+    return GetUncroppedPreview(GetBacksideImage(card_name));
 }
 
-const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
+const fs::path& Project::GetBacksideImage(const fs::path& card_name) const
 {
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it != m_Data.m_Cards.end())
     {
         const CardInfo& card{ it->second };
@@ -639,14 +639,14 @@ const fs::path& Project::GetBacksideImage(const fs::path& image_name) const
     }
     return m_Data.m_BacksideDefault;
 }
-bool Project::SetBacksideImage(const fs::path& image_name, fs::path backside_image)
+bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_image)
 {
-    if (image_name == backside_image)
+    if (card_name == backside_image)
     {
         return false;
     }
 
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it != m_Data.m_Cards.end())
     {
         CardInfo& card{ it->second };
@@ -666,9 +666,9 @@ bool Project::SetBacksideImage(const fs::path& image_name, fs::path backside_ima
     return false;
 }
 
-bool Project::HasCardBacksideShortEdge(const fs::path& image_name) const
+bool Project::HasCardBacksideShortEdge(const fs::path& card_name) const
 {
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it != m_Data.m_Cards.end())
     {
         const CardInfo& card{ it->second };
@@ -677,9 +677,9 @@ bool Project::HasCardBacksideShortEdge(const fs::path& image_name) const
     return false;
 }
 
-void Project::SetCardBacksideShortEdge(const fs::path& image_name, bool has_backside_short_edge)
+void Project::SetCardBacksideShortEdge(const fs::path& card_name, bool has_backside_short_edge)
 {
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it != m_Data.m_Cards.end())
     {
         CardInfo& card{ it->second };
@@ -1273,10 +1273,10 @@ Length Project::ProjectData::CardCornerRadius(const Config& config) const
     return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
-void Project::SetPreview(const fs::path& image_name, ImagePreview preview)
+void Project::SetPreview(const fs::path& card_name, ImagePreview preview)
 {
-    PreviewUpdated(image_name, preview);
-    m_Data.m_Previews[image_name] = std::move(preview);
+    PreviewUpdated(card_name, preview);
+    m_Data.m_Previews[card_name] = std::move(preview);
 }
 
 void Project::CropperDone()
@@ -1300,7 +1300,7 @@ CardList Project::GenerateDefaultCardsList() const
     return default_cards_list;
 }
 
-void Project::AppendCardToList(const fs::path& image_name)
+void Project::AppendCardToList(const fs::path& card_name)
 {
     // Empty list implies auto-sorting
     if (m_Data.m_CardsList.empty())
@@ -1308,7 +1308,7 @@ void Project::AppendCardToList(const fs::path& image_name)
         return;
     }
 
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it != m_Data.m_Cards.end())
     {
         const auto& card_info{ it->second };
@@ -1317,18 +1317,18 @@ void Project::AppendCardToList(const fs::path& image_name)
         {
             // Use key from list to avoid allocating these a lot
             // and the key in the list is stable
-            const auto card_name{ std::cref(it->first) };
+            const auto same_card_name{ std::cref(it->first) };
 
             const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
             for (auto i = current_count; i < card_info.m_Num; ++i)
             {
-                m_Data.m_CardsList.push_back(card_name);
+                m_Data.m_CardsList.push_back(same_card_name);
             }
         }
     }
 }
 
-void Project::RemoveCardFromList(const fs::path& image_name)
+void Project::RemoveCardFromList(const fs::path& card_name)
 {
     // Empty list implies auto-sorting
     if (m_Data.m_CardsList.empty())
@@ -1336,22 +1336,22 @@ void Project::RemoveCardFromList(const fs::path& image_name)
         return;
     }
 
-    const auto it{ m_Data.m_Cards.find(image_name) };
+    const auto it{ m_Data.m_Cards.find(card_name) };
     if (it == m_Data.m_Cards.end() || it->second.m_Num == 0)
     {
-        std::erase(m_Data.m_CardsList, image_name);
+        std::erase(m_Data.m_CardsList, card_name);
     }
     else
     {
         const auto& card_info{ it->second };
 
-        const auto current_count{ std::ranges::count(m_Data.m_CardsList, image_name) };
+        const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
         const auto to_remove{ current_count - card_info.m_Num };
 
         auto removed{ 0 };
         for (auto jt = m_Data.m_CardsList.rbegin(); jt != m_Data.m_CardsList.rend() && removed < to_remove;)
         {
-            if (*jt == image_name)
+            if (*jt == card_name)
             {
                 using iter_t = decltype(jt);
                 jt = iter_t{ m_Data.m_CardsList.erase(std::next(jt).base()) };
@@ -1365,32 +1365,32 @@ void Project::RemoveCardFromList(const fs::path& image_name)
     }
 }
 
-bool Project::AutoMatchBackside(const fs::path& image_name)
+bool Project::AutoMatchBackside(const fs::path& card_name)
 {
-    if (auto frontside{ MatchAsAutoBackside(image_name) })
+    if (auto frontside{ MatchAsAutoBackside(card_name) })
     {
         auto& card{ m_Data.m_Cards.at(frontside.value()) };
         if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
         {
-            SetBacksideImage(frontside.value(), image_name);
+            SetBacksideImage(frontside.value(), card_name);
             card.m_BacksideAutoAssigned = true;
             return true;
         }
     }
     else
     {
-        auto& card{ m_Data.m_Cards.at(image_name) };
+        auto& card{ m_Data.m_Cards.at(card_name) };
         if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
         {
-            if (auto backside{ FindCardAutoBackside(image_name) })
+            if (auto backside{ FindCardAutoBackside(card_name) })
             {
-                SetBacksideImage(image_name, backside.value());
+                SetBacksideImage(card_name, backside.value());
                 card.m_BacksideAutoAssigned = true;
                 return true;
             }
             else if (!card.m_Backside.empty())
             {
-                SetBacksideImage(image_name, "");
+                SetBacksideImage(card_name, "");
                 card.m_BacksideAutoAssigned = false;
                 return true;
             }
@@ -1399,7 +1399,7 @@ bool Project::AutoMatchBackside(const fs::path& image_name)
 
     return false;
 }
-std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name) const
+std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& card_name) const
 {
     if (m_Data.m_BacksideAutoPattern.empty())
     {
@@ -1408,7 +1408,7 @@ std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name
 
     std::string auto_backside{ m_Data.m_BacksideAutoPattern };
     const auto placeholder_pos{ auto_backside.find('$') };
-    auto_backside.replace(placeholder_pos, 1, image_name.stem().string());
+    auto_backside.replace(placeholder_pos, 1, card_name.stem().string());
 
     for (auto& [name, _] : m_Data.m_Cards)
     {
@@ -1420,7 +1420,7 @@ std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& image_name
 
     return std::nullopt;
 }
-std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& image_name) const
+std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& card_name) const
 {
     const auto pattern{ std::string_view{ m_Data.m_BacksideAutoPattern } };
     if (pattern.empty())
@@ -1432,7 +1432,7 @@ std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& image_name)
     const auto front{ pattern.substr(0, placeholder_pos) };
     const auto back{ pattern.substr(placeholder_pos + 1, std::string::npos) };
 
-    const auto name_str{ image_name.stem().string() };
+    const auto name_str{ card_name.stem().string() };
     if (name_str.starts_with(front) && name_str.ends_with(back))
     {
         const auto front_name{

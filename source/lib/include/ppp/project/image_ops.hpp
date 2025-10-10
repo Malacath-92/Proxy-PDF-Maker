@@ -30,12 +30,12 @@ std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 
 Image CropImage(const Image& image,
-                const fs::path& image_name,
+                const fs::path& card_name,
                 Size card_size,
                 Length full_bleed,
                 Length bleed_edge,
                 PixelDensity max_density);
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop);
+Image UncropImage(const Image& image, const fs::path& card_name, Size card_size, bool fancy_uncrop);
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 

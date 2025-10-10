@@ -343,13 +343,13 @@ class PrintPreviewCardImage : public CardImage
     Q_OBJECT
 
   public:
-    PrintPreviewCardImage(const fs::path& image_name,
+    PrintPreviewCardImage(const fs::path& card_name,
                           const Project& project,
                           CardImage::Params params,
                           size_t idx,
                           QWidget* companion)
         : CardImage{
-            image_name,
+            card_name,
             project,
             params,
         }
@@ -478,7 +478,7 @@ class PrintPreview::PagePreview : public QWidget
 
         for (size_t i = 0; i < page.m_Images.size(); ++i)
         {
-            const auto& [image_name, backside_short_edge, index]{
+            const auto& [card_name, backside_short_edge, index]{
                 page.m_Images[i]
             };
             const auto& [position, size, base_rotation]{
@@ -515,7 +515,7 @@ class PrintPreview::PagePreview : public QWidget
 
             auto* image_widget{
                 new PrintPreviewCardImage{
-                    image_name,
+                    card_name,
                     project,
                     CardImage::Params{
                         .m_RoundedCorners = rounded_corners,

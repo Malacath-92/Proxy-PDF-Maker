@@ -36,13 +36,13 @@ class SpinnerWidget : public QSvgWidget
     }
 };
 
-CardImage::CardImage(const fs::path& image_name, const Project& project, Params params)
+CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
 {
     setStyleSheet("background-color: transparent;");
-    Refresh(image_name, project, params);
+    Refresh(card_name, project, params);
 }
 
-void CardImage::Refresh(const fs::path& image_name, const Project& project, Params params)
+void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
 {
     if (auto* current_layout{ static_cast<QVBoxLayout*>(layout()) })
     {
@@ -67,7 +67,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
         m_Spinner = nullptr;
     }
 
-    m_ImageName = image_name;
+    m_CardName = card_name;
     m_OriginalParams = params;
 
     m_Rotated = params.m_Rotation == Image::Rotation::Degree90 or params.m_Rotation == Image::Rotation::Degree270;
@@ -77,7 +77,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     m_BleedEdge = params.m_BleedEdge;
     m_CornerRadius = project.CardCornerRadius();
 
-    const bool has_image{ project.HasPreview(image_name) };
+    const bool has_image{ project.HasPreview(card_name) };
     const bool has_bleed_edge{ params.m_BleedEdge > 0_mm };
 
     QPixmap pixmap{
@@ -87,14 +87,14 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
             {
                 if (has_bleed_edge)
                 {
-                    const Image& uncropped_image{ project.GetUncroppedPreview(image_name) };
-                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, project.m_Data.m_BleedEdge, 6800_dpi) };
+                    const Image& uncropped_image{ project.GetUncroppedPreview(card_name) };
+                    Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, project.m_Data.m_BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
                 else
                 {
-                    const Image& image{ project.GetCroppedPreview(image_name) };
+                    const Image& image{ project.GetCroppedPreview(card_name) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }
@@ -120,7 +120,7 @@ void CardImage::Refresh(const fs::path& image_name, const Project& project, Para
     {
         m_Spinner = nullptr;
 
-        const bool bad_format{ project.HasBadAspectRatio(image_name) };
+        const bool bad_format{ project.HasBadAspectRatio(card_name) };
         if (bad_format)
         {
             AddBadFormatWarning();
@@ -159,9 +159,9 @@ int CardImage::heightForWidth(int width) const
     }
 }
 
-void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& preview)
+void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
 {
-    if (m_ImageName == image_name)
+    if (m_CardName == card_name)
     {
         if (m_Spinner != nullptr)
         {
@@ -178,7 +178,7 @@ void CardImage::PreviewUpdated(const fs::path& image_name, const ImagePreview& p
                 if (m_BleedEdge > 0_mm)
                 {
                     const Image& uncropped_image{ preview.m_UncroppedImage };
-                    Image image{ CropImage(uncropped_image, image_name, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
+                    Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
                     QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
                     return raw_pixmap;
                 }

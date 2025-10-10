@@ -57,9 +57,9 @@ class SelectableCard : public QFrame
         }
     }
 
-    const fs::path& GetImageName() const
+    const fs::path& GetCardName() const
     {
-        return m_CardImage->GetImageName();
+        return m_CardImage->GetCardName();
     }
     virtual void enterEvent(QEnterEvent* event) override
     {
@@ -156,13 +156,13 @@ class SelectableCardGrid : public QWidget
         return item_width * c_Columns + margins.left() + margins.right() + spacing * (c_Columns - 1);
     }
 
-    std::optional<fs::path> GetSelectedImageName() const
+    std::optional<fs::path> GetSelectedCardName() const
     {
         if (m_Selected == nullptr)
         {
             return std::nullopt;
         }
-        return m_Selected->GetImageName();
+        return m_Selected->GetCardName();
     }
 
     virtual bool hasHeightForWidth() const override
@@ -312,7 +312,7 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
 std::optional<fs::path> ImageBrowsePopup::Show()
 {
     PopupBase::Show();
-    return m_Grid != nullptr ? m_Grid->GetSelectedImageName() : std::nullopt;
+    return m_Grid != nullptr ? m_Grid->GetSelectedCardName() : std::nullopt;
 }
 
 #include "image_browse_popup.moc"
