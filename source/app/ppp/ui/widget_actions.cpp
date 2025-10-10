@@ -17,6 +17,7 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
 ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& project)
@@ -64,7 +65,8 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     const auto render{
         [=, this, &project]()
         {
-            GenericPopup render_window{ window(), "Rendering PDF..." };
+            auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+            GenericPopup render_window{ main_window, "Rendering PDF..." };
 
             const auto render_work{
                 [=, &project, &render_window]()
@@ -85,14 +87,23 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        render_window.Sleep(3_s);
+                        if (main_window->hasFocus())
+                        {
+                            render_window.Sleep(3_s);
+                        }
+                        else
+                        {
+                            main_window->Toast(ToastType::Error,
+                                               "PDF Rendering Error",
+                                               "Failure while creating pdf, please check logs for details.");
+                        }
                     }
                 }
             };
 
-            window()->setEnabled(false);
+            main_window->setEnabled(false);
             render_window.ShowDuringWork(render_work);
-            window()->setEnabled(true);
+            main_window->setEnabled(true);
         }
     };
 
@@ -164,7 +175,8 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     const auto render_alignment{
         [this, &project]()
         {
-            GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
+            auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+            GenericPopup render_align_window{ main_window, "Rendering alignment PDF..." };
 
             const auto render_work{
                 [=, &project, &render_align_window]()
@@ -178,14 +190,23 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        render_align_window.Sleep(3_s);
+                        if (main_window->hasFocus())
+                        {
+                            render_align_window.Sleep(3_s);
+                        }
+                        else
+                        {
+                            main_window->Toast(ToastType::Error,
+                                               "PDF Rendering Error",
+                                               "Failure while creating pdf, please check logs for details.");
+                        }
                     }
                 }
             };
 
-            window()->setEnabled(false);
+            main_window->setEnabled(false);
             render_align_window.ShowDuringWork(render_work);
-            window()->setEnabled(true);
+            main_window->setEnabled(true);
         }
     };
 
