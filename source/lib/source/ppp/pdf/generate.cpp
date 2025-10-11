@@ -193,7 +193,7 @@ fs::path GeneratePdf(const Project& project)
                     .m_Path{ img_path },
                     .m_Pos{
                         transform.m_Position.x,
-                        page_height - transform.m_Position.y - transform.m_Size.y,
+                        page_height - transform.m_Position.y - transform.m_Size.y, // NOLINT
                     },
                     .m_Size{ transform.m_Size },
                     .m_Rotation = transform.m_Rotation,

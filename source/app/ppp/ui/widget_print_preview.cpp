@@ -148,14 +148,14 @@ class GuidesOverlay : public QWidget
 
         if (m_Project.m_Data.m_ExtendedGuides)
         {
-            static constexpr auto g_Precision{ 0.1_pts };
+            static constexpr auto c_Precision{ 0.1_pts };
 
             std::vector<int32_t> unique_x;
             std::vector<int32_t> unique_y;
             for (const auto& transform : m_Transforms)
             {
                 const auto top_left_corner{
-                    static_cast<dla::ivec2>((transform.m_Position + offset / pixel_ratio) / g_Precision)
+                    static_cast<dla::ivec2>((transform.m_Position + offset / pixel_ratio) / c_Precision)
                 };
                 if (!std::ranges::contains(unique_x, top_left_corner.x))
                 {
@@ -167,7 +167,7 @@ class GuidesOverlay : public QWidget
                 }
 
                 const auto card_size{
-                    static_cast<dla::ivec2>((transform.m_Size - offset * 2 / pixel_ratio) / g_Precision)
+                    static_cast<dla::ivec2>((transform.m_Size - offset * 2 / pixel_ratio) / c_Precision)
                 };
                 const auto bottom_right_corner{ top_left_corner + card_size };
                 if (!std::ranges::contains(unique_x, bottom_right_corner.x))
@@ -181,21 +181,21 @@ class GuidesOverlay : public QWidget
             }
 
             const auto extended_off{ offset + 1_mm * pixel_ratio };
-            const auto x_min{ std::ranges::min(unique_x) * g_Precision * pixel_ratio.x - extended_off.x };
-            const auto x_max{ std::ranges::max(unique_x) * g_Precision * pixel_ratio.x + extended_off.y };
-            const auto y_min{ std::ranges::min(unique_y) * g_Precision * pixel_ratio.y - extended_off.x };
-            const auto y_max{ std::ranges::max(unique_y) * g_Precision * pixel_ratio.y + extended_off.y };
+            const auto x_min{ std::ranges::min(unique_x) * c_Precision * pixel_ratio.x - extended_off.x };
+            const auto x_max{ std::ranges::max(unique_x) * c_Precision * pixel_ratio.x + extended_off.y };
+            const auto y_min{ std::ranges::min(unique_y) * c_Precision * pixel_ratio.y - extended_off.x };
+            const auto y_max{ std::ranges::max(unique_y) * c_Precision * pixel_ratio.y + extended_off.y };
 
             for (const auto& x : unique_x)
             {
-                const auto real_x{ x * g_Precision * pixel_ratio.x };
+                const auto real_x{ x * c_Precision * pixel_ratio.x };
                 m_Lines.push_back(QLineF{ real_x, y_min, real_x, 0.0f });
                 m_Lines.push_back(QLineF{ real_x, y_max, real_x, static_cast<float>(size.y) });
             }
 
             for (const auto& y : unique_y)
             {
-                const auto real_y{ y * g_Precision * pixel_ratio.y };
+                const auto real_y{ y * c_Precision * pixel_ratio.y };
                 m_Lines.push_back(QLineF{ x_min, real_y, 0.0f, real_y });
                 m_Lines.push_back(QLineF{ x_max, real_y, static_cast<float>(size.x), real_y });
             }
@@ -490,10 +490,10 @@ class PrintPreview::PagePreview : public QWidget
                 {
                     if (!backside_short_edge || !params.m_IsBackside)
                     {
-                        return base_rotation;
+                        return base_rotation; // NOLINT
                     }
 
-                    switch (base_rotation)
+                    switch (base_rotation) // NOLINT
                     {
                     default:
                     case Image::Rotation::None:
