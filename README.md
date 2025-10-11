@@ -242,7 +242,18 @@ Lets you choose a folder in which you have your images, this is saved with the p
 Opens the image folder for this project in a file explorer.
 
 ### Alignment Test
-Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned. 
+Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned.
+
+# Donations
+
+I provide this app free of charge and work on it as a hobby and I have no running costs other than the time I spend on it. I use it myself as well, so it's existence is not dependent on it having other users. As such there is no need to monetize this app and I have no plans to sell it as opposed to having it freely available. Despite all this I have had numereous users asking to contribute financially to the project via a donation. So if you are one of those users, feel free to contribute with any amount to buy me a coffee or contribute to a christmas present, I greatly appreciate these contributions. Everyone else, pleaes don't feel any obligation to spend any money on this project.
+
+
+<p align="center">
+  <a href="https://www.paypal.me/Malacath92/5USD">
+    <img src="https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png" alt="Donate with PayPal" width=250/>
+  </a>
+</p>
 
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.
