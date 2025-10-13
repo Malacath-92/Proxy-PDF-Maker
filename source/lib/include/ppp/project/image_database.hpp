@@ -4,6 +4,7 @@
 
 #include <QByteArray>
 
+#include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
 struct ImageParameters
@@ -12,6 +13,7 @@ struct ImageParameters
     Pixel m_Width{ 0_pix };
     Size m_CardSize{ 0_mm, 0_mm };
     Length m_FullBleedEdge{ 0_mm };
+    Image::Rotation m_Rotation{ Image::Rotation::None };
     bool m_WillWriteOutput{ true };
 };
 

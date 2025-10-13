@@ -125,6 +125,8 @@ int main(int argc, char** argv)
     auto* card_options{ new CardOptionsWidget{ project } };
     auto* global_options{ new GlobalOptionsWidget{} };
 
+    QObject::connect(scroll_area, &CardScrollArea::CardRotationChanged, &cropper, &Cropper::CardModified);
+
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
                      { cropper.PauseWork(); });

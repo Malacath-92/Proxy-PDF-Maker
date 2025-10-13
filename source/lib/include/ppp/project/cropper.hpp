@@ -38,7 +38,9 @@ class Cropper : public QObject
     void PreviewWorkDone();
 
     void CropProgress(float progress);
-    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
+    void PreviewUpdated(const fs::path& card_name,
+                        const ImagePreview& preview,
+                        Image::Rotation rotation);
 
     void OnStart();
 

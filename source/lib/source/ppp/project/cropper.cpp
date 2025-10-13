@@ -135,6 +135,7 @@ void Cropper::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
 
 void Cropper::CardModified(const fs::path& card_name)
 {
+    RemoveWork(card_name);
     PushWork(card_name, true, true);
 }
 

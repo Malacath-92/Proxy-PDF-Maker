@@ -6,6 +6,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
@@ -16,7 +18,8 @@ bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
            static_cast<int32_t>(std::floor(lhs.m_Width.value)) != static_cast<int32_t>(std::floor(rhs.m_Width.value)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.x / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.y / 0.001_mm)) ||
-           static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm));
+           static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm)) ||
+           lhs.m_Rotation != rhs.m_Rotation;
 }
 
 // NOLINTNEXTLINE
@@ -35,6 +38,11 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
     entry.m_Params.m_CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
+    if (json.contains("rotation"))
+    {
+        entry.m_Params.m_Rotation = magic_enum::enum_cast<Image::Rotation>(json["rotation"].get_ref<const std::string&>())
+                                        .value_or(Image::Rotation::None);
+    }
 }
 
 // NOLINTNEXTLINE
@@ -59,6 +67,7 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
         },
     };
     json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
+    json["rotation"] = magic_enum::enum_name(entry.m_Params.m_Rotation);
 }
 
 ImageDataBase ImageDataBase::FromFile(const fs::path& path)

@@ -81,6 +81,7 @@ class CropperCropWork : public CropperWork
     std::atomic_uint32_t& m_RunningCropperWork;
 
     fs::path m_CardName;
+    Image::Rotation m_Rotation;
 
     std::function<const cv::Mat*(std::string_view)> m_GetColorCube;
 
@@ -105,10 +106,13 @@ class CropperPreviewWork : public CropperWork
     virtual void run() override;
 
   signals:
-    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
+    void PreviewUpdated(const fs::path& card_name,
+                        const ImagePreview& preview,
+                        Image::Rotation rotation);
 
   private:
     fs::path m_CardName;
+    Image::Rotation m_Rotation;
     bool m_Force;
 
     ImageDataBase& m_ImageDB;

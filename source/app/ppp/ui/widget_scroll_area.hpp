@@ -8,8 +8,13 @@ class Project;
 
 class CardScrollArea : public QScrollArea
 {
+    Q_OBJECT
+
   public:
     CardScrollArea(Project& project);
+
+  signals:
+    void CardRotationChanged(const fs::path& card_name);
 
   public slots:
     void NewProjectOpened();

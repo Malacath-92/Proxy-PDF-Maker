@@ -4,6 +4,7 @@
         <file>res/edit.png</file>
         <file>res/linked.png</file>
         <file>res/unlinked.png</file>
+        <file>res/rotate.png</file>
         <file>res/styles/Combinear.qss</file>
         <file>res/styles/Darkeum.qss</file>
         <file>res/styles/Wstartpage.qss</file>

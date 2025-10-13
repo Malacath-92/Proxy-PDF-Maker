@@ -16,9 +16,12 @@ struct CardInfo
 {
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
+
     fs::path m_Backside{};
     bool m_BacksideShortEdge{ false };
     bool m_BacksideAutoAssigned{ false };
+
+    Image::Rotation m_Rotation{ Image::Rotation::None };
 
     bool m_Transient{ false };
 };
@@ -31,6 +34,7 @@ struct ImagePreview
     Image m_UncroppedImage;
     Image m_CroppedImage;
     bool m_BadAspectRatio;
+    bool m_BadRotation;
 };
 using ImgDict = std::unordered_map<fs::path, ImagePreview>;
 
@@ -123,6 +127,8 @@ class Project : public QObject
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
+    bool RotateCard(const fs::path& card_name);
+
     uint32_t GetCardCount(const fs::path& card_name) const;
     uint32_t SetCardCount(const fs::path& card_name, uint32_t num);
     uint32_t IncrementCardCount(const fs::path& card_name);
@@ -133,6 +139,7 @@ class Project : public QObject
 
     bool HasPreview(const fs::path& card_name) const;
     bool HasBadAspectRatio(const fs::path& card_name) const;
+    bool HasBadRotation(const fs::path& card_name) const;
     const Image& GetCroppedPreview(const fs::path& card_name) const;
     const Image& GetUncroppedPreview(const fs::path& card_name) const;
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
@@ -182,7 +189,9 @@ class Project : public QObject
     }
 
   public slots:
-    void SetPreview(const fs::path& card_name, ImagePreview preview);
+    void SetPreview(const fs::path& card_name,
+                    ImagePreview preview,
+                    Image::Rotation rotation);
 
     void CropperDone();
 

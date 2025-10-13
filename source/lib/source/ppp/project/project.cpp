@@ -61,6 +61,11 @@ void Project::Load(const fs::path& json_path)
             {
                 card.m_BacksideAutoAssigned = card_json["backside_auto_assigned"];
             }
+            if (card_json.contains("rotation"))
+            {
+                card.m_Rotation = magic_enum::enum_cast<Image::Rotation>(card_json["rotation"].get_ref<const std::string&>())
+                                      .value_or(Image::Rotation::None);
+            }
         }
 
         if (json.contains("cards_order"))
@@ -248,6 +253,7 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["backside"] = card.m_Backside.string();
                 card_json["backside_short_edge"] = card.m_BacksideShortEdge;
                 card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
+                card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
             }
         }
         json["cards"] = cards;
@@ -417,6 +423,17 @@ bool Project::UnhideCard(const fs::path& card_name)
             AppendCardToList(card_name);
             return true;
         }
+    }
+    return false;
+}
+
+bool Project::RotateCard(const fs::path& card_name)
+{
+    auto it{ m_Data.m_Cards.find(card_name) };
+    if (it != m_Data.m_Cards.end())
+    {
+        it->second.m_Rotation = Image::Rotation{ (std::to_underlying(it->second.m_Rotation) + 1) % 4 };
+        return true;
     }
     return false;
 }
@@ -596,6 +613,14 @@ bool Project::HasBadAspectRatio(const fs::path& card_name) const
     if (m_Data.m_Previews.contains(card_name))
     {
         return m_Data.m_Previews.at(card_name).m_BadAspectRatio;
+    }
+    return false;
+}
+bool Project::HasBadRotation(const fs::path& card_name) const
+{
+    if (m_Data.m_Previews.contains(card_name))
+    {
+        return m_Data.m_Previews.at(card_name).m_BadRotation;
     }
     return false;
 }
@@ -1273,10 +1298,15 @@ Length Project::ProjectData::CardCornerRadius(const Config& config) const
     return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
-void Project::SetPreview(const fs::path& card_name, ImagePreview preview)
+void Project::SetPreview(const fs::path& card_name,
+                         ImagePreview preview,
+                         Image::Rotation rotation)
 {
-    PreviewUpdated(card_name, preview);
-    m_Data.m_Previews[card_name] = std::move(preview);
+    if (rotation == m_Data.m_Cards.at(card_name).m_Rotation)
+    {
+        PreviewUpdated(card_name, preview);
+        m_Data.m_Previews[card_name] = std::move(preview);
+    }
 }
 
 void Project::CropperDone()

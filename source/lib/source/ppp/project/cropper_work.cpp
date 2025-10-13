@@ -99,6 +99,7 @@ CropperCropWork::CropperCropWork(
     : CropperWork{ alive_cropper_work }
     , m_RunningCropperWork{ running_crop_work }
     , m_CardName{ std::move(card_name) }
+    , m_Rotation{ data.m_Cards.at(m_CardName).m_Rotation }
     , m_GetColorCube{ get_color_cube }
     , m_ImageDB{ image_db }
     , m_Data{ CopyRelevant(data) }
@@ -156,6 +157,7 @@ void CropperCropWork::run()
             .m_DPI{ max_density },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
+            .m_Rotation{ m_Rotation },
         };
 
         QByteArray input_file_hash{
@@ -169,7 +171,7 @@ void CropperCropWork::run()
             return;
         }
 
-        Image source_image{ Image::Read(input_file) };
+        Image source_image{ Image::Read(input_file).Rotate(m_Rotation) };
 
         const auto image_aspect_ratio{ source_image.AspectRatio() };
         const bool image_has_bleed{
@@ -243,6 +245,7 @@ CropperPreviewWork::CropperPreviewWork(
     const Project::ProjectData& data)
     : CropperWork{ alive_cropper_work }
     , m_CardName{ std::move(card_name) }
+    , m_Rotation{ data.m_Cards.at(m_CardName).m_Rotation }
     , m_Force{ force }
     , m_ImageDB{ image_db }
     , m_Data{ CopyRelevant(data) }
@@ -283,6 +286,7 @@ void CropperPreviewWork::run()
             .m_Width{ preview_width },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
+            .m_Rotation{ m_Rotation },
             .m_WillWriteOutput = false,
         };
 
@@ -301,7 +305,14 @@ void CropperPreviewWork::run()
                     return;
                 }
 
-                const Image source_image{ Image::Read(input_file) };
+                const Image source_image{ Image::Read(input_file).Rotate(m_Rotation) };
+
+                static constexpr auto c_BadAspectRatioTolerance{
+                    0.01f
+                };
+                static constexpr auto c_BadRotationTolerance{
+                    0.01f
+                };
 
                 const auto image_aspect_ratio{ source_image.AspectRatio() };
                 const auto with_bleed_diff{
@@ -314,6 +325,11 @@ void CropperPreviewWork::run()
                     with_bleed_diff < without_bleed_diff
                 };
 
+                const bool bad_rotation{
+                    std::abs(image_aspect_ratio - 1.0f / card_aspect_ratio) < c_BadRotationTolerance ||
+                    std::abs(image_aspect_ratio - 1.0f / card_with_full_bleed_aspect_ratio) < c_BadRotationTolerance
+                };
+
                 ImagePreview image_preview{};
                 if (image_has_bleed)
                 {
@@ -321,7 +337,8 @@ void CropperPreviewWork::run()
 
                     image_preview.m_UncroppedImage = image;
                     image_preview.m_CroppedImage = CropImage(image, m_CardName, card_size, full_bleed_edge, 0_mm, 1200_dpi);
-                    image_preview.m_BadAspectRatio = with_bleed_diff > 0.005f;
+                    image_preview.m_BadAspectRatio = with_bleed_diff > c_BadAspectRatioTolerance;
+                    image_preview.m_BadRotation = bad_rotation;
                 }
                 else
                 {
@@ -340,12 +357,13 @@ void CropperPreviewWork::run()
 
                     image_preview.m_CroppedImage = image;
                     image_preview.m_UncroppedImage = UncropImage(image, m_CardName, card_size, fancy_uncrop);
-                    image_preview.m_BadAspectRatio = without_bleed_diff > 0.01f;
+                    image_preview.m_BadAspectRatio = without_bleed_diff > c_BadAspectRatioTolerance;
+                    image_preview.m_BadRotation = bad_rotation;
                 }
 
                 m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
 
-                PreviewUpdated(m_CardName, image_preview);
+                PreviewUpdated(m_CardName, image_preview, m_Rotation);
             }
         }
 

@@ -42,11 +42,16 @@ class CardWidget : public QFrame
         auto* increment_button{ new QPushButton{ "+" } };
         increment_button->setToolTip("Add one");
 
+        auto* rotate_button{ new QPushButton{} };
+        rotate_button->setIcon(QIcon{ QPixmap{ ":/res/rotate.png" } });
+        rotate_button->setToolTip("Rotate image by 90 degrees");
+
         auto* number_layout{ new QHBoxLayout };
         number_layout->addStretch();
         number_layout->addWidget(decrement_button);
         number_layout->addWidget(number_edit);
         number_layout->addWidget(increment_button);
+        number_layout->addWidget(rotate_button);
         number_layout->addStretch();
         number_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -78,6 +83,10 @@ class CardWidget : public QFrame
                          &QPushButton::clicked,
                          this,
                          std::bind_front(&CardWidget::IncrementNumber, this, std::ref(project)));
+        QObject::connect(rotate_button,
+                         &QPushButton::clicked,
+                         this,
+                         std::bind_front(&CardWidget::RotateImage, this, std::ref(project)));
 
         m_ImageWidget = card_widget;
         m_NumberEdit = number_edit;
@@ -117,6 +126,7 @@ class CardWidget : public QFrame
 
     void ApplyNumber(Project& project, int64_t number)
     {
+        number = std::max(number, int64_t{ 0 });
         uint32_t final_number{ project.SetCardCount(m_CardName, static_cast<uint32_t>(number)) };
         m_NumberEdit->setText(QString{}.setNum(final_number));
     }
@@ -167,6 +177,7 @@ class CardWidget : public QFrame
 
   signals:
     void CardVisbilityChanged();
+    void CardRotationChanged();
 
   private:
     QWidget* MakeCardWidget(Project& project)
@@ -290,6 +301,22 @@ class CardWidget : public QFrame
         ApplyNumber(project, number);
     }
 
+    virtual void RotateImage(Project& project)
+    {
+        if (project.RotateCard(m_CardName))
+        {
+            if (auto* image{ dynamic_cast<CardImage*>(m_ImageWidget) })
+            {
+                image->RotateImage();
+            }
+            else if (auto* stack{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
+            {
+                stack->RotateImage();
+            }
+            CardRotationChanged();
+        }
+    }
+
     virtual void SetShortEdge(Project& project, Qt::CheckState s)
     {
         project.SetCardBacksideShortEdge(m_CardName,
@@ -340,6 +367,8 @@ class DummyCardWidget : public CardWidget
 
 class CardScrollArea::CardGrid : public QWidget
 {
+    Q_OBJECT
+
   public:
     CardGrid(Project& project)
         : m_Project{ project }
@@ -430,6 +459,11 @@ class CardScrollArea::CardGrid : public QWidget
                                      &CardWidget::CardVisbilityChanged,
                                      this,
                                      &CardGrid::FullRefresh);
+                    QObject::connect(new_card,
+                                     &CardWidget::CardRotationChanged,
+                                     this,
+                                     std::bind_front(&CardGrid::CardRotationChanged, this, card_name));
+
                     return new_card;
                 }
 
@@ -509,6 +543,9 @@ class CardScrollArea::CardGrid : public QWidget
     {
         return m_Cards;
     }
+
+  signals:
+    void CardRotationChanged(const fs::path& card_name);
 
   private:
     Project& m_Project;
@@ -602,6 +639,10 @@ CardScrollArea::CardScrollArea(Project& project)
                      &QPushButton::clicked,
                      this,
                      reset_number);
+    QObject::connect(card_grid,
+                     &CardGrid::CardRotationChanged,
+                     this,
+                     &CardScrollArea::CardRotationChanged);
 
     m_Grid = card_grid;
 }

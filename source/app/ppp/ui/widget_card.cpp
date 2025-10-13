@@ -38,34 +38,20 @@ class SpinnerWidget : public QSvgWidget
 
 CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
 {
+    {
+        auto* layout{ new QBoxLayout(QBoxLayout::TopToBottom) };
+        layout->addStretch();
+        layout->addStretch();
+        setLayout(layout);
+    }
+
     setStyleSheet("background-color: transparent;");
     Refresh(card_name, project, params);
 }
 
 void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
 {
-    if (auto* current_layout{ static_cast<QVBoxLayout*>(layout()) })
-    {
-        while (current_layout->count() != 0)
-        {
-            auto* child{ current_layout->itemAt(0) };
-            current_layout->removeItem(child);
-
-            if (child->layout())
-            {
-                delete child->layout();
-            }
-            if (child->widget())
-            {
-                delete child->widget();
-            }
-
-            delete child;
-        }
-
-        delete current_layout;
-        m_Spinner = nullptr;
-    }
+    ClearChildren();
 
     m_CardName = card_name;
     m_OriginalParams = params;
@@ -118,26 +104,37 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
 
     if (has_image)
     {
-        m_Spinner = nullptr;
-
-        const bool bad_format{ project.HasBadAspectRatio(card_name) };
+        const auto& preview{ project.m_Data.m_Previews.at(card_name) };
+        const bool bad_aspect_ration{ preview.m_BadAspectRatio };
+        const bool bad_rotation{ preview.m_BadRotation };
+        const bool bad_format{ bad_aspect_ration || bad_rotation };
         if (bad_format)
         {
-            AddBadFormatWarning();
+            AddBadFormatWarning(preview);
         }
     }
     else
     {
         auto* spinner{ new SpinnerWidget };
 
-        QBoxLayout* layout = new QBoxLayout(QBoxLayout::LeftToRight);
-        layout->addWidget(spinner, 0, Qt::AlignCenter);
-        setLayout(layout);
+        QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+        layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
 
         m_Spinner = spinner;
     }
 
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
+}
+
+void CardImage::RotateImage()
+{
+    const auto pixmap{ this->pixmap() };
+    const auto rotated{
+        pixmap
+            .transformed(QTransform().rotate(90))
+            .scaled(pixmap.size())
+    };
+    setPixmap(rotated);
 }
 
 int CardImage::heightForWidth(int width) const
@@ -163,14 +160,7 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
 {
     if (m_CardName == card_name)
     {
-        if (m_Spinner != nullptr)
-        {
-            delete layout();
-            setLayout(nullptr);
-
-            delete m_Spinner;
-            m_Spinner = nullptr;
-        }
+        ClearChildren();
 
         QPixmap pixmap{
             [&, this]()
@@ -192,10 +182,12 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
         };
         setPixmap(FinalizePixmap(pixmap));
 
-        const bool bad_format{ preview.m_BadAspectRatio };
+        const bool bad_aspect_ration{ preview.m_BadAspectRatio };
+        const bool bad_rotation{ preview.m_BadRotation };
+        const bool bad_format{ bad_aspect_ration || bad_rotation };
         if (bad_format)
         {
-            AddBadFormatWarning();
+            AddBadFormatWarning(preview);
         }
     }
 }
@@ -250,7 +242,7 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
     return finalized_pixmap;
 }
 
-void CardImage::AddBadFormatWarning()
+void CardImage::AddBadFormatWarning(const ImagePreview& preview)
 {
     static constexpr int c_WarningSize{ 24 };
     const static QPixmap s_WarningPixmap{
@@ -265,14 +257,40 @@ void CardImage::AddBadFormatWarning()
 
     auto* format_warning{ new QLabel };
     format_warning->setPixmap(s_WarningPixmap);
-    format_warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
+    if (preview.m_BadRotation)
+    {
+        format_warning->setToolTip("Bad rotation. Use the rotate button to fix this.");
+    }
+    else
+    {
+        format_warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
+    }
     format_warning->setFixedWidth(c_WarningSize);
     format_warning->setFixedHeight(c_WarningSize);
 
-    QBoxLayout* layout = new QBoxLayout(QBoxLayout::TopToBottom);
-    layout->addWidget(format_warning, 0, Qt::AlignLeft);
-    layout->addStretch();
-    setLayout(layout);
+    QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+    layout->insertWidget(0, format_warning, 0, Qt::AlignLeft);
+
+    m_Warning = format_warning;
+}
+
+void CardImage::ClearChildren()
+{
+    auto* layout{ static_cast<QBoxLayout*>(this->layout()) };
+
+    if (m_Warning != nullptr)
+    {
+        layout->removeWidget(m_Warning);
+        delete m_Warning;
+        m_Warning = nullptr;
+    }
+
+    if (m_Spinner != nullptr)
+    {
+        layout->removeWidget(m_Spinner);
+        delete m_Spinner;
+        m_Spinner = nullptr;
+    }
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
@@ -300,7 +318,7 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
         CardImage::Params{ .m_MinimumWidth{ minimum_width } });
 }
 
-StackedCardBacksideView::StackedCardBacksideView(QWidget* image, QWidget* backside)
+StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)
 {
     const static QIcon s_ClearIcon{
         []()
@@ -364,6 +382,11 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     m_Backside = new_backside;
 
     RefreshSizes(rect().size());
+}
+
+void StackedCardBacksideView::RotateImage()
+{
+    m_Image->RotateImage();
 }
 
 int StackedCardBacksideView::heightForWidth(int width) const

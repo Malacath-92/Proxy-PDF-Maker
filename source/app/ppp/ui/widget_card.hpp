@@ -26,6 +26,8 @@ class CardImage : public QLabel
 
     void Refresh(const fs::path& card_name, const Project& project, Params params);
 
+    void RotateImage();
+
     const fs::path& GetCardName() const
     {
         return m_CardName;
@@ -42,7 +44,8 @@ class CardImage : public QLabel
 
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
-    void AddBadFormatWarning();
+    void AddBadFormatWarning(const ImagePreview& preview);
+    void ClearChildren();
 
     fs::path m_CardName;
     Params m_OriginalParams;
@@ -54,6 +57,7 @@ class CardImage : public QLabel
     Length m_BleedEdge;
     Length m_CornerRadius;
 
+    QWidget* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
 };
 
@@ -72,9 +76,11 @@ class StackedCardBacksideView : public QStackedWidget
     Q_OBJECT
 
   public:
-    StackedCardBacksideView(QWidget* image, QWidget* backside);
+    StackedCardBacksideView(CardImage* image, QWidget* backside);
 
     void RefreshBackside(QWidget* new_backside);
+
+    void RotateImage();
 
     virtual bool hasHeightForWidth() const override
     {
@@ -94,7 +100,7 @@ class StackedCardBacksideView : public QStackedWidget
     virtual void leaveEvent(QEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
 
-    QWidget* m_Image;
+    CardImage* m_Image;
     QWidget* m_Backside;
     QWidget* m_BacksideContainer;
 };
