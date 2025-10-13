@@ -94,7 +94,7 @@ class PluginsPopup : public PopupBase
     void PluginDisabled(std::string_view plugin_name);
 };
 
-GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
+GlobalOptionsWidget::GlobalOptionsWidget()
 {
     setObjectName("Global Config");
 
@@ -173,6 +173,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
         "Default P&aper Size", std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>(), g_Cfg.m_DefaultPageSize } };
     m_PageSizes = paper_sizes->GetWidget();
 
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     auto* themes{ new ComboBoxWithLabel{
         "&Theme", GetStyles(), application.GetTheme() } };
 
@@ -261,11 +262,11 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     };
 
     auto change_color_cube{
-        [this, &application](const QString& t)
+        [this](const QString& t)
         {
             g_Cfg.m_ColorCube = t.toStdString();
             SaveConfig(g_Cfg);
-            PreloadCube(application, g_Cfg.m_ColorCube);
+            PreloadCube(g_Cfg.m_ColorCube);
             ColorCubeChanged();
         }
     };
@@ -306,10 +307,11 @@ GlobalOptionsWidget::GlobalOptionsWidget(PrintProxyPrepApplication& application)
     };
 
     auto change_theme{
-        [=, &application](const QString& t)
+        [=](const QString& t)
         {
+            auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
             application.SetTheme(t.toStdString());
-            SetStyle(application, application.GetTheme());
+            SetStyle(application.GetTheme());
         }
     };
 

@@ -4,7 +4,6 @@
 
 class QVBoxLayout;
 
-class PrintProxyPrepApplication;
 class Project;
 class PluginInterface;
 
@@ -13,8 +12,7 @@ class OptionsAreaWidget : public QScrollArea
     Q_OBJECT
 
   public:
-    OptionsAreaWidget(const PrintProxyPrepApplication& app,
-                      Project& project,
+    OptionsAreaWidget(Project& project,
                       PluginInterface& plugin_router,
                       QWidget* actions,
                       QWidget* print_options,
@@ -32,7 +30,6 @@ class OptionsAreaWidget : public QScrollArea
   private:
     void AddCollapsible(QVBoxLayout* layout, QWidget* widget);
 
-    const PrintProxyPrepApplication& m_App;
     Project& m_Project;
 
     PluginInterface& m_PluginRouter;

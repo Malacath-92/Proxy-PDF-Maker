@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     Log main_log{ log_flags, Log::c_MainLogName };
 
     PrintProxyPrepApplication app{ argc, argv };
-    SetStyle(app, app.GetTheme());
+    SetStyle(app.GetTheme());
 
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
@@ -99,9 +99,9 @@ int main(int argc, char** argv)
     Project project{};
     project.Load(app.GetProjectPath());
 
-    Cropper cropper{ [&app](std::string_view cube_name)
+    Cropper cropper{ [](std::string_view cube_name)
                      {
-                         return GetCubeImage(app, cube_name);
+                         return GetCubeImage(cube_name);
                      },
                      project };
     CardProvider card_provider{ project };
@@ -119,11 +119,11 @@ int main(int argc, char** argv)
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ scroll_area, print_preview } };
 
-    auto* actions{ new ActionsWidget{ app, project } };
+    auto* actions{ new ActionsWidget{ project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* guides_options{ new GuidesOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
-    auto* global_options{ new GlobalOptionsWidget{ app } };
+    auto* global_options{ new GlobalOptionsWidget{} };
 
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
@@ -166,7 +166,6 @@ int main(int argc, char** argv)
 
     auto* options_area{
         new OptionsAreaWidget{
-            app,
             project,
             plugin_router,
             actions,

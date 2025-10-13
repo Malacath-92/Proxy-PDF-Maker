@@ -14,16 +14,14 @@
 
 #include <ppp/ui/collapse_button.hpp>
 
-OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
-                                     Project& project,
+OptionsAreaWidget::OptionsAreaWidget(Project& project,
                                      PluginInterface& plugin_router,
                                      QWidget* actions,
                                      QWidget* print_options,
                                      QWidget* guides_options,
                                      QWidget* card_options,
                                      QWidget* global_options)
-    : m_App{ app }
-    , m_Project{ project }
+    : m_Project{ project }
     , m_PluginRouter{ plugin_router }
 {
     auto* layout{ new QVBoxLayout };
@@ -95,7 +93,11 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 
 void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
 {
-    auto* collapse_button{ new CollapseButton{ widget, !m_App.GetObjectVisibility(widget->objectName()) } };
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* collapse_button{ new CollapseButton{
+        widget,
+        !application.GetObjectVisibility(widget->objectName()),
+    } };
     layout->insertWidget(layout->count() - 1, collapse_button);
     layout->insertWidget(layout->count() - 1, widget);
 

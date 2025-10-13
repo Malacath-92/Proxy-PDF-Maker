@@ -4,7 +4,6 @@
 
 class QComboBox;
 
-class PrintProxyPrepApplication;
 class Project;
 
 class GlobalOptionsWidget : public QWidget
@@ -12,7 +11,7 @@ class GlobalOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    GlobalOptionsWidget(PrintProxyPrepApplication& application);
+    GlobalOptionsWidget();
 
   signals:
     void AdvancedModeChanged();

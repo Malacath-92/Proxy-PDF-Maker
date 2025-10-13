@@ -20,7 +20,7 @@
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
-ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& project)
+ActionsWidget::ActionsWidget(Project& project)
 {
     setObjectName("Actions");
 
@@ -111,10 +111,11 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     };
 
     const auto save_project{
-        [=, &project, &application]()
+        [=, &project]()
         {
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
             {
+                auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
                 application.SetProjectPath(new_project_json.value());
                 project.Dump(new_project_json.value());
             }
@@ -122,10 +123,11 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     };
 
     const auto load_project{
-        [=, this, &project, &application]()
+        [=, this, &project]()
         {
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
             {
+                auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
                 if (new_project_json != application.GetProjectPath())
                 {
                     application.SetProjectPath(new_project_json.value());

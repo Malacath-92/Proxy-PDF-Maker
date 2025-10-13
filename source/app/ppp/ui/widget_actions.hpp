@@ -4,7 +4,6 @@
 
 class QProgressBar;
 
-class PrintProxyPrepApplication;
 class Project;
 
 class ActionsWidget : public QWidget
@@ -12,7 +11,7 @@ class ActionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    ActionsWidget(PrintProxyPrepApplication& application, Project& project);
+    ActionsWidget(Project& project);
 
   signals:
     void NewProjectOpened();
