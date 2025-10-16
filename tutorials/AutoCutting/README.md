@@ -29,7 +29,10 @@ Next we will be disabling guides and enabling `Export Exact Guides` in the `Guid
     Disabled guides but exporting exact guides
 </p>
 
-Now we can press `Render Document`, this will generate a `_printme.svg` file which has the exact card guides. In addition we should have a folder `_printme` with a file `0.png` which contains the first page's image.
+Now we can press `Render Document`, this will generate a `_printme.svg` file which has the exact card guides. In addition we should have a `_printme.pdf` which we won't really need, but you can use it to verify that the svg and the pdf output match.
+
+> [!NOTE]
+> Depending on what cutting machine you use you may have to set the `Paper Size` to `Fit`, `Card Orientation` to `Mixed` and play around with the vertical and horizontal layout values to get something that fits within the valid region of your registration marks.
 
 Now we can open a new project in _Silhouette Studio_ and choose the right page setup. Now we can drag-n-drop the `_printme.svg` file into the project (or use an online tool to convert it to `.dxf` and drop that in instead). Copy the `Cards Size` values over to the size of the imported cutting guides, press the `Center to Page` option.
 
@@ -70,8 +73,8 @@ While we are here we can also disable the outer-most cutting line. Right-click t
 
 ## Generating the full PDF in the App
 
->! Note:
->! You currently have to restart the app for this step, but that will be fixed in the future
+> [!NOTE]
+> You currently have to restart the app for this step, but that will be fixed in the future
 
 First go to the `Global Config` and choose `PoDoFo` for the `Rendering Backend` option.
 
@@ -101,14 +104,16 @@ Follow the Silhouette Studio instructions up to rendering the document. Make sur
 
 1. Open a new project in _Cricut Design Space_ and upload the `_printme.svg` file
 2. Click on the Cut Guides, and in the top bar, set Operation to 'Print Then Cut' and unlock the Size
-3. Copy the values from `Cards Size` within the print options
-   > **Note:** You may have to go to Settings and Canvas and set Units to Metric. The size in the bar will be in centimeters, so for example, 268.0 mm should be set to 26.8 within Cricut
+3. Copy the values from `Cards Size` within the `Print Options` section
+> [!NOTE]
+> You may have to go to Settings and Canvas and set Units to Metric. The size in the bar will be in centimeters, so for example, 268.0 mm should be set to 26.8 within Cricut. Alternatively you can change the display units in the app under `Global Config`.
 
 ### Configuring Page Settings
 
 1. Go to Settings and select the Load Type menu
-2. Set Print Then Cut Page Size to Tabloid
-   > **Important:** The Load Type setting will use whatever mat you decide to use which is important because Cricut must recognize the mat length. Ensure the mat fits the paper
+2. Set Print Then Cut Page Size to the paper size you plan to print onto
+> [!Important]
+> The Load Type setting will use whatever mat you decide to use which is important because Cricut must recognize the mat length. Ensure the mat fits the paper
 
 ### Setting Up the Print Area
 
