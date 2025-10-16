@@ -50,6 +50,13 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
+        if (json.contains("first_card_added"))
+        {
+            m_Data.m_FirstCardAdded = std::chrono::seconds{
+                json["first_card_added"].get<uint64_t>()
+            };
+        }
+
         for (const nlohmann::json& card_json : json["cards"])
         {
             CardInfo& card{ m_Data.m_Cards[card_json["name"]] };
@@ -65,6 +72,12 @@ void Project::Load(const fs::path& json_path)
             {
                 card.m_Rotation = magic_enum::enum_cast<Image::Rotation>(card_json["rotation"].get_ref<const std::string&>())
                                       .value_or(Image::Rotation::None);
+            }
+            if (card_json.contains("time_added"))
+            {
+                card.m_TimeAdded = std::chrono::seconds{
+                    card_json["time_added"].get<uint64_t>()
+                };
             }
         }
 
@@ -241,6 +254,12 @@ void Project::Dump(const fs::path& json_path) const
         json["image_dir"] = m_Data.m_ImageDir.string();
         json["img_cache"] = m_Data.m_ImageCache.string();
 
+        if (m_Data.m_FirstCardAdded.has_value())
+        {
+            json["first_card_added"] =
+                static_cast<uint64_t>(m_Data.m_FirstCardAdded->count());
+        }
+
         std::vector<nlohmann::json> cards;
         for (const auto& [name, card] : m_Data.m_Cards)
         {
@@ -254,6 +273,7 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["backside_short_edge"] = card.m_BacksideShortEdge;
                 card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
                 card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
+                card_json["time_added"] = static_cast<uint64_t>(card.m_TimeAdded.count());
             }
         }
         json["cards"] = cards;
@@ -535,14 +555,29 @@ void Project::ReorderCards(size_t from, size_t to)
 
 void Project::CardAdded(const fs::path& card_name)
 {
+    static constexpr auto time_point_to_s{
+        [](clock_t::time_point time_point)
+        {
+            return std::chrono::duration_cast<std::chrono::seconds>(
+                time_point.time_since_epoch());
+        }
+    };
+    if (!m_Data.m_FirstCardAdded.has_value())
+    {
+        m_Data.m_FirstCardAdded = time_point_to_s(clock_t::now());
+    }
+
     auto it{ m_Data.m_Cards.find(card_name) };
     if (it == m_Data.m_Cards.end())
     {
+        const auto now{ time_point_to_s(clock_t::now()) };
+        const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
         if (card_name.string().starts_with("__"))
         {
             m_Data.m_Cards[card_name] = CardInfo{
                 .m_Num = 0,
                 .m_Hidden = 1,
+                .m_TimeAdded{ since_first_card },
             };
         }
         else
@@ -550,6 +585,7 @@ void Project::CardAdded(const fs::path& card_name)
             m_Data.m_Cards[card_name] = CardInfo{
                 .m_Num = 1,
                 .m_Hidden = 0,
+                .m_TimeAdded{ since_first_card },
             };
         }
 

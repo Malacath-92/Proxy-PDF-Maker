@@ -23,6 +23,8 @@ struct CardInfo
 
     Image::Rotation m_Rotation{ Image::Rotation::None };
 
+    std::chrono::seconds m_TimeAdded{};
+
     bool m_Transient{ false };
 };
 using CardMap = std::map<fs::path, CardInfo>;
@@ -202,6 +204,8 @@ class Project : public QObject
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
 
   public:
+    using clock_t = std::chrono::high_resolution_clock;
+
     struct ProjectData
     {
         // Project options
@@ -211,6 +215,7 @@ class Project : public QObject
         fs::path m_ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards
+        std::optional<std::chrono::seconds> m_FirstCardAdded;
         CardMap m_Cards{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};
