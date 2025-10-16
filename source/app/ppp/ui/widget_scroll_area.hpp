@@ -13,9 +13,6 @@ class CardScrollArea : public QScrollArea
   public:
     CardScrollArea(Project& project);
 
-  signals:
-    void CardRotationChanged(const fs::path& card_name);
-
   public slots:
     void NewProjectOpened();
     void ImageDirChanged();
@@ -26,6 +23,8 @@ class CardScrollArea : public QScrollArea
     void CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
+
+    void CardVisibilityChanged(const fs::path& card_name, bool visible);
 
     void FullRefresh();
 

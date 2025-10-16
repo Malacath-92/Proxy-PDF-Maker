@@ -177,6 +177,7 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                 }
 
                 img.m_BadAspectRatio = read(c_Tag<bool>);
+                img.m_BadRotation = read(c_Tag<bool>);
 
                 img_dict[img_name] = std::move(img);
             }
@@ -235,6 +236,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
                 write_arr(buf.data(), buf.size());
             }
             write(image.m_BadAspectRatio);
+            write(image.m_BadRotation);
         }
     }
 }

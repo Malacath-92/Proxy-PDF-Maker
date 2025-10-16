@@ -20,7 +20,7 @@ SemanticVersion ProxyPdfToSemanticVersion(std::string_view version);
 
 consteval uint64_t ImageCacheFormatVersion()
 {
-    constexpr char c_Version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '5' };
+    constexpr char c_Version[8]{ 'P', 'P', 'P', '0', '0', '0', '0', '6' };
     return std::bit_cast<uint64_t>(c_Version);
 }
 

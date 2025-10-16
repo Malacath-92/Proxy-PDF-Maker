@@ -175,10 +175,6 @@ class CardWidget : public QFrame
         }
     }
 
-  signals:
-    void CardVisbilityChanged();
-    void CardRotationChanged();
-
   private:
     QWidget* MakeCardWidget(Project& project)
     {
@@ -193,10 +189,7 @@ class CardWidget : public QFrame
             auto backside_reset{
                 [=, this, &project]()
                 {
-                    if (project.SetBacksideImage(m_CardName, ""))
-                    {
-                        CardVisbilityChanged();
-                    }
+                    project.SetBacksideImage(m_CardName, "");
 
                     auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
                     stacked_widget->RefreshBackside(new_backside_image);
@@ -211,10 +204,7 @@ class CardWidget : public QFrame
                     if (const auto backside_choice{ image_browser.Show() })
                     {
                         const auto& backside{ backside_choice.value() };
-                        if (project.SetBacksideImage(m_CardName, backside))
-                        {
-                            CardVisbilityChanged();
-                        }
+                        project.SetBacksideImage(m_CardName, backside);
 
                         auto* new_backside_image{ new BacksideImage{ backside, project } };
                         stacked_widget->RefreshBackside(new_backside_image);
@@ -313,7 +303,6 @@ class CardWidget : public QFrame
             {
                 stack->RotateImage();
             }
-            CardRotationChanged();
         }
     }
 
@@ -454,17 +443,7 @@ class CardScrollArea::CardGrid : public QWidget
                 auto it{ old_cards.find(card_name) };
                 if (it == old_cards.end())
                 {
-                    CardWidget* new_card{ ctor(card_name, m_Project) };
-                    QObject::connect(new_card,
-                                     &CardWidget::CardVisbilityChanged,
-                                     this,
-                                     &CardGrid::FullRefresh);
-                    QObject::connect(new_card,
-                                     &CardWidget::CardRotationChanged,
-                                     this,
-                                     std::bind_front(&CardGrid::CardRotationChanged, this, card_name));
-
-                    return new_card;
+                    return ctor(card_name, m_Project);
                 }
 
                 CardWidget* card{ it->second };
@@ -492,9 +471,16 @@ class CardScrollArea::CardGrid : public QWidget
         const auto cols{ g_Cfg.m_DisplayColumns };
         for (const auto& [card_name, card_info] : m_Project.GetCards())
         {
-            if (card_info.m_Hidden > 0)
+            const bool hidden{ card_info.m_Hidden > 0 };
+            if (hidden)
             {
-                continue;
+                // Show cards that are hidden but have bad rotation to allow
+                // user to fix rotation
+                if (!m_Project.HasPreview(card_name) ||
+                    !m_Project.m_Data.m_Previews.at(card_name).m_BadRotation)
+                {
+                    continue;
+                }
             }
 
             auto* card_widget{ eat_or_make_real_card(card_name) };
@@ -543,9 +529,6 @@ class CardScrollArea::CardGrid : public QWidget
     {
         return m_Cards;
     }
-
-  signals:
-    void CardRotationChanged(const fs::path& card_name);
 
   private:
     Project& m_Project;
@@ -639,16 +622,13 @@ CardScrollArea::CardScrollArea(Project& project)
                      &QPushButton::clicked,
                      this,
                      reset_number);
-    QObject::connect(card_grid,
-                     &CardGrid::CardRotationChanged,
-                     this,
-                     &CardScrollArea::CardRotationChanged);
 
     m_Grid = card_grid;
 }
 
 void CardScrollArea::NewProjectOpened()
 {
+    FullRefresh();
 }
 
 void CardScrollArea::ImageDirChanged()
@@ -699,6 +679,18 @@ void CardScrollArea::CardRenamed(const fs::path& old_card_name, const fs::path& 
     }
 
     FullRefresh();
+}
+
+void CardScrollArea::CardVisibilityChanged(const fs::path& card_name, bool visible)
+{
+    if (visible && !m_Grid->HasCard(card_name))
+    {
+        FullRefresh();
+    }
+    else if (!visible && m_Grid->HasCard(card_name))
+    {
+        FullRefresh();
+    }
 }
 
 void CardScrollArea::FullRefresh()

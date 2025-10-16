@@ -56,7 +56,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     m_CardName = card_name;
     m_OriginalParams = params;
 
-    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 or params.m_Rotation == Image::Rotation::Degree270;
+    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
     m_CardSize = project.CardSize();
     m_FullBleed = project.CardFullBleed();
     m_CardRatio = m_CardSize.x / m_CardSize.y;

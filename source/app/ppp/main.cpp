@@ -115,6 +115,8 @@ int main(int argc, char** argv)
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &project, &Project::CardRenamed);
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &cropper, &Cropper::CardRenamed);
 
+    QObject::connect(&project, &Project::CardRotationChanged, &cropper, &Cropper::CardModified);
+
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ scroll_area, print_preview } };
@@ -124,8 +126,6 @@ int main(int argc, char** argv)
     auto* guides_options{ new GuidesOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
     auto* global_options{ new GlobalOptionsWidget{} };
-
-    QObject::connect(scroll_area, &CardScrollArea::CardRotationChanged, &cropper, &Cropper::CardModified);
 
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
@@ -214,6 +214,8 @@ int main(int argc, char** argv)
         QObject::connect(&card_provider, &CardProvider::CardAdded, scroll_area, &CardScrollArea::CardAdded);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, scroll_area, &CardScrollArea::CardRemoved);
         QObject::connect(&card_provider, &CardProvider::CardRenamed, scroll_area, &CardScrollArea::CardRenamed);
+
+        QObject::connect(&project, &Project::CardVisibilityChanged, scroll_area, &CardScrollArea::CardVisibilityChanged);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, scroll_area, &CardScrollArea::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, scroll_area, &CardScrollArea::ImageDirChanged);

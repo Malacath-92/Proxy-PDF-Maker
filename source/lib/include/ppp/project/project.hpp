@@ -198,6 +198,9 @@ class Project : public QObject
   signals:
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
+    void CardVisibilityChanged(const fs::path& card_name, bool visible);
+    void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
+
   public:
     struct ProjectData
     {

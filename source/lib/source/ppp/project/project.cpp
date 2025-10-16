@@ -405,6 +405,7 @@ bool Project::HideCard(const fs::path& card_name)
         if (was_visible)
         {
             RemoveCardFromList(card_name);
+            CardVisibilityChanged(card_name, false);
             return true;
         }
     }
@@ -421,6 +422,7 @@ bool Project::UnhideCard(const fs::path& card_name)
         if (visible)
         {
             AppendCardToList(card_name);
+            CardVisibilityChanged(card_name, true);
             return true;
         }
     }
@@ -433,6 +435,7 @@ bool Project::RotateCard(const fs::path& card_name)
     if (it != m_Data.m_Cards.end())
     {
         it->second.m_Rotation = Image::Rotation{ (std::to_underlying(it->second.m_Rotation) + 1) % 4 };
+        CardRotationChanged(card_name, it->second.m_Rotation);
         return true;
     }
     return false;
@@ -1305,7 +1308,15 @@ void Project::SetPreview(const fs::path& card_name,
     if (rotation == m_Data.m_Cards.at(card_name).m_Rotation)
     {
         PreviewUpdated(card_name, preview);
+        const auto update_visibility{
+            preview.m_BadRotation ||
+            m_Data.m_Previews[card_name].m_BadRotation
+        };
         m_Data.m_Previews[card_name] = std::move(preview);
+        if (update_visibility)
+        {
+            CardVisibilityChanged(card_name, true);
+        }
     }
 }
 
