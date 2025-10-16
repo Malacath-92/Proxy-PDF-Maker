@@ -157,7 +157,7 @@ void CropperCropWork::run()
             .m_DPI{ max_density },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
-            .m_Rotation{ m_Rotation },
+            .m_Rotation = m_Rotation,
         };
 
         QByteArray input_file_hash{
@@ -286,7 +286,7 @@ void CropperPreviewWork::run()
             .m_Width{ preview_width },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
-            .m_Rotation{ m_Rotation },
+            .m_Rotation = m_Rotation,
             .m_WillWriteOutput = false,
         };
 
