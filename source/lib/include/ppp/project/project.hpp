@@ -215,7 +215,7 @@ class Project : public QObject
         fs::path m_ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards
-        std::optional<std::chrono::seconds> m_FirstCardAdded;
+        std::optional<std::chrono::seconds> m_FirstCardAdded{ std::nullopt };
         CardMap m_Cards{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};
