@@ -59,7 +59,7 @@ void Project::Load(const fs::path& json_path)
 
         for (const nlohmann::json& card_json : json["cards"])
         {
-            CardInfo& card{ m_Data.m_Cards[card_json["name"]] };
+            CardInfo& card{ PutCard(card_json["name"]) };
             card.m_Num = card_json["num"];
             card.m_Hidden = card_json["hidden"];
             card.m_Backside = card_json["backside"].get<std::string>();
@@ -85,8 +85,7 @@ void Project::Load(const fs::path& json_path)
         {
             for (const size_t idx : json["cards_order"])
             {
-                const auto it{ std::next(m_Data.m_Cards.begin(), idx) };
-                m_Data.m_CardsList.push_back(std::cref(it->first));
+                m_Data.m_CardsList.push_back(m_Data.m_Cards[idx].m_Name);
             }
         }
 
@@ -261,12 +260,12 @@ void Project::Dump(const fs::path& json_path) const
         }
 
         std::vector<nlohmann::json> cards;
-        for (const auto& [name, card] : m_Data.m_Cards)
+        for (const auto& card : m_Data.m_Cards)
         {
             if (!card.m_Transient)
             {
                 nlohmann::json& card_json{ cards.emplace_back() };
-                card_json["name"] = name.string();
+                card_json["name"] = card.m_Name.string();
                 card_json["num"] = card.m_Num;
                 card_json["hidden"] = card.m_Hidden;
                 card_json["backside"] = card.m_Backside.string();
@@ -278,14 +277,16 @@ void Project::Dump(const fs::path& json_path) const
         }
         json["cards"] = cards;
 
-        if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsList())
+        if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsSorting())
         {
             std::vector<size_t> cards_list;
             cards_list.reserve(m_Data.m_CardsList.size());
             for (const auto& name : m_Data.m_CardsList)
             {
-                const auto idx{ std::distance(m_Data.m_Cards.begin(), m_Data.m_Cards.find(name)) };
-                cards_list.push_back(idx);
+                const auto idx{
+                    FindCard(name) - &m_Data.m_Cards.front()
+                };
+                cards_list.push_back(static_cast<size_t>(idx));
             }
 
             json["cards_order"] = cards_list;
@@ -386,14 +387,10 @@ void Project::InitProperties()
     // Check that we have all our cards accounted for
     for (const auto& img : img_list)
     {
-        if (!m_Data.m_Cards.contains(img) && img != g_Cfg.m_FallbackName)
+        auto* card{ FindCard(img) };
+        if (card == nullptr && img != g_Cfg.m_FallbackName)
         {
-            m_Data.m_Cards[img] = CardInfo{};
-            if (img.string().starts_with("__"))
-            {
-                m_Data.m_Cards[img].m_Num = 0;
-                m_Data.m_Cards[img].m_Hidden = 1;
-            }
+            PutCard(img);
         }
     }
 
@@ -401,7 +398,7 @@ void Project::InitProperties()
     const auto stale_images{
         m_Data.m_Cards |
             std::views::transform([](const auto& item)
-                                  { return std::ref(item.first); }) |
+                                  { return std::ref(item.m_Name); }) |
             std::views::filter([&](const auto& img)
                                { return !std::ranges::contains(img_list, img); }) |
             std::ranges::to<std::vector>(),
@@ -410,18 +407,17 @@ void Project::InitProperties()
     {
         std::erase(m_Data.m_CardsList, img);
         m_Data.m_Previews.erase(img);
-        m_Data.m_Cards.erase(img);
+        EatCard(img);
     }
 }
 
 bool Project::HideCard(const fs::path& card_name)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const bool was_visible{ it->second.m_Hidden == 0 };
-        it->second.m_Hidden++;
-        it->second.m_Num = 0;
+        const bool was_visible{ card->m_Hidden == 0 };
+        card->m_Hidden++;
+        card->m_Num = 0;
         if (was_visible)
         {
             RemoveCardFromList(card_name);
@@ -434,11 +430,10 @@ bool Project::HideCard(const fs::path& card_name)
 
 bool Project::UnhideCard(const fs::path& card_name)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        it->second.m_Hidden--;
-        const bool visible{ it->second.m_Hidden == 0 };
+        card->m_Hidden--;
+        const bool visible{ card->m_Hidden == 0 };
         if (visible)
         {
             AppendCardToList(card_name);
@@ -451,11 +446,12 @@ bool Project::UnhideCard(const fs::path& card_name)
 
 bool Project::RotateCard(const fs::path& card_name)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        it->second.m_Rotation = Image::Rotation{ (std::to_underlying(it->second.m_Rotation) + 1) % 4 };
-        CardRotationChanged(card_name, it->second.m_Rotation);
+        card->m_Rotation = Image::Rotation{
+            (std::to_underlying(card->m_Rotation) + 1) % 4
+        };
+        CardRotationChanged(card_name, card->m_Rotation);
         return true;
     }
     return false;
@@ -463,26 +459,23 @@ bool Project::RotateCard(const fs::path& card_name)
 
 uint32_t Project::GetCardCount(const fs::path& card_name) const
 {
-
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        return it->second.m_Num;
+        return card->m_Num;
     }
     return 0;
 }
 
 uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const bool visible{ it->second.m_Hidden == 0 };
+        const bool visible{ card->m_Hidden == 0 };
         if (visible)
         {
-            const auto previous_num{ it->second.m_Num };
+            const auto previous_num{ card->m_Num };
             const auto clamped_num{ std::max(std::min(num, 999u), 0u) };
-            it->second.m_Num = clamped_num;
+            card->m_Num = clamped_num;
 
             if (clamped_num > previous_num)
             {
@@ -501,15 +494,14 @@ uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
 
 uint32_t Project::IncrementCardCount(const fs::path& card_name)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const bool visible{ it->second.m_Hidden == 0 };
+        const bool visible{ card->m_Hidden == 0 };
         if (visible)
         {
-            ++it->second.m_Num;
+            ++card->m_Num;
             AppendCardToList(card_name);
-            return it->second.m_Num;
+            return card->m_Num;
         }
     }
 
@@ -518,15 +510,14 @@ uint32_t Project::IncrementCardCount(const fs::path& card_name)
 
 uint32_t Project::DecrementCardCount(const fs::path& card_name)
 {
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const bool visible{ it->second.m_Hidden == 0 };
+        const bool visible{ card->m_Hidden == 0 };
         if (visible)
         {
-            --it->second.m_Num;
+            --card->m_Num;
             RemoveCardFromList(card_name);
-            return it->second.m_Num;
+            return card->m_Num;
         }
     }
 
@@ -542,7 +533,7 @@ void Project::ReorderCards(size_t from, size_t to)
 {
     if (m_Data.m_CardsList.empty())
     {
-        m_Data.m_CardsList = GenerateDefaultCardsList();
+        m_Data.m_CardsList = GenerateDefaultCardsSorting();
     }
 
     const auto from_it{ m_Data.m_CardsList.begin() + from };
@@ -555,6 +546,91 @@ void Project::ReorderCards(size_t from, size_t to)
 
 void Project::CardAdded(const fs::path& card_name)
 {
+    auto* card{ FindCard(card_name) };
+    if (card == nullptr)
+    {
+        card = &PutCard(card_name);
+        for (const auto& other_card : m_Data.m_Cards)
+        {
+            if (other_card.m_Backside == card_name)
+            {
+                card->m_Hidden++;
+            }
+        }
+    }
+    else if (card->m_Transient)
+    {
+        --card->m_Hidden;
+        card->m_Transient = false;
+    }
+
+    AutoMatchBackside(card_name);
+    AppendCardToList(card_name);
+}
+
+void Project::CardRemoved(const fs::path& card_name)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        ++card->m_Hidden;
+        card->m_Transient = true;
+
+        if (const auto& frontside{ MatchAsAutoBackside(card_name) })
+        {
+            SetBacksideImage(frontside.value(), "");
+
+            auto& front_card{ *FindCard(frontside.value()) };
+            front_card.m_BacksideAutoAssigned = false;
+        }
+    }
+
+    RemoveCardFromList(card_name);
+}
+
+void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
+{
+    if (auto old_card{ EatCard(old_card_name) })
+    {
+        PutCard(std::move(old_card).value());
+    }
+
+    if (m_Data.m_Previews.contains(old_card_name))
+    {
+        m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
+        m_Data.m_Previews.erase(old_card_name);
+    }
+}
+
+bool Project::HasCard(const fs::path& card_name) const
+{
+    return std::ranges::find(m_Data.m_Cards,
+                             card_name,
+                             &CardInfo::m_Name) != m_Data.m_Cards.end();
+}
+
+const CardInfo* Project::FindCard(const fs::path& card_name) const
+{
+    auto it{ std::ranges::find(m_Data.m_Cards,
+                               card_name,
+                               &CardInfo::m_Name) };
+    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+}
+
+CardInfo* Project::FindCard(const fs::path& card_name)
+{
+    auto it{ std::ranges::find(m_Data.m_Cards,
+                               card_name,
+                               &CardInfo::m_Name) };
+    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+}
+
+CardInfo& Project::PutCard(const fs::path& card_name)
+{
+    if (auto* existing_card{ FindCard(card_name) })
+    {
+        return *existing_card;
+    }
+
     static constexpr auto time_point_to_s{
         [](clock_t::time_point time_point)
         {
@@ -567,80 +643,71 @@ void Project::CardAdded(const fs::path& card_name)
         m_Data.m_FirstCardAdded = time_point_to_s(clock_t::now());
     }
 
-    auto it{ m_Data.m_Cards.find(card_name) };
+    auto insert_at{
+        std::ranges::upper_bound(m_Data.m_Cards,
+                                 card_name,
+                                 {},
+                                 &CardInfo::m_Name)
+    };
+    auto new_card_it{
+        m_Data.m_Cards.insert(insert_at,
+                              CardInfo{ .m_Name{ card_name } })
+    };
+
+    auto& new_card{ *new_card_it };
+
+    if (card_name.string().starts_with("__"))
+    {
+        new_card.m_Num = 0;
+        new_card.m_Hidden = 1;
+    }
+    else
+    {
+        new_card.m_Num = 1;
+        new_card.m_Hidden = 0;
+    }
+
+    const auto now{ time_point_to_s(clock_t::now()) };
+    const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
+    new_card.m_TimeAdded = since_first_card;
+
+    return new_card;
+}
+
+CardInfo& Project::PutCard(CardInfo card)
+{
+    if (auto* existing_card{ FindCard(card.m_Name) })
+    {
+        return *existing_card;
+    }
+
+    auto insert_at{
+        std::ranges::upper_bound(m_Data.m_Cards,
+                                 card.m_Name,
+                                 {},
+                                 &CardInfo::m_Name)
+    };
+    auto new_card_it{
+        m_Data.m_Cards.insert(insert_at,
+                              std::move(card))
+    };
+
+    return *new_card_it;
+}
+
+std::optional<CardInfo> Project::EatCard(const fs::path& card_name)
+{
+    auto it{ std::ranges::find(m_Data.m_Cards,
+                               card_name,
+                               &CardInfo::m_Name) };
     if (it == m_Data.m_Cards.end())
     {
-        const auto now{ time_point_to_s(clock_t::now()) };
-        const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
-        if (card_name.string().starts_with("__"))
-        {
-            m_Data.m_Cards[card_name] = CardInfo{
-                .m_Num = 0,
-                .m_Hidden = 1,
-                .m_TimeAdded{ since_first_card },
-            };
-        }
-        else
-        {
-            m_Data.m_Cards[card_name] = CardInfo{
-                .m_Num = 1,
-                .m_Hidden = 0,
-                .m_TimeAdded{ since_first_card },
-            };
-        }
-
-        auto& card{ m_Data.m_Cards.at(card_name) };
-        for (const auto& [name, other_card] : m_Data.m_Cards)
-        {
-            if (other_card.m_Backside == card_name)
-            {
-                card.m_Hidden++;
-            }
-        }
-    }
-    else if (it->second.m_Transient)
-    {
-        --it->second.m_Hidden;
-        it->second.m_Transient = false;
+        return std::nullopt;
     }
 
-    AutoMatchBackside(card_name);
-    AppendCardToList(card_name);
-}
-
-void Project::CardRemoved(const fs::path& card_name)
-{
-    auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
-    {
-        ++it->second.m_Hidden;
-        it->second.m_Transient = true;
-
-        if (const auto& frontside{ MatchAsAutoBackside(card_name) })
-        {
-            SetBacksideImage(frontside.value(), "");
-
-            auto& card{ m_Data.m_Cards.at(frontside.value()) };
-            card.m_BacksideAutoAssigned = false;
-        }
-    }
-
-    RemoveCardFromList(card_name);
-}
-
-void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
-{
-    if (m_Data.m_Cards.contains(old_card_name))
-    {
-        m_Data.m_Cards[new_card_name] = std::move(m_Data.m_Cards.at(old_card_name));
-        m_Data.m_Cards.erase(old_card_name);
-    }
-
-    if (m_Data.m_Previews.contains(old_card_name))
-    {
-        m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
-        m_Data.m_Previews.erase(old_card_name);
-    }
+    std::optional<CardInfo> card{ std::move(*it) };
+    m_Data.m_Cards.erase(it);
+    return card;
 }
 
 bool Project::HasPreview(const fs::path& card_name) const
@@ -692,13 +759,11 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
 
 const fs::path& Project::GetBacksideImage(const fs::path& card_name) const
 {
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const CardInfo& card{ it->second };
-        if (!card.m_Backside.empty())
+        if (!card->m_Backside.empty())
         {
-            return card.m_Backside;
+            return card->m_Backside;
         }
     }
     return m_Data.m_BacksideDefault;
@@ -710,20 +775,18 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         return false;
     }
 
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        CardInfo& card{ it->second };
-        if (card.m_Backside == backside_image)
+        if (card->m_Backside == backside_image)
         {
             return false;
         }
 
-        auto old_backside{ std::move(card.m_Backside) };
-        card.m_Backside = std::move(backside_image);
+        auto old_backside{ std::move(card->m_Backside) };
+        card->m_Backside = std::move(backside_image);
 
         const bool old_backside_shown{ UnhideCard(old_backside) };
-        const bool new_backside_hidden{ HideCard(card.m_Backside) };
+        const bool new_backside_hidden{ HideCard(card->m_Backside) };
         return old_backside_shown || new_backside_hidden;
     }
 
@@ -732,22 +795,18 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 
 bool Project::HasCardBacksideShortEdge(const fs::path& card_name) const
 {
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const CardInfo& card{ it->second };
-        return card.m_BacksideShortEdge;
+        return card->m_BacksideShortEdge;
     }
     return false;
 }
 
 void Project::SetCardBacksideShortEdge(const fs::path& card_name, bool has_backside_short_edge)
 {
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        CardInfo& card{ it->second };
-        card.m_BacksideShortEdge = has_backside_short_edge;
+        card->m_BacksideShortEdge = has_backside_short_edge;
     }
 }
 
@@ -767,9 +826,9 @@ bool Project::SetBacksideAutoPattern(std::string pattern)
     m_Data.m_BacksideAutoPattern = std::move(pattern);
 
     bool any_backside_change{ false };
-    for (auto& [name, card] : m_Data.m_Cards)
+    for (auto& card : m_Data.m_Cards)
     {
-        if (AutoMatchBackside(name))
+        if (AutoMatchBackside(card.m_Name))
         {
             any_backside_change = true;
         }
@@ -1341,17 +1400,20 @@ void Project::SetPreview(const fs::path& card_name,
                          ImagePreview preview,
                          Image::Rotation rotation)
 {
-    if (rotation == m_Data.m_Cards.at(card_name).m_Rotation)
+    if (auto* card{ FindCard(card_name) })
     {
-        PreviewUpdated(card_name, preview);
-        const auto update_visibility{
-            preview.m_BadRotation ||
-            m_Data.m_Previews[card_name].m_BadRotation
-        };
-        m_Data.m_Previews[card_name] = std::move(preview);
-        if (update_visibility)
+        if (rotation == card->m_Rotation)
         {
-            CardVisibilityChanged(card_name, true);
+            PreviewUpdated(card_name, preview);
+            const auto update_visibility{
+                preview.m_BadRotation ||
+                m_Data.m_Previews[card_name].m_BadRotation
+            };
+            m_Data.m_Previews[card_name] = std::move(preview);
+            if (update_visibility)
+            {
+                CardVisibilityChanged(card_name, true);
+            }
         }
     }
 }
@@ -1361,16 +1423,16 @@ void Project::CropperDone()
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
 
-CardList Project::GenerateDefaultCardsList() const
+CardSorting Project::GenerateDefaultCardsSorting() const
 {
-    CardList default_cards_list;
-    for (const auto& [name, card] : m_Data.m_Cards)
+    CardSorting default_cards_list;
+    for (const auto& card : m_Data.m_Cards)
     {
-        for (uint32_t i = 0; i < card.m_Num; i++)
+        if (card.m_Hidden == 0)
         {
-            if (card.m_Hidden == 0)
+            for (uint32_t j = 0; j < card.m_Num; j++)
             {
-                default_cards_list.push_back(std::cref(name));
+                default_cards_list.push_back(card.m_Name);
             }
         }
     }
@@ -1385,21 +1447,15 @@ void Project::AppendCardToList(const fs::path& card_name)
         return;
     }
 
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it != m_Data.m_Cards.end())
+    if (auto* card{ FindCard(card_name) })
     {
-        const auto& card_info{ it->second };
 
-        if (card_info.m_Hidden == 0)
+        if (card->m_Hidden == 0)
         {
-            // Use key from list to avoid allocating these a lot
-            // and the key in the list is stable
-            const auto same_card_name{ std::cref(it->first) };
-
             const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
-            for (auto i = current_count; i < card_info.m_Num; ++i)
+            for (auto i{ current_count }; i < card->m_Num; ++i)
             {
-                m_Data.m_CardsList.push_back(same_card_name);
+                m_Data.m_CardsList.push_back(card_name);
             }
         }
     }
@@ -1413,17 +1469,15 @@ void Project::RemoveCardFromList(const fs::path& card_name)
         return;
     }
 
-    const auto it{ m_Data.m_Cards.find(card_name) };
-    if (it == m_Data.m_Cards.end() || it->second.m_Num == 0)
+    auto* card{ FindCard(card_name) };
+    if (card == nullptr || card->m_Num == 0)
     {
         std::erase(m_Data.m_CardsList, card_name);
     }
     else
     {
-        const auto& card_info{ it->second };
-
         const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
-        const auto to_remove{ current_count - card_info.m_Num };
+        const auto to_remove{ current_count - card->m_Num };
 
         auto removed{ 0 };
         for (auto jt = m_Data.m_CardsList.rbegin(); jt != m_Data.m_CardsList.rend() && removed < to_remove;)
@@ -1446,29 +1500,30 @@ bool Project::AutoMatchBackside(const fs::path& card_name)
 {
     if (auto frontside{ MatchAsAutoBackside(card_name) })
     {
-        auto& card{ m_Data.m_Cards.at(frontside.value()) };
-        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+        if (auto* card{ FindCard(frontside.value()) })
         {
-            SetBacksideImage(frontside.value(), card_name);
-            card.m_BacksideAutoAssigned = true;
-            return true;
+            if (card->m_Backside.empty() || card->m_BacksideAutoAssigned)
+            {
+                SetBacksideImage(frontside.value(), card_name);
+                card->m_BacksideAutoAssigned = true;
+                return true;
+            }
         }
     }
-    else
+    else if (auto* card{ FindCard(card_name) })
     {
-        auto& card{ m_Data.m_Cards.at(card_name) };
-        if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+        if (card->m_Backside.empty() || card->m_BacksideAutoAssigned)
         {
             if (auto backside{ FindCardAutoBackside(card_name) })
             {
                 SetBacksideImage(card_name, backside.value());
-                card.m_BacksideAutoAssigned = true;
+                card->m_BacksideAutoAssigned = true;
                 return true;
             }
-            else if (!card.m_Backside.empty())
+            else if (!card->m_Backside.empty())
             {
                 SetBacksideImage(card_name, "");
-                card.m_BacksideAutoAssigned = false;
+                card->m_BacksideAutoAssigned = false;
                 return true;
             }
         }
@@ -1487,11 +1542,11 @@ std::optional<fs::path> Project::FindCardAutoBackside(const fs::path& card_name)
     const auto placeholder_pos{ auto_backside.find('$') };
     auto_backside.replace(placeholder_pos, 1, card_name.stem().string());
 
-    for (auto& [name, _] : m_Data.m_Cards)
+    for (auto& card : m_Data.m_Cards)
     {
-        if (name.stem() == auto_backside)
+        if (card.m_Name.stem() == auto_backside)
         {
-            return name;
+            return card.m_Name;
         }
     }
 
@@ -1517,13 +1572,13 @@ std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& card_name) 
                 .substr(0, name_str.size() - back.size())
                 .substr(front.size()),
         };
-        for (auto& [name, card] : m_Data.m_Cards)
+        for (auto& card : m_Data.m_Cards)
         {
             if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
             {
-                if (name.stem() == front_name)
+                if (card.m_Name.stem() == front_name)
                 {
-                    return name;
+                    return card.m_Name;
                 }
             }
         }

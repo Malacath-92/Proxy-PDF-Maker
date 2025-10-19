@@ -104,8 +104,9 @@ class SelectableCardGrid : public QWidget
     {
         auto* grid_layout{ new QGridLayout };
         {
-            for (auto& [card_name, card_info] : project.GetCards())
+            for (auto& card_info : project.GetCards())
             {
+                const auto& card_name{ card_info.m_Name };
                 if (std::ranges::contains(ignored_images, card_name) ||
                     card_info.m_Transient)
                 {
@@ -247,11 +248,10 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     const auto& cards{ project.GetCards() };
     const auto num_valid_ignored_images{
         std::ranges::count_if(ignored_images, [&](const auto& img)
-                              { return cards.contains(img); })
+                              { return project.HasCard(img); })
     };
     const auto num_valid_images{
-        std::ranges::count_if(cards |
-                                  std::views::values,
+        std::ranges::count_if(cards,
                               [&](const auto& img)
                               { return !img.m_Transient; })
     };

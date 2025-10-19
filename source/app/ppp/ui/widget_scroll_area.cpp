@@ -469,8 +469,10 @@ class CardScrollArea::CardGrid : public QWidget
 
         size_t i{ 0 };
         const auto cols{ g_Cfg.m_DisplayColumns };
-        for (const auto& [card_name, card_info] : m_Project.GetCards())
+        for (const auto& card_info : m_Project.GetCards())
         {
+            const auto& card_name{ card_info.m_Name };
+
             const bool hidden{ card_info.m_Hidden > 0 };
             if (hidden)
             {

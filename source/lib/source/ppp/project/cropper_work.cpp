@@ -95,14 +95,14 @@ CropperCropWork::CropperCropWork(
     fs::path card_name,
     std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
-    const Project::ProjectData& data)
+    const Project& project)
     : CropperWork{ alive_cropper_work }
     , m_RunningCropperWork{ running_crop_work }
     , m_CardName{ std::move(card_name) }
-    , m_Rotation{ data.m_Cards.at(m_CardName).m_Rotation }
+    , m_Rotation{ project.FindCard(m_CardName)->m_Rotation }
     , m_GetColorCube{ get_color_cube }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(data) }
+    , m_Data{ CopyRelevant(project.m_Data) }
     , m_Cfg{ CopyRelevant(g_Cfg) }
 {
 }
@@ -242,13 +242,13 @@ CropperPreviewWork::CropperPreviewWork(
     fs::path card_name,
     bool force,
     ImageDataBase& image_db,
-    const Project::ProjectData& data)
+    const Project& project)
     : CropperWork{ alive_cropper_work }
     , m_CardName{ std::move(card_name) }
-    , m_Rotation{ data.m_Cards.at(m_CardName).m_Rotation }
+    , m_Rotation{ project.FindCard(m_CardName)->m_Rotation }
     , m_Force{ force }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(data) }
+    , m_Data{ CopyRelevant(project.m_Data) }
     , m_Cfg{ CopyRelevant(g_Cfg) }
 {
     m_Priorty = 1;

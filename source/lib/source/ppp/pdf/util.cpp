@@ -192,13 +192,15 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     pages.emplace_back();
 
     auto push_card{
-        [&, index = size_t{ 0 }](const auto& img, const auto& info) mutable
+        [&, index = size_t{ 0 }](const auto& info) mutable
         {
             // make new page if last page is full
             if (pages.back().m_Images.size() == images_per_page)
             {
                 pages.emplace_back();
             }
+
+            const auto& img{ info.m_Name };
 
             // add image to the page
             Page& page{ pages.back() };
@@ -215,17 +217,19 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
         // Pre-expanded list of cards with custom sorting
         for (const auto& img : project.GetManualSorting())
         {
-            const auto& info{ project.GetCards().at(img) };
-            push_card(img, info);
+            if (const auto* info{ project.FindCard(img) })
+            {
+                push_card(*info);
+            }
         }
     }
     else
     {
-        for (const auto& [img, info] : project.GetCards())
+        for (const auto& info : project.GetCards())
         {
             for (uint32_t i = 0; i < info.m_Num; i++)
             {
-                push_card(img, info);
+                push_card(info);
             }
         }
     }

@@ -14,6 +14,8 @@
 
 struct CardInfo
 {
+    fs::path m_Name{};
+
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
 
@@ -27,9 +29,9 @@ struct CardInfo
 
     bool m_Transient{ false };
 };
-using CardMap = std::map<fs::path, CardInfo>;
 
-using CardList = std::vector<std::reference_wrapper<const fs::path>>;
+using CardContainer = std::vector<CardInfo>;
+using CardSorting = std::vector<fs::path>;
 
 struct ImagePreview
 {
@@ -126,6 +128,14 @@ class Project : public QObject
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
 
+    bool HasCard(const fs::path& card_name) const;
+    const CardInfo* FindCard(const fs::path& card_name) const;
+    CardInfo* FindCard(const fs::path& card_name);
+
+    CardInfo& PutCard(const fs::path& card_name);
+    CardInfo& PutCard(CardInfo card);
+    std::optional<CardInfo> EatCard(const fs::path& card_name);
+
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
@@ -216,13 +226,13 @@ class Project : public QObject
 
         // List of all cards
         std::optional<std::chrono::seconds> m_FirstCardAdded{ std::nullopt };
-        CardMap m_Cards{};
+        CardContainer m_Cards{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};
 
         // Possibly empty list of all cards, determines user-provided order of cards
         // or if empty implies automatic ordering
-        CardList m_CardsList{};
+        CardSorting m_CardsList{};
 
         // Card options
         Length m_BleedEdge{ 0_mm };
@@ -305,7 +315,7 @@ class Project : public QObject
     Project& operator=(const Project&) = delete;
     Project& operator=(Project&&) = delete;
 
-    CardList GenerateDefaultCardsList() const;
+    CardSorting GenerateDefaultCardsSorting() const;
     void AppendCardToList(const fs::path& card_name);
     void RemoveCardFromList(const fs::path& card_name);
 

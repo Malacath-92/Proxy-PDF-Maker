@@ -73,7 +73,7 @@ class CropperCropWork : public CropperWork
         fs::path card_name,
         std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
-        const Project::ProjectData& data);
+        const Project& project);
 
     virtual void run() override;
 
@@ -101,7 +101,7 @@ class CropperPreviewWork : public CropperWork
         fs::path card_name,
         bool force,
         ImageDataBase& image_db,
-        const Project::ProjectData& data);
+        const Project& project);
 
     virtual void run() override;
 
