@@ -54,7 +54,7 @@ Now we can open a new project in _Silhouette Studio_ and choose the right page s
     Resizing and centering guides in Silhouette Studio
 </p>
 
-Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it to the `res/base_pdfs` folder.
+Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
 
 <p align="center">
     <img src="./images/silhouette_print_and_cut.png" alt="Print & Cut"/>
@@ -135,8 +135,8 @@ Follow the Silhouette Studio instructions up to rendering the document. Make sur
 ### Finalizing the Base PDF
 
 _This section is a summarization fo the 'Generating the full PDF in the App' section._
-1. Save/Move the file to `res\base_pdfs` within the PDF Proxy Printer folder
-2. Restart PDF Proxy Printer
+1. Save/Move the file to `res\base_pdfs` within the Proxy-PDF-Maker folder
+2. Restart Proxy-PDF-Maker
 3. Reopen and set Rendering Backend to PoDoFo
 4. Set Paper Size to Base Pdf and set Base Pdf to your proper file
 5. Set the margins to what you set them to previously
