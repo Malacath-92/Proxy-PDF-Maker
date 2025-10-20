@@ -236,14 +236,37 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
             // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
             PoDoFo::PdfPage* page{ m_BaseDocument->GetPage(0) };
 
-            PoDoFo::PdfObject* save_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            save_graphics_state->GetStream()->Set("q");
-            PoDoFo::PdfObject* restore_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            restore_graphics_state->GetStream()->Set("Q");
+            auto* contents{ page->GetContents() };
+            if (contents->IsArray())
+            {
+                auto* owner{ page->GetObject()->GetOwner() };
 
-            auto contents{ page->GetContents() };
-            contents->GetArray().insert(contents->GetArray().begin(), save_graphics_state->Reference());
-            contents->GetArray().push_back(restore_graphics_state->Reference());
+                auto* save_graphics_state{ owner->CreateObject() };
+                save_graphics_state->GetStream()->Set("q");
+
+                auto* restore_graphics_state{ owner->CreateObject() };
+                restore_graphics_state->GetStream()->Set("Q");
+
+                auto& array{ contents->GetArray() };
+                array.insert(array.begin(), save_graphics_state->Reference());
+                array.push_back(restore_graphics_state->Reference());
+            }
+            else
+            {
+                auto* contents_stream{ contents->GetStream() };
+
+                PoDoFo::pdf_long stream_size{};
+                char* stream_data{};
+                contents_stream->GetFilteredCopy(&stream_data, &stream_size);
+
+                contents_stream->BeginAppend(true);
+                contents_stream->Append("q ");
+                contents_stream->Append(stream_data, stream_size);
+                contents_stream->Append(" Q");
+                contents_stream->EndAppend();
+
+                PoDoFo::podofo_free(stream_data);
+            }
         }
     }
 }
@@ -273,38 +296,61 @@ PoDoFoPage* PoDoFoDocument::NextPage()
         if (is_backside)
         {
             auto* page{ new_page.m_Page };
-            PoDoFo::PdfObject* save_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            save_graphics_state->GetStream()->Set("q");
 
-            PoDoFo::PdfObject* transform_state = page->GetObject()->GetOwner()->CreateObject();
-            {
-                transform_state->GetStream()->BeginAppend();
+            const auto dx{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.x) };
+            const auto dy{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.y) };
 
-                const auto dx{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.x) };
-                const auto dy{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.y) };
-
-                std::ostringstream stream;
-                stream.flags(std::ios_base::fixed);
-                stream.precision(15);
-                PoDoFo::PdfLocaleImbue(stream);
-                stream << 1.0 << " " // scale-x
-                       << 0.0 << " " // rot-1
-                       << 0.0 << " " // rot-2
-                       << 1.0 << " " // scale-y
-                       << -dx << " " // trans-x
-                       << dy << " "  // trans-y
-                       << "cm " << std::endl;
-                transform_state->GetStream()->Append(stream.str());
-
-                transform_state->GetStream()->EndAppend();
-            }
-            PoDoFo::PdfObject* restore_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            restore_graphics_state->GetStream()->Set("Q");
+            std::ostringstream stream;
+            stream.flags(std::ios_base::fixed);
+            stream.precision(15);
+            PoDoFo::PdfLocaleImbue(stream);
+            stream << 1.0 << " " // scale-x
+                   << 0.0 << " " // rot-1
+                   << 0.0 << " " // rot-2
+                   << 1.0 << " " // scale-y
+                   << -dx << " " // trans-x
+                   << dy << " "  // trans-y
+                   << "cm " << std::endl;
 
             auto contents{ page->GetContents() };
-            contents->GetArray().insert(contents->GetArray().begin(), transform_state->Reference());
-            contents->GetArray().insert(contents->GetArray().begin(), save_graphics_state->Reference());
-            contents->GetArray().push_back(restore_graphics_state->Reference());
+            if (contents->IsArray())
+            {
+                auto* owner{ page->GetObject()->GetOwner() };
+
+                auto* save_graphics_state{ owner->CreateObject() };
+                save_graphics_state->GetStream()->Set("q");
+
+                auto* transform_state{ owner->CreateObject() };
+                auto* transform_stream{ transform_state->GetStream() };
+                transform_stream->BeginAppend();
+                transform_stream->Append(stream.str());
+                transform_stream->EndAppend();
+
+                auto* restore_graphics_state{ owner->CreateObject() };
+                restore_graphics_state->GetStream()->Set("Q");
+
+                auto& array{ contents->GetArray() };
+                array.insert(array.begin(), transform_state->Reference());
+                array.insert(array.begin(), save_graphics_state->Reference());
+                array.push_back(restore_graphics_state->Reference());
+            }
+            else
+            {
+                auto* contents_stream{ contents->GetStream() };
+
+                PoDoFo::pdf_long stream_size{};
+                char* stream_data{};
+                contents_stream->GetFilteredCopy(&stream_data, &stream_size);
+
+                contents_stream->BeginAppend(true);
+                contents_stream->Append("q ");
+                contents_stream->Append(stream.str());
+                contents_stream->Append(stream_data, stream_size);
+                contents_stream->Append(" Q");
+                contents_stream->EndAppend();
+
+                PoDoFo::podofo_free(stream_data);
+            }
         }
     }
     else
