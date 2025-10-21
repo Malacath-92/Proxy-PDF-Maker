@@ -106,6 +106,21 @@ void GenerateCardsSvg(const Project& project)
 
 void GenerateCardsDxf(const Project& project)
 {
+/*
+* Tbh, .dxf files kinda suck, but some tools will require subscriptions for importiong .svg files, so here we are
+* A .dxf file works like this: (shitty tl;dr incoming)
+*   a single line group code
+*   followed by a value for that code
+* Some entities will expect certain values following it, always preceeded by the corresponding group code
+* Group codes used here are:
+*   0       : Entity Type
+*   8       : Layer Name
+*   9       : Variable Name ID (used in HEADER)
+*   10      : Primary Point, aka X value
+*   20      : Y value
+*   66      : "Entities Follow" flag
+*   70 - 78 : Various integer values
+*/
     const auto dxf_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".dxf") };
 
     LogInfo("Generating card path...");
@@ -120,7 +135,7 @@ POLYLINE
   66
 1
   70
-9
+0
 )";
             return AtScopeExit{
                 [&output]()
@@ -150,6 +165,20 @@ VERTEX
     };
 
     output << R"(  0
+SECTION
+  2
+HEADER
+  9
+$MEASUREMENT
+  70
+1
+  9
+$INSUNITS
+  70
+4
+  0
+ENDSEC
+  0
 SECTION
   2
 ENTITIES
