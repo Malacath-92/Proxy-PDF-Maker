@@ -13,20 +13,20 @@ Do the usual steps to create your project, use the preview to verify everything 
 
 ## Setting up the _Silhouette Studio_ Project
 
-To setup the project we need to generate a the cutting guides from the app. We do this by enabling `Advanced Mode` in the `Global Config`, and while we're here we also switch the `Rendering Backend` to `PoDoFo`.
+To setup the project we need to generate a the cutting guides from the app. We do this by enabling `Advanced Mode` in the `Global Config`, and while we're here we also switch the `Rendering Backend` to `PoDoFo`<sup>1</sup>.
 
 <p align="center">
     <img src="./images/global_options.png" alt="Exact Guides"/>
     <br>
-    Global options required for this guide
+    <sup>1</sup>Global options required for this guide
 </p>
 
-Next we will be disabling guides and enabling `Export Exact Guides` in the `Guides Options` section.
+Next we will be disabling guides and enabling `Export Exact Guides` in the `Guides Options` section<sup>2</sup>.
 
 <p align="center">
     <img src="./images/exact_guides.png" alt="Exact Guides"/>
     <br>
-    Disabled guides but exporting exact guides
+    <sup>2</sup> Disabled guides but exporting exact guides
 </p>
 
 Now we can press `Render Document`, this will generate a `_printme.svg` file which has the exact card guides. In addition we should have a `_printme.pdf` which we won't really need, but you can use it to verify that the svg and the pdf output match.
@@ -34,40 +34,40 @@ Now we can press `Render Document`, this will generate a `_printme.svg` file whi
 > [!NOTE]
 > Depending on what cutting machine you use you may have to set the `Paper Size` to `Fit`, `Card Orientation` to `Mixed` and play around with the vertical and horizontal layout values to get something that fits within the valid region of your registration marks.
 
-Now we can open a new project in _Silhouette Studio_ and choose the right page setup. Now we can drag-n-drop the `_printme.svg` file into the project (or use an online tool to convert it to `.dxf` and drop that in instead). Copy the `Cards Size` values over to the size of the imported cutting guides, press the `Center to Page` option.
+Now we can open a new project in _Silhouette Studio_ and choose the right page setup<sup>3</sup>. At this point we can drag-n-drop the `_printme.svg` or the `_printme.dxf` file into the project. Copy the `Cards Size`<sup>4</sup> values over to the size of the imported cutting guides(note that this should be already correct if using `_printme.dxf`) and press the `Center to Page` option<sup>5</sup>.
 
 <p align="center">
     <img src="./images/silhouette_page_setup.png" alt="Page Setup"/>
     <br>
-    Page setup in Silhouette Studio for the sample project
+    <sup>3</sup> Page setup in Silhouette Studio for the sample project
 </p>
 
 <p align="center">
     <img src="./images/cards_size.png" alt="Cards Size"/>
     <br>
-    Cards size in app, note that this respects spacing and bleed options correctly
+    <sup>4</sup> Cards size in app, note that this respects spacing and bleed options correctly
 </p>
 
 <p align="center">
     <img src="./images/silhouette_guides_setup.png" alt="Silhouette Guides"/>
     <br>
-    Resizing and centering guides in Silhouette Studio
+    <sup>5</sup> Resizing and centering guides in Silhouette Studio
 </p>
 
-Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
+Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible<sup>6</sup>. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
 
 <p align="center">
     <img src="./images/silhouette_print_and_cut.png" alt="Print & Cut"/>
     <br>
-    Print & Cut settings for the sample project
+    <sup>6</sup> Print & Cut settings for the sample project
 </p>
 
-While we are here we can also disable the outer-most cutting line. Right-click the outlines and choose `Release Compound Path`, then select only the outer guides and delete them. Now select all the guides again, right-clock and choose `Make Compound Path`.
+While we are here we can also disable the outer-most cutting line. Right-click the outlines and choose `Release Compound Path` and/or `Ungroup`<sup>7</sup>, then select only the outer guides and delete them. Now select all the guides again, right-clock and choose `Make Compound Path`.
 
 <p align="center">
     <img src="./images/silhouette_release.png" alt="Release Compound Path"/>
     <br>
-    Splitting cutting guides into separate paths
+    <sup>7</sup> Splitting cutting guides into separate paths
 </p>
 
 
@@ -78,12 +78,12 @@ While we are here we can also disable the outer-most cutting line. Right-click t
 
 First go to the `Global Config` and choose `PoDoFo` for the `Rendering Backend` option.
 
-Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
+Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>8</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
 
 <p align="center">
     <img src="./images/base_pdf.png" alt="Base Pdf"/>
     <br>
-    Setting up the Base Pdf option
+    <sup>8</sup> Setting up the Base Pdf option
 </p>
 
 Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to check `Custom Margins` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Right Margin`).
