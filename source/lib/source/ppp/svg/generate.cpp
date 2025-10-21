@@ -183,12 +183,12 @@ ENTITIES
 
     for (const auto& transform : transforms)
     {
-        const dla::vec2 position{ transform.m_Position.x / 1_mm, cards_size.y - transform.m_Position.y / 1_mm };
+        const auto top_left_corner{ transform.m_Position / 1_mm };
         const auto card_size{ transform.m_Size / 1_mm - bleed_edge * 2.0f };
 
-        const auto left{ position.x + bleed_edge - cards_offset.x };
+        const auto left{ top_left_corner.x + bleed_edge - cards_offset.x };
         const auto right{ left + card_size.x };
-        const auto top{ position.y + bleed_edge - cards_offset.y };
+        const auto top{ cards_size.y - (top_left_corner.y + bleed_edge - cards_offset.y) };
         const auto bottom{ top - card_size.y };
 
         auto poly_line{ start_poly_line() };
