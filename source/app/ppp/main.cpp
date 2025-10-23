@@ -106,14 +106,14 @@ int main(int argc, char** argv)
                      project };
     CardProvider card_provider{ project };
 
-    QObject::connect(&card_provider, &CardProvider::CardAdded, &cropper, &Cropper::CardAdded);
-    QObject::connect(&card_provider, &CardProvider::CardRemoved, &cropper, &Cropper::CardRemoved);
-    QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
-
     QObject::connect(&card_provider, &CardProvider::CardAdded, &project, &Project::CardAdded);
     QObject::connect(&card_provider, &CardProvider::CardRemoved, &project, &Project::CardRemoved);
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &project, &Project::CardRenamed);
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &cropper, &Cropper::CardRenamed);
+
+    QObject::connect(&card_provider, &CardProvider::CardAdded, &cropper, &Cropper::CardAdded);
+    QObject::connect(&card_provider, &CardProvider::CardRemoved, &cropper, &Cropper::CardRemoved);
+    QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
 
     QObject::connect(&project, &Project::CardRotationChanged, &cropper, &Cropper::CardModified);
 
