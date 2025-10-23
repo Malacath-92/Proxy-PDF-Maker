@@ -13,6 +13,7 @@
 #include <QSvgWidget>
 
 #include <ppp/constants.hpp>
+#include <ppp/qt_util.hpp>
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
@@ -52,6 +53,8 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, Params p
 void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
 {
     ClearChildren();
+
+    setToolTip(ToQString(card_name));
 
     m_CardName = card_name;
     m_OriginalParams = params;
