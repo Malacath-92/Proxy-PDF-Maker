@@ -41,6 +41,17 @@ class ComboBoxWithLabel : public WidgetWithLabel
                       std::span<const std::string> tooltips,
                       std::string_view default_option);
 
+    template<Enum T>
+    ComboBoxWithLabel(std::string_view label_text,
+                      T default_option)
+        : ComboBoxWithLabel{
+            label_text,
+            magic_enum::enum_names<T>(),
+            magic_enum::enum_name(default_option)
+        }
+    {
+    }
+
     virtual QComboBox* GetWidget() const override;
 };
 

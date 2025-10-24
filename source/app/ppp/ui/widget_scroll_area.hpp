@@ -19,6 +19,8 @@ class CardScrollArea : public QScrollArea
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
     void DisplayColumnsChanged();
+    void CardOrderChanged();
+    void CardOrderDirectionChanged();
 
     void CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);

@@ -184,6 +184,20 @@ Config LoadConfig()
             config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
             config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
+
+            {
+                const auto card_order{
+                    settings.value("Card.Order", "Alphabetical").toString().toStdString()
+                };
+                const auto card_order_direction{
+                    settings.value("Card.Order.Direction", "Ascending").toString().toStdString()
+                };
+                config.m_CardOrder = magic_enum::enum_cast<CardOrder>(card_order)
+                                         .value_or(CardOrder::Alphabetical);
+                config.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(card_order_direction)
+                                                  .value_or(CardOrderDirection::Ascending);
+            }
+
             config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
             config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
             config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
@@ -369,6 +383,12 @@ void SaveConfig(Config config)
 
             settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
+
+            const std::string_view card_order{ magic_enum::enum_name(config.m_CardOrder) };
+            const std::string_view card_order_direction{ magic_enum::enum_name(config.m_CardOrderDirection) };
+            settings.setValue("Card.Order", ToQString(card_order));
+            settings.setValue("Card.Order.Direction", ToQString(card_order_direction));
+
             settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
             settings.setValue("Page.Size", ToQString(config.m_DefaultPageSize));

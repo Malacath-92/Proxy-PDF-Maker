@@ -653,6 +653,16 @@ void CardScrollArea::DisplayColumnsChanged()
     m_Grid->DisplayColumnsChanged();
 }
 
+void CardScrollArea::CardOrderChanged()
+{
+    FullRefresh();
+}
+
+void CardScrollArea::CardOrderDirectionChanged()
+{
+    FullRefresh();
+}
+
 void CardScrollArea::CardAdded(const fs::path& card_name)
 {
     if (m_Grid->HasCard(card_name))

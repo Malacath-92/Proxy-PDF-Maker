@@ -16,6 +16,9 @@ class PrintPreview : public QScrollArea
 
     void Refresh();
 
+    void CardOrderChanged();
+    void CardOrderDirectionChanged();
+
     virtual void resizeEvent(QResizeEvent* event) override;
     virtual void wheelEvent(QWheelEvent* event) override;
 

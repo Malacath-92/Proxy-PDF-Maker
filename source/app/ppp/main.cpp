@@ -192,6 +192,9 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
+
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, &project, &Project::CardOrderChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, &project, &Project::CardOrderDirectionChanged);
     }
 
     {
@@ -223,6 +226,8 @@ int main(int argc, char** argv)
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, scroll_area, &CardScrollArea::BacksideDefaultChanged);
         QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, scroll_area, &CardScrollArea::FullRefresh);
         QObject::connect(global_options, &GlobalOptionsWidget::DisplayColumnsChanged, scroll_area, &CardScrollArea::DisplayColumnsChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, scroll_area, &CardScrollArea::CardOrderChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, scroll_area, &CardScrollArea::CardOrderDirectionChanged);
     }
 
     {
@@ -255,6 +260,8 @@ int main(int argc, char** argv)
         QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
 
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, print_preview, &PrintPreview::CardOrderDirectionChanged);
     }
 
     {

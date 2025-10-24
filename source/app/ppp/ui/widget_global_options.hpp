@@ -24,6 +24,8 @@ class GlobalOptionsWidget : public QWidget
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();
+    void CardOrderChanged();
+    void CardOrderDirectionChanged();
     void MaxWorkerThreadsChanged();
 
     void PluginEnabled(std::string_view plugin_name);

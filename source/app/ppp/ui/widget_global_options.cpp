@@ -154,6 +154,15 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* max_dpi{ new WidgetWithLabel{ "&Max DPI", max_dpi_spin_box } };
     max_dpi->setToolTip("Requires rerunning cropper");
 
+    auto* card_order{ new ComboBoxWithLabel{
+        "&Card Sorting",
+        g_Cfg.m_CardOrder } };
+    card_order->GetWidget()->setToolTip("Determines how cards are sorted in the pdf and card grid.");
+
+    auto* card_order_direction{ new ComboBoxWithLabel{
+        "&Sort Direction",
+        g_Cfg.m_CardOrderDirection } };
+
     const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
     if (g_Cfg.m_MaxWorkerThreads >= ideal_thread_count)
     {
@@ -189,6 +198,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(color_cube);
     layout->addWidget(preview_width);
     layout->addWidget(max_dpi);
+    layout->addWidget(card_order);
+    layout->addWidget(card_order_direction);
     layout->addWidget(max_worker_threads);
     layout->addWidget(paper_sizes);
     layout->addWidget(themes);
@@ -289,6 +300,26 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         }
     };
 
+    auto change_card_order{
+        [this](const QString& t)
+        {
+            g_Cfg.m_CardOrder = magic_enum::enum_cast<CardOrder>(t.toStdString())
+                                    .value_or(CardOrder::Alphabetical);
+            SaveConfig(g_Cfg);
+            CardOrderChanged();
+        }
+    };
+
+    auto change_card_order_direction{
+        [this](const QString& t)
+        {
+            g_Cfg.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(t.toStdString())
+                                             .value_or(CardOrderDirection::Ascending);
+            SaveConfig(g_Cfg);
+            CardOrderDirectionChanged();
+        }
+    };
+
     auto change_max_worker_threads{
         [this](double v)
         {
@@ -371,6 +402,14 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_max_dpi);
+    QObject::connect(card_order->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_card_order);
+    QObject::connect(card_order_direction->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     this,
+                     change_card_order_direction);
     QObject::connect(max_worker_threads_spin_box,
                      &QDoubleSpinBox::valueChanged,
                      this,

@@ -16,6 +16,42 @@
 
 #include <ppp/project/image_ops.hpp>
 
+static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
+{
+    switch (g_Cfg.m_CardOrder)
+    {
+    case CardOrder::Alphabetical:
+        switch (g_Cfg.m_CardOrderDirection)
+        {
+        case CardOrderDirection::Ascending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_Name < rhs.m_Name;
+            };
+        case CardOrderDirection::Descending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_Name > rhs.m_Name;
+            };
+        }
+    case CardOrder::Chronological:
+        switch (g_Cfg.m_CardOrderDirection)
+        {
+        case CardOrderDirection::Ascending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_TimeAdded > rhs.m_TimeAdded;
+            };
+        case CardOrderDirection::Descending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_TimeAdded < rhs.m_TimeAdded;
+            };
+        }
+    }
+    std::unreachable();
+}
+
 Project::~Project()
 {
     // Save preview cache, in case we didn't finish generating previews we want some partial work saved
@@ -524,6 +560,16 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
     return 0;
 }
 
+void Project::CardOrderChanged()
+{
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+}
+
+void Project::CardOrderDirectionChanged()
+{
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+}
+
 void Project::RestoreCardsOrder()
 {
     m_Data.m_CardsList.clear();
@@ -643,19 +689,13 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         m_Data.m_FirstCardAdded = time_point_to_s(clock_t::now());
     }
 
-    auto insert_at{
-        std::ranges::upper_bound(m_Data.m_Cards,
-                                 card_name,
-                                 {},
-                                 &CardInfo::m_Name)
-    };
-    auto new_card_it{
-        m_Data.m_Cards.insert(insert_at,
-                              CardInfo{ .m_Name{ card_name } })
-    };
+    const auto now{ time_point_to_s(clock_t::now()) };
+    const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
 
-    auto& new_card{ *new_card_it };
-
+    CardInfo new_card{
+        .m_Name{ card_name },
+        .m_TimeAdded{ since_first_card },
+    };
     if (card_name.string().starts_with("__"))
     {
         new_card.m_Num = 0;
@@ -667,11 +707,17 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         new_card.m_Hidden = 0;
     }
 
-    const auto now{ time_point_to_s(clock_t::now()) };
-    const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
-    new_card.m_TimeAdded = since_first_card;
+    auto insert_at{
+        std::ranges::upper_bound(m_Data.m_Cards,
+                                 new_card,
+                                 GetSortFunction())
+    };
+    auto new_card_it{
+        m_Data.m_Cards
+            .insert(insert_at, std::move(new_card))
+    };
 
-    return new_card;
+    return *new_card_it;
 }
 
 CardInfo& Project::PutCard(CardInfo card)

@@ -146,6 +146,9 @@ class Project : public QObject
     uint32_t IncrementCardCount(const fs::path& card_name);
     uint32_t DecrementCardCount(const fs::path& card_name);
 
+    void CardOrderChanged();
+    void CardOrderDirectionChanged();
+
     void RestoreCardsOrder();
     void ReorderCards(size_t from, size_t to);
 

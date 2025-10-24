@@ -978,6 +978,22 @@ void PrintPreview::Refresh()
     verticalScrollBar()->setValue(current_scroll);
 }
 
+void PrintPreview::CardOrderChanged()
+{
+    if (!m_Project.IsManuallySorted())
+    {
+        Refresh();
+    }
+}
+
+void PrintPreview::CardOrderDirectionChanged()
+{
+    if (!m_Project.IsManuallySorted())
+    {
+        Refresh();
+    }
+}
+
 void PrintPreview::resizeEvent(QResizeEvent* event)
 {
     QScrollArea::resizeEvent(event);

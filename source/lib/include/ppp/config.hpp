@@ -8,6 +8,18 @@
 #include <ppp/units.hpp>
 #include <ppp/util.hpp>
 
+enum class CardOrder
+{
+    Alphabetical,
+    Chronological,
+};
+
+enum class CardOrderDirection
+{
+    Ascending,
+    Descending,
+};
+
 enum class PdfBackend
 {
     LibHaru,
@@ -36,6 +48,8 @@ struct Config
     bool m_EnableFancyUncrop{ true };
     Pixel m_BasePreviewWidth{ 248_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
+    CardOrder m_CardOrder{ CardOrder::Alphabetical };
+    CardOrderDirection m_CardOrderDirection{ CardOrderDirection::Ascending };
     uint32_t m_MaxWorkerThreads{ 16 };
     uint32_t m_DisplayColumns{ 5 };
     std::string m_DefaultCardSize{ "Standard" };
