@@ -811,6 +811,11 @@ PrintPreview::PrintPreview(const Project& project)
 
 void PrintPreview::Refresh()
 {
+    if (!isVisible())
+    {
+        return;
+    }
+
     const auto current_scroll{ verticalScrollBar()->value() };
     if (auto* current_widget{ widget() })
     {

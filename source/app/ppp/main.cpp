@@ -235,6 +235,10 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
 
+        QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::Refresh);
+        QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::Refresh);
+        QObject::connect(&card_provider, &CardProvider::CardRenamed, print_preview, &PrintPreview::Refresh);
+
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(print_options, &PrintOptionsWidget::PageSizeChanged, print_preview, &PrintPreview::Refresh);
         QObject::connect(print_options, &PrintOptionsWidget::MarginsChanged, print_preview, &PrintPreview::Refresh);
