@@ -5,11 +5,25 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#ifdef _WIN32
+#include "Windows.h"
+#endif
+
 CardProvider::CardProvider(const Project& project)
     : m_Project{ project }
     , m_ImageDir{ project.m_Data.m_ImageDir }
 {
-    m_Watcher.addWatch(m_ImageDir.string(), this, false);
+    m_Watcher.addWatch(m_ImageDir.string(),
+                       this,
+                       false,
+                       {
+#ifdef _WIN32
+                           efsw::WatcherOption{
+                               efsw::Option::WinNotifyFilter,
+                               FILE_NOTIFY_CHANGE_FILE_NAME,
+                           },
+#endif
+                       });
 }
 
 void CardProvider::Start()
