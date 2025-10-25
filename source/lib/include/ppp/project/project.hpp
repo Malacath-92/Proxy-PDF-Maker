@@ -25,7 +25,7 @@ struct CardInfo
 
     Image::Rotation m_Rotation{ Image::Rotation::None };
 
-    std::chrono::seconds m_TimeAdded{};
+    fs::file_time_type m_LastWriteTime{};
 
     bool m_Transient{ false };
 };
@@ -127,6 +127,7 @@ class Project : public QObject
     void CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
+    void CardModified(const fs::path& card_name);
 
     bool HasCard(const fs::path& card_name) const;
     const CardInfo* FindCard(const fs::path& card_name) const;
@@ -228,7 +229,6 @@ class Project : public QObject
         fs::path m_ImageCache{ "images/crop/preview.cache" };
 
         // List of all cards
-        std::optional<std::chrono::seconds> m_FirstCardAdded{ std::nullopt };
         CardContainer m_Cards{};
         ImgDict m_Previews{};
         ImagePreview m_FallbackPreview{};

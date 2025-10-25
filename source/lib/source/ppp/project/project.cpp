@@ -40,16 +40,29 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
         case CardOrderDirection::Ascending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
             {
-                return lhs.m_TimeAdded > rhs.m_TimeAdded;
+                return lhs.m_LastWriteTime > rhs.m_LastWriteTime;
             };
         case CardOrderDirection::Descending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
             {
-                return lhs.m_TimeAdded < rhs.m_TimeAdded;
+                return lhs.m_LastWriteTime < rhs.m_LastWriteTime;
             };
         }
     }
     std::unreachable();
+}
+
+fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
+{
+    try
+    {
+        return fs::last_write_time(file_path);
+    }
+    catch (const std::exception& e)
+    {
+        LogError("Failed getting last write time: {}", e.what());
+        return {};
+    }
 }
 
 Project::~Project()
@@ -86,13 +99,6 @@ void Project::Load(const fs::path& json_path)
         m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
-        if (json.contains("first_card_added"))
-        {
-            m_Data.m_FirstCardAdded = std::chrono::seconds{
-                json["first_card_added"].get<uint64_t>()
-            };
-        }
-
         for (const nlohmann::json& card_json : json["cards"])
         {
             CardInfo& card{ PutCard(card_json["name"]) };
@@ -108,12 +114,6 @@ void Project::Load(const fs::path& json_path)
             {
                 card.m_Rotation = magic_enum::enum_cast<Image::Rotation>(card_json["rotation"].get_ref<const std::string&>())
                                       .value_or(Image::Rotation::None);
-            }
-            if (card_json.contains("time_added"))
-            {
-                card.m_TimeAdded = std::chrono::seconds{
-                    card_json["time_added"].get<uint64_t>()
-                };
             }
         }
 
@@ -289,12 +289,6 @@ void Project::Dump(const fs::path& json_path) const
         json["image_dir"] = m_Data.m_ImageDir.string();
         json["img_cache"] = m_Data.m_ImageCache.string();
 
-        if (m_Data.m_FirstCardAdded.has_value())
-        {
-            json["first_card_added"] =
-                static_cast<uint64_t>(m_Data.m_FirstCardAdded->count());
-        }
-
         std::vector<nlohmann::json> cards;
         for (const auto& card : m_Data.m_Cards)
         {
@@ -308,7 +302,6 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["backside_short_edge"] = card.m_BacksideShortEdge;
                 card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
                 card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
-                card_json["time_added"] = static_cast<uint64_t>(card.m_TimeAdded.count());
             }
         }
         json["cards"] = cards;
@@ -637,6 +630,8 @@ void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
 {
     if (auto old_card{ EatCard(old_card_name) })
     {
+        old_card.value().m_Name = new_card_name;
+        old_card.value().m_LastWriteTime = TryGetLastWriteTime(m_Data.m_ImageDir / new_card_name);
         PutCard(std::move(old_card).value());
     }
 
@@ -644,6 +639,14 @@ void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     {
         m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
         m_Data.m_Previews.erase(old_card_name);
+    }
+}
+
+void Project::CardModified(const fs::path& card_name)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        card->m_LastWriteTime = TryGetLastWriteTime(m_Data.m_ImageDir / card_name);
     }
 }
 
@@ -677,24 +680,9 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         return *existing_card;
     }
 
-    static constexpr auto time_point_to_s{
-        [](clock_t::time_point time_point)
-        {
-            return std::chrono::duration_cast<std::chrono::seconds>(
-                time_point.time_since_epoch());
-        }
-    };
-    if (!m_Data.m_FirstCardAdded.has_value())
-    {
-        m_Data.m_FirstCardAdded = time_point_to_s(clock_t::now());
-    }
-
-    const auto now{ time_point_to_s(clock_t::now()) };
-    const auto since_first_card{ now - m_Data.m_FirstCardAdded.value() };
-
     CardInfo new_card{
         .m_Name{ card_name },
-        .m_TimeAdded{ since_first_card },
+        .m_LastWriteTime{ TryGetLastWriteTime(m_Data.m_ImageDir / card_name) },
     };
     if (card_name.string().starts_with("__"))
     {

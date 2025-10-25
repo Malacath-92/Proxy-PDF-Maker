@@ -109,6 +109,7 @@ int main(int argc, char** argv)
     QObject::connect(&card_provider, &CardProvider::CardAdded, &project, &Project::CardAdded);
     QObject::connect(&card_provider, &CardProvider::CardRemoved, &project, &Project::CardRemoved);
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &project, &Project::CardRenamed);
+    QObject::connect(&card_provider, &CardProvider::CardModified, &project, &Project::CardModified);
     QObject::connect(&card_provider, &CardProvider::CardRenamed, &cropper, &Cropper::CardRenamed);
 
     QObject::connect(&card_provider, &CardProvider::CardAdded, &cropper, &Cropper::CardAdded);
