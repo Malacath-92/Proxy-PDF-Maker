@@ -628,17 +628,35 @@ void Project::CardRemoved(const fs::path& card_name)
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
 {
+    if (m_Data.m_Previews.contains(old_card_name))
+    {
+        m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
+        m_Data.m_Previews.erase(old_card_name);
+    }
+
     if (auto old_card{ EatCard(old_card_name) })
     {
         old_card.value().m_Name = new_card_name;
         old_card.value().m_LastWriteTime = TryGetLastWriteTime(m_Data.m_ImageDir / new_card_name);
         PutCard(std::move(old_card).value());
-    }
 
-    if (m_Data.m_Previews.contains(old_card_name))
-    {
-        m_Data.m_Previews[new_card_name] = std::move(m_Data.m_Previews.at(old_card_name));
-        m_Data.m_Previews.erase(old_card_name);
+        for (auto& other_card : m_Data.m_Cards)
+        {
+            if (other_card.m_Backside == old_card_name)
+            {
+                if (other_card.m_BacksideAutoAssigned == true)
+                {
+                    SetBacksideImage(other_card.m_Name, "");
+                    UnhideCard(new_card_name);
+                }
+                else
+                {
+                    other_card.m_Backside = new_card_name;
+                }
+            }
+        }
+        AutoMatchBackside(new_card_name);
+        std::ranges::replace(m_Data.m_CardsList, old_card_name, new_card_name);
     }
 }
 
