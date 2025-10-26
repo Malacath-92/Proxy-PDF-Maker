@@ -20,6 +20,8 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
 {
     switch (g_Cfg.m_CardOrder)
     {
+    case CardOrder::AsIs:
+        [[fallthrough]];
     case CardOrder::Alphabetical:
         switch (g_Cfg.m_CardOrderDirection)
         {
@@ -34,7 +36,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
                 return lhs.m_Name > rhs.m_Name;
             };
         }
-    case CardOrder::Chronological:
+    case CardOrder::ModifiedTime:
         switch (g_Cfg.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
@@ -555,12 +557,22 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
 
 void Project::CardOrderChanged()
 {
-    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    if (g_Cfg.m_CardOrder != CardOrder::AsIs)
+    {
+        std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    }
 }
 
 void Project::CardOrderDirectionChanged()
 {
-    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    if (g_Cfg.m_CardOrder == CardOrder::AsIs)
+    {
+        std::ranges::reverse(m_Data.m_Cards);
+    }
+    else
+    {
+        std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    }
 }
 
 void Project::RestoreCardsOrder()
@@ -713,10 +725,22 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         new_card.m_Hidden = 0;
     }
 
-    auto insert_at{
-        std::ranges::upper_bound(m_Data.m_Cards,
-                                 new_card,
-                                 GetSortFunction())
+    auto insert_at
+    {
+        [&]()
+        {
+            if (g_Cfg.m_CardOrder == CardOrder::AsIs)
+            {
+                if (g_Cfg.m_CardOrderDirection == CardOrderDirection::Ascending)
+                {
+                    return m_Data.m_Cards.end();
+                }
+                return m_Data.m_Cards.begin();
+            }
+            return std::ranges::upper_bound(m_Data.m_Cards,
+                                            new_card,
+                                            GetSortFunction());
+        }()
     };
     auto new_card_it{
         m_Data.m_Cards
