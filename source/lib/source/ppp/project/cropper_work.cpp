@@ -33,6 +33,8 @@ CropperWork::CropperWork(std::atomic_uint32_t& alive_cropper_work)
     : m_AliveCropperWork{ alive_cropper_work }
 {
     m_AliveCropperWork.fetch_add(1, std::memory_order_release);
+
+    setAutoDelete(false);
 }
 
 CropperWork::~CropperWork()
@@ -45,10 +47,25 @@ void CropperWork::Start()
     QThreadPool::globalInstance()->start(this, m_Priorty);
 }
 
+void CropperWork::Restart()
+{
+    if (!m_CancelRequested.load(std::memory_order_relaxed))
+    {
+        m_State.store(State::Waiting);
+        Finished(Conclusion::RestartRequested);
+    }
+    else
+    {
+        Finished(Conclusion::Cancelled);
+    }
+}
+
 void CropperWork::Cancel()
 {
     State expected{ State::Waiting };
     m_State.compare_exchange_strong(expected, State::Cancelled);
+
+    m_CancelRequested.store(true, std::memory_order_relaxed);
 }
 
 int CropperWork::Priority() const
@@ -223,12 +240,12 @@ void CropperCropWork::run()
     }
     catch (...)
     {
-        if (m_Retries < c_MaxRetries)
+        if (m_Retries.load(std::memory_order_relaxed) < c_MaxRetries)
         {
             // If user updated the file we may be reading it's still being written to,
             // Hopefully that's the only reason to end up here...
-            QThreadPool::globalInstance()->tryStart(this);
-            ++m_Retries;
+            m_Retries.fetch_add(1, std::memory_order_relaxed);
+            Restart();
         }
         else
         {
@@ -371,12 +388,12 @@ void CropperPreviewWork::run()
     }
     catch (...)
     {
-        if (m_Retries < c_MaxRetries)
+        if (m_Retries.load(std::memory_order_relaxed) < c_MaxRetries)
         {
             // If user updated the file we may be reading it's still being written to,
             // Hopefully that's the only reason to end up here...
-            QThreadPool::globalInstance()->tryStart(this);
-            ++m_Retries;
+            m_Retries.fetch_add(1, std::memory_order_relaxed);
+            Restart();
         }
         else
         {

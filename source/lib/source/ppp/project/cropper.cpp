@@ -202,6 +202,12 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                              this,
                              [this, card_name, crop_work](CropperWork::Conclusion conclusion)
                              {
+                                 if (conclusion == CropperWork::Conclusion::RestartRequested)
+                                 {
+                                     crop_work->Start();
+                                     return;
+                                 }
+
                                  if (m_CropWork.contains(card_name) &&
                                      m_CropWork[card_name] == crop_work)
                                  {
@@ -225,6 +231,8 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                                      };
                                      CropProgress(progress);
                                  }
+
+                                 crop_work->deleteLater();
                              });
 
             if (m_TotalCropWorkToDo == 0)
@@ -274,13 +282,21 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
             QObject::connect(preview_work,
                              &CropperPreviewWork::Finished,
                              this,
-                             [this, card_name, preview_work]()
+                             [this, card_name, preview_work](CropperWork::Conclusion conclusion)
                              {
+                                 if (conclusion == CropperWork::Conclusion::RestartRequested)
+                                 {
+                                     preview_work->Start();
+                                     return;
+                                 }
+
                                  if (m_PreviewWork.contains(card_name) &&
                                      m_PreviewWork[card_name] == preview_work)
                                  {
                                      m_PreviewWork.erase(card_name);
                                  }
+
+                                 preview_work->deleteLater();
                              });
 
             m_PreviewWork[card_name] = preview_work;

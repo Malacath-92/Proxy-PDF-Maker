@@ -20,6 +20,7 @@ class CropperWork : public QObject, public QRunnable
     ~CropperWork();
 
     void Start();
+    void Restart();
     void Cancel();
 
     int Priority() const;
@@ -30,6 +31,7 @@ class CropperWork : public QObject, public QRunnable
         Failure,
         Skipped,
         Cancelled,
+        RestartRequested,
     };
 
   public slots:
@@ -49,7 +51,7 @@ class CropperWork : public QObject, public QRunnable
     int m_Priorty{ 0 };
 
     inline static constexpr uint32_t c_MaxRetries{ 5 };
-    uint32_t m_Retries{ 0 };
+    std::atomic_uint32_t m_Retries{ 0 };
 
   private:
     enum class State
@@ -60,6 +62,7 @@ class CropperWork : public QObject, public QRunnable
         Cancelled,
     };
     std::atomic<State> m_State{ State::Waiting };
+    std::atomic_bool m_CancelRequested{ false };
 };
 
 class CropperCropWork : public CropperWork
