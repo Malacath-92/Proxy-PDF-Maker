@@ -62,7 +62,7 @@ Next select the `Print & Cut` option, enable registration marks and set them up 
     <sup>6</sup> Print & Cut settings for the sample project
 </p>
 
-While we are here we can also disable the outer-most cutting line. Right-click the outlines and choose `Release Compound Path` and/or `Ungroup`<sup>7</sup>, then select only the outer guides and delete them. Now select all the guides again, right-clock and choose `Make Compound Path`.
+While we are here we can also disable the outer-most cutting line. Right-click the outlines and choose `Release Compound Path` if you imported an `.svg` or `Ungroup` if you imported a `.dxf`<sup>7</sup>, then select only the outer guides and delete them. Now select all the guides again, right-clock and choose `Make Compound Path`.
 
 <p align="center">
     <img src="./images/silhouette_release.png" alt="Release Compound Path"/>
