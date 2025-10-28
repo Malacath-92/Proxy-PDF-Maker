@@ -20,7 +20,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
 {
     switch (g_Cfg.m_CardOrder)
     {
-    case CardOrder::AsIs:
+    case CardOrder::LastAdded:
         [[fallthrough]];
     case CardOrder::Alphabetical:
         switch (g_Cfg.m_CardOrderDirection)
@@ -36,7 +36,8 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
                 return lhs.m_Name > rhs.m_Name;
             };
         }
-    case CardOrder::ModifiedTime:
+        std::unreachable();
+    case CardOrder::LastModified:
         switch (g_Cfg.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
@@ -557,7 +558,7 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
 
 void Project::CardOrderChanged()
 {
-    if (g_Cfg.m_CardOrder != CardOrder::AsIs)
+    if (g_Cfg.m_CardOrder != CardOrder::LastAdded)
     {
         std::ranges::sort(m_Data.m_Cards, GetSortFunction());
     }
@@ -565,7 +566,7 @@ void Project::CardOrderChanged()
 
 void Project::CardOrderDirectionChanged()
 {
-    if (g_Cfg.m_CardOrder == CardOrder::AsIs)
+    if (g_Cfg.m_CardOrder == CardOrder::LastAdded)
     {
         std::ranges::reverse(m_Data.m_Cards);
     }
@@ -729,7 +730,7 @@ CardInfo& Project::PutCard(const fs::path& card_name)
     {
         [&]()
         {
-            if (g_Cfg.m_CardOrder == CardOrder::AsIs)
+            if (g_Cfg.m_CardOrder == CardOrder::LastAdded)
             {
                 if (g_Cfg.m_CardOrderDirection == CardOrderDirection::Ascending)
                 {

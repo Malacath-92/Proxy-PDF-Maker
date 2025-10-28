@@ -11,8 +11,8 @@
 enum class CardOrder
 {
     Alphabetical,
-    ModifiedTime,
-    AsIs,
+    LastModified,
+    LastAdded,
 };
 
 enum class CardOrderDirection
