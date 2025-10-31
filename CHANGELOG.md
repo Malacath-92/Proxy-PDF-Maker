@@ -6,6 +6,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-??-11
+
+### Added
+- A toast notification will now show when a new version is available to download.
+- A toast notification will now show when the cropper has finished working, giving details on what work was done.
+- A toast notification will now show when there were errors when rendering a pdf.
+- A toast notification will now show when the MtG Downloader plugin finished downloading.
+- The backside offset option has been extended to also allow for vertical alignment.
+- On common request, a donation option was added to the README.
+- A button that allows rotating cards was added.
+- There are now two global options to choose how cards are sorted by default.
+- When hovering a card image it will now show the name of the card, with some exceptions.
+
+### Changed
+- The default output format is now set to Jpg at 100% quality.
+- The base pdf is now also offset for backsides, which allows e.g. cutting from the back when using an autoplotter.
+- When the MtG Downloader is done, the `Cancel` button will be relabled to `Close` to reduce confusion.
+- The threshold for showing the bad aspect ratio warning was increased, reducing how often users get the warning when it's so miniscule they likely won't be able to notice distortion.
+- The bad aspect ratio warning was changed to a bad rotation warning in cases where the ratio is the inverse of the expected ratio.
+- Cards with a bad rotation are shown in the card grid, even if they would otherwise be hidden.
+
+### Fixed
+- The window title now shows the correct name.
+- Only 16 log files will be kept now, as opposed to the previous 256.
+- When writing a .dxf file all cards will now be in the right positions.
+- When writing a .dxf file a header with units will be included that will allow some apps to import the file with correct sizes.
+- The print preview will now update when cards are added or removed at runtime.
+- The app will no longer sometimes crash when a crop job needs to retry.
+
 ## [0.15.0] - 2025-07-10
 
 ### Added
