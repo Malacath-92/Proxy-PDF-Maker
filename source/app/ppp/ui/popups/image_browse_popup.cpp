@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QApplication>
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -241,7 +242,9 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
                                    std::span<const fs::path> ignored_images)
     : PopupBase{ parent }
 {
-    m_AutoCenter = true;
+    m_AutoCenter = false;
+    m_AutoCenterOnShow = false;
+
     setWindowFlags(Qt::WindowType::Dialog);
     setWindowTitle("Choose Image");
 
@@ -307,6 +310,11 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
                          m_Grid = nullptr;
                          close();
                      });
+
+    const auto parent_rect{ parent != nullptr
+                                ? parent->rect()
+                                : QApplication::primaryScreen()->geometry() };
+    resize(parent_rect.width() - 100, parent_rect.height() - 100);
 }
 
 std::optional<fs::path> ImageBrowsePopup::Show()

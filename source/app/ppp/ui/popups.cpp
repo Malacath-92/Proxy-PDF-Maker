@@ -114,7 +114,10 @@ void PopupBase::showEvent(QShowEvent* event)
 {
     QDialog::showEvent(event);
 
-    Recenter();
+    if (m_AutoCenterOnShow)
+    {
+        Recenter();
+    }
 }
 
 void PopupBase::resizeEvent(QResizeEvent* event)

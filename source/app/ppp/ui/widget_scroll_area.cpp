@@ -242,7 +242,7 @@ class CardWidget : public QFrame
             auto backside_choose{
                 [=, this, &project]()
                 {
-                    ImageBrowsePopup image_browser{ nullptr, project, { &m_CardName, 1 } };
+                    ImageBrowsePopup image_browser{ window(), project, { &m_CardName, 1 } };
                     image_browser.setWindowTitle(QString{ "Choose backside for %1" }.arg(ToQString(m_CardName)));
                     if (const auto backside_choice{ image_browser.Show() })
                     {
