@@ -1,10 +1,12 @@
 #include <ppp/ui/widget_scroll_area.hpp>
 
+#include <QAction>
 #include <QCheckBox>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QIntValidator>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollBar>
@@ -42,16 +44,11 @@ class CardWidget : public QFrame
         auto* increment_button{ new QPushButton{ "+" } };
         increment_button->setToolTip("Add one");
 
-        auto* rotate_button{ new QPushButton{} };
-        rotate_button->setIcon(QIcon{ QPixmap{ ":/res/rotate.png" } });
-        rotate_button->setToolTip("Rotate image by 90 degrees");
-
         auto* number_layout{ new QHBoxLayout };
         number_layout->addStretch();
         number_layout->addWidget(decrement_button);
         number_layout->addWidget(number_edit);
         number_layout->addWidget(increment_button);
-        number_layout->addWidget(rotate_button);
         number_layout->addStretch();
         number_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -71,6 +68,16 @@ class CardWidget : public QFrame
         }
         setLayout(this_layout);
 
+        m_FixRatioExpandAction = new QAction{ "Fix Ratio: Expand", this };
+        m_FixRatioExpandAction->setIcon(QIcon{ QPixmap{ ":/res/expand.png" } });
+        m_FixRatioStretchAction = new QAction{ "Fix Ratio: Stretch", this };
+        m_FixRatioStretchAction->setIcon(QIcon{ QPixmap{ ":/res/stretch.png" } });
+
+        m_RotateLeftAction = new QAction{ "Rotate Left", this };
+        m_RotateLeftAction->setIcon(QIcon{ QPixmap{ ":/res/untap.png" } });
+        m_RotateRightAction = new QAction{ "Rotate Right", this };
+        m_RotateRightAction->setIcon(QIcon{ QPixmap{ ":/res/tap.png" } });
+
         QObject::connect(number_edit,
                          &QLineEdit::editingFinished,
                          this,
@@ -83,10 +90,24 @@ class CardWidget : public QFrame
                          &QPushButton::clicked,
                          this,
                          std::bind_front(&CardWidget::IncrementNumber, this, std::ref(project)));
-        QObject::connect(rotate_button,
-                         &QPushButton::clicked,
+
+        //QObject::connect(m_FixRatioExpandAction,
+        //                 &QAction::triggered,
+        //                 this,
+        //                 std::bind_front(&CardWidget::RotateImageLeft, this, std::ref(project)));
+        //QObject::connect(m_FixRatioStretchAction,
+        //                 &QAction::triggered,
+        //                 this,
+        //                 std::bind_front(&CardWidget::RotateImageRight, this, std::ref(project)));
+
+        QObject::connect(m_RotateLeftAction,
+                         &QAction::triggered,
                          this,
-                         std::bind_front(&CardWidget::RotateImage, this, std::ref(project)));
+                         std::bind_front(&CardWidget::RotateImageLeft, this, std::ref(project)));
+        QObject::connect(m_RotateRightAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardWidget::RotateImageRight, this, std::ref(project)));
 
         m_ImageWidget = card_widget;
         m_NumberEdit = number_edit;
@@ -176,9 +197,31 @@ class CardWidget : public QFrame
     }
 
   private:
+    void CardContextMenuRequested(QPoint pos)
+    {
+        auto* menu{ new QMenu{ this } };
+        if (m_FixRatioExpandAction != nullptr)
+        {
+            menu->addAction(m_FixRatioExpandAction);
+            menu->addAction(m_FixRatioStretchAction);
+            menu->addSeparator();
+        }
+        menu->addAction(m_RotateLeftAction);
+        menu->addAction(m_RotateRightAction);
+        menu->popup(pos);
+    }
+
     QWidget* MakeCardWidget(Project& project)
     {
         auto* card_image{ new CardImage{ m_CardName, project, CardImage::Params{} } };
+        card_image->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+        QObject::connect(card_image,
+                         &QWidget::customContextMenuRequested,
+                         this,
+                         [this, card_image](QPoint pos)
+                         {
+                             CardContextMenuRequested(card_image->mapToGlobal(pos));
+                         });
 
         if (m_BacksideEnabled)
         {
@@ -291,17 +334,32 @@ class CardWidget : public QFrame
         ApplyNumber(project, number);
     }
 
-    virtual void RotateImage(Project& project)
+    virtual void RotateImageLeft(Project& project)
     {
-        if (project.RotateCard(m_CardName))
+        if (project.RotateCardLeft(m_CardName))
         {
             if (auto* image{ dynamic_cast<CardImage*>(m_ImageWidget) })
             {
-                image->RotateImage();
+                image->RotateImageLeft();
             }
             else if (auto* stack{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
             {
-                stack->RotateImage();
+                stack->RotateImageLeft();
+            }
+        }
+    }
+
+    virtual void RotateImageRight(Project& project)
+    {
+        if (project.RotateCardRight(m_CardName))
+        {
+            if (auto* image{ dynamic_cast<CardImage*>(m_ImageWidget) })
+            {
+                image->RotateImageRight();
+            }
+            else if (auto* stack{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
+            {
+                stack->RotateImageRight();
             }
         }
     }
@@ -323,6 +381,12 @@ class CardWidget : public QFrame
     QLineEdit* m_NumberEdit{ nullptr };
     QWidget* m_NumberArea{ nullptr };
     QWidget* m_ExtraOptions{ nullptr };
+
+    QAction* m_FixRatioExpandAction{ nullptr };
+    QAction* m_FixRatioStretchAction{ nullptr };
+
+    QAction* m_RotateLeftAction{ nullptr };
+    QAction* m_RotateRightAction{ nullptr };
 };
 
 class DummyCardWidget : public CardWidget
@@ -349,8 +413,11 @@ class DummyCardWidget : public CardWidget
     // clang-format off
     virtual void EditNumber(Project&) override {}
     virtual void IncrementNumber(Project&) override {}
-    virtual void DecrementNumber(Project&)  override{}
-    virtual void SetShortEdge(Project&, Qt::CheckState)  override{}
+    virtual void DecrementNumber(Project&)  override {}
+    virtual void SetShortEdge(Project&, Qt::CheckState)  override {}
+
+    virtual void RotateImageLeft(Project&)  override {}
+    virtual void RotateImageRight(Project&)  override {}
     // clang-format on
 };
 

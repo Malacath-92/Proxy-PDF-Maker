@@ -26,7 +26,8 @@ class CardImage : public QLabel
 
     void Refresh(const fs::path& card_name, const Project& project, Params params);
 
-    void RotateImage();
+    void RotateImageLeft();
+    void RotateImageRight();
 
     const fs::path& GetCardName() const
     {
@@ -80,7 +81,8 @@ class StackedCardBacksideView : public QStackedWidget
 
     void RefreshBackside(QWidget* new_backside);
 
-    void RotateImage();
+    void RotateImageLeft();
+    void RotateImageRight();
 
     virtual bool hasHeightForWidth() const override
     {

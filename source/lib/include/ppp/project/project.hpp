@@ -140,7 +140,8 @@ class Project : public QObject
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
-    bool RotateCard(const fs::path& card_name);
+    bool RotateCardLeft(const fs::path& card_name);
+    bool RotateCardRight(const fs::path& card_name);
 
     uint32_t GetCardCount(const fs::path& card_name) const;
     uint32_t SetCardCount(const fs::path& card_name, uint32_t num);

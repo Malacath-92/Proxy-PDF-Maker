@@ -476,7 +476,20 @@ bool Project::UnhideCard(const fs::path& card_name)
     return false;
 }
 
-bool Project::RotateCard(const fs::path& card_name)
+bool Project::RotateCardLeft(const fs::path& card_name)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        card->m_Rotation = Image::Rotation{
+            (std::to_underlying(card->m_Rotation) + 3) % 4
+        };
+        CardRotationChanged(card_name, card->m_Rotation);
+        return true;
+    }
+    return false;
+}
+
+bool Project::RotateCardRight(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
     {

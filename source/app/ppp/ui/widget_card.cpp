@@ -129,7 +129,18 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
 }
 
-void CardImage::RotateImage()
+void CardImage::RotateImageLeft()
+{
+    const auto pixmap{ this->pixmap() };
+    const auto rotated{
+        pixmap
+            .transformed(QTransform().rotate(-90))
+            .scaled(pixmap.size())
+    };
+    setPixmap(rotated);
+}
+
+void CardImage::RotateImageRight()
 {
     const auto pixmap{ this->pixmap() };
     const auto rotated{
@@ -387,9 +398,14 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     RefreshSizes(rect().size());
 }
 
-void StackedCardBacksideView::RotateImage()
+void StackedCardBacksideView::RotateImageLeft()
 {
-    m_Image->RotateImage();
+    m_Image->RotateImageLeft();
+}
+
+void StackedCardBacksideView::RotateImageRight()
+{
+    m_Image->RotateImageRight();
 }
 
 int StackedCardBacksideView::heightForWidth(int width) const
