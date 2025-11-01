@@ -46,7 +46,7 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, Params p
         setLayout(layout);
     }
 
-    setStyleSheet("background-color: transparent;");
+    setStyleSheet("QLabel{ background-color: transparent; }");
     Refresh(card_name, project, params);
 }
 

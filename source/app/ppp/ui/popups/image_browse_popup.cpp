@@ -46,7 +46,7 @@ class SelectableCard : public QFrame
     void Select()
     {
         m_Selected = true;
-        setStyleSheet("background-color: purple;");
+        setStyleSheet("QFrame{ background-color: purple; }");
     }
 
     void Unselect()
@@ -54,7 +54,7 @@ class SelectableCard : public QFrame
         m_Selected = false;
         if (!underMouse())
         {
-            setStyleSheet("background-color: transparent;");
+            setStyleSheet("QFrame{ background-color: transparent; }");
         }
     }
 
@@ -67,7 +67,7 @@ class SelectableCard : public QFrame
         QFrame::enterEvent(event);
         if (!m_Selected)
         {
-            setStyleSheet("background-color: purple;");
+            setStyleSheet("QFrame{ background-color: purple; }");
         }
     }
 
@@ -76,7 +76,7 @@ class SelectableCard : public QFrame
         QFrame::leaveEvent(event);
         if (!m_Selected)
         {
-            setStyleSheet("background-color: transparent;");
+            setStyleSheet("QFrame{ background-color: transparent; }");
         }
     }
 

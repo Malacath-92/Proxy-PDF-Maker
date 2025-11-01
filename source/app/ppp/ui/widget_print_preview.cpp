@@ -660,7 +660,7 @@ class ArrowWidget : public QFrame
     ArrowWidget(ArrowDir dir)
         : m_Dir{ dir }
     {
-        setStyleSheet("background-color: purple;");
+        setStyleSheet("QFrame{ background-color: purple; }");
 
         setFrameStyle(QFrame::Shape::Panel | QFrame::Shadow::Sunken);
         setLineWidth(5);
@@ -832,7 +832,7 @@ void PrintPreview::Refresh()
 
         auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
         empty_label->setAlignment(Qt::AlignCenter);
-        empty_label->setStyleSheet("QLabel { color : red; font-size: 14px; }");
+        empty_label->setStyleSheet("QLabel{ color: red; font-size: 14px; }");
 
         auto* empty_layout{ new QVBoxLayout };
         empty_layout->setSpacing(15);
