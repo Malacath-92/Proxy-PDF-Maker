@@ -57,10 +57,6 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
 {
     ClearChildren();
 
-    m_BadAspectRatio = project.HasBadAspectRatio(m_CardName);
-    m_BleedType = project.GetCardBleedType(m_CardName);
-    m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(m_CardName);
-
     setToolTip(ToQString(card_name));
 
     m_CardName = card_name;
@@ -72,6 +68,10 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     m_CardRatio = m_CardSize.x / m_CardSize.y;
     m_BleedEdge = params.m_BleedEdge;
     m_CornerRadius = project.CardCornerRadius();
+
+    m_BadAspectRatio = project.HasBadAspectRatio(card_name);
+    m_BleedType = project.GetCardBleedType(card_name);
+    m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(card_name);
 
     const bool has_image{ project.HasPreview(card_name) };
     const bool has_bleed_edge{ params.m_BleedEdge > 0_mm };
