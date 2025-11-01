@@ -7,6 +7,8 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/project/card_info.hpp>
+
 struct ImageParameters
 {
     PixelDensity m_DPI{ 0_dpi };
@@ -14,6 +16,8 @@ struct ImageParameters
     Size m_CardSize{ 0_mm, 0_mm };
     Length m_FullBleedEdge{ 0_mm };
     Image::Rotation m_Rotation{ Image::Rotation::None };
+    BleedType m_BleedType{ BleedType::Default };
+    BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
     bool m_WillWriteOutput{ true };
 };
 

@@ -294,9 +294,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         [this, &project](const QString& pattern)
         {
             static constexpr const char c_WarningStyle[]{
+                "QLineEdit{"
                 "border-style: solid;"
                 "border-width: 2px;"
                 "border-color: red"
+                "}"
             };
             if (pattern.count('$') != 1)
             {

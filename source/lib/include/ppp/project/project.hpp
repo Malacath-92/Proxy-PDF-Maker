@@ -12,23 +12,7 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
-struct CardInfo
-{
-    fs::path m_Name{};
-
-    uint32_t m_Num{ 1 };
-    uint32_t m_Hidden{ 0 };
-
-    fs::path m_Backside{};
-    bool m_BacksideShortEdge{ false };
-    bool m_BacksideAutoAssigned{ false };
-
-    Image::Rotation m_Rotation{ Image::Rotation::None };
-
-    fs::file_time_type m_LastWriteTime{};
-
-    bool m_Transient{ false };
-};
+#include <ppp/project/card_info.hpp>
 
 using CardContainer = std::vector<CardInfo>;
 using CardSorting = std::vector<fs::path>;
@@ -140,8 +124,15 @@ class Project : public QObject
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
+    Image::Rotation GetCardRotation(const fs::path& card_name) const;
     bool RotateCardLeft(const fs::path& card_name);
     bool RotateCardRight(const fs::path& card_name);
+
+    BleedType GetCardBleedType(const fs::path& card_name) const;
+    bool SetCardBleedType(const fs::path& card_name, BleedType bleed_type);
+
+    BadAspectRatioHandling GetCardBadAspectRatioHandling(const fs::path& card_name) const;
+    bool SetCardBadAspectRatioHandling(const fs::path& card_name, BadAspectRatioHandling ratio_handling);
 
     uint32_t GetCardCount(const fs::path& card_name) const;
     uint32_t SetCardCount(const fs::path& card_name, uint32_t num);
@@ -217,6 +208,8 @@ class Project : public QObject
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
+    void CardBleedTypeChanged(const fs::path& card_name, BleedType bleed_type);
+    void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);
 
   public:
     using clock_t = std::chrono::high_resolution_clock;

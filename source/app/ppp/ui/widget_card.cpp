@@ -1,7 +1,9 @@
 #include <ppp/ui/widget_card.hpp>
 
+#include <QAction>
 #include <QCommonStyle>
 #include <QHBoxLayout>
+#include <QMenu>
 #include <QMovie>
 #include <QPainter>
 #include <QPainterPath>
@@ -14,6 +16,7 @@
 
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
@@ -53,6 +56,10 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, Params p
 void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
 {
     ClearChildren();
+
+    m_BadAspectRatio = project.HasBadAspectRatio(m_CardName);
+    m_BleedType = project.GetCardBleedType(m_CardName);
+    m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(m_CardName);
 
     setToolTip(ToQString(card_name));
 
@@ -129,26 +136,74 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
 }
 
-void CardImage::RotateImageLeft()
+void CardImage::EnableContextMenu(bool enable, Project& project)
 {
-    const auto pixmap{ this->pixmap() };
-    const auto rotated{
-        pixmap
-            .transformed(QTransform().rotate(-90))
-            .scaled(pixmap.size())
-    };
-    setPixmap(rotated);
-}
+    if (enable && contextMenuPolicy() != Qt::ContextMenuPolicy::CustomContextMenu)
+    {
+        setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+        QObject::connect(this,
+                         &QWidget::customContextMenuRequested,
+                         this,
+                         &CardImage::ContextMenuRequested);
 
-void CardImage::RotateImageRight()
-{
-    const auto pixmap{ this->pixmap() };
-    const auto rotated{
-        pixmap
-            .transformed(QTransform().rotate(90))
-            .scaled(pixmap.size())
-    };
-    setPixmap(rotated);
+        m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
+        // m_InferBleedAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
+        m_ForceFullBleedAction = new QAction{ "Assume Full Bleed", this };
+        // m_ForceFullBleedAction->setIcon(QIcon{ QPixmap{ ":/res/expand.png" } });
+        m_ForceNoBleedAction = new QAction{ "Assume No Bleed", this };
+        // m_ForceNoBleedAction->setIcon(QIcon{ QPixmap{ ":/res/stretch.png" } });
+
+        m_FixRatioIgnoreAction = new QAction{ "Reset Aspect Ratio", this };
+        m_FixRatioIgnoreAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
+        m_FixRatioExpandAction = new QAction{ "Fix Aspect Ratio: Expand", this };
+        m_FixRatioExpandAction->setIcon(QIcon{ QPixmap{ ":/res/expand.png" } });
+        m_FixRatioStretchAction = new QAction{ "Fix Aspect Ratio: Stretch", this };
+        m_FixRatioStretchAction->setIcon(QIcon{ QPixmap{ ":/res/stretch.png" } });
+
+        m_RotateLeftAction = new QAction{ "Rotate Left", this };
+        m_RotateLeftAction->setIcon(QIcon{ QPixmap{ ":/res/untap.png" } });
+        m_RotateRightAction = new QAction{ "Rotate Right", this };
+        m_RotateRightAction->setIcon(QIcon{ QPixmap{ ":/res/tap.png" } });
+
+        QObject::connect(m_InferBleedAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::Infer));
+        QObject::connect(m_ForceFullBleedAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::FullBleed));
+        QObject::connect(m_ForceNoBleedAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::NoBleed));
+
+        QObject::connect(m_FixRatioIgnoreAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Ignore));
+        QObject::connect(m_FixRatioExpandAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Expand));
+        QObject::connect(m_FixRatioStretchAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Stretch));
+
+        QObject::connect(m_RotateLeftAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::RotateImageLeft, this, std::ref(project)));
+        QObject::connect(m_RotateRightAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::RotateImageRight, this, std::ref(project)));
+    }
+    else if (!enable)
+    {
+        LogError("Disabling context menu currently not supported.");
+    }
 }
 
 int CardImage::heightForWidth(int width) const
@@ -172,6 +227,8 @@ int CardImage::heightForWidth(int width) const
 
 void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
 {
+    m_BadAspectRatio = preview.m_BadAspectRatio;
+
     if (m_CardName == card_name)
     {
         ClearChildren();
@@ -288,6 +345,87 @@ void CardImage::AddBadFormatWarning(const ImagePreview& preview)
     m_Warning = format_warning;
 }
 
+void CardImage::ContextMenuRequested(QPoint pos)
+{
+    auto* menu{ new QMenu{ this } };
+
+    if (m_BleedType != BleedType::Infer)
+    {
+        menu->addAction(m_InferBleedAction);
+    }
+    if (m_BleedType != BleedType::FullBleed)
+    {
+        menu->addAction(m_ForceFullBleedAction);
+    }
+    if (m_BleedType != BleedType::NoBleed)
+    {
+        menu->addAction(m_ForceNoBleedAction);
+    }
+    menu->addSeparator();
+
+    if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
+    {
+        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore)
+        {
+            menu->addAction(m_FixRatioIgnoreAction);
+        }
+        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Expand)
+        {
+            menu->addAction(m_FixRatioExpandAction);
+        }
+        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch)
+        {
+            menu->addAction(m_FixRatioStretchAction);
+        }
+        menu->addSeparator();
+    }
+
+    menu->addAction(m_RotateLeftAction);
+    menu->addAction(m_RotateRightAction);
+
+    menu->popup(mapToGlobal(pos));
+}
+
+void CardImage::RotateImageLeft(Project& project)
+{
+    if (project.RotateCardLeft(m_CardName))
+    {
+        const auto pixmap{ this->pixmap() };
+        const auto rotated{
+            pixmap
+                .transformed(QTransform().rotate(-90))
+                .scaled(pixmap.size())
+        };
+        setPixmap(rotated);
+    }
+}
+
+void CardImage::RotateImageRight(Project& project)
+{
+    if (project.RotateCardRight(m_CardName))
+    {
+        const auto pixmap{ this->pixmap() };
+        const auto rotated{
+            pixmap
+                .transformed(QTransform().rotate(90))
+                .scaled(pixmap.size())
+        };
+        setPixmap(rotated);
+    }
+}
+
+void CardImage::ChangeBleedType(Project& project, BleedType bleed_type)
+{
+    m_BleedType = bleed_type;
+    project.SetCardBleedType(m_CardName, bleed_type);
+}
+
+void CardImage::ChangeBadAspectRatioHandling(Project& project, BadAspectRatioHandling ratio_handling)
+{
+    m_BadAspectRatioHandling = ratio_handling;
+    project.SetCardBadAspectRatioHandling(m_CardName, ratio_handling);
+}
+
 void CardImage::ClearChildren()
 {
     auto* layout{ static_cast<QBoxLayout*>(this->layout()) };
@@ -396,16 +534,6 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     m_Backside = new_backside;
 
     RefreshSizes(rect().size());
-}
-
-void StackedCardBacksideView::RotateImageLeft()
-{
-    m_Image->RotateImageLeft();
-}
-
-void StackedCardBacksideView::RotateImageRight()
-{
-    m_Image->RotateImageRight();
 }
 
 int StackedCardBacksideView::heightForWidth(int width) const

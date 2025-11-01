@@ -6,6 +6,10 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/project/card_info.hpp>
+
+class QAction;
+
 class Project;
 struct ImagePreview;
 
@@ -26,8 +30,7 @@ class CardImage : public QLabel
 
     void Refresh(const fs::path& card_name, const Project& project, Params params);
 
-    void RotateImageLeft();
-    void RotateImageRight();
+    void EnableContextMenu(bool enable, Project& project);
 
     const fs::path& GetCardName() const
     {
@@ -46,6 +49,15 @@ class CardImage : public QLabel
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
     void AddBadFormatWarning(const ImagePreview& preview);
+
+    void ContextMenuRequested(QPoint pos);
+
+    void RotateImageLeft(Project& project);
+    void RotateImageRight(Project& project);
+    void ChangeBleedType(Project& project, BleedType bleed_type);
+    void ChangeBadAspectRatioHandling(Project& project,
+                                      BadAspectRatioHandling ratio_handling);
+
     void ClearChildren();
 
     fs::path m_CardName;
@@ -58,8 +70,23 @@ class CardImage : public QLabel
     Length m_BleedEdge;
     Length m_CornerRadius;
 
+    bool m_BadAspectRatio{ false };
+    BleedType m_BleedType{ BleedType::Default };
+    BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
+
     QWidget* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
+
+    QAction* m_InferBleedAction{ nullptr };
+    QAction* m_ForceFullBleedAction{ nullptr };
+    QAction* m_ForceNoBleedAction{ nullptr };
+
+    QAction* m_FixRatioIgnoreAction{ nullptr };
+    QAction* m_FixRatioExpandAction{ nullptr };
+    QAction* m_FixRatioStretchAction{ nullptr };
+
+    QAction* m_RotateLeftAction{ nullptr };
+    QAction* m_RotateRightAction{ nullptr };
 };
 
 class BacksideImage : public CardImage

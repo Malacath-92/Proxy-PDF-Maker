@@ -19,7 +19,9 @@ bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
            static_cast<int32_t>(std::floor(lhs.m_CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.x / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.y / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm)) ||
-           lhs.m_Rotation != rhs.m_Rotation;
+           lhs.m_Rotation != rhs.m_Rotation ||
+           lhs.m_BleedType != rhs.m_BleedType ||
+           lhs.m_BadAspectRatioHandling != rhs.m_BadAspectRatioHandling;
 }
 
 // NOLINTNEXTLINE
@@ -42,6 +44,16 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
     {
         entry.m_Params.m_Rotation = magic_enum::enum_cast<Image::Rotation>(json["rotation"].get_ref<const std::string&>())
                                         .value_or(Image::Rotation::None);
+    }
+    if (json.contains("bleed_type"))
+    {
+        entry.m_Params.m_BleedType = magic_enum::enum_cast<BleedType>(json["bleed_type"].get_ref<const std::string&>())
+                                         .value_or(BleedType::Default);
+    }
+    if (json.contains("ratio_handling"))
+    {
+        entry.m_Params.m_BadAspectRatioHandling = magic_enum::enum_cast<BadAspectRatioHandling>(json["ratio_handling"].get_ref<const std::string&>())
+                                                      .value_or(BadAspectRatioHandling::Default);
     }
 }
 
@@ -68,6 +80,8 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
     };
     json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
     json["rotation"] = magic_enum::enum_name(entry.m_Params.m_Rotation);
+    json["bleed_type"] = magic_enum::enum_name(entry.m_Params.m_BleedType);
+    json["ratio_handling"] = magic_enum::enum_name(entry.m_Params.m_BadAspectRatioHandling);
 }
 
 ImageDataBase ImageDataBase::FromFile(const fs::path& path)

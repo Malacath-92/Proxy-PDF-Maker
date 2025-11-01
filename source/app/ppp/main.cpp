@@ -117,6 +117,8 @@ int main(int argc, char** argv)
     QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
 
     QObject::connect(&project, &Project::CardRotationChanged, &cropper, &Cropper::CardModified);
+    QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
+    QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     auto* scroll_area{ new CardScrollArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };

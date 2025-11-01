@@ -118,6 +118,16 @@ void Project::Load(const fs::path& json_path)
                 card.m_Rotation = magic_enum::enum_cast<Image::Rotation>(card_json["rotation"].get_ref<const std::string&>())
                                       .value_or(Image::Rotation::None);
             }
+            if (card_json.contains("bleed_type"))
+            {
+                card.m_BleedType = magic_enum::enum_cast<BleedType>(card_json["bleed_type"].get_ref<const std::string&>())
+                                       .value_or(BleedType::Default);
+            }
+            if (card_json.contains("ratio_handling"))
+            {
+                card.m_BadAspectRatioHandling = magic_enum::enum_cast<BadAspectRatioHandling>(card_json["ratio_handling"].get_ref<const std::string&>())
+                                                    .value_or(BadAspectRatioHandling::Default);
+            }
         }
 
         if (json.contains("cards_order"))
@@ -305,6 +315,8 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["backside_short_edge"] = card.m_BacksideShortEdge;
                 card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
                 card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
+                card_json["bleed_type"] = magic_enum::enum_name(card.m_BleedType);
+                card_json["ratio_handling"] = magic_enum::enum_name(card.m_BadAspectRatioHandling);
             }
         }
         json["cards"] = cards;
@@ -476,6 +488,15 @@ bool Project::UnhideCard(const fs::path& card_name)
     return false;
 }
 
+Image::Rotation Project::GetCardRotation(const fs::path& card_name) const
+{
+    if (const auto* card{ FindCard(card_name) })
+    {
+        return card->m_Rotation;
+    }
+    return Image::Rotation::None;
+}
+
 bool Project::RotateCardLeft(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
@@ -497,6 +518,46 @@ bool Project::RotateCardRight(const fs::path& card_name)
             (std::to_underlying(card->m_Rotation) + 1) % 4
         };
         CardRotationChanged(card_name, card->m_Rotation);
+        return true;
+    }
+    return false;
+}
+
+BleedType Project::GetCardBleedType(const fs::path& card_name) const
+{
+    if (const auto* card{ FindCard(card_name) })
+    {
+        return card->m_BleedType;
+    }
+    return BleedType::Infer;
+}
+
+bool Project::SetCardBleedType(const fs::path& card_name, BleedType bleed_type)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        card->m_BleedType = bleed_type;
+        CardBleedTypeChanged(card_name, bleed_type);
+        return true;
+    }
+    return false;
+}
+
+BadAspectRatioHandling Project::GetCardBadAspectRatioHandling(const fs::path& card_name) const
+{
+    if (const auto* card{ FindCard(card_name) })
+    {
+        return card->m_BadAspectRatioHandling;
+    }
+    return BadAspectRatioHandling::Ignore;
+}
+
+bool Project::SetCardBadAspectRatioHandling(const fs::path& card_name, BadAspectRatioHandling ratio_handling)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        card->m_BadAspectRatioHandling = ratio_handling;
+        CardBadAspectRatioHandlingChanged(card_name, ratio_handling);
         return true;
     }
     return false;
@@ -739,8 +800,7 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         new_card.m_Hidden = 0;
     }
 
-    auto insert_at
-    {
+    auto insert_at{
         [&]()
         {
             if (g_Cfg.m_CardOrder == CardOrder::LastAdded)
