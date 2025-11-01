@@ -349,34 +349,26 @@ void CardImage::ContextMenuRequested(QPoint pos)
 {
     auto* menu{ new QMenu{ this } };
 
-    if (m_BleedType != BleedType::Infer)
-    {
-        menu->addAction(m_InferBleedAction);
-    }
-    if (m_BleedType != BleedType::FullBleed)
-    {
-        menu->addAction(m_ForceFullBleedAction);
-    }
-    if (m_BleedType != BleedType::NoBleed)
-    {
-        menu->addAction(m_ForceNoBleedAction);
-    }
+    menu->addAction(m_InferBleedAction);
+    menu->addAction(m_ForceFullBleedAction);
+    menu->addAction(m_ForceNoBleedAction);
+
+    m_InferBleedAction->setEnabled(m_BleedType != BleedType::Infer);
+    m_ForceFullBleedAction->setEnabled(m_BleedType != BleedType::FullBleed);
+    m_ForceNoBleedAction->setEnabled(m_BleedType != BleedType::NoBleed);
+
     menu->addSeparator();
 
     if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
     {
-        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore)
-        {
-            menu->addAction(m_FixRatioIgnoreAction);
-        }
-        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Expand)
-        {
-            menu->addAction(m_FixRatioExpandAction);
-        }
-        if (m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch)
-        {
-            menu->addAction(m_FixRatioStretchAction);
-        }
+        menu->addAction(m_FixRatioIgnoreAction);
+        menu->addAction(m_FixRatioExpandAction);
+        menu->addAction(m_FixRatioStretchAction);
+
+        m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
+        m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
+        m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
+
         menu->addSeparator();
     }
 
