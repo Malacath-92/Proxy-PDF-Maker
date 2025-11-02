@@ -153,6 +153,7 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
+    const bool HasNonDefaultBacksideImage(const fs::path& card_name) const;
     const fs::path& GetBacksideImage(const fs::path& card_name) const;
     bool SetBacksideImage(const fs::path& card_name, fs::path backside_image);
 
@@ -172,6 +173,8 @@ class Project : public QObject
     Size ComputeDefaultMargins() const;
 
     void SetMarginsMode(MarginsMode margins_mode);
+
+    bool SetBacksideEnabled(bool backside_enabled);
 
     float CardRatio() const;
     Size CardSize() const;
@@ -204,9 +207,12 @@ class Project : public QObject
     void CropperDone();
 
   signals:
+    void BacksideEnabledChanged(bool backside_enabled);
+
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
+    void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
     void CardBleedTypeChanged(const fs::path& card_name, BleedType bleed_type);
     void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);

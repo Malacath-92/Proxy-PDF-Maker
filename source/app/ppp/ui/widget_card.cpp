@@ -69,6 +69,8 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     m_BleedEdge = params.m_BleedEdge;
     m_CornerRadius = project.CardCornerRadius();
 
+    m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
+    m_HasNonDefaultBackside = project.HasNonDefaultBacksideImage(card_name);
     m_BadAspectRatio = project.HasBadAspectRatio(card_name);
     m_BleedType = project.GetCardBleedType(card_name);
     m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(card_name);
@@ -134,6 +136,9 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     }
 
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
+    QObject::connect(&project, &Project::CardBacksideChanged, this, &CardImage::CardBacksideChanged);
+    QObject::connect(&project, &Project::BacksideEnabledChanged, this, [this](bool enabled)
+                     { m_BacksideEnabled = enabled; });
 }
 
 void CardImage::EnableContextMenu(bool enable, Project& project)
@@ -145,6 +150,9 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
                          &QWidget::customContextMenuRequested,
                          this,
                          &CardImage::ContextMenuRequested);
+
+        m_ResetBacksideAction = new QAction{ "Reset Backside", this };
+        // m_ResetBacksideAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
 
         m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
         // m_InferBleedAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
@@ -165,6 +173,10 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
         m_RotateRightAction = new QAction{ "Rotate Right", this };
         m_RotateRightAction->setIcon(QIcon{ QPixmap{ ":/res/tap.png" } });
 
+        QObject::connect(m_ResetBacksideAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::ResetBackside, this, std::ref(project)));
         QObject::connect(m_InferBleedAction,
                          &QAction::triggered,
                          this,
@@ -227,10 +239,10 @@ int CardImage::heightForWidth(int width) const
 
 void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
 {
-    m_BadAspectRatio = preview.m_BadAspectRatio;
-
     if (m_CardName == card_name)
     {
+        m_BadAspectRatio = preview.m_BadAspectRatio;
+
         ClearChildren();
 
         QPixmap pixmap{
@@ -260,6 +272,14 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
         {
             AddBadFormatWarning(preview);
         }
+    }
+}
+
+void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& backside)
+{
+    if (m_CardName == card_name)
+    {
+        m_HasNonDefaultBackside = !backside.empty();
     }
 }
 
@@ -349,6 +369,12 @@ void CardImage::ContextMenuRequested(QPoint pos)
 {
     auto* menu{ new QMenu{ this } };
 
+    if (m_BacksideEnabled && m_HasNonDefaultBackside)
+    {
+        menu->addAction(m_ResetBacksideAction);
+        menu->addSeparator();
+    }
+
     menu->addAction(m_InferBleedAction);
     menu->addAction(m_ForceFullBleedAction);
     menu->addAction(m_ForceNoBleedAction);
@@ -378,6 +404,23 @@ void CardImage::ContextMenuRequested(QPoint pos)
     menu->popup(mapToGlobal(pos));
 }
 
+void CardImage::ResetBackside(Project& project)
+{
+    project.SetBacksideImage(m_CardName, "");
+}
+
+void CardImage::ChangeBleedType(Project& project, BleedType bleed_type)
+{
+    m_BleedType = bleed_type;
+    project.SetCardBleedType(m_CardName, bleed_type);
+}
+
+void CardImage::ChangeBadAspectRatioHandling(Project& project, BadAspectRatioHandling ratio_handling)
+{
+    m_BadAspectRatioHandling = ratio_handling;
+    project.SetCardBadAspectRatioHandling(m_CardName, ratio_handling);
+}
+
 void CardImage::RotateImageLeft(Project& project)
 {
     if (project.RotateCardLeft(m_CardName))
@@ -404,18 +447,6 @@ void CardImage::RotateImageRight(Project& project)
         };
         setPixmap(rotated);
     }
-}
-
-void CardImage::ChangeBleedType(Project& project, BleedType bleed_type)
-{
-    m_BleedType = bleed_type;
-    project.SetCardBleedType(m_CardName, bleed_type);
-}
-
-void CardImage::ChangeBadAspectRatioHandling(Project& project, BadAspectRatioHandling ratio_handling)
-{
-    m_BadAspectRatioHandling = ratio_handling;
-    project.SetCardBadAspectRatioHandling(m_CardName, ratio_handling);
 }
 
 void CardImage::ClearChildren()
@@ -464,30 +495,10 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
 
 StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)
 {
-    const static QIcon s_ClearIcon{
-        []()
-        {
-            QCommonStyle style{};
-            return style
-                .standardIcon(QStyle::StandardPixmap::SP_DialogResetButton);
-        }()
-    };
-
-    auto* reset_button{ new QPushButton };
-    reset_button->setIcon(s_ClearIcon);
-    reset_button->setToolTip("Reset Backside to Default");
-    reset_button->setFixedWidth(20);
-    reset_button->setFixedHeight(20);
-    QObject::connect(reset_button,
-                     &QPushButton::clicked,
-                     this,
-                     &StackedCardBacksideView::BacksideReset);
-
     backside->setToolTip("Choose individual Backside");
 
     auto* backside_layout{ new QHBoxLayout };
     backside_layout->addStretch();
-    backside_layout->addWidget(reset_button, 0, Qt::AlignmentFlag::AlignBottom);
     backside_layout->addWidget(backside, 0, Qt::AlignmentFlag::AlignBottom);
     backside_layout->setContentsMargins(0, 0, 0, 0);
 
@@ -506,6 +517,8 @@ StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* back
     this_layout->setStackingMode(QStackedLayout::StackingMode::StackAll);
     this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
     this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
+
+    adjustSize();
 
     m_Image = image;
     m_Backside = backside;
@@ -588,8 +601,11 @@ void StackedCardBacksideView::mouseReleaseEvent(QMouseEvent* event)
 {
     QStackedWidget::mouseReleaseEvent(event);
 
-    if (currentWidget() == m_BacksideContainer)
+    if (!event->isAccepted() &&
+        event->button() == Qt::MouseButton::LeftButton &&
+        currentWidget() == m_BacksideContainer)
     {
         BacksideClicked();
+        event->accept();
     }
 }

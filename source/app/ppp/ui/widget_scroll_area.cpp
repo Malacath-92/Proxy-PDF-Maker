@@ -178,18 +178,8 @@ class CardWidget : public QFrame
 
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
-            auto backside_reset{
-                [=, this, &project]()
-                {
-                    project.SetBacksideImage(m_CardName, "");
-
-                    auto* new_backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
-                    stacked_widget->RefreshBackside(new_backside_image);
-                }
-            };
-
             auto backside_choose{
-                [=, this, &project]()
+                [this, &project]()
                 {
                     ImageBrowsePopup image_browser{ window(), project, { &m_CardName, 1 } };
                     image_browser.setWindowTitle(QString{ "Choose backside for %1" }.arg(ToQString(m_CardName)));
@@ -197,19 +187,23 @@ class CardWidget : public QFrame
                     {
                         const auto& backside{ backside_choice.value() };
                         project.SetBacksideImage(m_CardName, backside);
-
-                        auto* new_backside_image{ new BacksideImage{ backside, project } };
-                        stacked_widget->RefreshBackside(new_backside_image);
                     }
                 }
             };
 
             if (!m_CardName.empty())
             {
-                QObject::connect(stacked_widget,
-                                 &StackedCardBacksideView::BacksideReset,
-                                 this,
-                                 backside_reset);
+                QObject::connect(&project,
+                                 &Project::CardBacksideChanged,
+                                 stacked_widget,
+                                 [this, stacked_widget, &project](const fs::path& card_name, const fs::path& backside)
+                                 {
+                                     if (m_CardName == card_name)
+                                     {
+                                         auto* new_backside_image{ new BacksideImage{ backside, project } };
+                                         stacked_widget->RefreshBackside(new_backside_image);
+                                     }
+                                 });
                 QObject::connect(stacked_widget,
                                  &StackedCardBacksideView::BacksideClicked,
                                  this,

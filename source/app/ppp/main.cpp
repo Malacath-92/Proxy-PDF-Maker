@@ -153,9 +153,8 @@ int main(int argc, char** argv)
         &PluginRouter::SetEnableBackside,
         [&](bool enabled)
         {
-            if (project.m_Data.m_BacksideEnabled != enabled)
+            if (project.SetBacksideEnabled(enabled))
             {
-                project.m_Data.m_BacksideEnabled = enabled;
                 card_options->BacksideEnabledChangedExternal();
             }
         });

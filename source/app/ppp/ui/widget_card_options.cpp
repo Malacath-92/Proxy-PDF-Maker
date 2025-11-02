@@ -246,15 +246,18 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     auto switch_backside_enabled{
         [this, &project](Qt::CheckState s)
         {
-            project.m_Data.m_BacksideEnabled = s == Qt::CheckState::Checked;
-            m_BacksideDefaultButton->setEnabled(project.m_Data.m_BacksideEnabled);
-            m_BacksideDefaultButton->setVisible(project.m_Data.m_BacksideEnabled);
-            m_BacksideDefaultPreview->setVisible(project.m_Data.m_BacksideEnabled);
-            m_BacksideOffset->setEnabled(project.m_Data.m_BacksideEnabled);
-            m_BacksideOffset->setVisible(project.m_Data.m_BacksideEnabled);
-            m_BacksideAuto->setEnabled(project.m_Data.m_BacksideEnabled);
-            m_BacksideAuto->setVisible(project.m_Data.m_BacksideEnabled);
-            BacksideEnabledChanged();
+            const bool enabled{ s == Qt::CheckState::Checked };
+            if (project.SetBacksideEnabled(enabled))
+            {
+                m_BacksideDefaultButton->setEnabled(enabled);
+                m_BacksideDefaultButton->setVisible(enabled);
+                m_BacksideDefaultPreview->setVisible(enabled);
+                m_BacksideOffset->setEnabled(enabled);
+                m_BacksideOffset->setVisible(enabled);
+                m_BacksideAuto->setEnabled(enabled);
+                m_BacksideAuto->setVisible(enabled);
+                BacksideEnabledChanged();
+            }
         }
     };
 

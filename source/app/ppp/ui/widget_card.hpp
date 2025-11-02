@@ -45,18 +45,22 @@ class CardImage : public QLabel
 
   private slots:
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
+    void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
 
   private:
     QPixmap FinalizePixmap(const QPixmap& pixmap);
     void AddBadFormatWarning(const ImagePreview& preview);
 
     void ContextMenuRequested(QPoint pos);
+    
+    void ResetBackside(Project& project);
 
-    void RotateImageLeft(Project& project);
-    void RotateImageRight(Project& project);
     void ChangeBleedType(Project& project, BleedType bleed_type);
     void ChangeBadAspectRatioHandling(Project& project,
                                       BadAspectRatioHandling ratio_handling);
+
+    void RotateImageLeft(Project& project);
+    void RotateImageRight(Project& project);
 
     void ClearChildren();
 
@@ -70,12 +74,16 @@ class CardImage : public QLabel
     Length m_BleedEdge;
     Length m_CornerRadius;
 
+    bool m_BacksideEnabled{ false };
+    bool m_HasNonDefaultBackside{ false };
     bool m_BadAspectRatio{ false };
     BleedType m_BleedType{ BleedType::Default };
     BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
 
     QWidget* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
+
+    QAction* m_ResetBacksideAction{ nullptr };
 
     QAction* m_InferBleedAction{ nullptr };
     QAction* m_ForceFullBleedAction{ nullptr };
@@ -118,7 +126,6 @@ class StackedCardBacksideView : public QStackedWidget
     virtual int heightForWidth(int width) const override;
 
   signals:
-    void BacksideReset();
     void BacksideClicked();
 
   private:

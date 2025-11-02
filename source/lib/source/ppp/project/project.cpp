@@ -907,6 +907,15 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return GetUncroppedPreview(GetBacksideImage(card_name));
 }
 
+const bool Project::HasNonDefaultBacksideImage(const fs::path& card_name) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        return !card->m_Backside.empty();
+    }
+    return false;
+}
+
 const fs::path& Project::GetBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
@@ -934,6 +943,8 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 
         auto old_backside{ std::move(card->m_Backside) };
         card->m_Backside = std::move(backside_image);
+
+        CardBacksideChanged(card_name, card->m_Backside);
 
         const bool old_backside_shown{ UnhideCard(old_backside) };
         const bool new_backside_hidden{ HideCard(card->m_Backside) };
@@ -1158,6 +1169,17 @@ void Project::SetMarginsMode(MarginsMode margins_mode)
     // Set margins mode after setting margins as we want to grab the current
     // margins and their computation may depend on the current margins mode
     m_Data.m_MarginsMode = margins_mode;
+}
+
+bool Project::SetBacksideEnabled(bool backside_enabled)
+{
+    if (m_Data.m_BacksideEnabled != backside_enabled)
+    {
+        m_Data.m_BacksideEnabled = backside_enabled;
+        BacksideEnabledChanged(backside_enabled);
+        return true;
+    }
+    return false;
 }
 
 float Project::CardRatio() const
