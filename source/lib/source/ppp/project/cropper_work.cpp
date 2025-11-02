@@ -38,7 +38,7 @@ static Image FixImageAspectRatio(Image source_image,
     if (ratio_handling == BadAspectRatioHandling::Ignore ||
         std::abs(aspect_ratio - target_aspect_ratio) < c_IgnoreThreshold)
     {
-        return std::move(source_image);
+        return source_image;
     }
 
     const Pixel width{ source_image.Width() };
@@ -57,6 +57,8 @@ static Image FixImageAspectRatio(Image source_image,
 
     switch (ratio_handling)
     {
+        case BadAspectRatioHandling::Ignore:
+            std::unreachable();
     case BadAspectRatioHandling::Expand:
         if (aspect_ratio < target_aspect_ratio)
         {
