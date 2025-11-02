@@ -152,14 +152,14 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
                          &CardImage::ContextMenuRequested);
 
         m_ResetBacksideAction = new QAction{ "Reset Backside", this };
-        // m_ResetBacksideAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
+        m_ResetBacksideAction->setIcon(QIcon{ QPixmap{ ":/res/clear.png" } });
 
         m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
-        // m_InferBleedAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
+        m_InferBleedAction->setIcon(QIcon{ QPixmap{ ":/res/bulb.png" } });
         m_ForceFullBleedAction = new QAction{ "Assume Full Bleed", this };
-        // m_ForceFullBleedAction->setIcon(QIcon{ QPixmap{ ":/res/expand.png" } });
+        m_ForceFullBleedAction->setIcon(QIcon{ QPixmap{ ":/res/full_bleed.png" } });
         m_ForceNoBleedAction = new QAction{ "Assume No Bleed", this };
-        // m_ForceNoBleedAction->setIcon(QIcon{ QPixmap{ ":/res/stretch.png" } });
+        m_ForceNoBleedAction->setIcon(QIcon{ QPixmap{ ":/res/no_bleed.png" } });
 
         m_FixRatioIgnoreAction = new QAction{ "Reset Aspect Ratio", this };
         m_FixRatioIgnoreAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });

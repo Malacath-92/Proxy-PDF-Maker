@@ -4,6 +4,10 @@
         <file>res/edit.png</file>
         <file>res/linked.png</file>
         <file>res/unlinked.png</file>
+        <file>res/clear.png</file>
+        <file>res/bulb.png</file>
+        <file>res/full_bleed.png</file>
+        <file>res/no_bleed.png</file>
         <file>res/reset.png</file>
         <file>res/expand.png</file>
         <file>res/stretch.png</file>
