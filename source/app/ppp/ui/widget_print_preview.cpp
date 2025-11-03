@@ -407,8 +407,11 @@ class PrintPreviewCardImage : public CardImage
     {
         const auto raw_data{ event->mimeData()->data("data/size_t") };
         const auto other_index{ *reinterpret_cast<const size_t*>(raw_data.constData()) };
-        ReorderCards(other_index, m_Index);
-        event->acceptProposedAction();
+        if (other_index != m_Index)
+        {
+            ReorderCards(other_index, m_Index);
+            event->acceptProposedAction();
+        }
     }
 
     virtual void enterEvent(QEnterEvent* event) override
