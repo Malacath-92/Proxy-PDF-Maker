@@ -33,11 +33,7 @@ class GuidesOverlay : public QWidget
         : m_Project{ project }
         , m_Transforms{ transforms }
     {
-        m_PenOne.setWidth(1);
         m_PenOne.setColor(QColor{ project.m_Data.m_GuidesColorA.r, project.m_Data.m_GuidesColorA.g, project.m_Data.m_GuidesColorA.b });
-
-        m_PenTwo.setDashPattern({ 2.0f, 4.0f });
-        m_PenTwo.setWidth(1);
         m_PenTwo.setColor(QColor{ project.m_Data.m_GuidesColorB.r, project.m_Data.m_GuidesColorB.g, project.m_Data.m_GuidesColorB.b });
 
         setAttribute(Qt::WA_NoSystemBackground);
@@ -64,6 +60,13 @@ class GuidesOverlay : public QWidget
 
         const dla::ivec2 size{ event->size().width(), event->size().height() };
         const auto pixel_ratio{ size / m_Project.ComputePageSize() };
+
+        const auto guides_width{
+            static_cast<int>(m_Project.m_Data.m_GuidesThickness * pixel_ratio.x)
+        };
+        m_PenOne.setWidth(guides_width);
+        m_PenTwo.setWidth(guides_width);
+        m_PenTwo.setDashPattern({ 2.0f, 4.0f });
 
         const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
         const auto bleed{ m_Project.m_Data.m_BleedEdge * pixel_ratio };
