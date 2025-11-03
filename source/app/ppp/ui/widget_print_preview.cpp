@@ -380,20 +380,27 @@ class PrintPreviewCardImage : public CardImage
     {
         CardImage::mousePressEvent(event);
 
-        QMimeData* mime_data{ new QMimeData };
-        mime_data->setData(
-            "data/size_t",
-            QByteArray::fromRawData(reinterpret_cast<const char*>(&m_Index),
-                                    sizeof(m_Index)));
+        if (!event->isAccepted() &&
+            m_Companion->isVisible() &&
+            event->button() == Qt::MouseButton::LeftButton)
+        {
+            QMimeData* mime_data{ new QMimeData };
+            mime_data->setData(
+                "data/size_t",
+                QByteArray::fromRawData(reinterpret_cast<const char*>(&m_Index),
+                                        sizeof(m_Index)));
 
-        QDrag drag{ this };
-        drag.setMimeData(mime_data);
-        drag.setPixmap(pixmap().scaledToWidth(width() / 2));
+            QDrag drag{ this };
+            drag.setMimeData(mime_data);
+            drag.setPixmap(pixmap().scaledToWidth(width() / 2));
 
-        DragStarted();
-        Qt::DropAction drop_action{ drag.exec() };
-        (void)drop_action;
-        DragFinished();
+            DragStarted();
+            Qt::DropAction drop_action{ drag.exec() };
+            (void)drop_action;
+            DragFinished();
+
+            event->accept();
+        }
     }
 
     virtual void dropEvent(QDropEvent* event) override
@@ -472,7 +479,10 @@ class PrintPreview::PagePreview : public QWidget
                 Params params)
         : m_Transforms{ transforms }
     {
-        setStyleSheet("background-color: white;");
+        QPalette pal = palette();
+        pal.setColor(QPalette::ColorRole::Window, Qt::white);
+        setAutoFillBackground(true);
+        setPalette(pal);
 
         const bool rounded_corners{ project.m_Data.m_Corners == CardCorners::Rounded && project.m_Data.m_BleedEdge <= 0_mm };
 
@@ -962,7 +972,7 @@ void PrintPreview::Refresh()
     if (g_Cfg.m_ColorCube != "None")
     {
         auto* vibrance_info{ new QLabel{ "Preview does not respect 'Vibrance Bump' setting" } };
-        vibrance_info->setStyleSheet("QLabel { color : red; }");
+        vibrance_info->setStyleSheet("QLabel{ color : red; }");
         header_layout->addWidget(vibrance_info);
     }
 
