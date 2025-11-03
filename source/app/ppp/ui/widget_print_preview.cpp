@@ -466,7 +466,7 @@ class PrintPreview::PagePreview : public QWidget
         Size m_PageSize;
         bool m_IsBackside;
     };
-    PagePreview(const Project& project,
+    PagePreview(Project& project,
                 const Page& page,
                 const PageImageTransforms& transforms,
                 Params params)
@@ -529,6 +529,7 @@ class PrintPreview::PagePreview : public QWidget
                     image_companion,
                 },
             };
+            image_widget->EnableContextMenu(true, project);
             image_widget->setParent(m_ImageContainer);
 
             QObject::connect(image_widget,
@@ -756,7 +757,7 @@ class ArrowWidget : public QFrame
     ArrowDir m_Dir;
 };
 
-PrintPreview::PrintPreview(const Project& project)
+PrintPreview::PrintPreview(Project& project)
     : m_Project{ project }
 {
     Refresh();

@@ -12,7 +12,7 @@ class PrintPreview : public QScrollArea
     Q_OBJECT
 
   public:
-    PrintPreview(const Project& project);
+    PrintPreview(Project& project);
 
     void Refresh();
 
@@ -29,7 +29,7 @@ class PrintPreview : public QScrollArea
   private:
     class PagePreview;
 
-    const Project& m_Project;
+    Project& m_Project;
 
     QWidget* m_ScrollUpWidget{ nullptr };
     QWidget* m_ScrollDownWidget{ nullptr };
