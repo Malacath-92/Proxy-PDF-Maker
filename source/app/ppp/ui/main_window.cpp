@@ -50,7 +50,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
 {
     Q_INIT_RESOURCE(toast_resources);
 
-    auto* toast{ new ::Toast(this) };
+    auto* toast{ new ::Toast };
     toast->setDuration(8000);
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
