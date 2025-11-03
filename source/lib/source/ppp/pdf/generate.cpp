@@ -50,6 +50,7 @@ fs::path GeneratePdf(const Project& project)
             guides_color_a,
         },
         guides_color_b,
+        project.m_Data.m_GuidesThickness * 2,
     };
 
     const auto page_size{ project.ComputePageSize() };
