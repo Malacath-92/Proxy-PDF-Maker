@@ -23,7 +23,6 @@ enum class CardOrderDirection
 
 enum class PdfBackend
 {
-    LibHaru,
     PoDoFo,
     Png,
 };
@@ -57,7 +56,7 @@ struct Config
     std::string m_DefaultPageSize{ "Letter" };
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
-    PdfBackend m_Backend{ PdfBackend::LibHaru };
+    PdfBackend m_Backend{ PdfBackend::PoDoFo };
     ImageFormat m_PdfImageFormat{ ImageFormat::Jpg };
     std::optional<int> m_PngCompression{ std::nullopt };
     std::optional<int> m_JpgQuality{ std::nullopt };

@@ -6,15 +6,29 @@ class ProxyPDF(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("fmt/9.1.0")
+        # GUI and App Framework
         self.requires("qt/6.7.3")
-        self.requires("opencv/4.11.0")
-        self.requires("libharu/2.4.4")
-        self.requires("podofo/0.9.7")
-        self.requires("nlohmann_json/3.11.3")
-        self.requires("catch2/3.7.1")
+
+        # File System Watcher
         self.requires("efsw/1.4.1")
+
+        # Image Procession
+        self.requires("opencv/4.11.0")
+
+        # JSON Write/Read
+        self.requires("nlohmann_json/3.11.3")
+
+        # PDF Write/Read
+        self.requires("podofo/0.9.7")
+
+        # String Formatting
+        self.requires("fmt/9.1.0")
+
+        # Enum Reflection
         self.requires("magic_enum/0.9.7")
+
+        # Unit Testing
+        self.requires("catch2/3.7.1")
 
         # Conflict Resolution
         self.requires("zstd/1.5.7", override=True)

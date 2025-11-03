@@ -117,9 +117,9 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* display_columns{ new WidgetWithLabel{ "Display &Columns", display_columns_spin_box } };
     display_columns->setToolTip("Number columns in card view");
 
-    auto* backend{ new ComboBoxWithLabel{
-        "&Rendering Backend", magic_enum::enum_names<PdfBackend>(), magic_enum::enum_name(g_Cfg.m_Backend) } };
-    backend->GetWidget()->setToolTip("Determines how the backend used for rendering and the output format.");
+    auto* backend{ new QCheckBox{ "&Render to Png" } };
+    backend->setToolTip("If checked, will render final document to a set of .png files instead of a .pdf file.");
+    backend->setChecked(g_Cfg.m_Backend == PdfBackend::Png);
 
     auto* image_format{ new ComboBoxWithLabel{
         "Image &Format", magic_enum::enum_names<ImageFormat>(), magic_enum::enum_name(g_Cfg.m_PdfImageFormat) } };
@@ -239,10 +239,11 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto change_render_backend{
-        [this, image_format, jpg_quality](const QString& t)
+        [this, image_format, jpg_quality](const Qt::CheckState& s)
         {
-            g_Cfg.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(t.toStdString())
-                                    .value_or(PdfBackend::LibHaru));
+            const bool render_to_png{ s == Qt::CheckState::Checked };
+            g_Cfg.SetPdfBackend(render_to_png ? PdfBackend::Png
+                                              : PdfBackend::PoDoFo);
             SaveConfig(g_Cfg);
             RenderBackendChanged();
 
@@ -378,8 +379,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_display_columns);
-    QObject::connect(backend->GetWidget(),
-                     &QComboBox::currentTextChanged,
+    QObject::connect(backend,
+                     &QCheckBox::checkStateChanged,
                      this,
                      change_render_backend);
     QObject::connect(image_format->GetWidget(),

@@ -29,7 +29,7 @@ ActionsWidget::ActionsWidget(Project& project)
     cropper_progress_bar->setTextVisible(false);
     cropper_progress_bar->setVisible(false);
     cropper_progress_bar->setRange(0, c_ProgressBarResolution);
-    auto* render_button{ new QPushButton{ "Render Document" } };
+    auto* render_button{ new QPushButton{ "Render PDF" } };
     auto* save_button{ new QPushButton{ "Save Project" } };
     auto* load_button{ new QPushButton{ "Load Project" } };
     auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
@@ -245,6 +245,9 @@ ActionsWidget::ActionsWidget(Project& project)
 
     m_CropperProgressBar = cropper_progress_bar;
     m_RenderButton = render_button;
+
+    // Just to set the right default text
+    RenderBackendChanged();
 }
 
 void ActionsWidget::CropperWorking()
@@ -264,4 +267,16 @@ void ActionsWidget::CropperProgress(float progress)
 {
     const int progress_whole{ static_cast<int>(progress * c_ProgressBarResolution) };
     m_CropperProgressBar->setValue(progress_whole);
+}
+
+void ActionsWidget::RenderBackendChanged()
+{
+    switch (g_Cfg.m_Backend)
+    {
+    case PdfBackend::PoDoFo:
+        m_RenderButton->setText("Render PDF");
+        break;
+    case PdfBackend::Png:
+        m_RenderButton->setText("Render PNG");
+    }
 }

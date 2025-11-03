@@ -272,6 +272,10 @@ int main(int argc, char** argv)
     }
 
     {
+        QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, actions, &ActionsWidget::RenderBackendChanged);
+    }
+
+    {
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_options, &PrintOptionsWidget::SpacingChanged);

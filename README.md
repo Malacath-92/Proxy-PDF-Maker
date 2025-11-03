@@ -106,7 +106,7 @@ Determines the size of a page in the generated pdf. Page sizes are defined in `c
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
 ##### Paper Size: Base Pdf
-The `Base Pdf` option is only available with the `PoDoFo` render backend. It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
+It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
 
 #### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
@@ -188,12 +188,8 @@ This determines what units all measurements are displayed in. The option `points
 #### Display Columns
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
 
-#### Rendering Backend
-Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files.
-- `LibHaru` and `PoDoFo` are largely the same however
-    - The two could have each their own bugs, so if you experience a crash during rendering try switching to the other
-    - `PoDoFo` is required if you want to render images on top of an existing `.pdf` file via the `Base PDF` page size  
-- `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software
+#### Render to Png
+Sometimes you may want to render out `.png` files instead of `.pdf` files. This is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software. Note that each page will be output to a separate file, including backsides.
 
 #### Image Format
 This determines whether images are encoded to `.png` or `.jpg` before writing them to the PDF. Use `Jpg` to reduce file size.

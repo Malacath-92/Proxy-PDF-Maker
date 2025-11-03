@@ -206,7 +206,7 @@ Config LoadConfig()
             {
                 const auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString().toStdString() };
                 config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
-                                         .value_or(PdfBackend::LibHaru));
+                                         .value_or(PdfBackend::PoDoFo));
             }
 
             {

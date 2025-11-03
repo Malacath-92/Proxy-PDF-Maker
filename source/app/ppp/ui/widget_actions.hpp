@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+class QPushButton;
 class QProgressBar;
 
 class Project;
@@ -22,9 +23,11 @@ class ActionsWidget : public QWidget
     void CropperDone();
     void CropperProgress(float progress);
 
+    void RenderBackendChanged();
+
   private:
     static inline constexpr int c_ProgressBarResolution{ 250 };
 
     QProgressBar* m_CropperProgressBar{ nullptr };
-    QWidget* m_RenderButton{ nullptr };
+    QPushButton* m_RenderButton{ nullptr };
 };
