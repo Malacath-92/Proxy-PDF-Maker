@@ -44,7 +44,6 @@ We will now go through all the settings to adjust them to exactly what LiberProx
 
 To start us off, expand the bottom section. Here we want to make sure to:
 - set `Units` to `mm`,
-- set `Rendering Backend` to either `LibHaru` or `PoDoFo`,
 - set `Image Format` to `Jpg`,
 - set `Jpg Quality` to `100`,
 - set `Color Cube` to `None` and

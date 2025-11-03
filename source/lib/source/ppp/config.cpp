@@ -204,7 +204,7 @@ Config LoadConfig()
             config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
             {
-                const auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString().toStdString() };
+                const auto pdf_backend{ settings.value("PDF.Backend", "PoDoFo").toString().toStdString() };
                 config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
                                          .value_or(PdfBackend::PoDoFo));
             }

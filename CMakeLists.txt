@@ -68,7 +68,6 @@ string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
 find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(libharu REQUIRED)
 find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
@@ -185,7 +184,6 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Network
 	Qt6::TlsBackendOpenSSLPlugin
 	opencv::opencv
-	libharu::libharu
 	podofo::podofo
 	nlohmann_json::nlohmann_json
 	efsw::efsw
