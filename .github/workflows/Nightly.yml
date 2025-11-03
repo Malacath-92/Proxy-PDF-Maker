@@ -153,5 +153,6 @@ jobs:
           overwrite: True
           tag: "nightly"
           body: "Unstable nightly release, use at your own risk"
+          target_commit: ${{ github.sha }}
           draft: False
           prerelease: True
