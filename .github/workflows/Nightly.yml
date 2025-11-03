@@ -143,16 +143,24 @@ jobs:
           cd publish
           tar -a -c -f ../${{ matrix.asset_name }} *
 
-      - name: Upload Binaries
-        uses: svenstaro/upload-release-action@2.9.0
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v5
         with:
-          release_name: Nightly
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
-          overwrite: True
-          tag: "nightly"
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v5
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ github.event.repository.name }}-*
+          tag_name: "nightly"
           body: "Unstable nightly release, use at your own risk"
-          target_commit: ${{ github.sha }}
-          draft: False
-          prerelease: True
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}
