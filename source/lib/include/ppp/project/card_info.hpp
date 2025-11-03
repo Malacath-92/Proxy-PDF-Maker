@@ -1,7 +1,7 @@
 #pragma once
 
-#include <ppp/util.hpp>
 #include <ppp/image.hpp>
+#include <ppp/util.hpp>
 
 enum class BadAspectRatioHandling
 {

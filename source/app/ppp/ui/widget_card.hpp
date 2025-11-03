@@ -52,7 +52,7 @@ class CardImage : public QLabel
     void AddBadFormatWarning(const ImagePreview& preview);
 
     void ContextMenuRequested(QPoint pos);
-    
+
     void ResetBackside(Project& project);
 
     void ChangeBleedType(Project& project, BleedType bleed_type);
