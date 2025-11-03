@@ -246,6 +246,8 @@ Config LoadConfig()
                 }
             }
 
+            config.m_RenderZeroBleedRoundedEdges = settings.value("Content.Creator.Mode", false).toBool();
+
             settings.endGroup();
         }
 
@@ -424,6 +426,8 @@ void SaveConfig(Config config)
 
             const auto base_unit_name{ UnitName(config.m_BaseUnit) };
             settings.setValue("Base.Unit", ToQString(base_unit_name));
+
+            settings.setValue("Content.Creator.Mode", config.m_RenderZeroBleedRoundedEdges);
 
             settings.endGroup();
         }

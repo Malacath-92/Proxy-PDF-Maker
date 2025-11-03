@@ -416,6 +416,19 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     return img;
 }
 
+Image Image::EnsureAlpha() const
+{
+
+    if (m_Impl.channels() == 4)
+    {
+        return Image{ m_Impl };
+    }
+
+    Image img{};
+    cv::cvtColor(m_Impl, img.m_Impl, cv::COLOR_RGB2RGBA);
+    return img;
+}
+
 Image Image::ApplyAlpha(const ColorRGB8& color) const
 {
     if (m_Impl.channels() != 4)

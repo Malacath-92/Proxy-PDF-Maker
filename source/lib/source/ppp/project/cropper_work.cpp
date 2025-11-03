@@ -25,6 +25,7 @@ static Config CopyRelevant(const Config& config)
         .m_BasePreviewWidth{ config.m_BasePreviewWidth },
         .m_MaxDPI{ config.m_MaxDPI },
         .m_ColorCube{ config.m_ColorCube },
+        .m_RenderZeroBleedRoundedEdges = config.m_RenderZeroBleedRoundedEdges,
         .m_CardSizes{ config.m_CardSizes },
     };
 }
@@ -57,8 +58,8 @@ static Image FixImageAspectRatio(Image source_image,
 
     switch (ratio_handling)
     {
-        case BadAspectRatioHandling::Ignore:
-            std::unreachable();
+    case BadAspectRatioHandling::Ignore:
+        std::unreachable();
     case BadAspectRatioHandling::Expand:
         if (aspect_ratio < target_aspect_ratio)
         {
@@ -212,6 +213,8 @@ void CropperCropWork::run()
         const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
         const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
+        const auto corner_radius{ m_Data.CardCornerRadius(m_Cfg) };
+
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
         const std::string color_cube_name{ m_Cfg.m_ColorCube };
@@ -331,6 +334,31 @@ void CropperCropWork::run()
             cropped_image.Write(output_file, 3, 100, card_size_with_bleed);
         }
 
+        if (m_Cfg.m_RenderZeroBleedRoundedEdges)
+        {
+            const Image no_bleed_image{
+                CropImage(source_image,
+                          m_CardName,
+                          card_size,
+                          full_bleed_edge,
+                          0_mm,
+                          max_density)
+            };
+            const Image rounded_corners_image{
+                no_bleed_image
+                    .EnsureAlpha()
+                    .RoundCorners(card_size, corner_radius)
+            };
+
+            const auto rounded_output_file{
+                fs::path{ crop_file }
+                    .replace_filename(crop_file.stem().string() +
+                                      "_rounded" +
+                                      crop_file.extension().string())
+            };
+            rounded_corners_image.Write(rounded_output_file, 3, 100, card_size);
+        }
+
         // If there are any early-exists we need to move this into a RAII wrapper
         m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);
 
@@ -389,7 +417,6 @@ void CropperPreviewWork::run()
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
         const fs::path input_file{ m_Data.m_ImageDir / m_CardName };
-        const fs::path crop_file{ m_Data.m_CropDir / m_CardName };
 
         const auto card_aspect_ratio{ card_size.x / card_size.y };
         const auto card_with_full_bleed_aspect_ratio{

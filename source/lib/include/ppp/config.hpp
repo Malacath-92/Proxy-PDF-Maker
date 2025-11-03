@@ -64,6 +64,9 @@ struct Config
 
     std::unordered_map<std::string, bool> m_PluginsState{};
 
+    // Hidden options, just doing someone a solid
+    bool m_RenderZeroBleedRoundedEdges{ false };
+
     static inline constexpr std::string_view c_FitSize{ "Fit" };
     static inline constexpr std::string_view c_BasePDFSize{ "Base Pdf" };
 

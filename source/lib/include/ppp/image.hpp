@@ -55,6 +55,7 @@ class [[nodiscard]] Image
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
+    Image EnsureAlpha() const;
     Image ApplyAlpha(const ColorRGB8& color) const;
 
     Image RoundCorners(::Size real_size, ::Length corner_radius) const;
