@@ -907,7 +907,7 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return GetUncroppedPreview(GetBacksideImage(card_name));
 }
 
-const bool Project::HasNonDefaultBacksideImage(const fs::path& card_name) const
+bool Project::HasNonDefaultBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
     {
