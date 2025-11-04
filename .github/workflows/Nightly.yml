@@ -158,16 +158,16 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: False
+
       - name: Download Artifacts
         uses: actions/download-artifact@v5
         with:
           path: nightly-artifacts
           pattern: nightly-artifact-*
           merge-multiple: true
-
-      - uses: actions/checkout@v4
-        with:
-          submodules: False
 
       - name: Delete old Nightly
         run: gh release delete nightly --cleanup-tag
