@@ -93,6 +93,11 @@ jobs:
             conan --version
             conan profile detect --force
 
+      - name: Conan setup Backup Servers
+        run: |
+          cd .conan_home
+          echo 'core.sources:download_urls=["origin", "https://c3i.jfrog.io/artifactory/conan-center-backup-sources"]' > global.conf
+
       - name: Conan set Ninja Generator (MacOS)
         if: ${{ startsWith(matrix.os, 'MacOS') }}
         run: |
