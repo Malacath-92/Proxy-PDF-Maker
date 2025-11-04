@@ -161,7 +161,12 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v5
 
-      - name: Create GitHub Release
+      - name: Delete old Nightly
+        run: gh release delete nightly --cleanup-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create new  Nightly
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ github.event.repository.name }}-*/${{ github.event.repository.name }}-*
