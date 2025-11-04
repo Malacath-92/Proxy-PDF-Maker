@@ -151,7 +151,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v5
         with:
-          name: ${{ matrix.asset_name }}
+          name: nightly-artifact-${{ matrix.os }}
           path: ${{ matrix.asset_name }}
 
   release:
@@ -160,6 +160,10 @@ jobs:
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v5
+        with:
+          path: nightly-artifacts
+          pattern: nightly-artifact-*
+          merge-multiple: true
 
       - uses: actions/checkout@v4
         with:
@@ -170,10 +174,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create new  Nightly
+      - name: Create new Nightly
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ github.event.repository.name }}-*/${{ github.event.repository.name }}-*
+          files: nightly-artifacts/*
           tag_name: "nightly"
           body: "Unstable nightly release, use at your own risk"
           prerelease: true
