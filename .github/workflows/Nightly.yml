@@ -159,7 +159,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ github.event.repository.name }}-*
+          files: ${{ github.event.repository.name }}-*/${{ github.event.repository.name }}-*
           tag_name: "nightly"
           body: "Unstable nightly release, use at your own risk"
           prerelease: true
