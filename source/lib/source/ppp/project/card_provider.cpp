@@ -64,29 +64,58 @@ void CardProvider::NewProjectOpened(const ProjectData& /*old_project*/, const Pr
 }
 void CardProvider::ImageDirChanged(const fs::path& old_path, const fs::path& new_path)
 {
-    SWatch* source_dir_watch{ FindWatch(old_path) };
-    if (source_dir_watch == nullptr)
+    SWatch* old_watch{ FindWatch(old_path) };
+    if (old_watch == nullptr)
     {
         return;
     }
 
     // Remove all old files ...
-    for (const fs::path& image : ListFiles(*source_dir_watch))
+    for (const fs::path& image : ListFiles(*old_watch))
     {
-        CardRemoved(image);
+        // ... but don't remove explicitly watched images ...
+        if (!std::ranges::contains(old_watch->m_Files, image))
+        {
+            CardRemoved(image);
+        }
     }
 
-    // ... move the watch over to the new folder ...
-    m_Watches.push_back({ new_path,
-                          std::move(source_dir_watch->m_Files) });
-    EraseWatch(old_path);
+    {
+        // ... stop watching all files in the old watch ...
+        if (old_watch->m_Files.size() == 1)
+        {
+            // ... by removing the watch ...
+            EraseWatch(old_path);
+            m_Watcher.removeWatch((old_path / "").string());
+        }
+        else
+        {
+            // ... or narrowing down the explicitly watched files  ...
+            auto it{ std::ranges::find(old_watch->m_Files, "*") };
+            if (it != old_watch->m_Files.end())
+            {
+                old_watch->m_Files.erase(it);
+            }
+        }
 
-    // ... re-register the watch with our watcher ...
-    m_Watcher.removeWatch((old_path / "").string());
-    m_Watcher.addWatch(new_path.string(),
-                       this,
-                       false,
-                       m_WatcherOptions);
+        // ... watch the new folder ...
+        SWatch* new_watch{ FindWatch(new_path) };
+        if (new_watch == nullptr)
+        {
+            // ... by creating a new watch ...
+            m_Watches.push_back({ new_path,
+                                  { "*" } });
+            m_Watcher.addWatch(new_path.string(),
+                               this,
+                               false,
+                               m_WatcherOptions);
+        }
+        else
+        {
+            // ... or by expanding the existing watch to all files ...
+            new_watch->m_Files.push_back("*");
+        }
+    }
 
     // ... add all new files, including external images,
     //     as those require output in the image folder.
@@ -307,21 +336,7 @@ std::vector<fs::path> CardProvider::ListFiles() const
 
     for (const auto& watch : m_Watches)
     {
-        if (std::ranges::contains(watch.m_Files, "*"))
-        {
-            ListFiles(watch, push_file);
-        }
-        else
-        {
-            ListFiles(watch,
-                      [&](const auto& file)
-                      {
-                          if (std::ranges::contains(watch.m_Files, file.filename()))
-                          {
-                              push_file(file);
-                          }
-                      });
-        }
+        ListFiles(watch, push_file);
     }
 
     return files;
@@ -339,26 +354,19 @@ std::vector<fs::path> CardProvider::ListFiles(const SWatch& watch) const
         }
     };
 
-    if (std::ranges::contains(watch.m_Files, "*"))
-    {
-        ListFiles(watch, push_file);
-    }
-    else
-    {
-        ListFiles(watch,
-                  [&](const auto& file)
-                  {
-                      if (std::ranges::contains(watch.m_Files, file.filename()))
-                      {
-                          push_file(file);
-                      }
-                  });
-    }
+    ListFiles(watch, push_file);
 
     return files;
 }
 template<class FunT>
 void CardProvider::ListFiles(const SWatch& watch, FunT&& fun)
 {
-    ForEachFile(watch.m_Directory, std::forward<FunT>(fun), g_ValidImageExtensions);
+    const bool all_files{ std::ranges::contains(watch.m_Files, "*") };
+    ForEachFile(watch.m_Directory, [&, fun = std::forward<FunT>(fun)](const auto& file)
+                {
+                if (all_files || std::ranges::contains(watch.m_Files, file.filename()))
+                {
+                    fun(file.filename());
+                } },
+                g_ValidImageExtensions);
 }

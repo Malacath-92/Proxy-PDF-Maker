@@ -199,9 +199,11 @@ void CropperCropWork::run()
 
     m_RunningCropperWork.fetch_add(1, std::memory_order_release);
     AtScopeExit decrement_work_counter{
-        [this]()
+        // Capture the atomic as a pointer, since we may call this after the
+        // work object has been destroyed
+        [running_crop_work = &m_RunningCropperWork]() mutable
         {
-            m_RunningCropperWork.fetch_sub(1, std::memory_order_release);
+            running_crop_work->fetch_sub(1, std::memory_order_release);
         }
     };
 

@@ -452,8 +452,7 @@ void Project::InitProperties()
             std::views::filter([](const auto& item)
                                { return !item.m_ExternalPath.has_value() ||
                                         !fs::exists(item.m_ExternalPath.value()); }) |
-            std::views::transform([](const auto& item)
-                                  { return std::ref(item.m_Name); }) |
+            std::views::transform(&CardInfo::m_Name) |
             std::views::filter([&](const auto& img)
                                { return !std::ranges::contains(img_list, img); }) |
             std::ranges::to<std::vector>(),
