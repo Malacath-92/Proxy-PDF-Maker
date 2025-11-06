@@ -219,6 +219,11 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
         {
             if (const auto* info{ project.FindCard(img) })
             {
+                if (info->m_Hidden > 0 || info->m_Transient)
+                {
+                    continue;
+                }
+
                 push_card(*info);
             }
         }
@@ -227,6 +232,11 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     {
         for (const auto& info : project.GetCards())
         {
+            if (info.m_Hidden > 0 || info.m_Transient)
+            {
+                continue;
+            }
+
             for (uint32_t i = 0; i < info.m_Num; i++)
             {
                 push_card(info);
