@@ -7,6 +7,7 @@
 #include <ppp/util.hpp>
 
 class Project;
+struct ProjectData;
 
 class CardProvider : public QObject, public efsw::FileWatchListener
 {
@@ -17,13 +18,16 @@ class CardProvider : public QObject, public efsw::FileWatchListener
 
     void Start();
 
-    void NewProjectOpened();
-    void ImageDirChanged();
+    void NewProjectOpened(const ProjectData& old_project, const ProjectData& new_project);
+    void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
     void CardSizeChanged();
     void BleedChanged();
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();
+
+    void ExternalCardAdded(const fs::path& absolute_image_path);
+    void ExternalCardRemoved(const fs::path& absolute_image_path);
 
   private:
     virtual void handleFileAction(efsw::WatchID watchid,
@@ -31,8 +35,25 @@ class CardProvider : public QObject, public efsw::FileWatchListener
                                   const std::string& filename,
                                   efsw::Action action,
                                   std::string old_filename) override;
+    
+    struct SWatch
+    {
+        fs::path m_Directory;
+        std::vector<fs::path> m_Files;
+    };
 
-    std::vector<fs::path> ListFiles();
+    void RegisterInitialWatches(const ProjectData& project);
+
+    void RegisterExternalCard(const fs::path& absolute_image_path);
+    void UnregisterExternalCard(const fs::path& absolute_image_path);
+
+    SWatch* FindWatch(const fs::path& directory);
+    void EraseWatch(const fs::path& directory);
+
+    std::vector<fs::path> ListFiles() const;
+    std::vector<fs::path> ListFiles(const SWatch& watch) const;
+    template<class FunT>
+    static void ListFiles(const SWatch& watch, FunT&& fun);
 
   signals:
     void CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview);
@@ -41,11 +62,10 @@ class CardProvider : public QObject, public efsw::FileWatchListener
     void CardModified(const fs::path& card_name);
 
   private:
-    const Project& m_Project;
-
-    fs::path m_ImageDir;
+    std::vector<SWatch> m_Watches;
 
     efsw::FileWatcher m_Watcher;
+    std::vector<efsw::WatcherOption> m_WatcherOptions;
 
     bool m_Started{ false };
 };

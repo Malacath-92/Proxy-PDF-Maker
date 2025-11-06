@@ -190,6 +190,13 @@ int main(int argc, char** argv)
     };
 
     {
+        // Creates the card-info correctly
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDropped, &project, &Project::ExternalCardAdded);
+        // Starts a watch on this file and forwards the relevant info to other widgets and systems
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDropped, &card_provider, &CardProvider::ExternalCardAdded);
+    }
+
+    {
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);

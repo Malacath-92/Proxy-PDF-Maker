@@ -32,7 +32,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
         path_two,
         [&images](const fs::path& path)
         {
-            if (!std::ranges::contains(images, path))
+            if (!std::ranges::contains(images, path.filename()))
             {
                 images.push_back(path.filename());
             }

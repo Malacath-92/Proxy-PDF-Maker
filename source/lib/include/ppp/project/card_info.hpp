@@ -1,7 +1,11 @@
 #pragma once
 
+#include <optional>
+
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
+
+struct ProjectData;
 
 enum class BadAspectRatioHandling
 {
@@ -24,6 +28,7 @@ enum class BleedType
 struct CardInfo
 {
     fs::path m_Name{};
+    std::optional<fs::path> m_ExternalPath;
 
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
@@ -39,4 +44,7 @@ struct CardInfo
     fs::file_time_type m_LastWriteTime{};
 
     bool m_Transient{ false };
+
+    fs::path GetSourcePath(const ProjectData& data) const;
+    fs::path GetSourceFolder(const ProjectData& data) const;
 };

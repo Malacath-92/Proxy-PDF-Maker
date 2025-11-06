@@ -15,6 +15,8 @@ enum class ToastType
 
 class PrintProxyPrepMainWindow : public QMainWindow
 {
+    Q_OBJECT
+
   public:
     PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options);
 
@@ -25,4 +27,10 @@ class PrintProxyPrepMainWindow : public QMainWindow
                QString message);
 
     virtual void closeEvent(QCloseEvent* event) override;
+
+    virtual void dragEnterEvent(QDragEnterEvent* event) override;
+    virtual void dropEvent(QDropEvent* event) override;
+
+  signals:
+    void ImageDropped(const fs::path& absolute_image_path) const;
 };

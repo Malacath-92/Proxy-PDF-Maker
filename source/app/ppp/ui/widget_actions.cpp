@@ -133,6 +133,7 @@ ActionsWidget::ActionsWidget(Project& project)
                     application.SetProjectPath(new_project_json.value());
                     GenericPopup reload_window{ window(), "Reloading project..." };
 
+                    const auto old_project_data{ std::move(project.m_Data) };
                     const auto load_project_work{
                         [=, &project]()
                         {
@@ -143,7 +144,7 @@ ActionsWidget::ActionsWidget(Project& project)
                     auto* main_window{ window() };
                     main_window->setEnabled(false);
                     reload_window.ShowDuringWork(load_project_work);
-                    NewProjectOpened();
+                    NewProjectOpened(old_project_data, project.m_Data);
                     main_window->setEnabled(true);
                 }
             }
@@ -157,14 +158,16 @@ ActionsWidget::ActionsWidget(Project& project)
             {
                 if (new_image_dir != project.m_Data.m_ImageDir)
                 {
-                    project.m_Data.m_ImageDir = new_image_dir.value();
+                    const auto old_image_dir{ std::move(project.m_Data.m_ImageDir) };
+
+                    project.m_Data.m_ImageDir = std::move(new_image_dir).value();
                     project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
                     project.m_Data.m_UncropDir = project.m_Data.m_ImageDir / "uncrop";
                     project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
 
                     project.Init();
 
-                    ImageDirChanged();
+                    ImageDirChanged(old_image_dir, project.m_Data.m_ImageDir);
                 }
             }
         }

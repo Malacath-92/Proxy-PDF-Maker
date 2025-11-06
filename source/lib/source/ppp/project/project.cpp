@@ -128,6 +128,10 @@ void Project::Load(const fs::path& json_path)
                 card.m_BadAspectRatioHandling = magic_enum::enum_cast<BadAspectRatioHandling>(card_json["ratio_handling"].get_ref<const std::string&>())
                                                     .value_or(BadAspectRatioHandling::Default);
             }
+            if (card_json.contains("external_path"))
+            {
+                card.m_ExternalPath = card_json["external_path"].get_ref<const std::string&>();
+            }
         }
 
         if (json.contains("cards_order"))
@@ -317,6 +321,10 @@ void Project::Dump(const fs::path& json_path) const
                 card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
                 card_json["bleed_type"] = magic_enum::enum_name(card.m_BleedType);
                 card_json["ratio_handling"] = magic_enum::enum_name(card.m_BadAspectRatioHandling);
+                if (card.m_ExternalPath.has_value())
+                {
+                    card_json["external_path"] = card.m_ExternalPath.value().string();
+                }
             }
         }
         json["cards"] = cards;
@@ -434,13 +442,16 @@ void Project::InitProperties()
         auto* card{ FindCard(img) };
         if (card == nullptr && img != g_Cfg.m_FallbackName)
         {
-            PutCard(img);
+            CardAdded(img);
         }
     }
 
     // And also check we don't have stale cards in here
     const auto stale_images{
         m_Data.m_Cards |
+            std::views::filter([](const auto& item)
+                               { return !item.m_ExternalPath.has_value() ||
+                                        !fs::exists(item.m_ExternalPath.value()); }) |
             std::views::transform([](const auto& item)
                                   { return std::ref(item.m_Name); }) |
             std::views::filter([&](const auto& img)
@@ -453,6 +464,15 @@ void Project::InitProperties()
         m_Data.m_Previews.erase(img);
         EatCard(img);
     }
+}
+
+fs::path Project::GetCardImagePath(const fs::path& card_name) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        return card->GetSourcePath(m_Data);
+    }
+    return m_Data.m_ImageDir / card_name;
 }
 
 bool Project::HideCard(const fs::path& card_name)
@@ -669,7 +689,7 @@ void Project::ReorderCards(size_t from, size_t to)
     m_Data.m_CardsList.insert(to_it, from_card);
 }
 
-void Project::CardAdded(const fs::path& card_name)
+CardInfo& Project::CardAdded(const fs::path& card_name)
 {
     auto* card{ FindCard(card_name) };
     if (card == nullptr)
@@ -691,6 +711,8 @@ void Project::CardAdded(const fs::path& card_name)
 
     AutoMatchBackside(card_name);
     AppendCardToList(card_name);
+
+    return *card;
 }
 
 void Project::CardRemoved(const fs::path& card_name)
@@ -723,7 +745,7 @@ void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
     if (auto old_card{ EatCard(old_card_name) })
     {
         old_card.value().m_Name = new_card_name;
-        old_card.value().m_LastWriteTime = TryGetLastWriteTime(m_Data.m_ImageDir / new_card_name);
+        old_card.value().m_LastWriteTime = TryGetLastWriteTime(old_card->GetSourceFolder(m_Data) / new_card_name);
         PutCard(std::move(old_card).value());
 
         for (auto& other_card : m_Data.m_Cards)
@@ -750,7 +772,7 @@ void Project::CardModified(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
     {
-        card->m_LastWriteTime = TryGetLastWriteTime(m_Data.m_ImageDir / card_name);
+        card->m_LastWriteTime = TryGetLastWriteTime(card->GetSourcePath(m_Data) / card_name);
     }
 }
 
@@ -787,7 +809,7 @@ CardInfo& Project::PutCard(const fs::path& card_name)
     CardInfo new_card{
         .m_Name{ card_name },
         .m_Num = 1,
-        .m_Hidden = card_name.string().starts_with("__") ? 1 : 0,
+        .m_Hidden = card_name.string().starts_with("__") ? 1u : 0u,
         .m_LastWriteTime{ TryGetLastWriteTime(m_Data.m_ImageDir / card_name) },
     };
 
@@ -1231,7 +1253,7 @@ void Project::EnsureOutputFolder() const
         c_CreateDirectories(m_Data.m_UncropDir);
     }
 }
-Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
+ProjectData::CardLayout ProjectData::ComputeAutoCardLayout(
     const Config& config,
     Size available_space) const
 {
@@ -1260,9 +1282,9 @@ Project::ProjectData::CardLayout Project::ProjectData::ComputeAutoCardLayout(
     }
 }
 
-dla::uvec2 Project::ProjectData::ComputeCardLayout(const Config& config,
-                                                   Size available_space,
-                                                   CardOrientation orientation) const
+dla::uvec2 ProjectData::ComputeCardLayout(const Config& config,
+                                          Size available_space,
+                                          CardOrientation orientation) const
 {
     if (available_space.x <= 0_mm || available_space.y <= 0_mm)
     {
@@ -1292,7 +1314,7 @@ dla::uvec2 Project::ProjectData::ComputeCardLayout(const Config& config,
     return layout;
 }
 
-Size Project::ProjectData::ComputePageSize(const Config& config) const
+Size ProjectData::ComputePageSize(const Config& config) const
 {
     const bool fit_size{ m_PageSize == Config::c_FitSize };
     const bool infer_size{ m_PageSize == Config::c_BasePDFSize };
@@ -1317,7 +1339,7 @@ Size Project::ProjectData::ComputePageSize(const Config& config) const
     }
 }
 
-Size Project::ProjectData::ComputeCardsSize(const Config& config) const
+Size ProjectData::ComputeCardsSize(const Config& config) const
 {
     const bool has_vertical_layout{ m_CardLayoutVertical.x > 0 && m_CardLayoutVertical.y > 0 };
     const bool has_horizontal_layout{ m_CardLayoutHorizontal.x > 0 && m_CardLayoutHorizontal.y > 0 };
@@ -1348,7 +1370,7 @@ Size Project::ProjectData::ComputeCardsSize(const Config& config) const
     return {};
 }
 
-Size Project::ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const
+Size ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const
 {
     if (card_layout.x == 0 || card_layout.y == 0)
     {
@@ -1358,7 +1380,7 @@ Size Project::ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, co
     return card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing;
 }
 
-Margins Project::ProjectData::ComputeMargins(const Config& config) const
+Margins ProjectData::ComputeMargins(const Config& config) const
 {
     // Custom margins take precedence over computed defaults to allow user-defined layouts
     // for specific printing requirements or aesthetic preferences
@@ -1403,12 +1425,12 @@ Margins Project::ProjectData::ComputeMargins(const Config& config) const
     };
 }
 
-Size Project::ProjectData::ComputeMaxMargins(const Config& config) const
+Size ProjectData::ComputeMaxMargins(const Config& config) const
 {
     return ComputeMaxMargins(config, m_MarginsMode);
 }
 
-Size Project::ProjectData::ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const
+Size ProjectData::ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const
 {
     const Size page_size{ ComputePageSize(config) };
     const auto card_size_with_bleed{ CardSizeWithBleed(config) };
@@ -1479,7 +1501,7 @@ Size Project::ProjectData::ComputeMaxMargins(const Config& config, MarginsMode m
     std::unreachable();
 }
 
-Size Project::ProjectData::ComputeDefaultMargins(const Config& config) const
+Size ProjectData::ComputeDefaultMargins(const Config& config) const
 {
     switch (m_MarginsMode)
     {
@@ -1503,13 +1525,13 @@ Size Project::ProjectData::ComputeDefaultMargins(const Config& config) const
     std::unreachable();
 }
 
-float Project::ProjectData::CardRatio(const Config& config) const
+float ProjectData::CardRatio(const Config& config) const
 {
     const auto& card_size{ CardSize(config) };
     return card_size.x / card_size.y;
 }
 
-Size Project::ProjectData::CardSize(const Config& config) const
+Size ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{
         config.m_CardSizes.contains(m_CardSizeChoice)
@@ -1519,7 +1541,7 @@ Size Project::ProjectData::CardSize(const Config& config) const
     return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
 }
 
-Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
+Size ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{
         config.m_CardSizes.contains(m_CardSizeChoice)
@@ -1529,7 +1551,7 @@ Size Project::ProjectData::CardSizeWithBleed(const Config& config) const
     return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
-Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
+Size ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{
         config.m_CardSizes.contains(m_CardSizeChoice)
@@ -1539,7 +1561,7 @@ Size Project::ProjectData::CardSizeWithFullBleed(const Config& config) const
     return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
-Length Project::ProjectData::CardFullBleed(const Config& config) const
+Length ProjectData::CardFullBleed(const Config& config) const
 {
     const auto& card_size_info{
         config.m_CardSizes.contains(m_CardSizeChoice)
@@ -1549,7 +1571,7 @@ Length Project::ProjectData::CardFullBleed(const Config& config) const
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
-Length Project::ProjectData::CardCornerRadius(const Config& config) const
+Length ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{
         config.m_CardSizes.contains(m_CardSizeChoice)
@@ -1584,6 +1606,22 @@ void Project::SetPreview(const fs::path& card_name,
 void Project::CropperDone()
 {
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
+}
+
+void Project::ExternalCardAdded(const fs::path& absolute_image_path)
+{
+    const auto card_name{ absolute_image_path.filename() };
+    if (HasCard(card_name))
+    {
+        LogError("Can't add card {} since a card with the same name is already part of the project.",
+                 card_name.string());
+    }
+    else
+    {
+        auto& card{ CardAdded(card_name) };
+        card.m_LastWriteTime = TryGetLastWriteTime(absolute_image_path),
+        card.m_ExternalPath = absolute_image_path;
+    }
 }
 
 CardSorting Project::GenerateDefaultCardsSorting() const

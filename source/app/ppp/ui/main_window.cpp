@@ -2,11 +2,14 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QDragEnterEvent>
 #include <QHBoxLayout>
+#include <QMimeData>
 #include <QStyleHints>
 
 #include <Toast.h>
 
+#include <ppp/project/image_ops.hpp>
 #include <ppp/ui/popups.hpp>
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
@@ -88,4 +91,43 @@ void PrintProxyPrepMainWindow::closeEvent(QCloseEvent* event)
     {
         event->ignore();
     }
+}
+
+void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (event->mimeData()->hasFormat("text/uri-list"))
+    {
+        const auto uri_list{ event->mimeData()->text().split('\n') };
+        for (const auto& uri : uri_list)
+        {
+            static constexpr std::string_view c_FileUriStart{ "file:///" };
+            if (uri.startsWith(c_FileUriStart.data()) &&
+                std::ranges::contains(g_ValidImageExtensions,
+                                      fs::path{ uri.toStdString() }.extension()))
+            {
+                // We have at least one valid image file in this
+                event->acceptProposedAction();
+                break;
+            }
+        }
+    }
+
+    QMainWindow::dragEnterEvent(event);
+}
+
+void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
+{
+    const auto uri_list{ event->mimeData()->text().split('\n') };
+    for (const auto& uri : uri_list)
+    {
+        static constexpr std::string_view c_FileUriStart{ "file:///" };
+        if (uri.startsWith(c_FileUriStart.data()) &&
+            std::ranges::contains(g_ValidImageExtensions,
+                                  fs::path{ uri.toStdString() }.extension()))
+        {
+            ImageDropped(uri.sliced(c_FileUriStart.size()).toStdString());
+        }
+    }
+
+    QMainWindow::dropEvent(event);
 }

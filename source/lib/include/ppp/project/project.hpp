@@ -94,6 +94,97 @@ enum CardOrientation
     Mixed,
 };
 
+struct ProjectData
+{
+    // Project options
+    fs::path m_ImageDir{ "images" };
+    fs::path m_CropDir{ "images/crop" };
+    fs::path m_UncropDir{ "images/uncrop" };
+    fs::path m_ImageCache{ "images/crop/preview.cache" };
+
+    // List of all cards
+    CardContainer m_Cards{};
+    ImgDict m_Previews{};
+    ImagePreview m_FallbackPreview{};
+
+    // Possibly empty list of all cards, determines user-provided order of cards
+    // or if empty implies automatic ordering
+    CardSorting m_CardsList{};
+
+    // Card options
+    Length m_BleedEdge{ 0_mm };
+    Size m_Spacing{ 0_mm, 0_mm };
+    bool m_SpacingLinked{ true };
+    CardCorners m_Corners{ CardCorners::Square };
+
+    // Backside options
+    bool m_BacksideEnabled{ false };
+    fs::path m_BacksideDefault{ "__back.png" };
+    Position m_BacksideOffset{ 0_mm, 0_mm };
+    std::string m_BacksideAutoPattern{ "__back_$" };
+
+    // PDF generation options
+    std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
+    std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
+    std::string m_BasePdf{ "None" };
+
+    // Margin mode is the user-selected edit-mode of margins
+    MarginsMode m_MarginsMode{ MarginsMode::Auto };
+
+    // Custom margins provide fine-grained control over page layout for professional printing
+    // where standard centered margins may not meet specific requirements
+    std::optional<CustomMargins> m_CustomMargins{};
+
+    // The way cards are layed out on the card can help maximize the amount of cards or
+    // reduce print errors
+    CardOrientation m_CardOrientation{ CardOrientation::Vertical };
+    dla::uvec2 m_CardLayoutVertical{ 3, 3 };
+    dla::uvec2 m_CardLayoutHorizontal{};
+
+    PageOrientation m_Orientation{ PageOrientation::Portrait };
+    FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
+    fs::path m_FileName{ "_printme" };
+
+    // Guides options
+    bool m_ExportExactGuides{ false };
+    bool m_EnableGuides{ true };
+    bool m_BacksideEnableGuides{ false };
+    bool m_CornerGuides{ true };
+    bool m_CrossGuides{ false };
+    bool m_ExtendedGuides{ false };
+    ColorRGB8 m_GuidesColorA{ 0, 0, 0 };
+    ColorRGB8 m_GuidesColorB{ 190, 190, 190 };
+    Length m_GuidesOffset{ 0_mm };
+    Length m_GuidesThickness{ 1_pts };
+    Length m_GuidesLength{ 1.5_mm };
+
+    // Utility functions
+    struct CardLayout
+    {
+        dla::uvec2 m_CardLayoutVertical;
+        dla::uvec2 m_CardLayoutHorizontal;
+    };
+    CardLayout ComputeAutoCardLayout(const Config& config, Size available_space) const;
+    dla::uvec2 ComputeCardLayout(const Config& config,
+                                 Size available_space,
+                                 CardOrientation orientation) const;
+
+    Size ComputePageSize(const Config& config) const;
+    Size ComputeCardsSize(const Config& config) const;
+    Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
+    Margins ComputeMargins(const Config& config) const;
+    Size ComputeMaxMargins(const Config& config) const;
+    Size ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const;
+    Size ComputeDefaultMargins(const Config& config) const;
+
+    float CardRatio(const Config& config) const;
+    Size CardSize(const Config& config) const;
+    Size CardSizeWithBleed(const Config& config) const;
+    Size CardSizeWithFullBleed(const Config& config) const;
+    Length CardFullBleed(const Config& config) const;
+    Length CardCornerRadius(const Config& config) const;
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -108,7 +199,7 @@ class Project : public QObject
     void Init();
     void InitProperties();
 
-    void CardAdded(const fs::path& card_name);
+    CardInfo& CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
     void CardModified(const fs::path& card_name);
@@ -120,6 +211,8 @@ class Project : public QObject
     CardInfo& PutCard(const fs::path& card_name);
     CardInfo& PutCard(CardInfo card);
     std::optional<CardInfo> EatCard(const fs::path& card_name);
+    
+    fs::path GetCardImagePath(const fs::path& card_name) const;
 
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
@@ -206,6 +299,8 @@ class Project : public QObject
 
     void CropperDone();
 
+    void ExternalCardAdded(const fs::path& absolute_image_path);
+
   signals:
     void BacksideEnabledChanged(bool backside_enabled);
 
@@ -218,98 +313,6 @@ class Project : public QObject
     void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);
 
   public:
-    using clock_t = std::chrono::high_resolution_clock;
-
-    struct ProjectData
-    {
-        // Project options
-        fs::path m_ImageDir{ "images" };
-        fs::path m_CropDir{ "images/crop" };
-        fs::path m_UncropDir{ "images/uncrop" };
-        fs::path m_ImageCache{ "images/crop/preview.cache" };
-
-        // List of all cards
-        CardContainer m_Cards{};
-        ImgDict m_Previews{};
-        ImagePreview m_FallbackPreview{};
-
-        // Possibly empty list of all cards, determines user-provided order of cards
-        // or if empty implies automatic ordering
-        CardSorting m_CardsList{};
-
-        // Card options
-        Length m_BleedEdge{ 0_mm };
-        Size m_Spacing{ 0_mm, 0_mm };
-        bool m_SpacingLinked{ true };
-        CardCorners m_Corners{ CardCorners::Square };
-
-        // Backside options
-        bool m_BacksideEnabled{ false };
-        fs::path m_BacksideDefault{ "__back.png" };
-        Position m_BacksideOffset{ 0_mm, 0_mm };
-        std::string m_BacksideAutoPattern{ "__back_$" };
-
-        // PDF generation options
-        std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
-        std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
-        std::string m_BasePdf{ "None" };
-
-        // Margin mode is the user-selected edit-mode of margins
-        MarginsMode m_MarginsMode{ MarginsMode::Auto };
-
-        // Custom margins provide fine-grained control over page layout for professional printing
-        // where standard centered margins may not meet specific requirements
-        std::optional<CustomMargins> m_CustomMargins{};
-
-        // The way cards are layed out on the card can help maximize the amount of cards or
-        // reduce print errors
-        CardOrientation m_CardOrientation{ CardOrientation::Vertical };
-        dla::uvec2 m_CardLayoutVertical{ 3, 3 };
-        dla::uvec2 m_CardLayoutHorizontal{};
-
-        PageOrientation m_Orientation{ PageOrientation::Portrait };
-        FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
-        fs::path m_FileName{ "_printme" };
-
-        // Guides options
-        bool m_ExportExactGuides{ false };
-        bool m_EnableGuides{ true };
-        bool m_BacksideEnableGuides{ false };
-        bool m_CornerGuides{ true };
-        bool m_CrossGuides{ false };
-        bool m_ExtendedGuides{ false };
-        ColorRGB8 m_GuidesColorA{ 0, 0, 0 };
-        ColorRGB8 m_GuidesColorB{ 190, 190, 190 };
-        Length m_GuidesOffset{ 0_mm };
-        Length m_GuidesThickness{ 1_pts };
-        Length m_GuidesLength{ 1.5_mm };
-
-        // Utility functions
-        struct CardLayout
-        {
-            dla::uvec2 m_CardLayoutVertical;
-            dla::uvec2 m_CardLayoutHorizontal;
-        };
-        CardLayout ComputeAutoCardLayout(const Config& config, Size available_space) const;
-        dla::uvec2 ComputeCardLayout(const Config& config,
-                                     Size available_space,
-                                     CardOrientation orientation) const;
-
-        Size ComputePageSize(const Config& config) const;
-        Size ComputeCardsSize(const Config& config) const;
-        Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
-        Margins ComputeMargins(const Config& config) const;
-        Size ComputeMaxMargins(const Config& config) const;
-        Size ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const;
-        Size ComputeDefaultMargins(const Config& config) const;
-
-        float CardRatio(const Config& config) const;
-        Size CardSize(const Config& config) const;
-        Size CardSizeWithBleed(const Config& config) const;
-        Size CardSizeWithFullBleed(const Config& config) const;
-        Length CardFullBleed(const Config& config) const;
-        Length CardCornerRadius(const Config& config) const;
-    };
     ProjectData m_Data;
 
   private:

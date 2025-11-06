@@ -74,6 +74,7 @@ class CropperCropWork : public CropperWork
         std::atomic_uint32_t& alive_cropper_work,
         std::atomic_uint32_t& running_crop_work,
         fs::path card_name,
+        fs::path image_path,
         std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
         const Project& project);
@@ -84,6 +85,7 @@ class CropperCropWork : public CropperWork
     std::atomic_uint32_t& m_RunningCropperWork;
 
     fs::path m_CardName;
+    fs::path m_ImagePath;
     Image::Rotation m_Rotation;
     BleedType m_BleedType;
     BadAspectRatioHandling m_BadAspectRatioHandling;
@@ -92,7 +94,7 @@ class CropperCropWork : public CropperWork
 
     ImageDataBase& m_ImageDB;
 
-    Project::ProjectData m_Data;
+    ProjectData m_Data;
     Config m_Cfg;
 };
 
@@ -104,6 +106,7 @@ class CropperPreviewWork : public CropperWork
     CropperPreviewWork(
         std::atomic_uint32_t& alive_cropper_work,
         fs::path card_name,
+        fs::path image_path,
         bool force,
         ImageDataBase& image_db,
         const Project& project);
@@ -117,6 +120,7 @@ class CropperPreviewWork : public CropperWork
 
   private:
     fs::path m_CardName;
+    fs::path m_ImagePath;
     Image::Rotation m_Rotation;
     BleedType m_BleedType;
     BadAspectRatioHandling m_BadAspectRatioHandling;
@@ -124,6 +128,6 @@ class CropperPreviewWork : public CropperWork
 
     ImageDataBase& m_ImageDB;
 
-    Project::ProjectData m_Data;
+    ProjectData m_Data;
     Config m_Cfg;
 };

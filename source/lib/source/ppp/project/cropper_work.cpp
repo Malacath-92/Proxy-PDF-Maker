@@ -7,9 +7,9 @@
 #include <ppp/project/image_database.hpp>
 #include <ppp/project/image_ops.hpp>
 
-static Project::ProjectData CopyRelevant(const Project::ProjectData& data)
+static ProjectData CopyRelevant(const ProjectData& data)
 {
-    return Project::ProjectData{
+    return ProjectData{
         .m_ImageDir{ data.m_ImageDir },
         .m_CropDir{ data.m_CropDir },
         .m_UncropDir{ data.m_UncropDir },
@@ -172,12 +172,14 @@ CropperCropWork::CropperCropWork(
     std::atomic_uint32_t& alive_cropper_work,
     std::atomic_uint32_t& running_crop_work,
     fs::path card_name,
+    fs::path image_path,
     std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
     const Project& project)
     : CropperWork{ alive_cropper_work }
     , m_RunningCropperWork{ running_crop_work }
     , m_CardName{ std::move(card_name) }
+    , m_ImagePath{ std::move(image_path) }
     , m_Rotation{ project.GetCardRotation(m_CardName) }
     , m_BleedType{ project.GetCardBleedType(m_CardName) }
     , m_BadAspectRatioHandling{ project.GetCardBadAspectRatioHandling(m_CardName) }
@@ -221,7 +223,7 @@ void CropperCropWork::run()
 
         const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
 
-        const fs::path input_file{ m_Data.m_ImageDir / m_CardName };
+        const fs::path input_file{ m_ImagePath };
         const fs::path crop_dir{ m_Data.m_CropDir };
         const fs::path uncrop_dir{ m_Data.m_UncropDir };
 
@@ -383,11 +385,13 @@ void CropperCropWork::run()
 CropperPreviewWork::CropperPreviewWork(
     std::atomic_uint32_t& alive_cropper_work,
     fs::path card_name,
+    fs::path image_path,
     bool force,
     ImageDataBase& image_db,
     const Project& project)
     : CropperWork{ alive_cropper_work }
     , m_CardName{ std::move(card_name) }
+    , m_ImagePath{ std::move(image_path) }
     , m_Rotation{ project.GetCardRotation(m_CardName) }
     , m_BleedType{ project.GetCardBleedType(m_CardName) }
     , m_BadAspectRatioHandling{ project.GetCardBadAspectRatioHandling(m_CardName) }
@@ -416,7 +420,7 @@ void CropperPreviewWork::run()
 
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
-        const fs::path input_file{ m_Data.m_ImageDir / m_CardName };
+        const fs::path input_file{ m_ImagePath };
 
         const auto card_aspect_ratio{ card_size.x / card_size.y };
         const auto card_with_full_bleed_aspect_ratio{

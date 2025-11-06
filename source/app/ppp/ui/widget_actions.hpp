@@ -2,10 +2,13 @@
 
 #include <QWidget>
 
+#include <ppp/util.hpp>
+
 class QPushButton;
 class QProgressBar;
 
 class Project;
+struct ProjectData;
 
 class ActionsWidget : public QWidget
 {
@@ -15,8 +18,8 @@ class ActionsWidget : public QWidget
     ActionsWidget(Project& project);
 
   signals:
-    void NewProjectOpened();
-    void ImageDirChanged();
+    void NewProjectOpened(const ProjectData& old_project, const ProjectData& new_project);
+    void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
   public slots:
     void CropperWorking();
