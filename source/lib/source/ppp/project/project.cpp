@@ -461,7 +461,6 @@ bool Project::HideCard(const fs::path& card_name)
     {
         const bool was_visible{ card->m_Hidden == 0 };
         card->m_Hidden++;
-        card->m_Num = 0;
         if (was_visible)
         {
             RemoveCardFromList(card_name);
@@ -787,18 +786,10 @@ CardInfo& Project::PutCard(const fs::path& card_name)
 
     CardInfo new_card{
         .m_Name{ card_name },
+        .m_Num = 1,
+        .m_Hidden = card_name.string().starts_with("__") ? 1 : 0,
         .m_LastWriteTime{ TryGetLastWriteTime(m_Data.m_ImageDir / card_name) },
     };
-    if (card_name.string().starts_with("__"))
-    {
-        new_card.m_Num = 0;
-        new_card.m_Hidden = 1;
-    }
-    else
-    {
-        new_card.m_Num = 1;
-        new_card.m_Hidden = 0;
-    }
 
     auto insert_at{
         [&]()
