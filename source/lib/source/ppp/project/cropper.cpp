@@ -3,6 +3,7 @@
 #include <ranges>
 
 #include <QDebug>
+#include <QEventLoop>
 #include <QThreadPool>
 #include <QTimer>
 
@@ -55,10 +56,26 @@ Cropper::~Cropper()
         work->Cancel();
     }
 
-    while (m_AliveCropperWork.load(std::memory_order_acquire))
+    if (m_AliveCropperWork.load(std::memory_order_acquire) > 0)
     {
-        QThread::yieldCurrentThread();
+        // Give the work six seconds to finish and be destroyed
+        QTimer dtor_timeout;
+        dtor_timeout.setSingleShot(true);
+        dtor_timeout.setInterval(6000);
+
+        QEventLoop evt_loop;
+        QObject::connect(&dtor_timeout,
+                         &QTimer::timeout,
+                         &evt_loop,
+                         &QEventLoop::quit);
+        QObject::connect(this,
+                         &Cropper::CropWorkDone,
+                         &evt_loop,
+                         &QEventLoop::quit);
+        evt_loop.exec();
     }
+
+    assert(m_AliveCropperWork.load(std::memory_order_acquire) == 0);
 
     m_ImageDB.Write();
 }
