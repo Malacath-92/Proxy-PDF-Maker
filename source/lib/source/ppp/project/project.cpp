@@ -1188,6 +1188,22 @@ bool Project::SetBacksideEnabled(bool backside_enabled)
     if (m_Data.m_BacksideEnabled != backside_enabled)
     {
         m_Data.m_BacksideEnabled = backside_enabled;
+
+        for (const auto& card : m_Data.m_Cards)
+        {
+            if (!card.m_Backside.empty())
+            {
+                if (backside_enabled)
+                {
+                    HideCard(card.m_Backside);
+                }
+                else
+                {
+                    UnhideCard(card.m_Backside);
+                }
+            }
+        }
+
         BacksideEnabledChanged(backside_enabled);
         return true;
     }
