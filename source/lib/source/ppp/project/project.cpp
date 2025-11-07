@@ -706,6 +706,11 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
     {
         --card->m_Hidden;
         card->m_Transient = false;
+
+        if (m_Data.m_BacksideEnabled && !card->m_Backside.empty())
+        {
+            HideCard(card->m_Backside);
+        }
     }
 
     AutoMatchBackside(card_name);
@@ -720,6 +725,11 @@ void Project::CardRemoved(const fs::path& card_name)
     {
         ++card->m_Hidden;
         card->m_Transient = true;
+
+        if (m_Data.m_BacksideEnabled && !card->m_Backside.empty())
+        {
+            UnhideCard(card->m_Backside);
+        }
 
         if (const auto& frontside{ MatchAsAutoBackside(card_name) })
         {
