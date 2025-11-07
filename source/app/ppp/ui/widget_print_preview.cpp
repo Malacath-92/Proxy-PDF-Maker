@@ -287,9 +287,8 @@ class PrintPreview::PagePreview : public QWidget
         m_ImageContainer->resize(event->size());
 
         const auto width{ event->size().width() };
-        const auto height{ heightForWidth(width) };
-        setFixedHeight(height);
-
+        const auto height{ event->size().height() };
+        
         const dla::ivec2 size{ width, height };
         const auto pixel_ratio{ size / m_PageSize };
 
