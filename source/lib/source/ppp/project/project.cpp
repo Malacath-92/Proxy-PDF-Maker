@@ -474,6 +474,15 @@ fs::path Project::GetCardImagePath(const fs::path& card_name) const
     return m_Data.m_ImageDir / card_name;
 }
 
+bool Project::IsCardExternal(const fs::path& card_name) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        return card->m_ExternalPath.has_value();
+    }
+    return false;
+}
+
 bool Project::HideCard(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
@@ -1633,20 +1642,38 @@ void Project::CropperDone()
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
 
-void Project::ExternalCardAdded(const fs::path& absolute_image_path)
+bool Project::AddExternalCard(const fs::path& absolute_image_path)
 {
     const auto card_name{ absolute_image_path.filename() };
     if (HasCard(card_name))
     {
         LogError("Can't add card {} since a card with the same name is already part of the project.",
                  card_name.string());
+        FailedAddingExternalCard(absolute_image_path);
+        return false;
     }
     else
     {
         auto& card{ CardAdded(card_name) };
         card.m_LastWriteTime = TryGetLastWriteTime(absolute_image_path),
         card.m_ExternalPath = absolute_image_path;
+        ExternalCardAdded(absolute_image_path);
+        return true;
     }
+}
+
+bool Project::RemoveExternalCard(const fs::path& card_name)
+{
+    if (IsCardExternal(card_name))
+    {
+        const fs::path absolute_image_path{
+            FindCard(card_name)->m_ExternalPath.value()
+        };
+        CardRemoved(card_name);
+        ExternalCardRemoved(absolute_image_path);
+        return true;
+    }
+    return false;
 }
 
 CardSorting Project::GenerateDefaultCardsSorting() const

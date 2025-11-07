@@ -10,6 +10,7 @@
 #include <Toast.h>
 
 #include <ppp/project/image_ops.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/ui/popups.hpp>
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
@@ -79,6 +80,13 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
     }
 
     toast->show();
+}
+void PrintProxyPrepMainWindow::ImageDropRejected(const fs::path& absolute_image_path)
+{
+    Toast(ToastType::Info,
+          "Drag 'N Drop Failed",
+          QString{ "An image with name %1 is already part of the project." }
+              .arg(ToQString(absolute_image_path.filename())));
 }
 
 void PrintProxyPrepMainWindow::closeEvent(QCloseEvent* event)

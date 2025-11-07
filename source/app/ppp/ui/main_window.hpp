@@ -26,6 +26,8 @@ class PrintProxyPrepMainWindow : public QMainWindow
                QString title,
                QString message);
 
+    void ImageDropRejected(const fs::path& absolute_image_path);
+
     virtual void closeEvent(QCloseEvent* event) override;
 
     virtual void dragEnterEvent(QDragEnterEvent* event) override;

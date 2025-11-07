@@ -53,6 +53,8 @@ class CardImage : public QLabel
 
     void ContextMenuRequested(QPoint pos);
 
+    void RemoveExternalCard(Project& project);
+
     void ResetBackside(Project& project);
 
     void ChangeBleedType(Project& project, BleedType bleed_type);
@@ -74,6 +76,7 @@ class CardImage : public QLabel
     Length m_BleedEdge;
     Length m_CornerRadius;
 
+    bool m_IsExternalCard{ false };
     bool m_BacksideEnabled{ false };
     bool m_HasNonDefaultBackside{ false };
     bool m_BadAspectRatio{ false };
@@ -82,6 +85,8 @@ class CardImage : public QLabel
 
     QWidget* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
+
+    QAction* m_RemoveExternalCardAction{ nullptr };
 
     QAction* m_ResetBacksideAction{ nullptr };
 

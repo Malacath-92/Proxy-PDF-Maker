@@ -213,6 +213,7 @@ class Project : public QObject
     std::optional<CardInfo> EatCard(const fs::path& card_name);
     
     fs::path GetCardImagePath(const fs::path& card_name) const;
+    bool IsCardExternal(const fs::path& card_name) const;
 
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
@@ -299,9 +300,14 @@ class Project : public QObject
 
     void CropperDone();
 
-    void ExternalCardAdded(const fs::path& absolute_image_path);
+    bool AddExternalCard(const fs::path& absolute_image_path);
+    bool RemoveExternalCard(const fs::path& card_name);
 
   signals:
+    void FailedAddingExternalCard(const fs::path& absolute_image_path);
+    void ExternalCardAdded(const fs::path& absolute_image_path);
+    void ExternalCardRemoved(const fs::path& absolute_image_path);
+
     void BacksideEnabledChanged(bool backside_enabled);
 
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);

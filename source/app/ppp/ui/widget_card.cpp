@@ -69,6 +69,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     m_BleedEdge = params.m_BleedEdge;
     m_CornerRadius = project.CardCornerRadius();
 
+    m_IsExternalCard = project.IsCardExternal(card_name);
     m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
     m_HasNonDefaultBackside = project.HasNonDefaultBacksideImage(card_name);
     m_BadAspectRatio = project.HasBadAspectRatio(card_name);
@@ -151,6 +152,9 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
                          this,
                          &CardImage::ContextMenuRequested);
 
+        m_RemoveExternalCardAction = new QAction{ "Remove External Card", this };
+        m_RemoveExternalCardAction->setIcon(QIcon{ QPixmap{ ":/res/clear.png" } });
+
         m_ResetBacksideAction = new QAction{ "Reset Backside", this };
         m_ResetBacksideAction->setIcon(QIcon{ QPixmap{ ":/res/clear.png" } });
 
@@ -173,6 +177,10 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
         m_RotateRightAction = new QAction{ "Rotate Right", this };
         m_RotateRightAction->setIcon(QIcon{ QPixmap{ ":/res/tap.png" } });
 
+        QObject::connect(m_RemoveExternalCardAction,
+                         &QAction::triggered,
+                         this,
+                         std::bind_front(&CardImage::RemoveExternalCard, this, std::ref(project)));
         QObject::connect(m_ResetBacksideAction,
                          &QAction::triggered,
                          this,
@@ -369,6 +377,12 @@ void CardImage::ContextMenuRequested(QPoint pos)
 {
     auto* menu{ new QMenu{ this } };
 
+    if (m_IsExternalCard)
+    {
+        menu->addAction(m_RemoveExternalCardAction);
+        menu->addSeparator();
+    }
+
     if (m_BacksideEnabled && m_HasNonDefaultBackside)
     {
         menu->addAction(m_ResetBacksideAction);
@@ -402,6 +416,11 @@ void CardImage::ContextMenuRequested(QPoint pos)
     menu->addAction(m_RotateRightAction);
 
     menu->popup(mapToGlobal(pos));
+}
+
+void CardImage::RemoveExternalCard(Project& project)
+{
+    project.RemoveExternalCard(m_CardName);
 }
 
 void CardImage::ResetBackside(Project& project)

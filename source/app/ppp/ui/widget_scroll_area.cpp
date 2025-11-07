@@ -531,16 +531,19 @@ CardScrollArea::CardScrollArea(Project& project)
     auto* global_decrement_button{ new QPushButton{ "-" } };
     auto* global_increment_button{ new QPushButton{ "+" } };
     auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
+    auto* remove_external_button{ new QPushButton{ "Remove All External Cards" } };
 
     global_decrement_button->setToolTip("Remove one from all");
     global_increment_button->setToolTip("Add one to all");
     global_set_zero_button->setToolTip("Set all to zero");
+    remove_external_button->setToolTip("Removes all cards not part of the images folder");
 
     auto* global_number_layout{ new QHBoxLayout };
     global_number_layout->addWidget(global_label);
     global_number_layout->addWidget(global_decrement_button);
     global_number_layout->addWidget(global_increment_button);
     global_number_layout->addWidget(global_set_zero_button);
+    global_number_layout->addWidget(remove_external_button);
     global_number_layout->addStretch();
     global_number_layout->setContentsMargins(6, 0, 6, 0);
 
@@ -594,6 +597,16 @@ CardScrollArea::CardScrollArea(Project& project)
         }
     };
 
+    auto remove_all_external{
+        [=, &project]()
+        {
+            for (auto& [card_name, _] : card_grid->GetCards())
+            {
+                project.RemoveExternalCard(card_name);
+            }
+        }
+    };
+
     QObject::connect(global_decrement_button,
                      &QPushButton::clicked,
                      this,
@@ -606,6 +619,10 @@ CardScrollArea::CardScrollArea(Project& project)
                      &QPushButton::clicked,
                      this,
                      reset_number);
+    QObject::connect(remove_external_button,
+                     &QPushButton::clicked,
+                     this,
+                     remove_all_external);
 
     m_Grid = card_grid;
 }
