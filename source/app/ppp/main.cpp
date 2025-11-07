@@ -244,36 +244,36 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
 
-        QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::Refresh);
-        QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::Refresh);
-        QObject::connect(&card_provider, &CardProvider::CardRenamed, print_preview, &PrintPreview::Refresh);
+        QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&card_provider, &CardProvider::CardRenamed, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(print_options, &PrintOptionsWidget::PageSizeChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(print_options, &PrintOptionsWidget::MarginsChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(print_options, &PrintOptionsWidget::CardLayoutChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(print_options, &PrintOptionsWidget::OrientationChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(print_options, &PrintOptionsWidget::FlipOnChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(print_options, &PrintOptionsWidget::PageSizeChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(print_options, &PrintOptionsWidget::MarginsChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(print_options, &PrintOptionsWidget::CardLayoutChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(print_options, &PrintOptionsWidget::OrientationChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(print_options, &PrintOptionsWidget::FlipOnChanged, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::CornerGuidesChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::CrossGuidesChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::ExtendedGuidesChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesColorChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesOffsetChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesLengthChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesThicknessChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::CornerGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::CrossGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::ExtendedGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesColorChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesLengthChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(card_options, &CardOptionsWidget::CornersChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::Refresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::CornersChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, print_preview, &PrintPreview::CardOrderDirectionChanged);
     }

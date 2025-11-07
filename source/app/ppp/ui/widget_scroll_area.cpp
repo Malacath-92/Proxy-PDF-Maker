@@ -516,6 +516,17 @@ class CardScrollArea::CardGrid : public QWidget
 CardScrollArea::CardScrollArea(Project& project)
     : m_Project{ project }
 {
+    m_RefreshTimer.setSingleShot(true);
+    m_RefreshTimer.setInterval(50);
+    QObject::connect(&m_RefreshTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         m_Grid->FullRefresh();
+                         setMinimumWidth(ComputeMinimumWidth());
+                     });
+
     auto* global_label{ new QLabel{ "Global Controls:" } };
     auto* global_decrement_button{ new QPushButton{ "-" } };
     auto* global_increment_button{ new QPushButton{ "+" } };
@@ -678,8 +689,7 @@ void CardScrollArea::CardVisibilityChanged(const fs::path& card_name, bool visib
 
 void CardScrollArea::FullRefresh()
 {
-    m_Grid->FullRefresh();
-    setMinimumWidth(ComputeMinimumWidth());
+    m_RefreshTimer.start();
 }
 
 int CardScrollArea::ComputeMinimumWidth()

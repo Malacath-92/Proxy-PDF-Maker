@@ -15,6 +15,7 @@ class PrintPreview : public QScrollArea
     PrintPreview(Project& project);
 
     void Refresh();
+    void RequestRefresh();
 
     void CardOrderChanged();
     void CardOrderDirectionChanged();
@@ -39,4 +40,9 @@ class PrintPreview : public QScrollArea
 
     PageImageTransforms m_FrontsideTransforms;
     PageImageTransforms m_BacksideTransforms;
+
+    // We use a timer whenever we do a full refresh
+    // to avoid cases where we get multiple requests
+    // in quick succession
+    QTimer m_RefreshTimer;
 };

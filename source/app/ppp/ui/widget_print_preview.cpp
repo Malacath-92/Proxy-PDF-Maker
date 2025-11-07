@@ -288,7 +288,7 @@ class PrintPreview::PagePreview : public QWidget
 
         const auto width{ event->size().width() };
         const auto height{ event->size().height() };
-        
+
         const dla::ivec2 size{ width, height };
         const auto pixel_ratio{ size / m_PageSize };
 
@@ -459,6 +459,16 @@ class ArrowWidget : public QFrame
 PrintPreview::PrintPreview(Project& project)
     : m_Project{ project }
 {
+    m_RefreshTimer.setSingleShot(true);
+    m_RefreshTimer.setInterval(50);
+    QObject::connect(&m_RefreshTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         Refresh();
+                     });
+
     Refresh();
 
     setWidgetResizable(true);
@@ -686,11 +696,16 @@ void PrintPreview::Refresh()
     verticalScrollBar()->setValue(current_scroll);
 }
 
+void PrintPreview::RequestRefresh()
+{
+    m_RefreshTimer.start();
+}
+
 void PrintPreview::CardOrderChanged()
 {
     if (!m_Project.IsManuallySorted())
     {
-        Refresh();
+        RequestRefresh();
     }
 }
 
@@ -698,7 +713,7 @@ void PrintPreview::CardOrderDirectionChanged()
 {
     if (!m_Project.IsManuallySorted())
     {
-        Refresh();
+        RequestRefresh();
     }
 }
 

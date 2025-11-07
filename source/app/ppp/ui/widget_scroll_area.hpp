@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QScrollArea>
+#include <QTimer>
 
 #include <ppp/util.hpp>
 
@@ -39,4 +40,9 @@ class CardScrollArea : public QScrollArea
 
     class CardGrid;
     CardGrid* m_Grid;
+
+    // We use a timer whenever we do a full refresh
+    // to avoid cases where we get multiple requests
+    // in quick succession
+    QTimer m_RefreshTimer;
 };
