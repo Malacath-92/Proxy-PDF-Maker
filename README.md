@@ -19,12 +19,22 @@ Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) pa
 
 On Windows you will additionally have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
-# Running the Program
+# Quick-Start Guide
 
 > [!NOTE]
 > This app was initially designed to work with card images that include a bleed edge. However it should be able to handle images without bleed edge by generating it on the fly. Be aware though that this is done based on aspect-ratio, so the images need to align as good as possible to avoid stretching and squishing. Card size and bleed edge can be further configured by users and changed per-game.
 
-First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping.
+The following is an outline for creating your first project:
+- Start the app, ideally by just double-clicking the executable.
+- Add images either by
+    - copying/moving them into the `images` folder that was created for you or
+    - dragging image files directly onto the app window.
+- Set the amount you want for each card by pressing the `+` or `-` buttons for each card.
+- Open the preview by pressing it in the top-left corner of the app window and verify everything is as you want.
+- Press the `Render PDF` button in the top-right corner that will appear once the loading bar is done.
+- Wait for rendering to be finished, the rendered pdf should be opened automatically.
+
+From here you have to explore the different options the app has to offer on the right-hand side. Be sure to always have the preview open while changing values there so you know how the final pdf will be affected.
 
 <p align="center">
     <img src="./readme_images/sample_project.png" alt="Sample Project" width=400/>
@@ -42,8 +52,6 @@ First, throw some images in the `images` folder. Then start the program to start
 > [!NOTE]
 > Images starting with `__` will not be visible in the program. These can however still be used as backsides for other cards.
 
-Below is an outline of the different parts of the app and most importantly the many options that you can work with.
-
 <p align="center">
     <img src="./readme_images/sample_project_backsides.png" alt="Sample Project with Backsides" width=400/>
     <img src="./readme_images/sample_preview_backsides.png" alt="Sample Preview with Backsides" width=400/>
@@ -57,14 +65,31 @@ Below is an outline of the different parts of the app and most importantly the m
     The app supports arbitrary card sizes, here shown with YuGiOh cards
 </p>
 
-## Cards
-The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a +/-, use these to adjust how many copies for each card you want. On the top you have global controls to +/- all cards or reset them back to 1.
+Following is an outline of the different parts of the app and most importantly the many options that you can work with.
+
+## Card Grid
+The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a `+` and `-` button, use these to adjust how many copies for each card you want. On the top you have global controls to `+`/`-` all cards or reset them all to 0.
 
 ## Print Preview
 On the top-left you can switch over to the `Preview`, which shows you a preview of the printed page. It should update automatically when you change printing settings on the right.
 
+## Context Menu
+If you right-click a card in either the Card Grid or the Print Preview you will open the card's context menu. In this menu you will see various options for the card:
+- _Remove External Card_: Removes the card from the project. **Only visible if the card is an external card.**
+- _Reset Backside_: Resets the backside for this card back to the default. **Only visible if the card has a non-default backside and backsides are enabled.**
+- Bleed Options:
+    - _Infer Input Bleed_: Default setting. The app will try to determine whether the image has a bleed edge or not.
+    - _Assume Full Bleed_: The image has a full bleed edge.
+    - _Assume No Bleed_: The image does not have any bleed edge.
+- Aspect Ratio Options: **Only visible if the image has an unexpected aspect ratio**
+    - _Reset Aspect Ratio_: Reset the aspect ratio to the images original aspect ratio.
+    - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+    - _Fix Aspect Ratio: Stretch_: Stretches the image in one dimension to make it have the expected aspect ratio.
+- _Rotate Left_: Rotates the image by 90 degrees counter-clockwise.
+- _Rotate Right_: Rotates the image by 90 degrees clockwise.
+
 ## Options
-The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that most options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
+The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that all options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
 
 > [!NOTE]
 > Some options are hidden by default and are only visible when enabling `Advanced Mode`, all such options are marked.
@@ -220,9 +245,9 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 Opens a window with all available game-specific plugins. Use the checkboxes to enable or disable the plugins.
 
 ## Actions
-At the top of the options you can see an untitled section, which are all buttons do perform various actions.
+At the top of the options you can see an untitled section, which are all buttons that perform various actions.
 
-### Render Document
+### Render PDF
 When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
 
 ### Save Project
