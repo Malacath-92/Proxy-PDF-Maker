@@ -35,7 +35,7 @@ class CardProvider : public QObject, public efsw::FileWatchListener
                                   const std::string& filename,
                                   efsw::Action action,
                                   std::string old_filename) override;
-    
+
     struct SWatch
     {
         fs::path m_Directory;
