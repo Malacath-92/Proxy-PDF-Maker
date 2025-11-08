@@ -175,6 +175,7 @@ class CardWidget : public QFrame
         if (m_BacksideEnabled)
         {
             BacksideImage* backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
+            backside_image->EnableContextMenu(true, project);
 
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
@@ -201,6 +202,7 @@ class CardWidget : public QFrame
                                      if (m_CardName == card_name)
                                      {
                                          auto* new_backside_image{ new BacksideImage{ backside, project } };
+                                         new_backside_image->EnableContextMenu(true, project);
                                          stacked_widget->RefreshBackside(new_backside_image);
                                      }
                                  });
@@ -447,13 +449,7 @@ class CardScrollArea::CardGrid : public QWidget
             const bool hidden{ card_info.m_Hidden > 0 };
             if (hidden)
             {
-                // Show cards that are hidden but have bad rotation to allow
-                // user to fix rotation
-                if (!m_Project.HasPreview(card_name) ||
-                    !m_Project.m_Data.m_Previews.at(card_name).m_BadRotation)
-                {
-                    continue;
-                }
+                continue;
             }
 
             auto* card_widget{ eat_or_make_real_card(card_name) };

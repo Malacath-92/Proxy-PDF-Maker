@@ -41,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When the MtG Downloader is done, the `Cancel` button will be relabled to `Close` to reduce confusion.
 - The threshold for showing the bad aspect ratio warning was increased, reducing how often users get the warning when it's so miniscule they likely won't be able to notice distortion.
 - The bad aspect ratio warning was changed to a bad rotation warning in cases where the ratio is the inverse of the expected ratio.
-- Cards with a bad rotation are shown in the card grid, even if they would otherwise be hidden.
 - Cards will now maintain their chose amount even when hidden (e.g. when they are declared a backside).
 - Backsides will now unhide when the backside setting is disabled.
 
