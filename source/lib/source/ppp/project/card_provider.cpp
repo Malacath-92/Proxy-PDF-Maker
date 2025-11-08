@@ -210,9 +210,11 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
         return;
     }
 
+    const fs::path old_filepath{ old_filename };
+
     if (!std::ranges::contains(watch->m_Files, "*") &&
         !std::ranges::contains(watch->m_Files, filepath) &&
-        !std::ranges::contains(watch->m_Files, old_filename))
+        !std::ranges::contains(watch->m_Files, old_filepath))
     {
         return;
     }
@@ -232,7 +234,7 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
         CardRenamed(old_filename, filepath);
 
         {
-            auto it{ std::ranges::find(watch->m_Files, old_filename) };
+            auto it{ std::ranges::find(watch->m_Files, old_filepath) };
             if (it != watch->m_Files.end())
             {
                 *it = filepath;
@@ -253,12 +255,14 @@ void CardProvider::RegisterInitialWatches(const ProjectData& project)
 
     auto external_pathes{
         project.m_Cards |
-        std::views::transform(&CardInfo::m_ExternalPath) |
-        std::views::filter(&std::optional<fs::path>::has_value)
+        std::views::filter([](const auto& card)
+                           { return card.m_ExternalPath.has_value(); }) |
+        std::views::transform([](const auto& card)
+                              { return std::cref(card.m_ExternalPath.value()); })
     };
     for (const auto& external_path : external_pathes)
     {
-        RegisterExternalCard(external_path.value());
+        RegisterExternalCard(external_path);
     }
 }
 
@@ -362,11 +366,12 @@ template<class FunT>
 void CardProvider::ListFiles(const SWatch& watch, FunT&& fun)
 {
     const bool all_files{ std::ranges::contains(watch.m_Files, "*") };
-    ForEachFile(watch.m_Directory, [&, fun = std::forward<FunT>(fun)](const auto& file)
-                {
+    ForEachFile(
+        watch.m_Directory, [&, fun = std::forward<FunT>(fun)](const auto& file)
+        {
                 if (all_files || std::ranges::contains(watch.m_Files, file.filename()))
                 {
                     fun(file.filename());
                 } },
-                g_ValidImageExtensions);
+        g_ValidImageExtensions);
 }
