@@ -217,8 +217,6 @@ void CropperCropWork::run()
         const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
         const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-        const auto corner_radius{ m_Data.CardCornerRadius(m_Cfg) };
-
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
         const std::string color_cube_name{ m_Cfg.m_ColorCube };
@@ -340,6 +338,8 @@ void CropperCropWork::run()
 
         if (m_Cfg.m_RenderZeroBleedRoundedEdges)
         {
+            const auto corner_radius{ m_Data.CardCornerRadius(m_Cfg) };
+
             const Image no_bleed_image{
                 CropImage(source_image,
                           m_CardName,
@@ -349,16 +349,13 @@ void CropperCropWork::run()
                           max_density)
             };
             const Image rounded_corners_image{
-                no_bleed_image
-                    .EnsureAlpha()
-                    .RoundCorners(card_size, corner_radius)
+                no_bleed_image.RoundCorners(card_size, corner_radius)
             };
 
             const auto rounded_output_file{
                 fs::path{ crop_file }
                     .replace_filename(crop_file.stem().string() +
-                                      "_rounded" +
-                                      crop_file.extension().string())
+                                      "_rounded.png")
             };
             rounded_corners_image.Write(rounded_output_file, 3, 100, card_size);
         }
