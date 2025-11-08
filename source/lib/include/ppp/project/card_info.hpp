@@ -28,7 +28,7 @@ enum class BleedType
 struct CardInfo
 {
     fs::path m_Name{};
-    std::optional<fs::path> m_ExternalPath;
+    std::optional<fs::path> m_ExternalPath{ std::nullopt };
 
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
