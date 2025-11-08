@@ -9,23 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-??-11
 
 ### Added
+- When right-clicking on cards in the card grid or in the preview a new context menu will show up that gives a number of options for changing how images are interpreted:
+    - _Remove External Card_: Removes the card from the project. **Only visible if the card is an external card.**
+    - _Reset Backside_: Resets the backside for this card back to the default. **Only visible if the card has a non-default backside and backsides are enabled.**
+    - Bleed Options:
+        - _Infer Input Bleed_: Default setting. The app will try to determine whether the image has a bleed edge or not.
+        - _Assume Full Bleed_: The image has a full bleed edge.
+        - _Assume No Bleed_: The image does not have any bleed edge.
+    - Aspect Ratio Options: **Only visible if the image has an unexpected aspect ratio**
+        - _Reset Aspect Ratio_: Reset the aspect ratio to the images original aspect ratio.
+        - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+        - _Fix Aspect Ratio: Stretch_: Stretches the image in one dimension to make it have the expected aspect ratio.
+    - _Rotate Left_: Rotates the image by 90 degrees counter-clockwise.
+    - _Rotate Right_: Rotates the image by 90 degrees clockwise.
+- It is now possible to drag-and-drop images into the app, these are treated as external cards and can be removed in the context menu for each card.
 - A toast notification will now show when a new version is available to download.
 - A toast notification will now show when the cropper has finished working, giving details on what work was done.
 - A toast notification will now show when there were errors when rendering a pdf.
 - A toast notification will now show when the MtG Downloader plugin finished downloading.
 - The backside offset option has been extended to also allow for vertical alignment.
 - On common request, a donation option was added to the README.
-- A button that allows rotating cards was added.
 - There are now two global options to choose how cards are sorted by default.
 - When hovering a card image it will now show the name of the card, with some exceptions.
+- A new `Render to Png` checkbox is now available that is the same as changing the old `Render Backend` option to `Png`.
 
 ### Changed
+- The render button now specifies `Render PDF` or `Render PNG` based on what setting the user has selected.
 - The default output format is now set to Jpg at 100% quality.
 - The base pdf is now also offset for backsides, which allows e.g. cutting from the back when using an autoplotter.
 - When the MtG Downloader is done, the `Cancel` button will be relabled to `Close` to reduce confusion.
 - The threshold for showing the bad aspect ratio warning was increased, reducing how often users get the warning when it's so miniscule they likely won't be able to notice distortion.
 - The bad aspect ratio warning was changed to a bad rotation warning in cases where the ratio is the inverse of the expected ratio.
 - Cards with a bad rotation are shown in the card grid, even if they would otherwise be hidden.
+- Cards will noow maintain their chose amount even when hidden (e.g. when they are declared a backside).
+- Backsides will now unhide when the backside setting is disabled.
+
+### Removed
+- The `Render Backend` option was removed in favor of a `Render to Png` option.
+- The `LibHaru` dependency was removed as it didn't have any benefits of the now default `PoDoFo` backend.
+- The button to reset backside has been moved to a card's context menu.
 
 ### Fixed
 - The window title now shows the correct name.
@@ -34,6 +56,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When writing a .dxf file a header with units will be included that will allow some apps to import the file with correct sizes.
 - The print preview will now update when cards are added or removed at runtime.
 - The app will no longer sometimes crash when a crop job needs to retry.
+- The `Guides Thickness` will now be respected in the preview, as good as possible given technical restrictions.
+- The guides are no longer sized incorrectly on first time opening the print preview.
+- Changing some settings no longer causes unnecessary hiccups in the app.
 
 ## [0.15.0] - 2025-07-10
 
