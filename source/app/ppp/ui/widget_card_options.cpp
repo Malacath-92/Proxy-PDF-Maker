@@ -115,6 +115,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
 
+    m_SeparateBacksidesCheckbox = new QCheckBox{ "Separate Backsides-PDF" };
+    m_SeparateBacksidesCheckbox->setToolTip("Generate two PDFs, one from the frontsides and one for the backsides.");
+
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
@@ -151,6 +154,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     layout->addWidget(spacing);
     layout->addWidget(corners);
     layout->addWidget(m_BacksideCheckbox);
+    layout->addWidget(m_SeparateBacksidesCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
     layout->addWidget(m_BacksideOffset);
@@ -249,6 +253,8 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             const bool enabled{ s == Qt::CheckState::Checked };
             if (project.SetBacksideEnabled(enabled))
             {
+                m_SeparateBacksidesCheckbox->setEnabled(enabled);
+                m_SeparateBacksidesCheckbox->setVisible(enabled);
                 m_BacksideDefaultButton->setEnabled(enabled);
                 m_BacksideDefaultButton->setVisible(enabled);
                 m_BacksideDefaultPreview->setVisible(enabled);
@@ -258,6 +264,15 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                 m_BacksideAuto->setVisible(enabled);
                 BacksideEnabledChanged();
             }
+        }
+    };
+
+    auto switch_separate_backsides_enabled{
+        [this, &project](Qt::CheckState s)
+        {
+            const bool enabled{ s == Qt::CheckState::Checked };
+            project.m_Data.m_SeparateBacksides = enabled;
+            SeparateBacksidesEnabledChanged();
         }
     };
 
@@ -355,6 +370,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QCheckBox::checkStateChanged,
                      this,
                      switch_backside_enabled);
+    QObject::connect(m_SeparateBacksidesCheckbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     switch_separate_backsides_enabled);
     QObject::connect(m_BacksideDefaultButton,
                      &QPushButton::clicked,
                      this,
@@ -421,6 +440,9 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 {
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
 
+    m_SeparateBacksidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_SeparateBacksidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
     m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
@@ -465,6 +487,10 @@ void CardOptionsWidget::SetDefaults()
     m_Corners->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Corners)));
 
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
+
+    m_SeparateBacksidesCheckbox->setChecked(m_Project.m_Data.m_SeparateBacksides);
+    m_SeparateBacksidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_SeparateBacksidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);

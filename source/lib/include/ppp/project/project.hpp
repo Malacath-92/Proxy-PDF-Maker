@@ -119,6 +119,7 @@ struct ProjectData
 
     // Backside options
     bool m_BacksideEnabled{ false };
+    bool m_SeparateBacksides{ false };
     fs::path m_BacksideDefault{ "__back.png" };
     Position m_BacksideOffset{ 0_mm, 0_mm };
     std::string m_BacksideAutoPattern{ "__back_$" };

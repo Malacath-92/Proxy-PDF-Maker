@@ -24,6 +24,7 @@ class CardOptionsWidget : public QWidget
     void SpacingChanged();
     void CornersChanged();
     void BacksideEnabledChanged();
+    void SeparateBacksidesEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
     void CardBacksideChanged();
@@ -50,6 +51,7 @@ class CardOptionsWidget : public QWidget
     QDoubleSpinBox* m_VerticalSpacingSpin{ nullptr };
     QComboBox* m_Corners{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
+    QCheckBox* m_SeparateBacksidesCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
     QDoubleSpinBox* m_BacksideOffsetWidthSpin{ nullptr };

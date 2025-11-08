@@ -166,6 +166,10 @@ void Project::Load(const fs::path& json_path)
         }
 
         m_Data.m_BacksideEnabled = json["backside_enabled"];
+        if (json.contains("separate_backsides"))
+        {
+            m_Data.m_SeparateBacksides = json["separate_backsides"];
+        }
         m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
         {
             auto backside_offset{ json["backside_offset"] };
@@ -353,6 +357,8 @@ void Project::Dump(const fs::path& json_path) const
         json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
 
         json["backside_enabled"] = m_Data.m_BacksideEnabled;
+        json["separate_backsides"] = m_Data.m_SeparateBacksides;
+
         json["backside_default"] = m_Data.m_BacksideDefault.string();
         json["backside_offset"] = nlohmann::json{
             { "width", m_Data.m_BacksideOffset.x / 1_mm },
