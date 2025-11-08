@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <optional>
 
 #include <ppp/image.hpp>
@@ -25,6 +26,9 @@ enum class BleedType
     Default = Infer,
 };
 
+using CardInfoClock = std::chrono::high_resolution_clock;
+using CardInfoTimePoint = CardInfoClock::time_point;
+
 struct CardInfo
 {
     fs::path m_Name{};
@@ -42,6 +46,7 @@ struct CardInfo
     BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
 
     fs::file_time_type m_LastWriteTime{};
+    CardInfoTimePoint m_TimeAdded{};
 
     bool m_Transient{ false };
 

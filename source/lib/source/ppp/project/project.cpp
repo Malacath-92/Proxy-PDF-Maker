@@ -20,8 +20,6 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
 {
     switch (g_Cfg.m_CardOrder)
     {
-    case CardOrder::LastAdded:
-        [[fallthrough]];
     case CardOrder::Alphabetical:
         switch (g_Cfg.m_CardOrderDirection)
         {
@@ -49,6 +47,20 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
             return [](const CardInfo& lhs, const CardInfo& rhs)
             {
                 return lhs.m_LastWriteTime < rhs.m_LastWriteTime;
+            };
+        }
+    case CardOrder::LastAdded:
+        switch (g_Cfg.m_CardOrderDirection)
+        {
+        case CardOrderDirection::Ascending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_TimeAdded > rhs.m_TimeAdded;
+            };
+        case CardOrderDirection::Descending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_TimeAdded < rhs.m_TimeAdded;
             };
         }
     }
@@ -131,6 +143,14 @@ void Project::Load(const fs::path& json_path)
             if (card_json.contains("external_path"))
             {
                 card.m_ExternalPath = card_json["external_path"].get_ref<const std::string&>();
+            }
+            if (card_json.contains("time_added"))
+            {
+                card.m_TimeAdded = CardInfoTimePoint{
+                    std::chrono::seconds{
+                        card_json["time_added"].get<uint64_t>(),
+                    }
+                };
             }
         }
 
@@ -329,6 +349,10 @@ void Project::Dump(const fs::path& json_path) const
                 {
                     card_json["external_path"] = card.m_ExternalPath.value().string();
                 }
+                card_json["time_added"] = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::seconds>(
+                        card.m_TimeAdded.time_since_epoch())
+                        .count());
             }
         }
         json["cards"] = cards;
@@ -665,22 +689,12 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
 
 void Project::CardOrderChanged()
 {
-    if (g_Cfg.m_CardOrder != CardOrder::LastAdded)
-    {
-        std::ranges::sort(m_Data.m_Cards, GetSortFunction());
-    }
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
 }
 
 void Project::CardOrderDirectionChanged()
 {
-    if (g_Cfg.m_CardOrder == CardOrder::LastAdded)
-    {
-        std::ranges::reverse(m_Data.m_Cards);
-    }
-    else
-    {
-        std::ranges::sort(m_Data.m_Cards, GetSortFunction());
-    }
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
 }
 
 void Project::RestoreCardsOrder()
@@ -736,7 +750,8 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
 
 void Project::CardRemoved(const fs::path& card_name)
 {
-    if (auto* card{ FindCard(card_name) })
+    auto* card{ FindCard(card_name) };
+    if (card != nullptr && !card->m_Transient)
     {
         ++card->m_Hidden;
         card->m_Transient = true;
@@ -835,24 +850,12 @@ CardInfo& Project::PutCard(const fs::path& card_name)
         .m_Num = 1,
         .m_Hidden = card_name.string().starts_with("__") ? 1u : 0u,
         .m_LastWriteTime{ TryGetLastWriteTime(m_Data.m_ImageDir / card_name) },
+        .m_TimeAdded{ CardInfoClock::now() },
     };
 
-    auto insert_at{
-        [&]()
-        {
-            if (g_Cfg.m_CardOrder == CardOrder::LastAdded)
-            {
-                if (g_Cfg.m_CardOrderDirection == CardOrderDirection::Ascending)
-                {
-                    return m_Data.m_Cards.end();
-                }
-                return m_Data.m_Cards.begin();
-            }
-            return std::ranges::upper_bound(m_Data.m_Cards,
-                                            new_card,
-                                            GetSortFunction());
-        }()
-    };
+    auto insert_at{ std::ranges::upper_bound(m_Data.m_Cards,
+                                             new_card,
+                                             GetSortFunction()) };
     auto new_card_it{
         m_Data.m_Cards
             .insert(insert_at, std::move(new_card))
@@ -1651,7 +1654,8 @@ void Project::CropperDone()
 bool Project::AddExternalCard(const fs::path& absolute_image_path)
 {
     const auto card_name{ absolute_image_path.filename() };
-    if (HasCard(card_name))
+    const auto* existing_card{ FindCard(card_name) };
+    if (existing_card != nullptr && !existing_card->m_Transient)
     {
         LogError("Can't add card {} since a card with the same name is already part of the project.",
                  card_name.string());
