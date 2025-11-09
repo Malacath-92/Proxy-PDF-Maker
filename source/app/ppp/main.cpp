@@ -333,7 +333,7 @@ int main(int argc, char** argv)
             [&]()
             {
                 project.RestoreCardsOrder();
-                print_preview->Refresh();
+                print_preview->RequestRefresh();
             },
             Qt::ConnectionType::QueuedConnection);
         QObject::connect(
@@ -343,7 +343,7 @@ int main(int argc, char** argv)
             [&](size_t from, size_t to)
             {
                 project.ReorderCards(from, to);
-                print_preview->Refresh();
+                print_preview->RequestRefresh();
             },
             Qt::ConnectionType::QueuedConnection);
     }
