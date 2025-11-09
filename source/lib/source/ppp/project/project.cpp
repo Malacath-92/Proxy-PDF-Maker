@@ -49,6 +49,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
                 return lhs.m_LastWriteTime < rhs.m_LastWriteTime;
             };
         }
+        std:: unreachable();
     case CardOrder::LastAdded:
         switch (g_Cfg.m_CardOrderDirection)
         {
