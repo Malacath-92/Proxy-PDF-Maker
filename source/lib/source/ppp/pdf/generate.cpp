@@ -17,7 +17,7 @@
 #include <ppp/pdf/backend.hpp>
 #include <ppp/pdf/util.hpp>
 
-fs::path GeneratePdf(const Project& project)
+PdfResults GeneratePdf(const Project& project)
 {
     AtScopeExit log_generate_time{
         [start_point = std::chrono::high_resolution_clock::now()]()
@@ -178,6 +178,28 @@ fs::path GeneratePdf(const Project& project)
         backside_extended_guides = generate_extended_guides(backside_transforms);
     }
 
+    const bool backsides_on_same_pdf{
+        project.m_Data.m_BacksideEnabled && !project.m_Data.m_SeparateBacksides
+    };
+    const bool backsides_on_separate_pdf{
+        project.m_Data.m_BacksideEnabled && project.m_Data.m_SeparateBacksides
+    };
+
+    auto frontside_pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
+    frontside_pdf->ReservePages(pages.size() +
+                                (backsides_on_same_pdf ? pages.size() : 0));
+
+    auto unique_backside_pdf{
+        backsides_on_separate_pdf
+            ? CreatePdfDocument(g_Cfg.m_Backend, project)
+            : nullptr
+    };
+    const auto& backside_pdf{
+        backsides_on_separate_pdf
+            ? unique_backside_pdf.get()
+            : frontside_pdf.get()
+    };
+
     const auto draw_image{
         [&](PdfPage* page,
             const PageImage& image,
@@ -321,8 +343,7 @@ fs::path GeneratePdf(const Project& project)
         }
     };
 
-    std::vector<std::function<void(PdfDocument&)>> frontside_generate_work;
-    std::vector<std::function<void(PdfDocument&)>> backside_generate_work;
+    std::vector<std::function<void()>> generate_work;
 
 #if __cpp_lib_ranges_enumerate
     for (auto [p, page] : pages | std::views::enumerate)
@@ -333,102 +354,74 @@ fs::path GeneratePdf(const Project& project)
         const Page& page{ pages[p] };
 #endif
 
-        frontside_generate_work.push_back(
-            [draw_front_page, &page, p](PdfDocument& pdf)
-            {
-                PdfPage* front_page{ pdf.NextPage() };
-                draw_front_page(front_page, page, p);
-            });
+        PdfPage* front_page{ frontside_pdf->NextPage() };
+        generate_work.push_back([draw_front_page, front_page, &page, p]()
+                                { draw_front_page(front_page, page, p); });
 
         if (project.m_Data.m_BacksideEnabled)
         {
+            PdfPage* back_page{ backside_pdf->NextPage() };
             const auto& backside_page{ backside_pages[p] };
-            backside_generate_work.push_back(
-                [draw_back_page, &backside_page, p](PdfDocument& pdf)
-                {
-                    PdfPage* back_page{ pdf.NextPage() };
-                    draw_back_page(back_page, backside_page, p);
-                });
+            generate_work.push_back([draw_back_page, back_page, &backside_page, p]()
+                                    { draw_back_page(back_page, backside_page, p); });
         }
     }
 
-    auto generate_pdf{
-        [&](const auto& generate_work, const fs::path& file_name)
+    if (generate_work.size() < 4)
+    {
+        for (const auto& work : generate_work)
         {
-            auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
-            pdf->ReservePages(generate_work.size());
-
-            if (generate_work.size() < 4)
-            {
-                for (const auto& work : generate_work)
-                {
-                    work(*pdf);
-                }
-            }
-            else
-            {
-                class Worker : public QRunnable
-                {
-                  public:
-                    Worker(
-                        std::atomic_uint32_t& work_done,
-                        PdfDocument& pdf,
-                        std::function<void(PdfDocument&)> work)
-                        : m_WorkDone{ work_done }
-                        , m_Pdf{ pdf }
-                        , m_Work{ std::move(work) }
-                    {
-                    }
-
-                    virtual void run() override
-                    {
-                        m_Work(m_Pdf);
-                        m_WorkDone.fetch_add(1, std::memory_order::release);
-                    }
-
-                  private:
-                    std::atomic_uint32_t& m_WorkDone;
-                    PdfDocument& m_Pdf;
-                    std::function<void(PdfDocument&)> m_Work;
-                };
-
-                std::atomic_uint32_t work_done{ 0 };
-                for (const auto& work : generate_work)
-                {
-                    auto* worker{ new Worker{ work_done, *pdf, work } };
-                    QThreadPool::globalInstance()->start(worker);
-                }
-
-                while (work_done.load(std::memory_order_acquire) < generate_work.size())
-                {
-                    QThread::yieldCurrentThread();
-                }
-            }
-
-            const auto pdf_path{ pdf->Write(file_name) };
-            return pdf_path;
+            work();
         }
+    }
+    else
+    {
+        class Worker : public QRunnable
+        {
+          public:
+            Worker(
+                std::atomic_uint32_t& work_done,
+                std::function<void()> work)
+                : m_WorkDone{ work_done }
+                , m_Work{ std::move(work) }
+            {
+            }
+
+            virtual void run() override
+            {
+                m_Work();
+                m_WorkDone.fetch_add(1, std::memory_order::release);
+            }
+
+          private:
+            std::atomic_uint32_t& m_WorkDone;
+            std::function<void()> m_Work;
+        };
+
+        std::atomic_uint32_t work_done{ 0 };
+        for (const auto& work : generate_work)
+        {
+            auto* worker{ new Worker{ work_done, work } };
+            QThreadPool::globalInstance()->start(worker);
+        }
+
+        while (work_done.load(std::memory_order_acquire) < generate_work.size())
+        {
+            QThread::yieldCurrentThread();
+        }
+    }
+
+    auto frontside_pdf_path{ frontside_pdf->Write(project.m_Data.m_FileName) };
+    auto backside_pdf_path{
+        backside_pdf != frontside_pdf.get() && backside_pdf != nullptr
+            ? std::optional{ backside_pdf->Write(project.m_Data.m_FileName.string() + "_backside") }
+            : std::nullopt
     };
 
-    if (project.m_Data.m_BacksideEnabled)
-    {
-        if (project.m_Data.m_SeparateBacksides)
-        {
-            generate_pdf(backside_generate_work, project.m_Data.m_FileName.string() + "_back");
-        }
-        else
-        {
-            std::vector<std::function<void(PdfDocument&)>> generate_work;
-            for (size_t i = 0; i < frontside_generate_work.size(); ++i)
-            {
-                generate_work.push_back(std::move(frontside_generate_work[i]));
-                generate_work.push_back(std::move(backside_generate_work[i]));
-            }
-            return generate_pdf(generate_work, project.m_Data.m_FileName);
-        }
-    }
-
-    return generate_pdf(frontside_generate_work, project.m_Data.m_FileName);
+    return {
+        std::move(frontside_pdf_path),
+        std::move(backside_pdf_path),
+    };
 }
 
 fs::path GenerateTestPdf(const Project& project)

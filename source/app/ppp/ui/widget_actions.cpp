@@ -76,8 +76,12 @@ ActionsWidget::ActionsWidget(Project& project)
 
                     try
                     {
-                        const auto file_path{ GeneratePdf(project) };
-                        OpenFile(file_path);
+                        const auto [frontside_path, backside_path]{ GeneratePdf(project) };
+                        OpenFile(frontside_path);
+                        if (backside_path.has_value())
+                        {
+                            OpenFile(backside_path.value());
+                        }
 
                         if (project.m_Data.m_ExportExactGuides)
                         {
