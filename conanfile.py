@@ -7,7 +7,7 @@ class ProxyPDF(ConanFile):
 
     def requirements(self):
         # GUI and App Framework
-        self.requires("qt/6.7.3")
+        self.requires("qt/6.8.3")
 
         # File System Watcher
         self.requires("efsw/1.4.1")
