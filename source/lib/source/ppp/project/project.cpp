@@ -91,7 +91,6 @@ bool Project::Load(const fs::path& json_path)
 {
     return Load(json_path, {});
 }
-
 bool Project::Load(const fs::path& json_path,
                    const std::unordered_map<std::string, std::string>& overrides)
 {
@@ -339,7 +338,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
     }
 
     Init();
-    return error;
+    return !error;
 }
 
 void Project::Dump(const fs::path& json_path) const

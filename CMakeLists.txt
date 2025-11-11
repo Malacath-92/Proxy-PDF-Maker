@@ -277,7 +277,7 @@ target_compile_definitions(qt_toast_lib PRIVATE QT_TOAST_PACKAGED_RESOURCES=qt-t
 target_include_directories(qt_toast_lib PUBLIC "submodules/qt-toast/src")
 
 # --------------------------------------------------
-# Create executable
+# Create GUI executable
 if (WIN32)
 	set(proxy_pdf_resources "resources.qrc;res/proxy_pdf.rc")
 else()
@@ -296,6 +296,22 @@ target_link_libraries(proxy_pdf PRIVATE
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
+    VS_GLOBAL_RunCodeAnalysis false
+    VS_GLOBAL_EnableMicrosoftCodeAnalysis false
+    VS_GLOBAL_EnableClangTidyCodeAnalysis true)
+
+# --------------------------------------------------
+# Create CLI executable
+if (WIN32)
+	set(proxy_pdf_cli_resources "res/proxy_pdf.rc")
+endif()
+file(GLOB_RECURSE proxy_pdf_cli_sources CONFIGURE_DEPENDS "source/cli/*.cpp")
+file(GLOB_RECURSE proxy_pdf_cli_headers CONFIGURE_DEPENDS "source/cli/*.hpp" "source/cli/*.inl")
+add_executable(proxy_pdf_cli ${proxy_pdf_cli_sources} ${proxy_pdf_cli_headers} ${proxy_pdf_cli_resources})
+target_link_libraries(proxy_pdf_cli PRIVATE
+	proxy_pdf_lib)
+target_include_directories(proxy_pdf_cli PRIVATE "source/cli" "res")
+set_target_properties(proxy_pdf_cli PROPERTIES
     VS_GLOBAL_RunCodeAnalysis false
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
     VS_GLOBAL_EnableClangTidyCodeAnalysis true)
@@ -331,6 +347,7 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT p
 # Install exectuable and resource files
 install(TARGETS
 	proxy_pdf
+	proxy_pdf_cli
 	RUNTIME
 	DESTINATION .)
 install(FILES
