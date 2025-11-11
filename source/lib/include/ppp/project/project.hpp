@@ -194,7 +194,11 @@ class Project : public QObject
     Project() = default;
     ~Project();
 
-    void Load(const fs::path& json_path);
+    bool Load(const fs::path& json_path);
+    bool Load(const fs::path& json_path,
+              const std::unordered_map<std::string, std::string>& overrides);
+    bool LoadFromJson(const std::string& json_blob,
+                      const std::unordered_map<std::string, std::string>& overrides);
     void Dump(const fs::path& json_path) const;
 
     void Init();

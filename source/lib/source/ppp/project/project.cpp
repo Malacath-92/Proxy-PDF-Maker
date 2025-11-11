@@ -87,15 +87,36 @@ Project::~Project()
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
 
-void Project::Load(const fs::path& json_path)
+bool Project::Load(const fs::path& json_path)
+{
+    return Load(json_path, {});
+}
+
+bool Project::Load(const fs::path& json_path,
+                   const std::unordered_map<std::string, std::string>& overrides)
+{
+    std::ifstream file_stream{ json_path };
+    std::string json{ std::istreambuf_iterator<char>{ file_stream },
+                      std::istreambuf_iterator<char>{} };
+    if (!LoadFromJson(json, overrides))
+    {
+        LogError("Failed loading project from {}...", json_path.string());
+        return false;
+    }
+    return true;
+}
+
+bool Project::LoadFromJson(const std::string& json_blob,
+                           const std::unordered_map<std::string, std::string>& /*overrides*/)
 {
     m_Data = ProjectData{};
 
     LogInfo("Initializing project...");
 
+    bool error{ false };
     try
     {
-        const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ json_path }) };
+        const nlohmann::json json{ nlohmann::json::parse(json_blob) };
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
             if (JsonFormatVersion() == "PPP00007")
@@ -313,10 +334,12 @@ void Project::Load(const fs::path& json_path)
     }
     catch (const std::exception& e)
     {
-        LogError("Failed loading project from {}, continuing with an empty project: {}", json_path.string(), e.what());
+        error = true;
+        LogError("Failed loading project, continuing with an empty project: {}", e.what());
     }
 
     Init();
+    return error;
 }
 
 void Project::Dump(const fs::path& json_path) const
