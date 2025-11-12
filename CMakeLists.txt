@@ -327,6 +327,9 @@ set_target_properties(proxy_pdf_cli PROPERTIES
 set_target_properties(proxy_pdf PROPERTIES
 	VS_DEBUGGER_COMMAND_ARGUMENTS ""
 	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_target_properties(proxy_pdf_cli PROPERTIES
+	VS_DEBUGGER_COMMAND_ARGUMENTS ""
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # --------------------------------------------------
 # Create tests
