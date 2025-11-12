@@ -38,7 +38,6 @@ constexpr const char c_HelpStr[]{
 Command Line Interface for Proxy-PDF-Maker
 
     --help              Display this information.
-    --no-ui             Do not create a window.
     --cropper           Wait for the cropper, then quit.
     --render            Wait for the cropper, render the pdf, then quit.
     --project <file>    Load the project from this file.
@@ -121,7 +120,7 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         }
 
         const std::string_view param{ argv[i + 1] };
-        cli.m_ProjectOverrides[std::string{ arg }] = param;
+        cli.m_ProjectOverrides[std::string{ arg.substr(2) }] = param;
     }
 
     return cli;
@@ -172,6 +171,12 @@ int main(int argc, char** argv)
         {
             LogError("Failed loading project from json-blob...");
         }
+    }
+    else if (!cli.m_ProjectOverrides.empty())
+    {
+        LogInfo("Starting from a clean project with overrides...");
+        const auto default_json{ project.DumpToJson() };
+        project.LoadFromJson(default_json, cli.m_ProjectOverrides);
     }
     else
     {

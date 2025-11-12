@@ -199,7 +199,9 @@ class Project : public QObject
               const std::unordered_map<std::string, std::string>& overrides);
     bool LoadFromJson(const std::string& json_blob,
                       const std::unordered_map<std::string, std::string>& overrides);
+
     void Dump(const fs::path& json_path) const;
+    std::string DumpToJson() const;
 
     void Init();
     void InitProperties();

@@ -106,7 +106,7 @@ bool Project::Load(const fs::path& json_path,
 }
 
 bool Project::LoadFromJson(const std::string& json_blob,
-                           const std::unordered_map<std::string, std::string>& /*overrides*/)
+                           const std::unordered_map<std::string, std::string>& overrides)
 {
     m_Data = ProjectData{};
 
@@ -115,7 +115,44 @@ bool Project::LoadFromJson(const std::string& json_blob,
     bool error{ false };
     try
     {
-        const nlohmann::json json{ nlohmann::json::parse(json_blob) };
+        const auto json{
+            [&]()
+            {
+                auto json{ nlohmann::json::parse(json_blob) };
+
+                // apply overrides directly to the json
+                for (const auto& [name, value] : overrides)
+                {
+                    static constexpr auto c_ToStringViews{ std::views::transform(
+                        [](auto str)
+                        { return std::string_view(str.data(), str.size()); }) };
+                    auto parts{ name | std::views::split('.') | c_ToStringViews };
+
+                    std::reference_wrapper parent_json{ json };
+                    std::reference_wrapper target_json{ json };
+                    std::string_view last_name_part{};
+                    for (const auto& name_part : parts)
+                    {
+                        parent_json = target_json;
+                        target_json = parent_json.get()[name_part];
+                        last_name_part = name_part;
+                    }
+
+                    try
+                    {
+                        // Try parsing the override as a literal ...
+                        parent_json.get()[last_name_part] = nlohmann::json::parse(value);
+                    }
+                    catch (const nlohmann::json::parse_error&)
+                    {
+                        // ... and just set it as a string if that's not possible.
+                        parent_json.get()[last_name_part] = std::string{ value };
+                    }
+                }
+
+                return json;
+            }()
+        };
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
             if (JsonFormatVersion() == "PPP00007")
@@ -345,130 +382,136 @@ void Project::Dump(const fs::path& json_path) const
 {
     if (std::ofstream file{ json_path })
     {
+        LogInfo("Generating project json...");
+        const auto json_blob{ DumpToJson() };
+
         LogInfo("Writing project to {}...", json_path.string());
-
-        nlohmann::json json{};
-        json["version"] = JsonFormatVersion();
-
-        json["image_dir"] = m_Data.m_ImageDir.string();
-        json["img_cache"] = m_Data.m_ImageCache.string();
-
-        std::vector<nlohmann::json> cards;
-        for (const auto& card : m_Data.m_Cards)
-        {
-            if (!card.m_Transient)
-            {
-                nlohmann::json& card_json{ cards.emplace_back() };
-                card_json["name"] = card.m_Name.string();
-                card_json["num"] = card.m_Num;
-                card_json["hidden"] = card.m_Hidden;
-                card_json["backside"] = card.m_Backside.string();
-                card_json["backside_short_edge"] = card.m_BacksideShortEdge;
-                card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
-                card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
-                card_json["bleed_type"] = magic_enum::enum_name(card.m_BleedType);
-                card_json["ratio_handling"] = magic_enum::enum_name(card.m_BadAspectRatioHandling);
-                if (card.m_ExternalPath.has_value())
-                {
-                    card_json["external_path"] = card.m_ExternalPath.value().string();
-                }
-                card_json["time_added"] = static_cast<uint64_t>(
-                    std::chrono::duration_cast<std::chrono::seconds>(
-                        card.m_TimeAdded.time_since_epoch())
-                        .count());
-            }
-        }
-        json["cards"] = cards;
-
-        if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsSorting())
-        {
-            std::vector<size_t> cards_list;
-            cards_list.reserve(m_Data.m_CardsList.size());
-            for (const auto& name : m_Data.m_CardsList)
-            {
-                const auto idx{
-                    FindCard(name) - &m_Data.m_Cards.front()
-                };
-                cards_list.push_back(static_cast<size_t>(idx));
-            }
-
-            json["cards_order"] = cards_list;
-        }
-
-        json["bleed_edge"] = m_Data.m_BleedEdge.value;
-        json["spacing"] = nlohmann::json{
-            { "width", m_Data.m_Spacing.x / 1_mm },
-            { "height", m_Data.m_Spacing.y / 1_mm },
-        };
-        json["spacing_linked"] = m_Data.m_SpacingLinked;
-        json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
-
-        json["backside_enabled"] = m_Data.m_BacksideEnabled;
-        json["separate_backsides"] = m_Data.m_SeparateBacksides;
-
-        json["backside_default"] = m_Data.m_BacksideDefault.string();
-        json["backside_offset"] = nlohmann::json{
-            { "width", m_Data.m_BacksideOffset.x / 1_mm },
-            { "height", m_Data.m_BacksideOffset.y / 1_mm },
-        };
-        json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
-
-        json["card_size"] = m_Data.m_CardSizeChoice;
-        json["page_size"] = m_Data.m_PageSize;
-        json["base_pdf"] = m_Data.m_BasePdf;
-        if (m_Data.m_CustomMargins.has_value())
-        {
-            json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
-
-            if (!m_Data.m_CustomMargins->m_BottomRight.has_value())
-            {
-                json["custom_margins"] = nlohmann::json{
-                    { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
-                    { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
-                };
-            }
-            else
-            {
-                json["custom_margins"] = nlohmann::json{
-                    { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
-                    { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
-                    { "right", m_Data.m_CustomMargins->m_BottomRight->x / 1_cm },
-                    { "bottom", m_Data.m_CustomMargins->m_BottomRight->y / 1_cm },
-                };
-            }
-        }
-        json["card_orientation"] = magic_enum::enum_name(m_Data.m_CardOrientation);
-        json["card_layout_vertical"] = nlohmann::json{
-            { "width", m_Data.m_CardLayoutVertical.x },
-            { "height", m_Data.m_CardLayoutVertical.y },
-        };
-        json["card_layout_horizontal"] = nlohmann::json{
-            { "width", m_Data.m_CardLayoutHorizontal.x },
-            { "height", m_Data.m_CardLayoutHorizontal.y },
-        };
-        json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
-        json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
-        json["file_name"] = m_Data.m_FileName.string();
-
-        json["export_exact_guides"] = m_Data.m_ExportExactGuides;
-        json["enable_guides"] = m_Data.m_EnableGuides;
-        json["enable_backside_guides"] = m_Data.m_BacksideEnableGuides;
-        json["corner_guides"] = m_Data.m_CornerGuides;
-        json["cross_guides"] = m_Data.m_CrossGuides;
-        json["extended_guides"] = m_Data.m_ExtendedGuides;
-        json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
-        json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
-        json["guides_offset"] = m_Data.m_GuidesOffset.value;
-        json["guides_thickness"] = m_Data.m_GuidesThickness.value;
-        json["guides_length"] = m_Data.m_GuidesLength.value;
-
-        file << json;
-        file.close();
+        file << json_blob;
     }
     else
     {
         LogError("Failed opening file {} for write...", json_path.string());
     }
+}
+
+std::string Project::DumpToJson() const
+{
+    nlohmann::json json{};
+    json["version"] = JsonFormatVersion();
+
+    json["image_dir"] = m_Data.m_ImageDir.string();
+    json["img_cache"] = m_Data.m_ImageCache.string();
+
+    std::vector<nlohmann::json> cards;
+    for (const auto& card : m_Data.m_Cards)
+    {
+        if (!card.m_Transient)
+        {
+            nlohmann::json& card_json{ cards.emplace_back() };
+            card_json["name"] = card.m_Name.string();
+            card_json["num"] = card.m_Num;
+            card_json["hidden"] = card.m_Hidden;
+            card_json["backside"] = card.m_Backside.string();
+            card_json["backside_short_edge"] = card.m_BacksideShortEdge;
+            card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
+            card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
+            card_json["bleed_type"] = magic_enum::enum_name(card.m_BleedType);
+            card_json["ratio_handling"] = magic_enum::enum_name(card.m_BadAspectRatioHandling);
+            if (card.m_ExternalPath.has_value())
+            {
+                card_json["external_path"] = card.m_ExternalPath.value().string();
+            }
+            card_json["time_added"] = static_cast<uint64_t>(
+                std::chrono::duration_cast<std::chrono::seconds>(
+                    card.m_TimeAdded.time_since_epoch())
+                    .count());
+        }
+    }
+    json["cards"] = cards;
+
+    if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsSorting())
+    {
+        std::vector<size_t> cards_list;
+        cards_list.reserve(m_Data.m_CardsList.size());
+        for (const auto& name : m_Data.m_CardsList)
+        {
+            const auto idx{
+                FindCard(name) - &m_Data.m_Cards.front()
+            };
+            cards_list.push_back(static_cast<size_t>(idx));
+        }
+
+        json["cards_order"] = cards_list;
+    }
+
+    json["bleed_edge"] = m_Data.m_BleedEdge.value;
+    json["spacing"] = nlohmann::json{
+        { "width", m_Data.m_Spacing.x / 1_mm },
+        { "height", m_Data.m_Spacing.y / 1_mm },
+    };
+    json["spacing_linked"] = m_Data.m_SpacingLinked;
+    json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
+
+    json["backside_enabled"] = m_Data.m_BacksideEnabled;
+    json["separate_backsides"] = m_Data.m_SeparateBacksides;
+
+    json["backside_default"] = m_Data.m_BacksideDefault.string();
+    json["backside_offset"] = nlohmann::json{
+        { "width", m_Data.m_BacksideOffset.x / 1_mm },
+        { "height", m_Data.m_BacksideOffset.y / 1_mm },
+    };
+    json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
+
+    json["card_size"] = m_Data.m_CardSizeChoice;
+    json["page_size"] = m_Data.m_PageSize;
+    json["base_pdf"] = m_Data.m_BasePdf;
+    if (m_Data.m_CustomMargins.has_value())
+    {
+        json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
+
+        if (!m_Data.m_CustomMargins->m_BottomRight.has_value())
+        {
+            json["custom_margins"] = nlohmann::json{
+                { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
+            };
+        }
+        else
+        {
+            json["custom_margins"] = nlohmann::json{
+                { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
+                { "right", m_Data.m_CustomMargins->m_BottomRight->x / 1_cm },
+                { "bottom", m_Data.m_CustomMargins->m_BottomRight->y / 1_cm },
+            };
+        }
+    }
+    json["card_orientation"] = magic_enum::enum_name(m_Data.m_CardOrientation);
+    json["card_layout_vertical"] = nlohmann::json{
+        { "width", m_Data.m_CardLayoutVertical.x },
+        { "height", m_Data.m_CardLayoutVertical.y },
+    };
+    json["card_layout_horizontal"] = nlohmann::json{
+        { "width", m_Data.m_CardLayoutHorizontal.x },
+        { "height", m_Data.m_CardLayoutHorizontal.y },
+    };
+    json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
+    json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
+    json["file_name"] = m_Data.m_FileName.string();
+
+    json["export_exact_guides"] = m_Data.m_ExportExactGuides;
+    json["enable_guides"] = m_Data.m_EnableGuides;
+    json["enable_backside_guides"] = m_Data.m_BacksideEnableGuides;
+    json["corner_guides"] = m_Data.m_CornerGuides;
+    json["cross_guides"] = m_Data.m_CrossGuides;
+    json["extended_guides"] = m_Data.m_ExtendedGuides;
+    json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
+    json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
+    json["guides_offset"] = m_Data.m_GuidesOffset.value;
+    json["guides_thickness"] = m_Data.m_GuidesThickness.value;
+    json["guides_length"] = m_Data.m_GuidesLength.value;
+
+    return json.dump();
 }
 
 void Project::Init()
