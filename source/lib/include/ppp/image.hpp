@@ -9,8 +9,6 @@
 #include <ppp/color.hpp>
 #include <ppp/util.hpp>
 
-class QPixmap;
-
 using EncodedImage = std::vector<std::byte>;
 using EncodedImageView = std::span<const std::byte>;
 
@@ -36,8 +34,6 @@ class [[nodiscard]] Image
 
     EncodedImage EncodePng(std::optional<int32_t> compression = std::nullopt) const;
     EncodedImage EncodeJpg(std::optional<int32_t> quality = std::nullopt) const;
-
-    QPixmap StoreIntoQtPixmap() const;
 
     explicit operator bool() const;
     bool Valid() const;

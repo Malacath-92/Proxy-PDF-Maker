@@ -174,26 +174,31 @@ add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
 	dla
 	fmt::fmt
-	OpenSSL::SSL
-	OpenSSL::Crypto
-	Qt6::Core
-	Qt6::Gui
-	Qt6::Widgets
-	Qt6::SvgWidgets
-	Qt6::Xml
-	Qt6::Network
-	Qt6::TlsBackendOpenSSLPlugin
 	opencv::opencv
 	podofo::podofo
 	nlohmann_json::nlohmann_json
 	efsw::efsw
-	magic_enum::magic_enum)
+	magic_enum::magic_enum
+	OpenSSL::SSL
+	OpenSSL::Crypto
+	Qt6::Core
+	Qt6::Gui
+	Qt6::Svg
+	Qt6::Network
+	Qt6::TlsBackendOpenSSLPlugin)
+
+add_library(proxy_pdf_app_dependencies INTERFACE)
+target_link_libraries(proxy_pdf_app_dependencies INTERFACE
+	proxy_pdf_dependencies
+	Qt6::Widgets
+	Qt6::SvgWidgets
+	Qt6::Xml)
 
 if(WIN32)
-	target_link_libraries(proxy_pdf_dependencies INTERFACE
+	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
 		Qt6::QWindowsIntegrationPlugin)
 elseif(APPLE)
-	target_link_libraries(proxy_pdf_dependencies INTERFACE
+	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
 		Qt6::QCocoaIntegrationPlugin)
 
 	macro(target_link_framework target type fwname)
@@ -211,14 +216,14 @@ elseif(APPLE)
 		endif()
 	endmacro(target_link_framework)
 
-	target_link_framework(proxy_pdf_dependencies INTERFACE QuartzCore)
-	target_link_framework(proxy_pdf_dependencies INTERFACE IOSurface)
- 	target_link_framework(proxy_pdf_dependencies INTERFACE UniformTypeIdentifiers)
+	target_link_framework(proxy_pdf_app_dependencies INTERFACE QuartzCore)
+	target_link_framework(proxy_pdf_app_dependencies INTERFACE IOSurface)
+ 	target_link_framework(proxy_pdf_app_dependencies INTERFACE UniformTypeIdentifiers)
 elseif(UNIX)
-	target_link_libraries(proxy_pdf_dependencies INTERFACE
+	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
 
-	target_link_libraries(proxy_pdf_definitions INTERFACE
+	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
 		stdc++exp)
 endif() 
 
@@ -292,7 +297,8 @@ else()
 endif()
 target_link_libraries(proxy_pdf PRIVATE
 	qt_toast_lib
-	proxy_pdf_lib)
+	proxy_pdf_lib
+	proxy_pdf_app_dependencies)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES

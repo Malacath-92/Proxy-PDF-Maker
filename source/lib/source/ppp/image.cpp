@@ -9,8 +9,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <QPixmap>
-
 namespace pngcrc
 {
 static uint32_t CRC(const uchar* buf, int len)
@@ -327,25 +325,6 @@ EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
         return out_buffer;
     }
     return {};
-}
-
-QPixmap Image::StoreIntoQtPixmap() const
-{
-    switch (m_Impl.channels())
-    {
-    case 1:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_Grayscale8));
-    case 3:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
-    case 4:
-    {
-        cv::Mat img;
-        cv::cvtColor(m_Impl, img, cv::COLOR_BGR2RGBA);
-        return QPixmap::fromImage(QImage(img.ptr(), img.cols, img.rows, img.step, QImage::Format_RGBA8888));
-    }
-    default:
-        return QPixmap{ static_cast<int>(Width() / 1_pix), static_cast<int>(Height() / 1_pix) };
-    }
 }
 
 Image::operator bool() const

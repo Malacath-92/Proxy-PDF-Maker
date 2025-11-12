@@ -14,6 +14,8 @@
 #include <QSvgRenderer>
 #include <QSvgWidget>
 
+#include <opencv2/opencv.hpp>
+
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
@@ -39,6 +41,26 @@ class SpinnerWidget : public QSvgWidget
         return width;
     }
 };
+
+QPixmap StoreIntoQtPixmap(const Image& img)
+{
+    const auto& img_impl{ img.GetUnderlying() };
+    switch (img_impl.channels())
+    {
+    case 1:
+        return QPixmap::fromImage(QImage(img_impl.ptr(), img_impl.cols, img_impl.rows, img_impl.step, QImage::Format_Grayscale8));
+    case 3:
+        return QPixmap::fromImage(QImage(img_impl.ptr(), img_impl.cols, img_impl.rows, img_impl.step, QImage::Format_BGR888));
+    case 4:
+    {
+        cv::Mat cvt_img;
+        cv::cvtColor(img_impl, cvt_img, cv::COLOR_BGR2RGBA);
+        return QPixmap::fromImage(QImage(cvt_img.ptr(), cvt_img.cols, cvt_img.rows, cvt_img.step, QImage::Format_RGBA8888));
+    }
+    default:
+        return QPixmap{ img_impl.cols, img_impl.rows };
+    }
+}
 
 CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
 {
@@ -88,13 +110,13 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
                 {
                     const Image& uncropped_image{ project.GetUncroppedPreview(card_name) };
                     Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, project.m_Data.m_BleedEdge, 6800_dpi) };
-                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
                     return raw_pixmap;
                 }
                 else
                 {
                     const Image& image{ project.GetCroppedPreview(card_name) };
-                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
                     return raw_pixmap;
                 }
             }
@@ -260,13 +282,13 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
                 {
                     const Image& uncropped_image{ preview.m_UncroppedImage };
                     Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
-                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
                     return raw_pixmap;
                 }
                 else
                 {
                     const Image& image{ preview.m_CroppedImage };
-                    QPixmap raw_pixmap{ image.StoreIntoQtPixmap() };
+                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
                     return raw_pixmap;
                 }
             }()
