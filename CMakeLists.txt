@@ -227,7 +227,7 @@ elseif(UNIX)
 	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
 		Qt6::QXcbIntegrationPlugin)
 
-	target_link_libraries(proxy_pdf_app_dependencies INTERFACE
+	target_link_libraries(proxy_pdf_dependencies INTERFACE
 		stdc++exp)
 endif() 
 
