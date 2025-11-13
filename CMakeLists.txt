@@ -19,6 +19,9 @@ option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 # Run conan, needs to happen before project definition
 include(cmake/conan.cmake)
 set(CONAN_INSTALL_ARGS --build=missing)
+if (LINUX)
+	set(CONAN_INSTALL_ARGS ${CONAN_INSTALL_ARGS} -s qt:compiler.cppstd=gnu23)
+endif()
 run_conan(
     HOST_PROFILE default auto-cmake
     BUILD_PROFILE default
