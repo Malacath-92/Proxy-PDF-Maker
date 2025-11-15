@@ -49,6 +49,20 @@ class ScryfallDownloader : public CardArtDownloader
     std::vector<BacksideRequest> m_Backsides;
     uint32_t m_Downloads{ 0 };
 
+    enum class RequestType
+    {
+        CardInfo,
+        CardImage,
+        BacksideImage,
+    };
+    struct MetaData
+    {
+        QString m_FileName;
+        size_t m_Index;
+        RequestType m_Type;
+    };
+    std::unordered_map<QNetworkReply*, MetaData> m_ReplyMetaData;
+
     size_t m_TotalRequests{};
     std::vector<QNetworkReply*> m_Requests{};
     QTimer m_ScryfallTimer;
