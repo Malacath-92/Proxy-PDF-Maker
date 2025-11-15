@@ -17,7 +17,17 @@ Proxy PDF Maker is an app for creating PDF files for at-home printing of TCG Pro
 
 Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) page and grab the latest version for your platform. Unzip this into any folder of your choice and you should be good to go.
 
+## Windows
 On Windows you will additionally have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+## Ubunutu
+On Linux systems you may have to mark the file as exectuable via the `chmod` command, e.g.
+```sh
+chmod +x proxy_pdf
+```
+
+## macOS
+On macOS 15+ you have to trust the binary to run it. This process is a bit more involved and is outlined in the [MAC-OS-INSTALLATION](https://github.com/Malacath-92/Proxy-PDF-Maker/blob/main/MAC-OS-INSTALLATION.md) guide.
 
 # Quick-Start Guide
 
