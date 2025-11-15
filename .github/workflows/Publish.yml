@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: True
       matrix:
-        os: [Windows, Ubuntu-ARM64, Ubuntu-x86]
+        os: [Windows, Ubuntu-ARM64, Ubuntu-x86, MacOS-ARM64, MacOS-x86]
         include:
           - os: Windows
             compiler: MSVC
@@ -26,16 +26,16 @@ jobs:
             compiler: Gcc
             runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.zip
-          # - os: MacOS-ARM64
-          #   compiler: AppleClang
-          #   runs_on: macos-14
-          #   arch: arm64
-          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
-          # - os: MacOS-x86
-          #   compiler: AppleClang
-          #   runs_on: macos-14
-          #   arch: x86_64
-          #   asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
+          - os: MacOS-ARM64
+            compiler: AppleClang
+            runs_on: macos-14
+            arch: arm64
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
+          - os: MacOS-x86
+            compiler: AppleClang
+            runs_on: macos-14
+            arch: x86_64
+            asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -136,22 +136,43 @@ jobs:
           cd publish
           strip --strip-debug proxy_pdf
 
-      - name: Get Release Notes
-        id: extract_release_notes
-        uses: ffurrer2/extract-release-notes@v2.2.0
-
       - name: Zip Release
         run: |
           cd publish
           tar -a -c -f ../${{ matrix.asset_name }} *
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: release-artifact-${{ matrix.os }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: False
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-artifacts
+          pattern: release-artifact-*
+          merge-multiple: true
+
+      - name: Get Release Notes
+        id: extract_release_notes
+        uses: ffurrer2/extract-release-notes@v2.2.0
 
       - name: Upload Binaries
         uses: svenstaro/upload-release-action@2.9.0
         with:
           release_name: Release ${{ github.ref_name }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
+          file: release-artifacts/*.zip
+          file_glob: true
           tag: ${{ github.ref }}
           body: ${{ steps.extract_release_notes.outputs.release_notes }}
           draft: false
