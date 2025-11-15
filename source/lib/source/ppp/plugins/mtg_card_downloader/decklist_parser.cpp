@@ -40,7 +40,7 @@ class MODOParser final : public DecklistParser
     virtual bool IsValidLine(const QString& line) const override;
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
-    static inline QRegularExpression g_Regex{ "(\\d+) ([^\\(\\[]+)" };
+    static inline QRegularExpression g_Regex{ "(\\d+)x? ([^\\(\\[]+)" };
 };
 
 /*
@@ -54,7 +54,7 @@ class NamesAndSetParser final : public DecklistParser
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
     static inline QRegularExpression g_Regex{
-        "(\\d+) ([^\\(]+) \\(([^ ]+)\\)"
+        "(\\d+)x? ([^\\(]+) \\(([^ ]+)\\)"
     };
 };
 
@@ -70,7 +70,7 @@ class MTGAParser final : public DecklistParser
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
     static inline QRegularExpression g_Regex{
-        "(\\d+) ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
+        "(\\d+)x? ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
     };
 };
 
@@ -85,7 +85,7 @@ class ArchidektParser final : public DecklistParser
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
     static inline QRegularExpression g_Regex{
-        "(\\d+)x ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
+        "(\\d+)x? ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
     };
 };
 
@@ -100,7 +100,7 @@ class MoxfieldParser final : public DecklistParser
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
     static inline QRegularExpression g_Regex{
-        "(\\d+) ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
+        "(\\d+)x? ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
     };
 };
 
