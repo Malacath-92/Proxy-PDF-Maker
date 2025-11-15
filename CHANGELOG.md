@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When hovering a card image it will now show the name of the card, with some exceptions.
 - A new `Render to Png` checkbox is now available that is the same as changing the old `Render Backend` option to `Png`.
 - You can now split front- and backside pages into separate pdfs with the new `Separate Backsides-PDF` option.
+- An additional executable `proxy_pdf_cli` is available to run a full project cycle from the command line.
 
 ### Changed
 - The render button now specifies `Render PDF` or `Render PNG` based on what setting the user has selected.

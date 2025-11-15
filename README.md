@@ -265,6 +265,9 @@ Opens the image folder for this project in a file explorer.
 ### Alignment Test
 Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned.
 
+# CLI
+The app also ships with `proxy_pdf_cli`, which is a command line interface to run cropping and generation. If you don't know what this means then this is probably not for you. With all the features available in the app it should be possible to generate sheets without large amounts of effort. But it's possible to change all project properties via the CLI, please refer to `--help` for more details.
+
 # Donations
 
 I provide this app free of charge and work on it as a hobby and I have no running costs other than the time I spend on it. I use it myself as well, so it's existence is not dependent on it having other users. As such there is no need to monetize this app and I have no plans to sell it as opposed to having it freely available. Despite all this I have had numereous users asking to contribute financially to the project via a donation. So if you are one of those users, feel free to contribute with any amount to buy me a coffee or contribute to a christmas present, I greatly appreciate these contributions. Everyone else, pleaes don't feel any obligation to spend any money on this project.
