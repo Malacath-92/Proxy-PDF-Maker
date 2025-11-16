@@ -100,7 +100,7 @@ class MoxfieldParser final : public DecklistParser
     virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
 
     static inline QRegularExpression g_Regex{
-        "(\\d+)x? ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
+        "(\\d+) ([^\\(]+) \\(([^ ]+)\\) (\\S*\\d+\\S*)"
     };
 };
 
