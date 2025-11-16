@@ -651,7 +651,7 @@ void PrintPreview::Refresh()
                          &PrintPreview::ReorderCards);
     }
 
-    auto* restore_order_button{ new QPushButton{ "Restore Alphabetical Order" } };
+    auto* restore_order_button{ new QPushButton{ "Restore Original Order" } };
     QObject::connect(restore_order_button,
                      &QPushButton::clicked,
                      this,
