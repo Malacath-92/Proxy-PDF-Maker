@@ -27,7 +27,7 @@ jobs:
   build:
     name: ${{ matrix.os }} ${{ matrix.compiler }}
     needs: [check]
-    if: needs.check.outputs.last_sha != github.sha
+    if: needs.check.outputs.last_sha != github.sha || github.event_name == 'workflow_dispatch'
 
     runs-on: ${{ matrix.runs_on }}
     strategy:
