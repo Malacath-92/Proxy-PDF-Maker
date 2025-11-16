@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2025-??-11
+## [1.0.0] - 2025-16-11
 
 ### Added
 - When right-clicking on cards in the card grid or in the preview a new context menu will show up that gives a number of options for changing how images are interpreted:
@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When hovering a card image it will now show the name of the card, with some exceptions.
 - A new `Render to Png` checkbox is now available that is the same as changing the old `Render Backend` option to `Png`.
 - You can now split front- and backside pages into separate pdfs with the new `Separate Backsides-PDF` option.
+- The app can now also load `.webp` files.
 - An additional executable `proxy_pdf_cli` is available to run a full project cycle from the command line.
 
 ### Changed
