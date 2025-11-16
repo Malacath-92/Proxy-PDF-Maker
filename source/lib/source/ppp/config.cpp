@@ -242,7 +242,7 @@ Config LoadConfig()
                 if (base_unit.isValid())
                 {
                     config.m_BaseUnit = UnitFromName(base_unit.toString().toStdString())
-                                            .value_or(Unit::Inches);
+                                            .value_or(Unit::Millimeter);
                 }
             }
 
