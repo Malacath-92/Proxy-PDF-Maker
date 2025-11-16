@@ -120,14 +120,16 @@ void Cropper::CardRemoved(const fs::path& card_name)
     if (fs::exists(m_Project.m_Data.m_CropDir / card_name))
     {
         fs::remove(m_Project.m_Data.m_CropDir / card_name);
+    }
+    if (fs::exists(m_Project.m_Data.m_UncropDir / card_name))
+    {
         fs::remove(m_Project.m_Data.m_UncropDir / card_name);
-
-        for (const auto& entry : fs::recursive_directory_iterator(m_Project.m_Data.m_CropDir))
+    }
+    for (const auto& entry : fs::recursive_directory_iterator(m_Project.m_Data.m_CropDir))
+    {
+        if (entry.is_directory() && fs::exists(entry.path() / card_name))
         {
-            if (entry.is_directory() && fs::exists(entry.path() / card_name))
-            {
-                fs::remove(entry.path() / card_name);
-            }
+            fs::remove(entry.path() / card_name);
         }
     }
 }
