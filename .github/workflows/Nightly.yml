@@ -198,5 +198,6 @@ jobs:
           files: nightly-artifacts/*
           tag_name: "nightly"
           body: "Unstable nightly release, use at your own risk"
+          generate_release_notes: true
           prerelease: true
           token: ${{ secrets.GITHUB_TOKEN }}
