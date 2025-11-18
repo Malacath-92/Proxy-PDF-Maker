@@ -415,25 +415,35 @@ void CardOptionsWidget::BaseUnitChanged()
     const auto full_bleed{ m_Project.CardFullBleed() };
     const auto backside_offset{ m_Project.m_Data.m_BacksideOffset };
 
+    m_BleedEdgeSpin->blockSignals(true);
     m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
     m_BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
     m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
+    m_BleedEdgeSpin->blockSignals(false);
 
+    m_HorizontalSpacingSpin->blockSignals(true);
     m_HorizontalSpacingSpin->setRange(0, 1_cm / base_unit);
     m_HorizontalSpacingSpin->setSuffix(ToQString(base_unit_name));
     m_HorizontalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.x / base_unit);
+    m_HorizontalSpacingSpin->blockSignals(false);
 
+    m_VerticalSpacingSpin->blockSignals(true);
     m_VerticalSpacingSpin->setRange(0, 1_cm / base_unit);
     m_VerticalSpacingSpin->setSuffix(ToQString(base_unit_name));
     m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
+    m_VerticalSpacingSpin->blockSignals(false);
 
+    m_BacksideOffsetWidthSpin->blockSignals(true);
     m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetWidthSpin->setSuffix(ToQString(base_unit_name));
     m_BacksideOffsetWidthSpin->setValue(backside_offset.x / base_unit);
+    m_BacksideOffsetWidthSpin->blockSignals(false);
 
+    m_BacksideOffsetHeightSpin->blockSignals(true);
     m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
     m_BacksideOffsetHeightSpin->setSuffix(ToQString(base_unit_name));
     m_BacksideOffsetHeightSpin->setValue(backside_offset.y / base_unit);
+    m_BacksideOffsetHeightSpin->blockSignals(false);
 }
 
 void CardOptionsWidget::BacksideEnabledChangedExternal()

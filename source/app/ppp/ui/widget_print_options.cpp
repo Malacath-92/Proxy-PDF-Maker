@@ -698,22 +698,35 @@ void PrintOptionsWidget::BaseUnitChanged()
     const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
     const auto margins{ m_Project.ComputeMargins() / base_unit };
 
+    m_LeftMarginSpin->blockSignals(true);
     m_LeftMarginSpin->setSuffix(base_unit_name);
     m_LeftMarginSpin->setRange(0, max_margins.x);
     m_LeftMarginSpin->setValue(margins.m_Left);
+    m_LeftMarginSpin->blockSignals(true);
+    m_TopMarginSpin->blockSignals(false);
     m_TopMarginSpin->setSuffix(base_unit_name);
     m_TopMarginSpin->setRange(0, max_margins.y);
     m_TopMarginSpin->setValue(margins.m_Top);
+    m_TopMarginSpin->blockSignals(true);
+    m_RightMarginSpin->blockSignals(false);
     m_RightMarginSpin->setSuffix(base_unit_name);
     m_RightMarginSpin->setRange(0, max_margins.x);
     m_RightMarginSpin->setValue(margins.m_Right);
+    m_RightMarginSpin->blockSignals(true);
+    m_BottomMarginSpin->blockSignals(false);
     m_BottomMarginSpin->setSuffix(base_unit_name);
     m_BottomMarginSpin->setRange(0, max_margins.y);
     m_BottomMarginSpin->setValue(margins.m_Top);
+    m_BottomMarginSpin->blockSignals(false);
 
-    // Update All Margins range and suffix
+    m_AllMarginsSpin->blockSignals(true);
     m_AllMarginsSpin->setSuffix(base_unit_name);
     m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
+    if (m_Project.m_Data.m_MarginsMode == MarginsMode::Linked)
+    {
+        m_AllMarginsSpin->setValue(margins.m_Top);
+    }
+    m_AllMarginsSpin->blockSignals(false);
 }
 
 void PrintOptionsWidget::RenderBackendChanged()

@@ -307,17 +307,23 @@ void GuidesOptionsWidget::BaseUnitChanged()
     const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
     const auto card_size{ m_Project.CardSize() };
 
+    m_GuidesOffsetSpin->blockSignals(true);
     m_GuidesOffsetSpin->setSuffix(base_unit_name);
     m_GuidesOffsetSpin->setRange(0, m_Project.m_Data.m_BleedEdge / base_unit);
     m_GuidesOffsetSpin->setValue(m_Project.m_Data.m_GuidesOffset / base_unit);
+    m_GuidesOffsetSpin->blockSignals(false);
 
+    m_GuidesLengthSpin->blockSignals(true);
     m_GuidesLengthSpin->setSuffix(base_unit_name);
     m_GuidesLengthSpin->setRange(0, dla::math::min(card_size.x, card_size.y) / base_unit / 2.0f);
     m_GuidesLengthSpin->setValue(m_Project.m_Data.m_GuidesLength / base_unit);
+    m_GuidesLengthSpin->blockSignals(false);
 
+    m_GuidesThicknessSpin->blockSignals(true);
     m_GuidesThicknessSpin->setSuffix(base_unit_name);
     m_GuidesThicknessSpin->setRange(0, 5_mm / base_unit);
     m_GuidesThicknessSpin->setValue(m_Project.m_Data.m_GuidesThickness / base_unit);
+    m_GuidesThicknessSpin->blockSignals(false);
 }
 
 void GuidesOptionsWidget::SetDefaults()
