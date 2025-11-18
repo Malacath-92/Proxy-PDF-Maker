@@ -155,15 +155,25 @@ PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& proj
 
 PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
 {
+    auto find_existing_image{
+        [&]() -> PoDoFo::PdfImage*
+        {
+            const auto it{
+                std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
+                                     { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
+            };
+            if (it != m_Cache.end())
+            {
+                return it->m_PoDoFoImage.get();
+            }
+            return nullptr;
+        }
+    };
     {
         std::lock_guard lock{ m_Mutex };
-        const auto it{
-            std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
-                                 { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
-        };
-        if (it != m_Cache.end())
+        if (auto* img{ find_existing_image() })
         {
-            return it->m_PoDoFoImage.get();
+            return img;
         }
     }
 
@@ -203,10 +213,18 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 
     const auto encoded_image{ encoder(loaded_image) };
 
+    std::lock_guard lock{ m_Mutex };
+    if (auto* img{ find_existing_image() })
+    {
+        // If we end up here we discard all the work we did before
+        // but if we don't we will destroy an existing image and probably
+        // corrup the pdf
+        return img;
+    }
+
     std::unique_ptr podofo_image{ m_Document.MakeImage() };
     (podofo_image.get()->*loader)(reinterpret_cast<const unsigned char*>(encoded_image.data()), encoded_image.size());
 
-    std::lock_guard lock{ m_Mutex };
     m_Cache.push_back({
         std::move(image_path),
         rotation,

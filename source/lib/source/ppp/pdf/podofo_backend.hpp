@@ -42,7 +42,7 @@ class PoDoFoImageCache
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    mutable std::mutex m_Mutex;
+    mutable std::recursive_mutex m_Mutex;
 
     PoDoFoDocument& m_Document;
     const Project& m_Project;
