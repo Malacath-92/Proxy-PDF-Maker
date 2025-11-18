@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-18-11
+
+### Changed
+- The default units are now `mm`.
+- The label for restoring card order was made more general to make sense with user settings.
+- Selected color cube will now be applied to previews as well.
+
+### Fixed
+- Some settings will no longer get messed up when changing units.
+- The backside of a card will now correctly update when resetting it to default.
+- A potential bug in the pdf generation that could result in corrupt pdf files is now gone.
+
 ## [1.0.0] - 2025-16-11
 
 ### Added
