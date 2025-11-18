@@ -283,6 +283,7 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                     card_name,
                     m_Project.GetCardImagePath(card_name),
                     !m_Project.m_Data.m_Previews.contains(card_name),
+                    m_GetColorCube,
                     m_ImageDB,
                     m_Project }
             };

@@ -142,10 +142,10 @@ void CardProvider::BleedChanged()
 }
 void CardProvider::ColorCubeChanged()
 {
-    // Generate new crops only ...
+    // Generate new crops and previews ...
     for (const fs::path& image : ListFiles())
     {
-        CardAdded(image, true, false);
+        CardAdded(image, true, true);
     }
 }
 void CardProvider::BasePreviewWidthChanged()

@@ -19,6 +19,7 @@ bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
            static_cast<int32_t>(std::floor(lhs.m_CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.x / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.y / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm)) ||
+           lhs.m_ColorCube != rhs.m_ColorCube ||
            lhs.m_Rotation != rhs.m_Rotation ||
            lhs.m_BleedType != rhs.m_BleedType ||
            lhs.m_BadAspectRatioHandling != rhs.m_BadAspectRatioHandling;
@@ -40,6 +41,10 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
     entry.m_Params.m_CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
+    if (json.contains("color_cube"))
+    {
+        entry.m_Params.m_ColorCube = json["color_cube"];
+    }
     if (json.contains("rotation"))
     {
         entry.m_Params.m_Rotation = magic_enum::enum_cast<Image::Rotation>(json["rotation"].get_ref<const std::string&>())
@@ -79,6 +84,7 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
         },
     };
     json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
+    json["color_cube"] = entry.m_Params.m_ColorCube;
     json["rotation"] = magic_enum::enum_name(entry.m_Params.m_Rotation);
     json["bleed_type"] = magic_enum::enum_name(entry.m_Params.m_BleedType);
     json["ratio_handling"] = magic_enum::enum_name(entry.m_Params.m_BadAspectRatioHandling);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <string>
 
 #include <QByteArray>
 
@@ -15,6 +16,7 @@ struct ImageParameters
     Pixel m_Width{ 0_pix };
     Size m_CardSize{ 0_mm, 0_mm };
     Length m_FullBleedEdge{ 0_mm };
+    std::string m_ColorCube{ "" };
     Image::Rotation m_Rotation{ Image::Rotation::None };
     BleedType m_BleedType{ BleedType::Default };
     BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };

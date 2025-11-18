@@ -108,6 +108,7 @@ class CropperPreviewWork : public CropperWork
         fs::path card_name,
         fs::path image_path,
         bool force,
+        std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
         const Project& project);
 
@@ -125,6 +126,8 @@ class CropperPreviewWork : public CropperWork
     BleedType m_BleedType;
     BadAspectRatioHandling m_BadAspectRatioHandling;
     bool m_Force;
+
+    std::function<const cv::Mat*(std::string_view)> m_GetColorCube;
 
     ImageDataBase& m_ImageDB;
 

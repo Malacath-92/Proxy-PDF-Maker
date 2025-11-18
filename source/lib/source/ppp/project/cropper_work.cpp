@@ -219,8 +219,6 @@ void CropperCropWork::run()
 
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
-        const std::string color_cube_name{ m_Cfg.m_ColorCube };
-
         const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
 
         const fs::path input_file{ m_ImagePath };
@@ -235,6 +233,7 @@ void CropperCropWork::run()
             card_size_with_full_bleed.x / card_size_with_full_bleed.y
         };
 
+        const std::string color_cube_name{ m_Cfg.m_ColorCube };
         const bool do_color_correction{ color_cube_name != "None" };
         const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
 
@@ -242,6 +241,7 @@ void CropperCropWork::run()
             .m_DPI{ max_density },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
+            // No need to set m_ColorCube here, it's already implied by the out path
             .m_Rotation = m_Rotation,
             .m_BleedType = m_BleedType,
             .m_BadAspectRatioHandling = m_BadAspectRatioHandling,
@@ -386,6 +386,7 @@ CropperPreviewWork::CropperPreviewWork(
     fs::path card_name,
     fs::path image_path,
     bool force,
+    std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
     const Project& project)
     : CropperWork{ alive_cropper_work }
@@ -395,6 +396,7 @@ CropperPreviewWork::CropperPreviewWork(
     , m_BleedType{ project.GetCardBleedType(m_CardName) }
     , m_BadAspectRatioHandling{ project.GetCardBadAspectRatioHandling(m_CardName) }
     , m_Force{ force }
+    , m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ image_db }
     , m_Data{ CopyRelevant(project.m_Data) }
     , m_Cfg{ CopyRelevant(g_Cfg) }
@@ -426,6 +428,10 @@ void CropperPreviewWork::run()
             card_size_with_full_bleed.x / card_size_with_full_bleed.y
         };
 
+        const std::string color_cube_name{ m_Cfg.m_ColorCube };
+        const bool do_color_correction{ color_cube_name != "None" };
+        const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
+
         const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
 
         // Fake image parameters
@@ -433,6 +439,7 @@ void CropperPreviewWork::run()
             .m_Width{ preview_width },
             .m_CardSize{ card_size },
             .m_FullBleedEdge{ full_bleed_edge },
+            .m_ColorCube{ color_cube_name },
             .m_Rotation = m_Rotation,
             .m_BleedType = m_BleedType,
             .m_BadAspectRatioHandling = m_BadAspectRatioHandling,
@@ -454,7 +461,22 @@ void CropperPreviewWork::run()
                     return;
                 }
 
-                const Image source_image{ Image::Read(input_file).Rotate(m_Rotation) };
+                const Image source_image{
+                    [&]()
+                    {
+                        if (do_color_correction)
+                        {
+                            return Image::Read(input_file)
+                                .Rotate(m_Rotation)
+                                .ApplyColorCube(*color_cube);
+                        }
+                        else
+                        {
+                            return Image::Read(input_file)
+                                .Rotate(m_Rotation);
+                        }
+                    }()
+                };
 
                 static constexpr auto c_BadAspectRatioTolerance{
                     0.01f

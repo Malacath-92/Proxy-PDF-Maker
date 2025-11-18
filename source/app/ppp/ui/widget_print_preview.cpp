@@ -668,13 +668,6 @@ void PrintPreview::Refresh()
     header_layout->addWidget(restore_order_button);
     header_layout->addStretch();
 
-    if (g_Cfg.m_ColorCube != "None")
-    {
-        auto* vibrance_info{ new QLabel{ "Preview does not respect 'Vibrance Bump' setting" } };
-        vibrance_info->setStyleSheet("QLabel{ color : red; }");
-        header_layout->addWidget(vibrance_info);
-    }
-
     auto* header{ new QWidget };
     header->setLayout(header_layout);
 
