@@ -201,7 +201,11 @@ class CardWidget : public QFrame
                                  {
                                      if (m_CardName == card_name)
                                      {
-                                         auto* new_backside_image{ new BacksideImage{ backside, project } };
+                                         auto* new_backside_image{
+                                             backside.empty()
+                                                 ? new BacksideImage{ project.m_Data.m_BacksideDefault, project }
+                                                 : new BacksideImage{ backside, project },
+                                         };
                                          new_backside_image->EnableContextMenu(true, project);
                                          stacked_widget->RefreshBackside(new_backside_image);
                                      }
