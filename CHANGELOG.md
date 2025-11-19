@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-19-11
+
+### Fixed
+- The pathes exported in the .dxf file with the `Export Exact Guides` is now closed.
+
 ## [1.0.1] - 2025-18-11
 
 ### Changed
