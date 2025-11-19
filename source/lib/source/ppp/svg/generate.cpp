@@ -135,7 +135,7 @@ POLYLINE
   66
 1
   70
-0
+1
 )";
             return AtScopeExit{
                 [&output]()
