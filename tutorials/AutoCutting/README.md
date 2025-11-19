@@ -34,7 +34,7 @@ Now we can press `Render Document`, this will generate a `_printme.svg` file whi
 > [!NOTE]
 > Depending on what cutting machine you use you may have to set the `Paper Size` to `Fit`, `Card Orientation` to `Mixed` and play around with the vertical and horizontal layout values to get something that fits within the valid region of your registration marks.
 
-Now we can open a new project in _Silhouette Studio_ and choose the right page setup<sup>3</sup>. At this point we can drag-n-drop the `_printme.svg` or the `_printme.dxf` file into the project. Copy the `Cards Size`<sup>4</sup> values over to the size of the imported cutting guides(note that this should be already correct if using `_printme.dxf`) and press the `Center to Page` option<sup>5</sup>.
+Now we can open a new project in _Silhouette Studio_ and choose the right page setup<sup>3</sup>. At this point we can drag-n-drop the `_printme.svg` or the `_printme.dxf` file into the project. Copy the `Cards Size`<sup>4</sup> values over to the size of the imported cutting guides (note that this should be already correct if using `_printme.dxf`, if not go into the settings and change the import to open "As-Is") and press the `Center to Page` option<sup>5</sup>.
 
 <p align="center">
     <img src="./images/silhouette_page_setup.png" alt="Page Setup"/>
