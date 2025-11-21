@@ -1115,7 +1115,7 @@ bool Project::CacheCardLayout()
     // Calculate available space after accounting for margins
     const Size page_size{ ComputePageSize() };
     Size available_space{ page_size };
-    if (m_Data.m_CustomMargins.has_value())
+    if (m_Data.m_MarginsMode == MarginsMode::Full)
     {
         const auto margins{ ComputeMargins() };
         available_space.x -= (margins.m_Left + margins.m_Right);
