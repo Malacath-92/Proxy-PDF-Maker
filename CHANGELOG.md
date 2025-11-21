@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-21-11
+
+### Fixed
+- Extended guides are now moved in the right direction when changing vertical margins.
+- When switching to simple margins control it no longer happens that the layout changes unexpectedly.
+
 ## [1.0.2] - 2025-19-11
 
 ### Fixed
