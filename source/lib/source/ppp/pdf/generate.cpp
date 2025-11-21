@@ -96,9 +96,14 @@ PdfResults GeneratePdf(const Project& project)
                 std::vector<ApproximatePosition> unique_y;
                 for (const auto& transform : transforms)
                 {
+                    const Position position{
+                        transform.m_Position.x,
+                        page_height - transform.m_Position.y - transform.m_Size.y,
+                    };
+
                     using lvec2 = dla::tvec2<int64_t>;
                     const auto top_left_corner_exact{
-                        transform.m_Position + corner_guides_offset
+                        position + corner_guides_offset
                     };
                     const auto top_left_corner{
                         static_cast<lvec2>(top_left_corner_exact / c_Precision)
@@ -113,7 +118,7 @@ PdfResults GeneratePdf(const Project& project)
                     }
 
                     const auto bottom_right_corner_exact{
-                        transform.m_Position + transform.m_Size - corner_guides_offset
+                        position + transform.m_Size - corner_guides_offset
                     };
                     const auto bottom_right_corner{
                         static_cast<lvec2>(bottom_right_corner_exact / c_Precision)
@@ -149,12 +154,12 @@ PdfResults GeneratePdf(const Project& project)
                 for (const auto& [_, x] : unique_x)
                 {
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ x, page_height - y_min },
-                        .m_To{ x, page_height },
+                        .m_From{ x, y_min },
+                        .m_To{ x, 0_mm },
                     });
                     guides.push_back(PdfPage::LineData{
-                        .m_From{ x, page_height - y_max },
-                        .m_To{ x, 0_mm },
+                        .m_From{ x, y_max },
+                        .m_To{ x, page_height },
                     });
                 }
 
