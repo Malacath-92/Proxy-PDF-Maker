@@ -13,7 +13,7 @@ Do the usual steps to create your project, use the preview to verify everything 
 
 ## Setting up the _Silhouette Studio_ Project
 
-To setup the project we need to generate a the cutting guides from the app. We do this by enabling `Advanced Mode` in the `Global Config`, and while we're here we also switch the `Rendering Backend` to `PoDoFo`<sup>1</sup>.
+To setup the project we need to generate a the cutting guides from the app. We do this by enabling `Advanced Mode` in the `Global Config`, and while we're here we also switch the `Rendering Backend` to `PoDoFo`<sup>1</sup> (only in versions older than v1.0.0, later versions do not have the `Rendering Backen` option).
 
 <p align="center">
     <img src="./images/global_options.png" alt="Exact Guides"/>
