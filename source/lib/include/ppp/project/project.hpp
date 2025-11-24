@@ -152,7 +152,7 @@ struct ProjectData
     bool m_BacksideEnableGuides{ false };
     bool m_CornerGuides{ true };
     bool m_CrossGuides{ false };
-    bool m_ExtendedGuides{ false };
+    bool m_ExtendedGuides{ true };
     ColorRGB8 m_GuidesColorA{ 0, 0, 0 };
     ColorRGB8 m_GuidesColorB{ 190, 190, 190 };
     Length m_GuidesOffset{ 0_mm };
