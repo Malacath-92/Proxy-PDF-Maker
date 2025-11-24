@@ -247,8 +247,24 @@ int main(int argc, char** argv)
         }
     }
 
+    QTimer idle_timer;
+    idle_timer.setSingleShot(true);
+    idle_timer.setInterval(500);
+
+    {
+        QObject::connect(&idle_timer,
+                         &QTimer::timeout,
+                         &app,
+                         &QCoreApplication::quit);
+        QObject::connect(&cropper,
+                         &Cropper::CropWorkStart,
+                         &idle_timer,
+                         &QTimer::stop);
+    }
+
     cropper.Start();
     card_provider.Start();
+    idle_timer.start();
 
     return app.exec();
 }
