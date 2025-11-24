@@ -92,23 +92,24 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
 
 ImageDataBase ImageDataBase::FromFile(const fs::path& path)
 {
-    try
+    if (fs::exists(path))
     {
-        const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
-        if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
+        try
         {
-            throw std::logic_error{ "Image databse version not compatible with App version..." };
+            const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
+            if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
+            {
+                throw std::logic_error{ "Image databse version not compatible with App version..." };
+            }
+
+            return ImageDataBase{ json["db"].get<DataBaseMap>(), path };
         }
-
-        return ImageDataBase{ json["db"].get<DataBaseMap>(), path };
+        catch (const std::exception& e)
+        {
+            fmt::print("Failed loading image database, continuing with an empty image database: {}", e.what());
+        }
     }
-    catch (const std::exception& e)
-    {
-        fmt::print("{}", e.what());
-
-        // Failed loading image database, continuing with an empty image databse...
-        return ImageDataBase{ path };
-    }
+    return ImageDataBase{ path };
 }
 
 ImageDataBase& ImageDataBase::Read(const fs::path& path)
