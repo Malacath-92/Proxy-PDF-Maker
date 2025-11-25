@@ -8,7 +8,7 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
-QByteArray hash_file(const fs::path& file_path)
+QByteArray hash_pdf_file(const fs::path& file_path)
 {
     const auto source_data{
         [&]()
@@ -18,7 +18,11 @@ QByteArray hash_file(const fs::path& file_path)
             return source_file.readAll();
         }()
     };
-    return QCryptographicHash::hash(source_data, QCryptographicHash::Md5);
+    const auto id_start{ source_data.lastIndexOf("ID[<") };
+    const auto id_end{ source_data.indexOf(">]", id_start) };
+    const auto id_less_data{ source_data.sliced(0, id_start) +
+                             source_data.sliced(id_end + 2) };
+    return QCryptographicHash::hash(id_less_data, QCryptographicHash::Md5);
 }
 
 TEST_CASE("Run CLI without any images", "[cli_empty_project]")
@@ -39,9 +43,9 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     REQUIRE(!fs::exists("config.ini"));
 
     constexpr const char c_ExpectedHash[]{
-        "\x76\x40\xb1\x81\xd3\xc8\x7c\xb9\x91\xd9\x6b\x14\xbc\x33\xf6\x72"
+        "\x20\x0b\xd4\x75\x01\xed\x56\xc6\xeb\x38\x1a\x7c\xff\x84\x1a\xf8"
     };
-    const auto file_hash{ hash_file("_printme.pdf") };
+    const auto file_hash{ hash_pdf_file("_printme.pdf") };
     REQUIRE(file_hash == c_ExpectedHash);
 
     AtScopeExit delete_folders{
