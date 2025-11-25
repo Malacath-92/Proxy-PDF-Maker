@@ -31,7 +31,7 @@ function(proxyPdfAddTest NAME)
 	# --------------------------------------------------
 	# Create a custom command that copies files that tests need
 	add_custom_command(TARGET ${TEST_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 			"${CMAKE_SOURCE_DIR}/fallback.png"
 			"${CMAKE_SOURCE_DIR}/res/cubes/Foils Vibrance.CUBE"
 			"${CMAKE_SOURCE_DIR}/tests/madness.CUBE"
