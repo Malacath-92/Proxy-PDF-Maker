@@ -34,7 +34,7 @@ function(proxyPdfAddTest NAME)
 		COMMAND ${CMAKE_COMMAND} -E copy
 			"${CMAKE_SOURCE_DIR}/fallback.png"
 			"${CMAKE_SOURCE_DIR}/res/cubes/Foils Vibrance.CUBE"
-			"${CMAKE_SOURCE_DIR}/tests/Madness.CUBE"
+			"${CMAKE_SOURCE_DIR}/tests/madness.CUBE"
 			"$<TARGET_FILE_DIR:${TEST_NAME}>"
 		COMMENT "Copying test dependencies to $<TARGET_FILE_DIR:${TEST_NAME}>")
 endfunction()
