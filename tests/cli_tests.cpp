@@ -35,6 +35,8 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
 
     REQUIRE(ret == 0);
     REQUIRE(fs::exists("_printme.pdf"));
+    REQUIRE(!fs::exists("proj.json"));
+    REQUIRE(!fs::exists("config.ini"));
 
     constexpr const char c_ExpectedHash[]{
         "\xa3\x2a\xde\x7a\x23\x5d\xce\xc4\xc2\x72\x8d\x9b\xe1\x1c\xce\x79"

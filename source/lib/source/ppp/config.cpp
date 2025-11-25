@@ -48,7 +48,6 @@ Config LoadConfig()
     Config config{};
     if (!QFile::exists("config.ini"))
     {
-        SaveConfig(config);
         return config;
     }
 
@@ -59,7 +58,6 @@ Config LoadConfig()
             settings.beginGroup("DEFAULT");
             if (!settings.value("Config.Version").isValid())
             {
-                SaveConfig(config);
                 return config;
             }
             settings.endGroup();

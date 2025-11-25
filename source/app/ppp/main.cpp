@@ -75,6 +75,8 @@ int main(int argc, char** argv)
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app.GetTheme());
 
+    SaveConfig(g_Cfg);
+
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
     {
