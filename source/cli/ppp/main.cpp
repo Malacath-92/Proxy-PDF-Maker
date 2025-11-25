@@ -28,6 +28,8 @@ struct CommandLineOptions
     bool m_Render{ false };
     bool m_WaitForCropper{ false };
 
+    bool m_Deterministic{ false };
+
     std::optional<std::string> m_ProjectFile{ std::nullopt };
     std::optional<std::string> m_ProjectJson{ std::nullopt };
     std::unordered_map<std::string, std::string> m_ProjectOverrides{};
@@ -85,6 +87,10 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
             cli.m_WaitForCropper = true;
             cli.m_Render = true;
         }
+        else if (arg == "--deterministic")
+        {
+            cli.m_Deterministic = true;
+        }
         else if (arg == "--project")
         {
             if (i + 1 < argv.size() &&
@@ -107,6 +113,10 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
                     cli.m_ProjectJson = std::move(param);
                 }
             }
+        }
+        else
+        {
+            LogError("Unknown command line option {}", arg);
         }
     }
 
@@ -156,6 +166,11 @@ int main(int argc, char** argv)
     if (cli.m_HelpDisplayed)
     {
         return 0;
+    }
+
+    if (cli.m_Deterministic)
+    {
+        g_Cfg.m_DeterminsticPdfOutput = true;
     }
 
     Project project{};

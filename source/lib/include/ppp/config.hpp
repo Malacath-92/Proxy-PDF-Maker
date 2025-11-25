@@ -62,6 +62,8 @@ struct Config
     std::optional<int> m_JpgQuality{ std::nullopt };
     Unit m_BaseUnit{ Unit::Inches };
 
+    bool m_DeterminsticPdfOutput{ false };
+
     std::unordered_map<std::string, bool> m_PluginsState{};
 
     // Hidden options, just doing someone a solid

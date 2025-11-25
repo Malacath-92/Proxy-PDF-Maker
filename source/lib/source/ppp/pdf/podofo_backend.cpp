@@ -396,6 +396,15 @@ fs::path PoDoFoDocument::Write(fs::path path)
         LogInfo("Saving to {}...", pdf_path_string);
 
         std::lock_guard lock{ m_Mutex };
+
+        if (g_Cfg.m_DeterminsticPdfOutput)
+        {
+            auto* trailer{ m_Document.GetTrailer() };
+            const auto& ref = trailer->GetDictionary().GetKey("Info")->GetReference();
+            auto* obj = m_Document.GetObjects().GetObject(ref);
+            obj->GetDictionary().RemoveKey("CreationDate");
+        }
+
         m_Document.Write(pdf_path.c_str());
         return pdf_path;
     }

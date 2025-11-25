@@ -372,7 +372,7 @@ PdfResults GeneratePdf(const Project& project)
         }
     }
 
-    if (generate_work.size() < 4)
+    if (g_Cfg.m_DeterminsticPdfOutput || generate_work.size() < 4)
     {
         for (const auto& work : generate_work)
         {
