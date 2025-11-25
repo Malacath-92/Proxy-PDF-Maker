@@ -239,22 +239,41 @@ int main(int argc, char** argv)
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
 
+    QTimer idle_timer;
+    idle_timer.setSingleShot(true);
+    idle_timer.setInterval(500);
+    QObject::connect(&cropper,
+                     &Cropper::CropWorkStart,
+                     &idle_timer,
+                     &QTimer::stop);
+
     QCoreApplication app{ argc, argv };
     if (cli.m_WaitForCropper)
     {
         if (cli.m_Render)
         {
+            const auto render_and_quit{
+                [&]
+                {
+                    GeneratePdf(project);
+                    app.quit();
+                }
+            };
+            QObject::connect(&idle_timer,
+                             &QTimer::timeout,
+                             &project,
+                             render_and_quit);
             QObject::connect(&cropper,
                              &Cropper::CropWorkDone,
                              &project,
-                             [&]
-                             {
-                                 GeneratePdf(project);
-                                 app.quit();
-                             });
+                             render_and_quit);
         }
         else
         {
+            QObject::connect(&idle_timer,
+                             &QTimer::timeout,
+                             &app,
+                             &QCoreApplication::quit);
             QObject::connect(&cropper,
                              &Cropper::CropWorkDone,
                              &app,
@@ -262,19 +281,7 @@ int main(int argc, char** argv)
         }
     }
 
-    QTimer idle_timer;
-    idle_timer.setSingleShot(true);
-    idle_timer.setInterval(500);
-
     {
-        QObject::connect(&idle_timer,
-                         &QTimer::timeout,
-                         &app,
-                         &QCoreApplication::quit);
-        QObject::connect(&cropper,
-                         &Cropper::CropWorkStart,
-                         &idle_timer,
-                         &QTimer::stop);
     }
 
     cropper.Start();
