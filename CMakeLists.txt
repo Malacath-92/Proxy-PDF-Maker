@@ -270,6 +270,7 @@ set_target_properties(proxy_pdf_lib PROPERTIES
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
     VS_GLOBAL_EnableClangTidyCodeAnalysis true)
 
+# --------------------------------------------------
 # Create toast library
 set(qt_toast_lib_resources "submodules/qt-toast/src/toast_resources.qrc")
 file(GLOB_RECURSE qt_toast_lib_sources CONFIGURE_DEPENDS "submodules/qt-toast/src/*.cpp")
