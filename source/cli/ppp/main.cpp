@@ -74,7 +74,7 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         return cli;
     }
 
-    size_t i{ 0 };
+    size_t i{ 1 };
     for (; i < argv.size(); i++)
     {
         const std::string_view arg{ argv[i] };
