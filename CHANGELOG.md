@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2025-26-11
+
+### Changed
+- Enabled extended guides by default.
+- Cutting guides will now always contain at least three dashes.
+
+### Fixed
+- The cli will no longer freeze when running with no images.
+- Running the cli will no longer save a config.ini file.
+- Loading the image database the first time will no longer emit an error.
+
 ## [1.0.3] - 2025-21-11
 
 ### Fixed
