@@ -61,7 +61,8 @@ void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const auto real_tx{ ToPoDoFoPoints(tx) };
     const auto real_ty{ ToPoDoFoPoints(ty) };
     const auto line_width{ ToPoDoFoPoints(style.m_Thickness) };
-    const auto dash_size{ ToPoDoFoPoints(style.m_DashSize) };
+    const auto final_dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
+    const auto dash_size{ ToPoDoFoPoints(final_dash_size) };
 
     PoDoFo::PdfPainter painter;
     painter.SetPage(m_Page);

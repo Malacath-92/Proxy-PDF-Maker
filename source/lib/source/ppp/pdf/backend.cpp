@@ -69,3 +69,13 @@ void PdfPage::DrawDashedCross(CrossData data, DashedLineStyle style)
         DrawDashedLine(LineData{ data.m_Pos, { x, ty } }, style);
     }
 }
+
+Length PdfPage::ComputeFinalDashSize(Length line_length, Length dash_size)
+{
+    // We want at least three dashes in a line
+    if (line_length / dash_size < 3.0f)
+    {
+        return line_length / 3.0f;
+    }
+    return dash_size;
+}

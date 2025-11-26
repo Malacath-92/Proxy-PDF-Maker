@@ -69,7 +69,8 @@ void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
 
     cv::rectangle(m_Page, from, to, color_a, cv::FILLED);
 
-    const float dash_freq{ style.m_DashSize / dla::distance(data.m_From, data.m_To) };
+    const auto dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
+    const auto dash_freq{ dash_size / dla::distance(data.m_From, data.m_To) };
     for (size_t i = 0; i < static_cast<size_t>(0.5f / dash_freq); ++i)
     {
         const float alpha{ i * dash_freq * 2.0f };

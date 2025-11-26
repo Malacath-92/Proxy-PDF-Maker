@@ -36,7 +36,7 @@ class PdfPage
     struct DashedLineStyle : LineStyle
     {
         ColorRGB32f m_SecondColor;
-        Length m_DashSize{ m_Thickness };
+        Length m_TargetDashSize{ m_Thickness };
     };
 
     enum class CrossSegment
@@ -90,6 +90,8 @@ class PdfPage
         dla::vec2{ -1.0f, +1.0f },
         dla::vec2{ +1.0f, +1.0f },
     };
+
+    static Length ComputeFinalDashSize(Length line_length, Length dash_size);
 };
 
 class PdfDocument
