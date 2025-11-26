@@ -83,25 +83,23 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 {
     setObjectName("Card Options");
 
-    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
-
-    auto* bleed_edge{ new DoubleSpinBoxWithLabel{ "&Bleed Edge" } };
+    auto* bleed_edge{ new LengthSpinBoxWithLabel{ "&Bleed Edge" } };
     m_BleedEdgeSpin = bleed_edge->GetWidget();
+    m_BleedEdgeSpin->ConnectUnitSignals(this);
     m_BleedEdgeSpin->setDecimals(2);
     m_BleedEdgeSpin->setSingleStep(0.1);
-    m_BleedEdgeSpin->setSuffix(base_unit_name);
 
     auto* spacing_spin_boxes{ new LinkedSpinBoxes{ project.m_Data.m_SpacingLinked } };
 
     m_HorizontalSpacingSpin = spacing_spin_boxes->First();
+    m_HorizontalSpacingSpin->ConnectUnitSignals(this);
     m_HorizontalSpacingSpin->setDecimals(2);
     m_HorizontalSpacingSpin->setSingleStep(0.1);
-    m_HorizontalSpacingSpin->setSuffix(base_unit_name);
 
     m_VerticalSpacingSpin = spacing_spin_boxes->Second();
+    m_VerticalSpacingSpin->ConnectUnitSignals(this);
     m_VerticalSpacingSpin->setDecimals(2);
     m_VerticalSpacingSpin->setSingleStep(0.1);
-    m_VerticalSpacingSpin->setSuffix(base_unit_name);
 
     auto* spacing{ new WidgetWithLabel{ "Card Spacing", spacing_spin_boxes } };
     spacing->layout()->setAlignment(spacing->GetLabel(), Qt::AlignTop);
@@ -123,15 +121,15 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
 
     {
-        m_BacksideOffsetWidthSpin = MakeDoubleSpinBox();
+        m_BacksideOffsetWidthSpin = MakeLengthSpinBox();
+        m_BacksideOffsetWidthSpin->ConnectUnitSignals(this);
         m_BacksideOffsetWidthSpin->setDecimals(2);
         m_BacksideOffsetWidthSpin->setSingleStep(0.1);
-        m_BacksideOffsetWidthSpin->setSuffix(base_unit_name);
 
-        m_BacksideOffsetHeightSpin = MakeDoubleSpinBox();
+        m_BacksideOffsetHeightSpin = MakeLengthSpinBox();
+        m_BacksideOffsetHeightSpin->ConnectUnitSignals(this);
         m_BacksideOffsetHeightSpin->setDecimals(2);
         m_BacksideOffsetHeightSpin->setSingleStep(0.1);
-        m_BacksideOffsetHeightSpin->setSuffix(base_unit_name);
 
         auto* inner_layout{ new QVBoxLayout };
         inner_layout->addWidget(m_BacksideOffsetWidthSpin);
@@ -408,44 +406,6 @@ void CardOptionsWidget::AdvancedModeChanged()
     SetAdvancedWidgetsVisibility();
 }
 
-void CardOptionsWidget::BaseUnitChanged()
-{
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    const auto base_unit_name{ UnitShortName(g_Cfg.m_BaseUnit) };
-    const auto full_bleed{ m_Project.CardFullBleed() };
-    const auto backside_offset{ m_Project.m_Data.m_BacksideOffset };
-
-    m_BleedEdgeSpin->blockSignals(true);
-    m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
-    m_BleedEdgeSpin->setSuffix(ToQString(base_unit_name));
-    m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
-    m_BleedEdgeSpin->blockSignals(false);
-
-    m_HorizontalSpacingSpin->blockSignals(true);
-    m_HorizontalSpacingSpin->setRange(0, 1_cm / base_unit);
-    m_HorizontalSpacingSpin->setSuffix(ToQString(base_unit_name));
-    m_HorizontalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.x / base_unit);
-    m_HorizontalSpacingSpin->blockSignals(false);
-
-    m_VerticalSpacingSpin->blockSignals(true);
-    m_VerticalSpacingSpin->setRange(0, 1_cm / base_unit);
-    m_VerticalSpacingSpin->setSuffix(ToQString(base_unit_name));
-    m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
-    m_VerticalSpacingSpin->blockSignals(false);
-
-    m_BacksideOffsetWidthSpin->blockSignals(true);
-    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetWidthSpin->setSuffix(ToQString(base_unit_name));
-    m_BacksideOffsetWidthSpin->setValue(backside_offset.x / base_unit);
-    m_BacksideOffsetWidthSpin->blockSignals(false);
-
-    m_BacksideOffsetHeightSpin->blockSignals(true);
-    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetHeightSpin->setSuffix(ToQString(base_unit_name));
-    m_BacksideOffsetHeightSpin->setValue(backside_offset.y / base_unit);
-    m_BacksideOffsetHeightSpin->blockSignals(false);
-}
-
 void CardOptionsWidget::BacksideEnabledChangedExternal()
 {
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
@@ -458,11 +418,10 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetWidthSpin->setValue(m_Project.m_Data.m_BacksideOffset.x / base_unit);
-    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetHeightSpin->setValue(m_Project.m_Data.m_BacksideOffset.y / base_unit);
+    m_BacksideOffsetWidthSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetWidthSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
+    m_BacksideOffsetHeightSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetHeightSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
@@ -485,14 +444,14 @@ void CardOptionsWidget::SetDefaults()
     const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto full_bleed{ m_Project.CardFullBleed() };
 
-    m_BleedEdgeSpin->setRange(0, full_bleed / base_unit);
-    m_BleedEdgeSpin->setValue(m_Project.m_Data.m_BleedEdge / base_unit);
+    m_BleedEdgeSpin->SetRange(0_mm, full_bleed);
+    m_BleedEdgeSpin->SetValue(m_Project.m_Data.m_BleedEdge);
 
-    m_HorizontalSpacingSpin->setRange(0, 1_cm / base_unit);
-    m_HorizontalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.x / base_unit);
+    m_HorizontalSpacingSpin->SetRange(0_mm, 1_cm);
+    m_HorizontalSpacingSpin->SetValue(m_Project.m_Data.m_Spacing.x);
 
-    m_VerticalSpacingSpin->setRange(0, 1_cm / base_unit);
-    m_VerticalSpacingSpin->setValue(m_Project.m_Data.m_Spacing.y / base_unit);
+    m_VerticalSpacingSpin->SetRange(0_mm, 1_cm);
+    m_VerticalSpacingSpin->SetValue(m_Project.m_Data.m_Spacing.y);
 
     m_Corners->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Corners)));
 
@@ -507,11 +466,11 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideOffsetWidthSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetWidthSpin->setValue(m_Project.m_Data.m_BacksideOffset.x / base_unit);
+    m_BacksideOffsetWidthSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetWidthSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
 
-    m_BacksideOffsetHeightSpin->setRange(-0.3_in / base_unit, 0.3_in / base_unit);
-    m_BacksideOffsetHeightSpin->setValue(m_Project.m_Data.m_BacksideOffset.y / base_unit);
+    m_BacksideOffsetHeightSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetHeightSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);

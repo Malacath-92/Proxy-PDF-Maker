@@ -195,29 +195,29 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_CardsInfo = cards_info->GetWidget();
     m_CardsInfo->setToolTip("Size of the cards area in the final rendered PDF (excluding margins)");
 
-    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", MakeDoubleSpinBox() } };
-    m_LeftMarginSpin = static_cast<QDoubleSpinBox*>(left_margin->GetWidget());
+    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", MakeLengthSpinBox() } };
+    m_LeftMarginSpin = static_cast<LengthSpinBox*>(left_margin->GetWidget());
+    m_LeftMarginSpin->ConnectUnitSignals(this);
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
-    m_LeftMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", MakeDoubleSpinBox() } };
-    m_TopMarginSpin = static_cast<QDoubleSpinBox*>(top_margin->GetWidget());
+    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", MakeLengthSpinBox() } };
+    m_TopMarginSpin = static_cast<LengthSpinBox*>(top_margin->GetWidget());
+    m_TopMarginSpin->ConnectUnitSignals(this);
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
-    m_TopMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", MakeDoubleSpinBox() } };
-    m_RightMarginSpin = static_cast<QDoubleSpinBox*>(right_margin->GetWidget());
+    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", MakeLengthSpinBox() } };
+    m_RightMarginSpin = static_cast<LengthSpinBox*>(right_margin->GetWidget());
+    m_RightMarginSpin->ConnectUnitSignals(this);
     m_RightMarginSpin->setDecimals(2);
     m_RightMarginSpin->setSingleStep(0.1);
-    m_RightMarginSpin->setSuffix(initial_base_unit_name);
 
-    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", MakeDoubleSpinBox() } };
-    m_BottomMarginSpin = static_cast<QDoubleSpinBox*>(bottom_margin->GetWidget());
+    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", MakeLengthSpinBox() } };
+    m_BottomMarginSpin = static_cast<LengthSpinBox*>(bottom_margin->GetWidget());
+    m_BottomMarginSpin->ConnectUnitSignals(this);
     m_BottomMarginSpin->setDecimals(2);
     m_BottomMarginSpin->setSingleStep(0.1);
-    m_BottomMarginSpin->setSuffix(initial_base_unit_name);
 
     auto* margins_mode{ new ComboBoxWithLabel{
         "&Margin Mode",
@@ -225,11 +225,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
     m_MarginsMode = margins_mode->GetWidget();
 
-    auto* all_margins{ new WidgetWithLabel{ "&All Margins", MakeDoubleSpinBox() } };
-    m_AllMarginsSpin = static_cast<QDoubleSpinBox*>(all_margins->GetWidget());
+    auto* all_margins{ new WidgetWithLabel{ "&All Margins", MakeLengthSpinBox() } };
+    m_AllMarginsSpin = static_cast<LengthSpinBox*>(all_margins->GetWidget());
+    m_AllMarginsSpin->ConnectUnitSignals(this);
     m_AllMarginsSpin->setDecimals(2);
     m_AllMarginsSpin->setSingleStep(0.1);
-    m_AllMarginsSpin->setSuffix(initial_base_unit_name);
 
     auto* card_orientation{ new ComboBoxWithLabel{
         "Card Orien&tation",
@@ -690,45 +690,6 @@ void PrintOptionsWidget::AdvancedModeChanged()
     SetAdvancedWidgetsVisibility();
 }
 
-void PrintOptionsWidget::BaseUnitChanged()
-{
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
-
-    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
-    const auto margins{ m_Project.ComputeMargins() / base_unit };
-
-    m_LeftMarginSpin->blockSignals(true);
-    m_LeftMarginSpin->setSuffix(base_unit_name);
-    m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(margins.m_Left);
-    m_LeftMarginSpin->blockSignals(true);
-    m_TopMarginSpin->blockSignals(false);
-    m_TopMarginSpin->setSuffix(base_unit_name);
-    m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(margins.m_Top);
-    m_TopMarginSpin->blockSignals(true);
-    m_RightMarginSpin->blockSignals(false);
-    m_RightMarginSpin->setSuffix(base_unit_name);
-    m_RightMarginSpin->setRange(0, max_margins.x);
-    m_RightMarginSpin->setValue(margins.m_Right);
-    m_RightMarginSpin->blockSignals(true);
-    m_BottomMarginSpin->blockSignals(false);
-    m_BottomMarginSpin->setSuffix(base_unit_name);
-    m_BottomMarginSpin->setRange(0, max_margins.y);
-    m_BottomMarginSpin->setValue(margins.m_Top);
-    m_BottomMarginSpin->blockSignals(false);
-
-    m_AllMarginsSpin->blockSignals(true);
-    m_AllMarginsSpin->setSuffix(base_unit_name);
-    m_AllMarginsSpin->setRange(0, std::max(max_margins.x, max_margins.y));
-    if (m_Project.m_Data.m_MarginsMode == MarginsMode::Linked)
-    {
-        m_AllMarginsSpin->setValue(margins.m_Top);
-    }
-    m_AllMarginsSpin->blockSignals(false);
-}
-
 void PrintOptionsWidget::RenderBackendChanged()
 {
     const int base_pdf_size_idx{
@@ -814,34 +775,33 @@ void PrintOptionsWidget::SetDefaults()
     m_BasePdf->setEnabled(infer_size);
     m_BasePdf->setVisible(infer_size);
 
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
-    const auto margins{ m_Project.ComputeMargins() / base_unit };
+    const auto max_margins{ m_Project.ComputeMaxMargins() };
+    const auto margins{ m_Project.ComputeMargins() };
 
     const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
     const bool custom_margins{ margins_mode != MarginsMode::Auto };
     const bool margins_full_control{ margins_mode == MarginsMode::Full };
     const bool margins_linked{ margins_mode == MarginsMode::Linked };
 
-    m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_LeftMarginSpin->setValue(margins.m_Left);
+    m_LeftMarginSpin->SetRange(0_mm, max_margins.x);
+    m_LeftMarginSpin->SetValue(margins.m_Left);
     m_LeftMarginSpin->setEnabled(custom_margins && !margins_linked);
 
-    m_TopMarginSpin->setRange(0, max_margins.y);
-    m_TopMarginSpin->setValue(margins.m_Top);
+    m_TopMarginSpin->SetRange(0_mm, max_margins.y);
+    m_TopMarginSpin->SetValue(margins.m_Top);
     m_TopMarginSpin->setEnabled(custom_margins && !margins_linked);
 
-    m_RightMarginSpin->setRange(0, max_margins.x);
-    m_RightMarginSpin->setValue(margins.m_Right);
+    m_RightMarginSpin->SetRange(0_mm, max_margins.x);
+    m_RightMarginSpin->SetValue(margins.m_Right);
     m_RightMarginSpin->setEnabled(custom_margins && margins_full_control);
 
-    m_BottomMarginSpin->setRange(0, max_margins.y);
-    m_BottomMarginSpin->setValue(margins.m_Bottom);
+    m_BottomMarginSpin->SetRange(0_mm, max_margins.y);
+    m_BottomMarginSpin->SetValue(margins.m_Bottom);
     m_BottomMarginSpin->setEnabled(custom_margins && margins_full_control);
 
     // Set up All Margins control
-    m_AllMarginsSpin->setRange(0, std::min(max_margins.x, max_margins.y));
-    m_AllMarginsSpin->setValue(m_LeftMarginSpin->value());
+    m_AllMarginsSpin->SetRange(0_mm, std::min(max_margins.x, max_margins.y));
+    m_AllMarginsSpin->SetValue(m_LeftMarginSpin->Value());
     m_AllMarginsSpin->setEnabled(custom_margins && margins_linked);
 
     // Set up margin mode toggle
@@ -873,36 +833,34 @@ void PrintOptionsWidget::RefreshSizes()
 
 void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
-    const auto max_margins{ m_Project.ComputeMaxMargins() / base_unit };
+    const auto max_margins{ m_Project.ComputeMaxMargins() };
 
-    m_LeftMarginSpin->setRange(0, max_margins.x);
-    m_TopMarginSpin->setRange(0, max_margins.y);
-    m_RightMarginSpin->setRange(0, max_margins.x);
-    m_BottomMarginSpin->setRange(0, max_margins.y);
-    m_AllMarginsSpin->setRange(0, std::min(max_margins.x, max_margins.y));
+    m_LeftMarginSpin->SetRange(0_mm, max_margins.x);
+    m_TopMarginSpin->SetRange(0_mm, max_margins.y);
+    m_RightMarginSpin->SetRange(0_mm, max_margins.x);
+    m_BottomMarginSpin->SetRange(0_mm, max_margins.y);
+    m_AllMarginsSpin->SetRange(0_mm, dla::math::min(max_margins.x, max_margins.y));
 
     if (reset_margins)
     {
+        const auto default_margins{ m_Project.ComputeDefaultMargins() };
         if (margins_mode == MarginsMode::Linked)
         {
-            const auto default_margins{ m_Project.ComputeDefaultMargins() / base_unit };
             const auto default_all_margins{ std::min(default_margins.x, default_margins.y) };
-            m_LeftMarginSpin->setValue(default_all_margins);
-            m_TopMarginSpin->setValue(default_all_margins);
-            m_RightMarginSpin->setValue(default_all_margins);
-            m_BottomMarginSpin->setValue(default_all_margins);
-            m_AllMarginsSpin->setValue(default_all_margins);
+            m_LeftMarginSpin->SetValue(default_all_margins);
+            m_TopMarginSpin->SetValue(default_all_margins);
+            m_RightMarginSpin->SetValue(default_all_margins);
+            m_BottomMarginSpin->SetValue(default_all_margins);
+            m_AllMarginsSpin->SetValue(default_all_margins);
         }
         else
         {
-            const auto default_margins{ m_Project.ComputeDefaultMargins() / base_unit };
-            m_LeftMarginSpin->setValue(default_margins.x);
-            m_TopMarginSpin->setValue(default_margins.y);
-            m_RightMarginSpin->setValue(default_margins.x);
-            m_BottomMarginSpin->setValue(default_margins.y);
-            m_AllMarginsSpin->setValue(0.0);
+            m_LeftMarginSpin->SetValue(default_margins.x);
+            m_TopMarginSpin->SetValue(default_margins.y);
+            m_RightMarginSpin->SetValue(default_margins.x);
+            m_BottomMarginSpin->SetValue(default_margins.y);
+            m_AllMarginsSpin->SetValue(0_mm);
         }
     }
     else
@@ -916,19 +874,19 @@ void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 
         // Preserve current margin values after updating ranges while also pulling
         // exact computed margins in case they are dependent on each other
-        const auto margins{ m_Project.ComputeMargins() / base_unit };
-        m_LeftMarginSpin->setValue(margins.m_Left);
-        m_TopMarginSpin->setValue(margins.m_Top);
-        m_RightMarginSpin->setValue(margins.m_Right);
-        m_BottomMarginSpin->setValue(margins.m_Bottom);
+        const auto margins{ m_Project.ComputeMargins() };
+        m_LeftMarginSpin->SetValue(margins.m_Left);
+        m_TopMarginSpin->SetValue(margins.m_Top);
+        m_RightMarginSpin->SetValue(margins.m_Right);
+        m_BottomMarginSpin->SetValue(margins.m_Bottom);
 
         if (margins_mode == MarginsMode::Linked)
         {
-            m_AllMarginsSpin->setValue(margins.m_Left);
+            m_AllMarginsSpin->SetValue(margins.m_Left);
         }
         else
         {
-            m_AllMarginsSpin->setValue(0.0);
+            m_AllMarginsSpin->SetValue(0_mm);
         }
 
         // Unblock signals

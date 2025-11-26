@@ -14,6 +14,8 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/ui/widget_double_spin_box.hpp>
+
 class WidgetWithLabel : public QWidget
 {
   public:
@@ -77,4 +79,12 @@ class DoubleSpinBoxWithLabel : public WidgetWithLabel
     DoubleSpinBoxWithLabel(std::string_view label_text);
 
     virtual QDoubleSpinBox* GetWidget() const override;
+};
+
+class LengthSpinBoxWithLabel : public WidgetWithLabel
+{
+  public:
+    LengthSpinBoxWithLabel(std::string_view label_text);
+
+    virtual LengthSpinBox* GetWidget() const override;
 };

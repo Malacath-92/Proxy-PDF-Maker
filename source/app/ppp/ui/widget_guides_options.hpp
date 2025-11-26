@@ -6,10 +6,10 @@
 #include <ppp/color.hpp>
 
 class QCheckBox;
-class QDoubleSpinBox;
 
 class Project;
 class WidgetWithLabel;
+class LengthSpinBox;
 
 class GuidesOptionsWidget : public QWidget
 {
@@ -30,6 +30,8 @@ class GuidesOptionsWidget : public QWidget
     void GuidesColorChanged();
     void GuidesThicknessChanged();
 
+    void BaseUnitChanged();
+
   public slots:
     void NewProjectOpened();
     void CardSizeChanged();
@@ -37,7 +39,6 @@ class GuidesOptionsWidget : public QWidget
     void BacksideEnabledChanged();
 
     void AdvancedModeChanged();
-    void BaseUnitChanged();
 
   private:
     void SetDefaults();
@@ -52,10 +53,10 @@ class GuidesOptionsWidget : public QWidget
     QCheckBox* m_EnableBacksideGuidesCheckbox{ nullptr };
     QCheckBox* m_CornerGuidesCheckbox{ nullptr };
     QCheckBox* m_CrossGuidesCheckbox{ nullptr };
-    QDoubleSpinBox* m_GuidesOffsetSpin{ nullptr };
-    QDoubleSpinBox* m_GuidesLengthSpin{ nullptr };
+    LengthSpinBox* m_GuidesOffsetSpin{ nullptr };
+    LengthSpinBox* m_GuidesLengthSpin{ nullptr };
     QCheckBox* m_ExtendedGuidesCheckbox{ nullptr };
     WidgetWithLabel* m_GuidesColorA{ nullptr };
     WidgetWithLabel* m_GuidesColorB{ nullptr };
-    QDoubleSpinBox* m_GuidesThicknessSpin{ nullptr };
+    LengthSpinBox* m_GuidesThicknessSpin{ nullptr };
 };

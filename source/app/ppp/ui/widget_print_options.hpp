@@ -15,6 +15,7 @@ class QLineEdit;
 class Project;
 class WidgetWithLabel;
 class ComboBoxWithLabel;
+class LengthSpinBox;
 
 class PrintOptionsWidget : public QWidget
 {
@@ -34,13 +35,14 @@ class PrintOptionsWidget : public QWidget
     void OrientationChanged();
     void FlipOnChanged();
 
+    void BaseUnitChanged();
+
   public slots:
     void NewProjectOpened();
     void BleedChanged();
     void SpacingChanged();
 
     void AdvancedModeChanged();
-    void BaseUnitChanged();
     void RenderBackendChanged();
 
     void ExternalCardSizeChanged();
@@ -81,12 +83,12 @@ class PrintOptionsWidget : public QWidget
 
     // Individual margin controls enable asymmetric layouts needed for binding,
     // cutting guides, or when different margins are required for aesthetic reasons
-    QDoubleSpinBox* m_LeftMarginSpin{ nullptr };
-    QDoubleSpinBox* m_TopMarginSpin{ nullptr };
-    QDoubleSpinBox* m_RightMarginSpin{ nullptr };
-    QDoubleSpinBox* m_BottomMarginSpin{ nullptr };
+    LengthSpinBox* m_LeftMarginSpin{ nullptr };
+    LengthSpinBox* m_TopMarginSpin{ nullptr };
+    LengthSpinBox* m_RightMarginSpin{ nullptr };
+    LengthSpinBox* m_BottomMarginSpin{ nullptr };
 
     // All-margins control provides quick uniform margin adjustment for common scenarios
     // where symmetric margins are sufficient for the printing requirements
-    QDoubleSpinBox* m_AllMarginsSpin{ nullptr };
+    LengthSpinBox* m_AllMarginsSpin{ nullptr };
 };

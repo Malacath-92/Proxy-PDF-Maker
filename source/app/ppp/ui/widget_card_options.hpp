@@ -4,13 +4,13 @@
 
 class QCheckBox;
 class QComboBox;
-class QDoubleSpinBox;
 class QPushButton;
 class QSlider;
 class QLineEdit;
 
 class DefaultBacksidePreview;
 class Project;
+class LengthSpinBox;
 
 class CardOptionsWidget : public QWidget
 {
@@ -29,10 +29,11 @@ class CardOptionsWidget : public QWidget
     void BacksideOffsetChanged();
     void CardBacksideChanged();
 
+    void BaseUnitChanged();
+
   public slots:
     void NewProjectOpened();
     void ImageDirChanged();
-    void BaseUnitChanged();
 
     void AdvancedModeChanged();
 
@@ -46,16 +47,16 @@ class CardOptionsWidget : public QWidget
 
     Project& m_Project;
 
-    QDoubleSpinBox* m_BleedEdgeSpin{ nullptr };
-    QDoubleSpinBox* m_HorizontalSpacingSpin{ nullptr };
-    QDoubleSpinBox* m_VerticalSpacingSpin{ nullptr };
+    LengthSpinBox* m_BleedEdgeSpin{ nullptr };
+    LengthSpinBox* m_HorizontalSpacingSpin{ nullptr };
+    LengthSpinBox* m_VerticalSpacingSpin{ nullptr };
     QComboBox* m_Corners{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QCheckBox* m_SeparateBacksidesCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
-    QDoubleSpinBox* m_BacksideOffsetWidthSpin{ nullptr };
-    QDoubleSpinBox* m_BacksideOffsetHeightSpin{ nullptr };
+    LengthSpinBox* m_BacksideOffsetWidthSpin{ nullptr };
+    LengthSpinBox* m_BacksideOffsetHeightSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
     QLineEdit* m_BacksideAutoPattern{ nullptr };
     QWidget* m_BacksideAuto{ nullptr };
