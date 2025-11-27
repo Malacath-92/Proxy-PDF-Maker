@@ -164,16 +164,14 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     SetDefaults();
 
     auto change_bleed_edge{
-        [this, &project, corners](double v)
+        [this, &project, corners](Length v)
         {
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            const auto new_bleed_edge{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.m_Data.m_BleedEdge - new_bleed_edge) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_BleedEdge - v) < 0.001_mm)
             {
                 return;
             }
 
-            project.m_Data.m_BleedEdge = new_bleed_edge;
+            project.m_Data.m_BleedEdge = v;
             BleedChanged();
 
             const bool has_no_bleed_edge{ project.m_Data.m_BleedEdge == 0_mm };
@@ -203,31 +201,27 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     auto change_horizontal_spacing{
-        [this, &project](double v)
+        [this, &project](Length v)
         {
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            const auto new_spacing{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.m_Data.m_Spacing.x - new_spacing) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_Spacing.x - v) < 0.001_mm)
             {
                 return;
             }
 
-            project.m_Data.m_Spacing.x = new_spacing;
+            project.m_Data.m_Spacing.x = v;
             SpacingChanged();
         }
     };
 
     auto change_vertical_spacing{
-        [this, &project](double v)
+        [this, &project](Length v)
         {
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            const auto new_spacing{ base_unit * static_cast<float>(v) };
-            if (dla::math::abs(project.m_Data.m_Spacing.y - new_spacing) < 0.001_mm)
+            if (dla::math::abs(project.m_Data.m_Spacing.y - v) < 0.001_mm)
             {
                 return;
             }
 
-            project.m_Data.m_Spacing.y = new_spacing;
+            project.m_Data.m_Spacing.y = v;
             SpacingChanged();
         }
     };
@@ -289,19 +283,17 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     auto change_backside_offset_width{
-        [this, &project](double v)
+        [this, &project](Length v)
         {
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            project.m_Data.m_BacksideOffset.x = base_unit * static_cast<float>(v);
+            project.m_Data.m_BacksideOffset.x = v;
             BacksideOffsetChanged();
         }
     };
 
     auto change_backside_offset_height{
-        [this, &project](double v)
+        [this, &project](Length v)
         {
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            project.m_Data.m_BacksideOffset.y = base_unit * static_cast<float>(v);
+            project.m_Data.m_BacksideOffset.y = v;
             BacksideOffsetChanged();
         }
     };
@@ -341,7 +333,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     };
 
     QObject::connect(m_BleedEdgeSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_bleed_edge);
     QObject::connect(spacing_spin_boxes,
@@ -353,11 +345,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      this,
                      unlink_spacing);
     QObject::connect(m_HorizontalSpacingSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_horizontal_spacing);
     QObject::connect(m_VerticalSpacingSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_vertical_spacing);
     QObject::connect(m_Corners,
@@ -377,11 +369,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      this,
                      pick_backside);
     QObject::connect(m_BacksideOffsetWidthSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_backside_offset_width);
     QObject::connect(m_BacksideOffsetHeightSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_backside_offset_height);
     QObject::connect(m_BacksideAutoPattern,
@@ -441,7 +433,6 @@ void CardOptionsWidget::BacksideAutoPatternChangedExternal(const std::string& pa
 
 void CardOptionsWidget::SetDefaults()
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
     const auto full_bleed{ m_Project.CardFullBleed() };
 
     m_BleedEdgeSpin->SetRange(0_mm, full_bleed);

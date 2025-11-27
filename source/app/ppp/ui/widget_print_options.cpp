@@ -27,8 +27,6 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 {
     setObjectName("Print Options");
 
-    const auto initial_base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
-
     const auto initial_page_size{ project.ComputePageSize() };
     const auto initial_cards_size{ project.ComputeCardsSize() };
 
@@ -400,7 +398,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     };
 
     auto change_margin{
-        [=, this](Margin margin, double v)
+        [=, this](Margin margin, Length v)
         {
             if (!m_Project.m_Data.m_CustomMargins.has_value())
             {
@@ -418,21 +416,19 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
             // Convert UI value to internal units and update project data
             // Real-time updates ensure immediate visual feedback in preview
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            const auto margin_value{ static_cast<float>(v) * base_unit };
             switch (margin)
             {
             case Margin::Left:
-                custom_margins.m_TopLeft.x = margin_value;
+                custom_margins.m_TopLeft.x = v;
                 break;
             case Margin::Top:
-                custom_margins.m_TopLeft.y = margin_value;
+                custom_margins.m_TopLeft.y = v;
                 break;
             case Margin::Right:
-                custom_margins.m_BottomRight->x = margin_value;
+                custom_margins.m_BottomRight->x = v;
                 break;
             case Margin::Bottom:
-                custom_margins.m_BottomRight->y = margin_value;
+                custom_margins.m_BottomRight->y = v;
                 break;
             }
 
@@ -480,7 +476,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     };
 
     auto change_all_margins{
-        [=, this](double v)
+        [=, this](Length v)
         {
             if (!m_Project.m_Data.m_CustomMargins.has_value())
             {
@@ -493,14 +489,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 return;
             }
 
-            // Convert UI value to internal units and update project data for all margins
-            // This ensures the project data is properly synchronized with the UI
-            const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-            const auto margin_value{ static_cast<float>(v) * base_unit };
-            custom_margins.m_TopLeft.x = margin_value;
-            custom_margins.m_TopLeft.y = margin_value;
-            custom_margins.m_BottomRight->x = margin_value;
-            custom_margins.m_BottomRight->y = margin_value;
+            custom_margins.m_TopLeft.x = v;
+            custom_margins.m_TopLeft.y = v;
+            custom_margins.m_BottomRight->x = v;
+            custom_margins.m_BottomRight->y = v;
 
             on_margins_changed();
         }
@@ -619,23 +611,23 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      this,
                      change_margins_mode);
     QObject::connect(m_LeftMarginSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      std::bind_front(change_margin, Margin::Left));
     QObject::connect(m_TopMarginSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      std::bind_front(change_margin, Margin::Top));
     QObject::connect(m_RightMarginSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      std::bind_front(change_margin, Margin::Right));
     QObject::connect(m_BottomMarginSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      std::bind_front(change_margin, Margin::Bottom));
     QObject::connect(m_AllMarginsSpin,
-                     &QDoubleSpinBox::valueChanged,
+                     &LengthSpinBox::ValueChanged,
                      this,
                      change_all_margins);
     QObject::connect(card_orientation->GetWidget(),
