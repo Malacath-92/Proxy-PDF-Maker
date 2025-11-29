@@ -222,10 +222,22 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                m_Data.m_Spacing = Size{
-                    get_value("spacing.width").get<float>() * 1_mm,
-                    get_value("spacing.height").get<float>() * 1_mm,
-                };
+                auto spacing_width{ get_value("spacing.width") };
+                auto spacing_height{ get_value("spacing.height") };
+                if (!spacing_width.is_null() && !spacing_height.is_null())
+                {
+                    m_Data.m_Spacing = Size{
+                        spacing_width.get<float>() * 1_mm,
+                        spacing_height.get<float>() * 1_mm,
+                    };
+                }
+                else
+                {
+                    m_Data.m_Spacing = Size{
+                        get_value("spacing.horizontal").get<float>() * 1_cm,
+                        get_value("spacing.vertical").get<float>() * 1_cm,
+                    };
+                }
                 m_Data.m_SpacingLinked = get_value("spacing_linked");
             }
         }
@@ -256,8 +268,18 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                m_Data.m_BacksideOffset.x = get_value("backside_offset.width").get<float>() * 1_mm;
-                m_Data.m_BacksideOffset.y = get_value("backside_offset.height").get<float>() * 1_mm;
+                auto backside_offset_width{ get_value("backside_offset.width") };
+                auto backside_offset_height{ get_value("backside_offset.height") };
+                if (!backside_offset_width.is_null() && !backside_offset_height.is_null())
+                {
+                    m_Data.m_BacksideOffset.x = backside_offset_width.get<float>() * 1_mm;
+                    m_Data.m_BacksideOffset.y = backside_offset_height.get<float>() * 1_mm;
+                }
+                else
+                {
+                    m_Data.m_BacksideOffset.x = get_value("backside_offset.horizontal").get<float>() * 1_cm;
+                    m_Data.m_BacksideOffset.y = get_value("backside_offset.vertical").get<float>() * 1_cm;
+                }
             }
         }
         {
@@ -271,7 +293,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_CardSizeChoice = get_value("card_size");
         if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
         {
-            m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize() ;
+            m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
         }
 
         m_Data.m_PageSize = get_value("page_size");
@@ -472,8 +494,8 @@ std::string Project::DumpToJson() const
 
     json["bleed_edge"] = m_Data.m_BleedEdge.value;
     json["spacing"] = nlohmann::json{
-        { "width", m_Data.m_Spacing.x / 1_mm },
-        { "height", m_Data.m_Spacing.y / 1_mm },
+        { "horizontal", m_Data.m_Spacing.x / 1_cm },
+        { "vertical", m_Data.m_Spacing.y / 1_cm },
     };
     json["spacing_linked"] = m_Data.m_SpacingLinked;
     json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
@@ -483,8 +505,8 @@ std::string Project::DumpToJson() const
 
     json["backside_default"] = m_Data.m_BacksideDefault.string();
     json["backside_offset"] = nlohmann::json{
-        { "width", m_Data.m_BacksideOffset.x / 1_mm },
-        { "height", m_Data.m_BacksideOffset.y / 1_mm },
+        { "horizontal", m_Data.m_BacksideOffset.x / 1_cm },
+        { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
     };
     json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
