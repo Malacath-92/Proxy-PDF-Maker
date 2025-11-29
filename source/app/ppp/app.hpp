@@ -37,6 +37,9 @@ class PrintProxyPrepApplication
     bool GetObjectVisibility(const QString& object_name) const;
     void SetObjectVisibility(const QString& object_name, bool visible);
 
+    nlohmann::json GetProjectDefault(std::string_view path) const;
+    void SetProjectDefault(std::string_view path, nlohmann::json value);
+
     virtual nlohmann::json GetJsonValue(std::string_view path) const override;
     virtual void SetJsonValue(std::string_view path, nlohmann::json value) override;
 

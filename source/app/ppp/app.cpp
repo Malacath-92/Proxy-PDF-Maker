@@ -105,6 +105,15 @@ void PrintProxyPrepApplication::SetObjectVisibility(const QString& object_name, 
     m_ObjectVisibilities[object_name] = visible;
 }
 
+nlohmann::json PrintProxyPrepApplication::GetProjectDefault(std::string_view path) const
+{
+    return GetJsonValue(path);
+}
+void PrintProxyPrepApplication::SetProjectDefault(std::string_view path, nlohmann::json value)
+{
+    SetJsonValue(path, std::move(value));
+}
+
 nlohmann::json PrintProxyPrepApplication::GetJsonValue(std::string_view path) const
 {
     if (m_DefaultProjectData == nullptr)
