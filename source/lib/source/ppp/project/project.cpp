@@ -271,13 +271,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_CardSizeChoice = get_value("card_size");
         if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
         {
-            m_Data.m_CardSizeChoice = "Standard";
+            m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize() ;
         }
 
         m_Data.m_PageSize = get_value("page_size");
         if (!g_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
         {
-            m_Data.m_PageSize = "Letter";
+            m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
         }
 
         m_Data.m_BasePdf = get_value("base_pdf");
@@ -328,8 +328,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
             else
             {
                 const auto custom_margins_left{ get_value("custom_margins.left") };
-                const auto custom_margins_right{ get_value("custom_margins.right") };
-                if (!custom_margins_left.is_null() && !custom_margins_right.is_null())
+                const auto custom_margins_top{ get_value("custom_margins.top") };
+                if (!custom_margins_left.is_null() && !custom_margins_top.is_null())
                 {
                     m_Data.m_CustomMargins.emplace();
                     m_Data.m_MarginsMode = magic_enum::enum_cast<MarginsMode>(json["margins_mode"].get_ref<const std::string&>())
@@ -338,7 +338,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
                     // Full four-value margins ...
                     m_Data.m_CustomMargins.value().m_TopLeft = Size{
                         custom_margins_left.get<float>() * 1_cm,
-                        custom_margins_right.get<float>() * 1_cm,
+                        custom_margins_top.get<float>() * 1_cm,
                     };
 
                     // ... last two being optional
@@ -1170,7 +1170,7 @@ Size Project::ComputePageSize() const
     else if (infer_size)
     {
         return LoadPdfSize(m_Data.m_BasePdf + ".pdf")
-            .value_or(g_Cfg.m_PageSizes["A4"].m_Dimensions);
+            .value_or(g_Cfg.GetFirstValidPageSizeInfo().m_Dimensions);
     }
     else
     {
@@ -1461,7 +1461,7 @@ Size ProjectData::ComputePageSize(const Config& config) const
     else if (infer_size)
     {
         return LoadPdfSize(m_BasePdf + ".pdf")
-            .value_or(config.m_PageSizes.at("A4").m_Dimensions);
+            .value_or(config.GetFirstValidPageSizeInfo().m_Dimensions);
     }
     else
     {
@@ -1667,7 +1667,7 @@ const Config::CardSizeInfo& ProjectData::CardSizeInfo(const Config& config) cons
     {
         LogError("Project has invalid card size '{}' set, defaulting to '{}'...",
                  m_CardSizeChoice,
-                 config.m_CardSizes.begin()->first);
+                 config.GetFirstValidCardSize());
     }
     return has_valid_card_size
                ? config.m_CardSizes.at(m_CardSizeChoice)

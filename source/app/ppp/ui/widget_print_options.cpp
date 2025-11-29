@@ -78,7 +78,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                          g_Cfg.m_CardSizes = card_sizes;
                                          if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
                                          {
-                                             m_Project.m_Data.m_CardSizeChoice = g_Cfg.m_CardSizes.begin()->first;
+                                             m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
                                              CardSizeChanged();
                                          }
 
@@ -143,6 +143,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                      &PaperSizePopup::PageSizesChanged,
                                      [this](const std::map<std::string, Config::SizeInfo>& page_sizes)
                                      {
+                                         if (page_sizes.empty())
+                                         {
+                                             LogError("User tried to remove all page sizes. Ignoring request.");
+                                             return;
+                                         }
+
                                          g_Cfg.m_PageSizes = page_sizes;
                                          if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
                                          {
@@ -719,14 +725,9 @@ void PrintOptionsWidget::RenderBackendChanged()
 
     if (g_Cfg.m_Backend != PdfBackend::PoDoFo && m_Project.m_Data.m_PageSize == Config::c_BasePDFSize)
     {
-        const auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-        auto default_page_size{ app->GetJsonValue("page_size") };
-        if (default_page_size.is_null())
-        {
-            default_page_size = ProjectData{}.m_PageSize;
-        }
-        m_PaperSize->setCurrentText(ToQString(default_page_size.get_ref<const std::string&>()));
-        m_Project.m_Data.m_PageSize = default_page_size.get_ref<const std::string&>();
+        const auto default_page_size{ g_Cfg.GetFirstValidPageSize() };
+        m_PaperSize->setCurrentText(ToQString(default_page_size));
+        m_Project.m_Data.m_PageSize = default_page_size;
         PageSizeChanged();
     }
 }

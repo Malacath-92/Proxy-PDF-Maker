@@ -165,6 +165,10 @@ struct Config
     void SetPdfBackend(PdfBackend backend);
 
     std::string_view GetFirstValidPageSize() const;
+    const SizeInfo& GetFirstValidPageSizeInfo() const;
+
+    std::string_view GetFirstValidCardSize() const;
+    const CardSizeInfo& GetFirstValidCardSizeInfo() const;
 };
 
 Config LoadConfig();

@@ -125,8 +125,8 @@ struct ProjectData
     std::string m_BacksideAutoPattern{ "__back_$" };
 
     // PDF generation options
-    std::string m_CardSizeChoice{ "Letter" };
-    std::string m_PageSize{ "Standard" };
+    std::string m_CardSizeChoice{ g_Cfg.GetFirstValidCardSize() };
+    std::string m_PageSize{ g_Cfg.GetFirstValidPageSize() };
     std::string m_BasePdf{ "None" };
 
     // Margin mode is the user-selected edit-mode of margins

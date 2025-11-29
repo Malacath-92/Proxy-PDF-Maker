@@ -30,17 +30,58 @@ void Config::SetPdfBackend(PdfBackend backend)
     }
 }
 
-std::string_view Config::GetFirstValidPageSize() const
+auto GetFirstValidPageSizeIter(const Config& cfg)
 {
-    for (const auto& [page_size, info] : g_Cfg.m_PageSizes)
+    if (cfg.m_PageSizes.contains("Letter"))
     {
+        return cfg.m_PageSizes.find("Letter");
+    }
+    if (cfg.m_PageSizes.contains("A4"))
+    {
+        return cfg.m_PageSizes.find("A4");
+    }
+
+    for (auto it{ cfg.m_PageSizes.begin() }; it != cfg.m_PageSizes.end(); ++it)
+    {
+        const auto& [page_size, info]{ *it };
         if (page_size != Config::c_FitSize && page_size != Config::c_BasePDFSize)
         {
-            return page_size;
+            return it;
         }
     }
 
-    return "No Valid Page Size";
+    throw std::logic_error{ "No valid page sizes..." };
+}
+const Config::SizeInfo& Config::GetFirstValidPageSizeInfo() const
+{
+    return GetFirstValidPageSizeIter(*this)->second;
+}
+std::string_view Config::GetFirstValidPageSize() const
+{
+    return GetFirstValidPageSizeIter(*this)->first;
+}
+
+auto GetFirstValidCardSizeIter(const Config& cfg)
+{
+    if (cfg.m_CardSizes.contains("Standard"))
+    {
+        return cfg.m_CardSizes.find("Standard");
+    }
+
+    if (!cfg.m_CardSizes.empty())
+    {
+        return cfg.m_CardSizes.begin();
+    }
+
+    throw std::logic_error{ "No valid card sizes..." };
+}
+const Config::CardSizeInfo& Config::GetFirstValidCardSizeInfo() const
+{
+    return GetFirstValidCardSizeIter(*this)->second;
+}
+std::string_view Config::GetFirstValidCardSize() const
+{
+    return GetFirstValidCardSizeIter(*this)->first;
 }
 
 Config LoadConfig()
