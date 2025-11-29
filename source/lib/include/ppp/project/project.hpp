@@ -125,8 +125,8 @@ struct ProjectData
     std::string m_BacksideAutoPattern{ "__back_$" };
 
     // PDF generation options
-    std::string m_CardSizeChoice{ g_Cfg.m_DefaultCardSize };
-    std::string m_PageSize{ g_Cfg.m_DefaultPageSize };
+    std::string m_CardSizeChoice{ "Letter" };
+    std::string m_PageSize{ "Standard" };
     std::string m_BasePdf{ "None" };
 
     // Margin mode is the user-selected edit-mode of margins
@@ -178,6 +178,7 @@ struct ProjectData
     Size ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const;
     Size ComputeDefaultMargins(const Config& config) const;
 
+    const Config::CardSizeInfo& CardSizeInfo(const Config& config) const;
     float CardRatio(const Config& config) const;
     Size CardSize(const Config& config) const;
     Size CardSizeWithBleed(const Config& config) const;
@@ -185,6 +186,8 @@ struct ProjectData
     Length CardFullBleed(const Config& config) const;
     Length CardCornerRadius(const Config& config) const;
 };
+
+class JsonProvider;
 
 class Project : public QObject
 {
@@ -196,9 +199,9 @@ class Project : public QObject
 
     bool Load(const fs::path& json_path);
     bool Load(const fs::path& json_path,
-              const std::unordered_map<std::string, std::string>& overrides);
+              const JsonProvider* overrides);
     bool LoadFromJson(const std::string& json_blob,
-                      const std::unordered_map<std::string, std::string>& overrides);
+                      const JsonProvider* overrides);
 
     void Dump(const fs::path& json_path) const;
     std::string DumpToJson() const;

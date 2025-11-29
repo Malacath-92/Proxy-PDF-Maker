@@ -16,6 +16,8 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 
 #include <fmt/chrono.h>
 
+#include <nlohmann/json.hpp>
+
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/project.hpp>
@@ -74,6 +76,18 @@ int main(int argc, char** argv)
 
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app.GetTheme());
+
+    {
+        // Backwards compatiblity of saving card/page size default in Config
+        if (g_Cfg.m_DefaultCardSize.value_or("Standard") != "Standard")
+        {
+            app.SetProjectDefault("card_size", g_Cfg.m_DefaultCardSize.value());
+        }
+        if (g_Cfg.m_DefaultPageSize.value_or("Letter") != "Letter")
+        {
+            app.SetProjectDefault("page_size", g_Cfg.m_DefaultPageSize.value());
+        }
+    }
 
     SaveConfig(g_Cfg);
 

@@ -198,7 +198,10 @@ Config LoadConfig()
 
             config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
             config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
-            config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
+            if (settings.contains("Page.Size"))
+            {
+                config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
+            }
             config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
             {
@@ -391,7 +394,6 @@ void SaveConfig(Config config)
 
             settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
-            settings.setValue("Page.Size", ToQString(config.m_DefaultPageSize));
             settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
 
             const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };

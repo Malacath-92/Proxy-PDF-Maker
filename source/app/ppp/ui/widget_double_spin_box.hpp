@@ -35,8 +35,8 @@ class LengthSpinBox : public QDoubleSpinBox
 
   private:
     using QDoubleSpinBox::setRange;
-    using QDoubleSpinBox::setValue;
     using QDoubleSpinBox::setSuffix;
+    using QDoubleSpinBox::setValue;
 
     Unit m_Unit;
 };

@@ -178,10 +178,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* max_worker_threads{ new WidgetWithLabel{ "Max &Worker Threads", max_worker_threads_spin_box } };
     max_worker_threads->setToolTip("Higher numbers speed up cropping and pdf generation, but cost more system resources");
 
-    auto* paper_sizes{ new ComboBoxWithLabel{
-        "Default P&aper Size", std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>(), g_Cfg.m_DefaultPageSize } };
-    m_PageSizes = paper_sizes->GetWidget();
-
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     auto* themes{ new ComboBoxWithLabel{
         "&Theme", GetStyles(), application.GetTheme() } };
@@ -201,7 +197,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(card_order);
     layout->addWidget(card_order_direction);
     layout->addWidget(max_worker_threads);
-    layout->addWidget(paper_sizes);
     layout->addWidget(themes);
     layout->addWidget(plugins);
     setLayout(layout);
@@ -330,14 +325,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         }
     };
 
-    auto change_papersize{
-        [=](const QString& t)
-        {
-            g_Cfg.m_DefaultPageSize = t.toStdString();
-            SaveConfig(g_Cfg);
-        }
-    };
-
     auto change_theme{
         [=](const QString& t)
         {
@@ -415,10 +402,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_max_worker_threads);
-    QObject::connect(paper_sizes->GetWidget(),
-                     &QComboBox::currentTextChanged,
-                     this,
-                     change_papersize);
     QObject::connect(themes->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
@@ -431,16 +414,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
 
 void GlobalOptionsWidget::PageSizesChanged()
 {
-    if (!g_Cfg.m_PageSizes.contains(g_Cfg.m_DefaultPageSize))
-    {
-        g_Cfg.m_DefaultPageSize = g_Cfg.GetFirstValidPageSize();
-    }
-
-    UpdateComboBox(m_PageSizes,
-                   std::span<const std::string>(std::views::keys(g_Cfg.m_PageSizes) | std::ranges::to<std::vector>()),
-                   {},
-                   g_Cfg.m_DefaultPageSize);
-
     SaveConfig(g_Cfg);
 }
 

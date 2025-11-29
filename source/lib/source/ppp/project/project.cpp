@@ -9,6 +9,7 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/config.hpp>
+#include <ppp/json_util.hpp>
 #include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
@@ -92,7 +93,7 @@ bool Project::Load(const fs::path& json_path)
     return Load(json_path, {});
 }
 bool Project::Load(const fs::path& json_path,
-                   const std::unordered_map<std::string, std::string>& overrides)
+                   const JsonProvider* overrides)
 {
     std::ifstream file_stream{ json_path };
     std::string json{ std::istreambuf_iterator<char>{ file_stream },
@@ -106,7 +107,7 @@ bool Project::Load(const fs::path& json_path,
 }
 
 bool Project::LoadFromJson(const std::string& json_blob,
-                           const std::unordered_map<std::string, std::string>& overrides)
+                           const JsonProvider* overrides)
 {
     m_Data = ProjectData{};
 
@@ -115,44 +116,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
     bool error{ false };
     try
     {
-        const auto json{
-            [&]()
-            {
-                auto json{ nlohmann::json::parse(json_blob) };
+        const auto json{ nlohmann::json::parse(json_blob) };
 
-                // apply overrides directly to the json
-                for (const auto& [name, value] : overrides)
-                {
-                    static constexpr auto c_ToStringViews{ std::views::transform(
-                        [](auto str)
-                        { return std::string_view(str.data(), str.size()); }) };
-                    auto parts{ name | std::views::split('.') | c_ToStringViews };
-
-                    std::reference_wrapper parent_json{ json };
-                    std::reference_wrapper target_json{ json };
-                    std::string_view last_name_part{};
-                    for (const auto& name_part : parts)
-                    {
-                        parent_json = target_json;
-                        target_json = parent_json.get()[name_part];
-                        last_name_part = name_part;
-                    }
-
-                    try
-                    {
-                        // Try parsing the override as a literal ...
-                        parent_json.get()[last_name_part] = nlohmann::json::parse(value);
-                    }
-                    catch (const nlohmann::json::parse_error&)
-                    {
-                        // ... and just set it as a string if that's not possible.
-                        parent_json.get()[last_name_part] = std::string{ value };
-                    }
-                }
-
-                return json;
-            }()
-        };
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
             if (JsonFormatVersion() == "PPP00007")
@@ -167,11 +132,35 @@ bool Project::LoadFromJson(const std::string& json_blob,
             throw std::logic_error{ "Project version not compatible with App version..." };
         }
 
-        m_Data.m_ImageDir = json["image_dir"].get<std::string>();
+        auto get_value{
+            [&json, &overrides](std::string_view path,
+                                nlohmann::json default_value = {})
+            {
+                if (overrides != nullptr)
+                {
+                    auto value{ overrides->GetJsonValue(path) };
+                    if (!value.is_null())
+                    {
+                        return value;
+                    }
+                }
+
+                auto value{ GetJsonValue(json, path) };
+                if (!value.is_null())
+                {
+                    return value;
+                }
+
+                return default_value;
+            }
+        };
+
+        m_Data.m_ImageDir = get_value("image_dir").get<std::string>();
         m_Data.m_CropDir = m_Data.m_ImageDir / "crop";
         m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
+        // Note: Not using get_value as we don't support overriding card values right now
         for (const nlohmann::json& card_json : json["cards"])
         {
             CardInfo& card{ PutCard(card_json["name"]) };
@@ -212,161 +201,198 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
 
-        if (json.contains("cards_order"))
         {
-            for (const size_t idx : json["cards_order"])
+            const auto cards_order{ get_value("cards_order") };
+            if (!cards_order.is_null())
             {
-                m_Data.m_CardsList.push_back(m_Data.m_Cards[idx].m_Name);
+                for (const size_t idx : cards_order)
+                {
+                    m_Data.m_CardsList.push_back(m_Data.m_Cards[idx].m_Name);
+                }
             }
         }
 
-        m_Data.m_BleedEdge.value = json["bleed_edge"];
+        m_Data.m_BleedEdge.value = get_value("bleed_edge");
         {
-            const auto& spacing{ json["spacing"] };
+            const auto& spacing{ get_value("spacing") };
             if (spacing.is_number())
             {
-                m_Data.m_Spacing.x.value = json["spacing"];
+                m_Data.m_Spacing.x.value = spacing;
                 m_Data.m_Spacing.y = m_Data.m_Spacing.x;
             }
             else
             {
                 m_Data.m_Spacing = Size{
-                    spacing["width"].get<float>() * 1_mm,
-                    spacing["height"].get<float>() * 1_mm,
+                    get_value("spacing.width").get<float>() * 1_mm,
+                    get_value("spacing.height").get<float>() * 1_mm,
                 };
-                m_Data.m_SpacingLinked = json["spacing_linked"];
+                m_Data.m_SpacingLinked = get_value("spacing_linked");
             }
         }
-        if (json.contains("corners"))
         {
-            m_Data.m_Corners = magic_enum::enum_cast<CardCorners>(json["corners"].get_ref<const std::string&>())
-                                   .value_or(CardCorners::Square);
-        }
-
-        m_Data.m_BacksideEnabled = json["backside_enabled"];
-        if (json.contains("separate_backsides"))
-        {
-            m_Data.m_SeparateBacksides = json["separate_backsides"];
-        }
-        m_Data.m_BacksideDefault = json["backside_default"].get<std::string>();
-        {
-            auto backside_offset{ json["backside_offset"] };
-            if (json["backside_offset"].is_object())
+            const auto corners{ get_value("corners") };
+            if (!corners.is_null())
             {
-
-                m_Data.m_BacksideOffset.x = backside_offset["width"].get<float>() * 1_mm;
-                m_Data.m_BacksideOffset.y = backside_offset["height"].get<float>() * 1_mm;
+                m_Data.m_Corners = magic_enum::enum_cast<CardCorners>(corners.get_ref<const std::string&>())
+                                       .value_or(CardCorners::Square);
             }
-            else
+        }
+
+        m_Data.m_BacksideEnabled = get_value("backside_enabled");
+        {
+            const auto separate_backsides{ get_value("separate_backsides") };
+            if (!separate_backsides.is_null())
+            {
+                m_Data.m_SeparateBacksides = separate_backsides;
+            }
+        }
+        m_Data.m_BacksideDefault = get_value("backside_default").get<std::string>();
+        {
+            auto backside_offset{ get_value("backside_offset") };
+            if (backside_offset.is_number())
             {
                 m_Data.m_BacksideOffset.x.value = backside_offset;
                 m_Data.m_BacksideOffset.y = 0_mm;
             }
+            else
+            {
+                m_Data.m_BacksideOffset.x = get_value("backside_offset.width").get<float>() * 1_mm;
+                m_Data.m_BacksideOffset.y = get_value("backside_offset.height").get<float>() * 1_mm;
+            }
         }
-        if (json.contains("backside_auto_pattern"))
         {
-            m_Data.m_BacksideAutoPattern = json["backside_auto_pattern"];
+            const auto backside_auto_pattern{ get_value("backside_auto_pattern") };
+            if (!backside_auto_pattern.is_null())
+            {
+                m_Data.m_BacksideAutoPattern = backside_auto_pattern;
+            }
         }
 
-        m_Data.m_CardSizeChoice = json["card_size"];
+        m_Data.m_CardSizeChoice = get_value("card_size");
         if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
         {
-            m_Data.m_CardSizeChoice = g_Cfg.m_DefaultCardSize;
+            m_Data.m_CardSizeChoice = "Standard";
         }
 
-        m_Data.m_PageSize = json["page_size"];
+        m_Data.m_PageSize = get_value("page_size");
         if (!g_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
         {
-            m_Data.m_PageSize = g_Cfg.m_DefaultPageSize;
+            m_Data.m_PageSize = "Letter";
         }
 
-        m_Data.m_BasePdf = json["base_pdf"];
-        m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(json["orientation"].get_ref<const std::string&>())
+        m_Data.m_BasePdf = get_value("base_pdf");
+        m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(get_value("orientation").get_ref<const std::string&>())
                                    .value_or(PageOrientation::Portrait);
-        if (json.contains("flip_page_on"))
         {
-            m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(json["flip_page_on"].get_ref<const std::string&>())
-                                  .value_or(FlipPageOn::LeftEdge);
+            const auto flip_page_on{ get_value("flip_page_on") };
+            if (!flip_page_on.is_null())
+            {
+                m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(flip_page_on.get_ref<const std::string&>())
+                                      .value_or(FlipPageOn::LeftEdge);
+            }
         }
 
-        if (json.contains("card_orientation"))
         {
-            m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(json["card_orientation"].get_ref<const std::string&>())
-                                           .value_or(CardOrientation::Vertical);
-            m_Data.m_CardLayoutVertical.x = json["card_layout_vertical"]["width"];
-            m_Data.m_CardLayoutVertical.y = json["card_layout_vertical"]["height"];
-            m_Data.m_CardLayoutHorizontal.x = json["card_layout_horizontal"]["width"];
-            m_Data.m_CardLayoutHorizontal.y = json["card_layout_horizontal"]["height"];
-        }
-        else if (m_Data.m_PageSize == Config::c_FitSize)
-        {
-            m_Data.m_CardLayoutVertical.x = json["card_layout"]["width"];
-            m_Data.m_CardLayoutVertical.y = json["card_layout"]["height"];
+            const auto card_orientation{ get_value("card_orientation") };
+            if (!card_orientation.is_null())
+            {
+                m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(card_orientation.get_ref<const std::string&>())
+                                               .value_or(CardOrientation::Vertical);
+                m_Data.m_CardLayoutVertical.x = get_value("card_layout_vertical.width");
+                m_Data.m_CardLayoutVertical.y = get_value("card_layout_vertical.height");
+                m_Data.m_CardLayoutHorizontal.x = get_value("card_layout_horizontal.width");
+                m_Data.m_CardLayoutHorizontal.y = get_value("card_layout_horizontal.height");
+            }
+            else if (m_Data.m_PageSize == Config::c_FitSize)
+            {
+                m_Data.m_CardLayoutVertical.x = get_value("card_layout.width");
+                m_Data.m_CardLayoutVertical.y = get_value("card_layout.height");
+            }
         }
 
         CacheCardLayout();
 
-        if (json.contains("custom_margins"))
         {
-            const auto& custom_margins{ json["custom_margins"] };
-            m_Data.m_CustomMargins.emplace();
-            if (custom_margins.contains("width"))
+            const auto custom_margins_width{ get_value("custom_margins.width") };
+            const auto custom_margins_height{ get_value("custom_margins.height") };
+            if (!custom_margins_width.is_null() && !custom_margins_height.is_null())
             {
+                m_Data.m_CustomMargins.emplace();
+
                 // Legacy two-value margins
                 m_Data.m_CustomMargins.value().m_TopLeft = Size{
-                    custom_margins["width"].get<float>() * 1_cm,
-                    custom_margins["height"].get<float>() * 1_cm,
+                    custom_margins_width.get<float>() * 1_cm,
+                    custom_margins_height.get<float>() * 1_cm,
                 };
             }
             else
             {
-                m_Data.m_MarginsMode = magic_enum::enum_cast<MarginsMode>(json["margins_mode"].get_ref<const std::string&>())
-                                           .value_or(MarginsMode::Simple);
-
-                // Full four-value margins ...
-                m_Data.m_CustomMargins.value().m_TopLeft = Size{
-                    custom_margins["left"].get<float>() * 1_cm,
-                    custom_margins["top"].get<float>() * 1_cm,
-                };
-                // ... last two being optional
-                if (custom_margins.contains("right"))
+                const auto custom_margins_left{ get_value("custom_margins.left") };
+                const auto custom_margins_right{ get_value("custom_margins.right") };
+                if (!custom_margins_left.is_null() && !custom_margins_right.is_null())
                 {
-                    m_Data.m_CustomMargins.value().m_BottomRight = Size{
-                        custom_margins["right"].get<float>() * 1_cm,
-                        custom_margins["bottom"].get<float>() * 1_cm,
+                    m_Data.m_CustomMargins.emplace();
+                    m_Data.m_MarginsMode = magic_enum::enum_cast<MarginsMode>(json["margins_mode"].get_ref<const std::string&>())
+                                               .value_or(MarginsMode::Simple);
+
+                    // Full four-value margins ...
+                    m_Data.m_CustomMargins.value().m_TopLeft = Size{
+                        custom_margins_left.get<float>() * 1_cm,
+                        custom_margins_right.get<float>() * 1_cm,
                     };
+
+                    // ... last two being optional
+                    const auto custom_margins_right{ get_value("custom_margins.right") };
+                    const auto custom_margins_bottom{ get_value("custom_margins.bottom") };
+                    if (!custom_margins_right.is_null() && !custom_margins_bottom.is_null())
+                    {
+                        m_Data.m_CustomMargins.value().m_BottomRight = Size{
+                            custom_margins_right.get<float>() * 1_cm,
+                            custom_margins_bottom.get<float>() * 1_cm,
+                        };
+                    }
+                }
+                else
+                {
+                    // No custom margins
+                    m_Data.m_CustomMargins.reset();
                 }
             }
         }
-        else
-        {
-            m_Data.m_CustomMargins.reset();
-        }
 
-        m_Data.m_FileName = json["file_name"].get<std::string>();
+        m_Data.m_FileName = get_value("file_name").get<std::string>();
 
-        m_Data.m_ExportExactGuides = json["export_exact_guides"];
-        m_Data.m_EnableGuides = json["enable_guides"];
-        m_Data.m_BacksideEnableGuides = json["enable_backside_guides"];
-        if (json.contains("corner_guides"))
+        m_Data.m_ExportExactGuides = get_value("export_exact_guides");
+        m_Data.m_EnableGuides = get_value("enable_guides");
+        m_Data.m_BacksideEnableGuides = get_value("enable_backside_guides");
         {
-            m_Data.m_CornerGuides = json["corner_guides"];
+            const auto corner_guides{ get_value("corner_guides") };
+            if (!corner_guides.is_null())
+            {
+                m_Data.m_CornerGuides = corner_guides;
+            }
+            else
+            {
+                m_Data.m_CornerGuides = m_Data.m_EnableGuides;
+            }
         }
-        else
+        m_Data.m_CrossGuides = get_value("cross_guides");
+        m_Data.m_ExtendedGuides = get_value("extended_guides");
         {
-            m_Data.m_CornerGuides = m_Data.m_EnableGuides;
+            const auto& guides_color_a{ get_value("guides_color_a") };
+            m_Data.m_GuidesColorA.r = guides_color_a[0];
+            m_Data.m_GuidesColorA.g = guides_color_a[1];
+            m_Data.m_GuidesColorA.b = guides_color_a[2];
         }
-        m_Data.m_CrossGuides = json["cross_guides"];
-        m_Data.m_ExtendedGuides = json["extended_guides"];
-        m_Data.m_GuidesColorA.r = json["guides_color_a"][0];
-        m_Data.m_GuidesColorA.g = json["guides_color_a"][1];
-        m_Data.m_GuidesColorA.b = json["guides_color_a"][2];
-        m_Data.m_GuidesColorB.r = json["guides_color_b"][0];
-        m_Data.m_GuidesColorB.g = json["guides_color_b"][1];
-        m_Data.m_GuidesColorB.b = json["guides_color_b"][2];
-        m_Data.m_GuidesOffset.value = json["guides_offset"];
-        m_Data.m_GuidesThickness.value = json["guides_thickness"];
-        m_Data.m_GuidesLength.value = json["guides_length"];
+        {
+            const auto& guides_color_b{ get_value("guides_color_b") };
+            m_Data.m_GuidesColorB.r = guides_color_b[0];
+            m_Data.m_GuidesColorB.g = guides_color_b[1];
+            m_Data.m_GuidesColorB.b = guides_color_b[2];
+        }
+        m_Data.m_GuidesOffset.value = get_value("guides_offset");
+        m_Data.m_GuidesThickness.value = get_value("guides_thickness");
+        m_Data.m_GuidesLength.value = get_value("guides_length");
     }
     catch (const std::exception& e)
     {
@@ -1634,6 +1660,20 @@ Size ProjectData::ComputeDefaultMargins(const Config& config) const
     std::unreachable();
 }
 
+const Config::CardSizeInfo& ProjectData::CardSizeInfo(const Config& config) const
+{
+    const bool has_valid_card_size{ config.m_CardSizes.contains(m_CardSizeChoice) };
+    if (!has_valid_card_size)
+    {
+        LogError("Project has invalid card size '{}' set, defaulting to '{}'...",
+                 m_CardSizeChoice,
+                 config.m_CardSizes.begin()->first);
+    }
+    return has_valid_card_size
+               ? config.m_CardSizes.at(m_CardSizeChoice)
+               : config.m_CardSizes.begin()->second;
+}
+
 float ProjectData::CardRatio(const Config& config) const
 {
     const auto& card_size{ CardSize(config) };
@@ -1642,51 +1682,31 @@ float ProjectData::CardRatio(const Config& config) const
 
 Size ProjectData::CardSize(const Config& config) const
 {
-    const auto& card_size_info{
-        config.m_CardSizes.contains(m_CardSizeChoice)
-            ? config.m_CardSizes.at(m_CardSizeChoice)
-            : config.m_CardSizes.at(g_Cfg.m_DefaultCardSize),
-    };
+    const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
 }
 
 Size ProjectData::CardSizeWithBleed(const Config& config) const
 {
-    const auto& card_size_info{
-        config.m_CardSizes.contains(m_CardSizeChoice)
-            ? config.m_CardSizes.at(m_CardSizeChoice)
-            : config.m_CardSizes.at(config.m_DefaultCardSize),
-    };
+    const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
 Size ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
-    const auto& card_size_info{
-        config.m_CardSizes.contains(m_CardSizeChoice)
-            ? config.m_CardSizes.at(m_CardSizeChoice)
-            : config.m_CardSizes.at(config.m_DefaultCardSize),
-    };
+    const auto& card_size_info{ CardSizeInfo(config) };
     return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
 Length ProjectData::CardFullBleed(const Config& config) const
 {
-    const auto& card_size_info{
-        config.m_CardSizes.contains(m_CardSizeChoice)
-            ? config.m_CardSizes.at(m_CardSizeChoice)
-            : config.m_CardSizes.at(config.m_DefaultCardSize),
-    };
+    const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
 Length ProjectData::CardCornerRadius(const Config& config) const
 {
-    const auto& card_size_info{
-        config.m_CardSizes.contains(m_CardSizeChoice)
-            ? config.m_CardSizes.at(m_CardSizeChoice)
-            : config.m_CardSizes.at(config.m_DefaultCardSize),
-    };
+    const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
 

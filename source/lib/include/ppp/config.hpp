@@ -52,8 +52,8 @@ struct Config
     CardOrderDirection m_CardOrderDirection{ CardOrderDirection::Ascending };
     uint32_t m_MaxWorkerThreads{ 16 };
     uint32_t m_DisplayColumns{ 5 };
-    std::string m_DefaultCardSize{ "Standard" };
-    std::string m_DefaultPageSize{ "Letter" };
+    std::optional<std::string> m_DefaultCardSize{};
+    std::optional<std::string> m_DefaultPageSize{};
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
     PdfBackend m_Backend{ PdfBackend::PoDoFo };

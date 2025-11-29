@@ -7,6 +7,8 @@
 
 #include <fmt/format.h>
 
+#include <nlohmann/json.hpp>
+
 #include <QCoreApplication>
 #include <QThreadPool>
 
@@ -18,8 +20,11 @@
 #include <ppp/util/log.hpp>
 
 #include <ppp/config.hpp>
+#include <ppp/json_util.hpp>
 
 #include <ppp/pdf/generate.hpp>
+
+using ProjectOverrides = std::unordered_map<std::string, std::string>;
 
 struct CommandLineOptions
 {
@@ -32,7 +37,7 @@ struct CommandLineOptions
 
     std::optional<std::string> m_ProjectFile{ std::nullopt };
     std::optional<std::string> m_ProjectJson{ std::nullopt };
-    std::unordered_map<std::string, std::string> m_ProjectOverrides{};
+    ProjectOverrides m_ProjectOverrides{};
 };
 
 constexpr const char c_HelpStr[]{
@@ -57,6 +62,45 @@ Project Overrides are formatted as follows:
                             --spacing.height 0.0
                             --spacing.with 1.5
 )"
+};
+
+class OverridesProvider : public JsonProvider
+{
+  public:
+    OverridesProvider(const ProjectOverrides& overrides)
+        : m_Overrides{ overrides }
+    {
+    }
+
+    virtual nlohmann::json GetJsonValue(std::string_view path_view) const override
+    {
+        const std::string path{ path_view };
+        if (m_Overrides.contains(path))
+        {
+            const auto& value{ m_Overrides.at(path) };
+            try
+            {
+                // Try parsing the override as a literal ...
+                return nlohmann::json::parse(value);
+            }
+            catch (const nlohmann::json::parse_error&)
+            {
+                // ... and keep it as a string if that's not possible.
+                return nlohmann::json{ value };
+            }
+        }
+
+        return nlohmann::json{};
+    }
+
+    virtual void SetJsonValue(std::string_view path, nlohmann::json /*value*/) override
+    {
+        LogError("SetJsonValue is not implemented for CLI, path {} is ignored...",
+                 path);
+    }
+
+  private:
+    const ProjectOverrides& m_Overrides;
 };
 
 CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
@@ -173,16 +217,20 @@ int main(int argc, char** argv)
         g_Cfg.m_DeterminsticPdfOutput = true;
     }
 
+    OverridesProvider overrides_provider{
+        cli.m_ProjectOverrides
+    };
+
     Project project{};
     if (cli.m_ProjectFile.has_value())
     {
         project.Load(cli.m_ProjectFile.value(),
-                     cli.m_ProjectOverrides);
+                     &overrides_provider);
     }
     else if (cli.m_ProjectJson.has_value())
     {
         if (!project.LoadFromJson(cli.m_ProjectJson.value(),
-                                  cli.m_ProjectOverrides))
+                                  &overrides_provider))
         {
             LogError("Failed loading project from json-blob...");
         }
@@ -191,7 +239,7 @@ int main(int argc, char** argv)
     {
         LogInfo("Starting from a clean project with overrides...");
         const auto default_json{ project.DumpToJson() };
-        project.LoadFromJson(default_json, cli.m_ProjectOverrides);
+        project.LoadFromJson(default_json, &overrides_provider);
     }
     else
     {

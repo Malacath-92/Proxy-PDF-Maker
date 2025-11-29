@@ -7,6 +7,8 @@
 #include <QHBoxLayout>
 #include <QToolButton>
 
+#include <nlohmann/json.hpp>
+
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/app.hpp>
@@ -717,8 +719,14 @@ void PrintOptionsWidget::RenderBackendChanged()
 
     if (g_Cfg.m_Backend != PdfBackend::PoDoFo && m_Project.m_Data.m_PageSize == Config::c_BasePDFSize)
     {
-        m_PaperSize->setCurrentText(ToQString(g_Cfg.m_DefaultPageSize));
-        m_Project.m_Data.m_PageSize = g_Cfg.m_DefaultPageSize;
+        const auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        auto default_page_size{ app->GetJsonValue("page_size") };
+        if (default_page_size.is_null())
+        {
+            default_page_size = ProjectData{}.m_PageSize;
+        }
+        m_PaperSize->setCurrentText(ToQString(default_page_size.get_ref<const std::string&>()));
+        m_Project.m_Data.m_PageSize = default_page_size.get_ref<const std::string&>();
         PageSizeChanged();
     }
 }
