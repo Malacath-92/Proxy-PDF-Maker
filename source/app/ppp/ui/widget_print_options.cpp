@@ -17,6 +17,7 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/default_project_value_actions.hpp>
 #include <ppp/ui/widget_combo_box.hpp>
 #include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
@@ -115,6 +116,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         };
         card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
     }
+    EnableOptionWidgetForDefaults(m_CardSize, "card_size");
 
     WidgetWithLabel* paper_size;
     {
@@ -185,6 +187,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         };
         paper_size->setToolTip("Additional card sizes can be defined in config.ini");
     }
+    EnableOptionWidgetForDefaults(m_PaperSize, "page_size");
 
     m_BasePdf = new ComboBoxWithLabel{
         "&Base Pdf", GetBasePdfNames(), project.m_Data.m_BasePdf
