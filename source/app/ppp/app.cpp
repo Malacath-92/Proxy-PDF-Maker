@@ -134,7 +134,7 @@ void PrintProxyPrepApplication::SetJsonValue(std::string_view path, nlohmann::js
 {
     if (m_DefaultProjectData == nullptr)
     {
-        m_DefaultProjectData = std::make_unique<nlohmann::json>();
+        m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::value_t::object);
     }
 
     try
@@ -232,7 +232,7 @@ void PrintProxyPrepApplication::Save() const
         try
         {
             const auto json_blob{ m_DefaultProjectData->dump() };
-            settings.setValue("project_defaults", ToQString(m_Theme));
+            settings.setValue("project_defaults", ToQString(json_blob));
         }
         catch (const std::exception& e)
         {
