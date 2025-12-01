@@ -513,10 +513,9 @@ std::string Project::DumpToJson() const
     json["card_size"] = m_Data.m_CardSizeChoice;
     json["page_size"] = m_Data.m_PageSize;
     json["base_pdf"] = m_Data.m_BasePdf;
+    json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
     if (m_Data.m_CustomMargins.has_value())
     {
-        json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
-
         if (!m_Data.m_CustomMargins->m_BottomRight.has_value())
         {
             json["custom_margins"] = nlohmann::json{
@@ -533,6 +532,10 @@ std::string Project::DumpToJson() const
                 { "bottom", m_Data.m_CustomMargins->m_BottomRight->y / 1_cm },
             };
         }
+    }
+    else
+    {
+        json["custom_margins"] = nlohmann::json{ nlohmann::json::value_t::object };
     }
     json["card_orientation"] = magic_enum::enum_name(m_Data.m_CardOrientation);
     json["card_layout_vertical"] = nlohmann::json{
