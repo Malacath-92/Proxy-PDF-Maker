@@ -212,7 +212,17 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
 
-        m_Data.m_BleedEdge.value = get_value("bleed_edge");
+        {
+            const auto bleed_edge_length{ get_value("bleed_edge_cm") };
+            if (!bleed_edge_length.is_null())
+            {
+                m_Data.m_BleedEdge = bleed_edge_length.get<float>() * 1_cm;
+            }
+            else
+            {
+                m_Data.m_BleedEdge.value = get_value("bleed_edge");
+            }
+        }
         {
             const auto& spacing{ get_value("spacing") };
             if (spacing.is_number())
@@ -412,9 +422,35 @@ bool Project::LoadFromJson(const std::string& json_blob,
             m_Data.m_GuidesColorB.g = guides_color_b[1];
             m_Data.m_GuidesColorB.b = guides_color_b[2];
         }
-        m_Data.m_GuidesOffset.value = get_value("guides_offset");
-        m_Data.m_GuidesThickness.value = get_value("guides_thickness");
-        m_Data.m_GuidesLength.value = get_value("guides_length");
+        {
+            const auto guides_offset_length{ get_value("guides_offset_cm") };
+            if (!guides_offset_length.is_null())
+            {
+                m_Data.m_GuidesOffset = guides_offset_length.get<float>() * 1_cm;
+            }
+            else
+            {
+                m_Data.m_GuidesOffset.value = get_value("guides_offset");
+            }
+            const auto guides_tickness_length{ get_value("guides_tickness_cm") };
+            if (!guides_tickness_length.is_null())
+            {
+                m_Data.m_GuidesThickness = guides_tickness_length.get<float>() * 1_cm;
+            }
+            else
+            {
+                m_Data.m_GuidesThickness.value = get_value("guides_tickness");
+            }
+            const auto guides_length_length{ get_value("guides_length_cm") };
+            if (!guides_length_length.is_null())
+            {
+                m_Data.m_GuidesLength = guides_length_length.get<float>() * 1_cm;
+            }
+            else
+            {
+                m_Data.m_GuidesLength.value = get_value("guides_cm");
+            }
+        }
     }
     catch (const std::exception& e)
     {
@@ -492,7 +528,7 @@ std::string Project::DumpToJson() const
         json["cards_order"] = cards_list;
     }
 
-    json["bleed_edge"] = m_Data.m_BleedEdge.value;
+    json["bleed_edge_cm"] = m_Data.m_BleedEdge / 1_cm;
     json["spacing"] = nlohmann::json{
         { "horizontal", m_Data.m_Spacing.x / 1_cm },
         { "vertical", m_Data.m_Spacing.y / 1_cm },
@@ -558,9 +594,9 @@ std::string Project::DumpToJson() const
     json["extended_guides"] = m_Data.m_ExtendedGuides;
     json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
     json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
-    json["guides_offset"] = m_Data.m_GuidesOffset.value;
-    json["guides_thickness"] = m_Data.m_GuidesThickness.value;
-    json["guides_length"] = m_Data.m_GuidesLength.value;
+    json["guides_offset_cm"] = m_Data.m_GuidesOffset / 1_cm;
+    json["guides_thickness_cm"] = m_Data.m_GuidesThickness / 1_cm;
+    json["guides_length_cm"] = m_Data.m_GuidesLength / 1_cm;
 
     return json.dump();
 }
