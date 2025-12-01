@@ -86,7 +86,7 @@ class OverridesProvider : public JsonProvider
             catch (const nlohmann::json::parse_error&)
             {
                 // ... and keep it as a string if that's not possible.
-                return nlohmann::json{ value };
+                return value;
             }
         }
 
