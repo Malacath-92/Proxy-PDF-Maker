@@ -9,6 +9,8 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <nlohmann/json.hpp>
+
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
@@ -38,8 +40,6 @@ class DefaultBacksidePreview : public QWidget
         backside_default_image->setFixedHeight(backside_height);
 
         auto* backside_default_label{ new QLabel{ ClampName(ToQString(backside_name.c_str())) } };
-        // TODO:
-        //EnableOptionWidgetForDefaults(backside_default_image, "backside_default");
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
@@ -128,6 +128,20 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
+    EnableOptionWidgetForDefaults(
+        m_BacksideDefaultPreview,
+        "backside_default",
+        [this, &project](nlohmann::json default_value)
+        {
+            const auto& default_backside{ default_value.get_ref<const std::string&>() };
+            project.m_Data.m_BacksideDefault = fs::path{ default_backside };
+            m_BacksideDefaultPreview->Refresh();
+            BacksideDefaultChanged();
+        },
+        [&project]()
+        {
+            return project.m_Data.m_BacksideDefault;
+        });
 
     {
         m_BacksideOffsetHorizontalSpin = MakeLengthSpinBox();
