@@ -2,6 +2,8 @@
 
 #include <charconv>
 
+#include <nlohmann/json.hpp>
+
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QPushButton>
@@ -63,13 +65,47 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
-    // TODO: Implement these in the default code
-    // EnableOptionWidgetForDefaults(guides_color_a_button, "guides_color_a");
+    EnableOptionWidgetForDefaults(
+        m_GuidesColorA,
+        "guides_color_a",
+        [this, guides_color_a_button, &project](nlohmann::json default_value)
+        {
+            project.m_Data.m_GuidesColorA.r = default_value[0];
+            project.m_Data.m_GuidesColorA.g = default_value[1];
+            project.m_Data.m_GuidesColorA.b = default_value[2];
+            guides_color_a_button->setStyleSheet(ColorToBackgroundStyle(m_Project.m_Data.m_GuidesColorA));
+            GuidesColorChanged();
+        },
+        [&project]()
+        {
+            return std::array{
+                project.m_Data.m_GuidesColorA.r,
+                project.m_Data.m_GuidesColorA.g,
+                project.m_Data.m_GuidesColorA.b
+            };
+        });
 
     auto* guides_color_b_button{ new QPushButton };
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
-    // TODO: Implement these in the default code
-    //EnableOptionWidgetForDefaults(guides_color_b_button, "guides_color_b");
+    EnableOptionWidgetForDefaults(
+        m_GuidesColorB,
+        "guides_color_b",
+        [this, guides_color_b_button, &project](nlohmann::json default_value)
+        {
+            project.m_Data.m_GuidesColorB.r = default_value[0];
+            project.m_Data.m_GuidesColorB.g = default_value[1];
+            project.m_Data.m_GuidesColorB.b = default_value[2];
+            guides_color_b_button->setStyleSheet(ColorToBackgroundStyle(m_Project.m_Data.m_GuidesColorB));
+            GuidesColorChanged();
+        },
+        [&project]()
+        {
+            return std::array{
+                project.m_Data.m_GuidesColorB.r,
+                project.m_Data.m_GuidesColorB.g,
+                project.m_Data.m_GuidesColorB.b
+            };
+        });
 
     auto* guides_thickness{ new LengthSpinBoxWithLabel{ "Guides Thic&kness" } };
     m_GuidesThicknessSpin = guides_thickness->GetWidget();
