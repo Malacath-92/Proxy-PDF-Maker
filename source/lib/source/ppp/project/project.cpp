@@ -145,13 +145,20 @@ bool Project::LoadFromJson(const std::string& json_blob,
                     }
                 }
 
-                auto value{ GetJsonValue(json, path) };
-                if (!value.is_null())
+                try
                 {
-                    return value;
-                }
+                    auto value{ GetJsonValue(json, path) };
+                    if (!value.is_null())
+                    {
+                        return value;
+                    }
 
-                return default_value;
+                    return default_value;
+                }
+                catch (...)
+                {
+                    return default_value;
+                }
             }
         };
 
@@ -432,14 +439,14 @@ bool Project::LoadFromJson(const std::string& json_blob,
             {
                 m_Data.m_GuidesOffset.value = get_value("guides_offset");
             }
-            const auto guides_tickness_length{ get_value("guides_tickness_cm") };
+            const auto guides_tickness_length{ get_value("guides_thickness_cm") };
             if (!guides_tickness_length.is_null())
             {
                 m_Data.m_GuidesThickness = guides_tickness_length.get<float>() * 1_cm;
             }
             else
             {
-                m_Data.m_GuidesThickness.value = get_value("guides_tickness");
+                m_Data.m_GuidesThickness.value = get_value("guides_thickness");
             }
             const auto guides_length_length{ get_value("guides_length_cm") };
             if (!guides_length_length.is_null())
@@ -526,6 +533,10 @@ std::string Project::DumpToJson() const
         }
 
         json["cards_order"] = cards_list;
+    }
+    else
+    {
+        json["cards_order"] = std::array<int, 0>{};
     }
 
     json["bleed_edge_cm"] = m_Data.m_BleedEdge / 1_cm;
