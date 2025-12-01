@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include <QCoreApplication>
+#include <QSettings>
 #include <QThreadPool>
 
 #include <ppp/project/card_provider.hpp>
@@ -30,6 +31,8 @@ struct CommandLineOptions
 {
     bool m_HelpDisplayed{ false };
 
+    bool m_IgnoreUserDefaults{ false };
+
     bool m_Render{ false };
     bool m_WaitForCropper{ false };
 
@@ -44,32 +47,57 @@ constexpr const char c_HelpStr[]{
     R"(
 Command Line Interface for Proxy-PDF-Maker
 
-    --help              Display this information.
-    --cropper           Wait for the cropper, then quit.
-    --render            Wait for the cropper, render the pdf, then quit.
-    --project <file>    Load the project from this file.
-    --project <json>    Load the project from this json blob.
-    --project           Take all following commands and override 
-                        project settings with them.
+    --help                  Display this information.
+    --ignore-user-defaults  Do not load user-defaults that were set from
+                            within the GUI application.
+    --cropper               Wait for the cropper, then quit.
+    --render                Wait for the cropper, render the pdf, then quit.
+    --project <file>        Load the project from this file.
+    --project <json>        Load the project from this json blob.
+    --project               Take all following commands and override 
+                            project settings with them.
     
 Project Overrides are formatted as follows:
-    --<name> <value>    Will override the property <name> with the
-                        value <value> as if parsed as json, where
-                        <name> can be a nested name and refers to
-                        the names seen in proj.json files.
-                        For example:
-                            --file_name output_file
-                            --spacing.height 0.0
-                            --spacing.with 1.5
+    --<name> <value>        Will override the property <name> with the
+                            value <value> as if parsed as json, where
+                            <name> can be a nested name and refers to
+                            the names seen in proj.json files.
+                            For example:
+                                --file_name output_file
+                                --spacing.height 0.0
+                                --spacing.with 1.5
 )"
 };
 
 class OverridesProvider : public JsonProvider
 {
   public:
-    OverridesProvider(const ProjectOverrides& overrides)
+    OverridesProvider(bool load_user_defaults,
+                      const ProjectOverrides& overrides)
         : m_Overrides{ overrides }
     {
+        if (load_user_defaults)
+        {
+            QSettings settings{ "Proxy", "Proxy PDF Maker" };
+            if (settings.contains("version"))
+            {
+                if (settings.contains("project_defaults"))
+                {
+                    try
+                    {
+                        const auto json_blob{ settings.value("project_defaults").toString().toStdString() };
+                        m_UserDefaults = nlohmann::json::parse(json_blob);
+                    }
+                    catch (const std::exception& e)
+                    {
+                        LogError("Failed loading user defaults, continuing with original defaults: {}", e.what());
+
+                        // Shouldn't be set, but better safe than sorry'
+                        m_UserDefaults.reset();
+                    }
+                }
+            }
+        }
     }
 
     virtual nlohmann::json GetJsonValue(std::string_view path_view) const override
@@ -90,6 +118,18 @@ class OverridesProvider : public JsonProvider
             }
         }
 
+        if (m_UserDefaults.has_value())
+        {
+            try
+            {
+                return ::GetJsonValue(m_UserDefaults.value(), path_view);
+            }
+            catch (...)
+            {
+                return nlohmann::json{};
+            }
+        }
+
         return nlohmann::json{};
     }
 
@@ -100,6 +140,7 @@ class OverridesProvider : public JsonProvider
     }
 
   private:
+    std::optional<nlohmann::json> m_UserDefaults;
     const ProjectOverrides& m_Overrides;
 };
 
@@ -125,6 +166,10 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         if (arg == "--cropper")
         {
             cli.m_WaitForCropper = true;
+        }
+        else if (arg == "--ignore-user-defaults")
+        {
+            cli.m_IgnoreUserDefaults = true;
         }
         else if (arg == "--render")
         {
@@ -204,6 +249,8 @@ int main(int argc, char** argv)
     };
     Log main_log{ log_flags, Log::c_MainLogName };
 
+    QCoreApplication app{ argc, argv };
+
     QThreadPool::globalInstance()->setMaxThreadCount(g_Cfg.m_MaxWorkerThreads);
 
     CommandLineOptions cli{ ParseCommandLine(argc, argv) };
@@ -218,6 +265,7 @@ int main(int argc, char** argv)
     }
 
     OverridesProvider overrides_provider{
+        !cli.m_IgnoreUserDefaults,
         cli.m_ProjectOverrides
     };
 
@@ -295,7 +343,6 @@ int main(int argc, char** argv)
                      &idle_timer,
                      &QTimer::stop);
 
-    QCoreApplication app{ argc, argv };
     if (cli.m_WaitForCropper)
     {
         if (cli.m_Render)
@@ -327,9 +374,6 @@ int main(int argc, char** argv)
                              &app,
                              &QCoreApplication::quit);
         }
-    }
-
-    {
     }
 
     cropper.Start();
