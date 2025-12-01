@@ -192,10 +192,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     m_BasePdf = new ComboBoxWithLabel{
         "&Base Pdf", GetBasePdfNames(), project.m_Data.m_BasePdf
     };
+    EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), "base_pdf");
 
     m_Orientation = new ComboBoxWithLabel{
         "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.m_Data.m_Orientation)
     };
+    EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), "orientation");
 
     auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size) } };
     m_PaperInfo = paper_info->GetWidget();
@@ -233,6 +235,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_names<MarginsMode>(),
         magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
     m_MarginsMode = margins_mode->GetWidget();
+    EnableOptionWidgetForDefaults(m_MarginsMode, "margins_mode");
 
     auto* all_margins{ new WidgetWithLabel{ "&All Margins", MakeLengthSpinBox() } };
     m_AllMarginsSpin = static_cast<LengthSpinBox*>(all_margins->GetWidget());
@@ -245,6 +248,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_names<CardOrientation>(),
         magic_enum::enum_name(project.m_Data.m_CardOrientation) } };
     m_CardOrientation = card_orientation->GetWidget();
+    EnableOptionWidgetForDefaults(m_CardOrientation, "card_orientation");
 
     {
         m_CardsWidthVertical = MakeDoubleSpinBox();
@@ -262,6 +266,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         auto* cards_layout_vertical_container{ new QWidget };
         cards_layout_vertical_container->setLayout(cards_layout_vertical_layout);
         m_CardsLayoutVertical = new WidgetWithLabel("&Vertical Layout", cards_layout_vertical_container);
+        
+        EnableOptionWidgetForDefaults(m_CardsWidthVertical, "card_layout_vertical.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightVertical, "card_layout_vertical.height");
     }
 
     {
@@ -280,11 +287,15 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         auto* cards_layout_horizontal_container{ new QWidget };
         cards_layout_horizontal_container->setLayout(cards_layout_horizontal_layout);
         m_CardsLayoutHorizontal = new WidgetWithLabel("&Horizontal Layout", cards_layout_horizontal_container);
+
+        EnableOptionWidgetForDefaults(m_CardsWidthHorizontal, "card_layout_horizontal.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightHorizontal, "card_layout_horizontal.height");
     }
 
     auto* flip_on{ new ComboBoxWithLabel{
         "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
     m_FlipOn = flip_on->GetWidget();
+    EnableOptionWidgetForDefaults(m_FlipOn, "flip_page_on");
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);

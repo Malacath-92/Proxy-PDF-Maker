@@ -14,6 +14,7 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/default_project_value_actions.hpp>
 #include <ppp/ui/linked_spin_boxes.hpp>
 #include <ppp/ui/widget_card.hpp>
 #include <ppp/ui/widget_double_spin_box.hpp>
@@ -37,6 +38,8 @@ class DefaultBacksidePreview : public QWidget
         backside_default_image->setFixedHeight(backside_height);
 
         auto* backside_default_label{ new QLabel{ ClampName(ToQString(backside_name.c_str())) } };
+        // TODO:
+        //EnableOptionWidgetForDefaults(backside_default_image, "backside_default");
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
@@ -88,6 +91,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BleedEdgeSpin->ConnectUnitSignals(this);
     m_BleedEdgeSpin->setDecimals(2);
     m_BleedEdgeSpin->setSingleStep(0.1);
+    EnableOptionWidgetForDefaults(m_BleedEdgeSpin, "bleed_edge_cm");
 
     auto* spacing_spin_boxes{ new LinkedSpinBoxes{ project.m_Data.m_SpacingLinked } };
 
@@ -95,11 +99,13 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_HorizontalSpacingSpin->ConnectUnitSignals(this);
     m_HorizontalSpacingSpin->setDecimals(2);
     m_HorizontalSpacingSpin->setSingleStep(0.1);
+    EnableOptionWidgetForDefaults(m_HorizontalSpacingSpin, "spacing.horizontal");
 
     m_VerticalSpacingSpin = spacing_spin_boxes->Second();
     m_VerticalSpacingSpin->ConnectUnitSignals(this);
     m_VerticalSpacingSpin->setDecimals(2);
     m_VerticalSpacingSpin->setSingleStep(0.1);
+    EnableOptionWidgetForDefaults(m_VerticalSpacingSpin, "spacing.vertical");
 
     auto* spacing{ new WidgetWithLabel{ "Card Spacing", spacing_spin_boxes } };
     spacing->layout()->setAlignment(spacing->GetLabel(), Qt::AlignTop);
@@ -110,30 +116,35 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     corners->setEnabled(project.m_Data.m_BleedEdge == 0_mm);
     m_Corners = corners->GetWidget();
     m_Corners->setToolTip("Determines if corners in the rendered pdf are square or rounded, only available if bleed edge is zero.");
+    EnableOptionWidgetForDefaults(m_Corners, "corners");
 
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
+    EnableOptionWidgetForDefaults(m_BacksideCheckbox, "backside_enabled");
 
     m_SeparateBacksidesCheckbox = new QCheckBox{ "Separate Backsides-PDF" };
     m_SeparateBacksidesCheckbox->setToolTip("Generate two PDFs, one from the frontsides and one for the backsides.");
+    EnableOptionWidgetForDefaults(m_SeparateBacksidesCheckbox, "separate_backsides");
 
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
     m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
 
     {
-        m_BacksideOffsetWidthSpin = MakeLengthSpinBox();
-        m_BacksideOffsetWidthSpin->ConnectUnitSignals(this);
-        m_BacksideOffsetWidthSpin->setDecimals(2);
-        m_BacksideOffsetWidthSpin->setSingleStep(0.1);
+        m_BacksideOffsetHorizontalSpin = MakeLengthSpinBox();
+        m_BacksideOffsetHorizontalSpin->ConnectUnitSignals(this);
+        m_BacksideOffsetHorizontalSpin->setDecimals(2);
+        m_BacksideOffsetHorizontalSpin->setSingleStep(0.1);
+        EnableOptionWidgetForDefaults(m_BacksideOffsetHorizontalSpin, "backside_offset.horizontal");
 
-        m_BacksideOffsetHeightSpin = MakeLengthSpinBox();
-        m_BacksideOffsetHeightSpin->ConnectUnitSignals(this);
-        m_BacksideOffsetHeightSpin->setDecimals(2);
-        m_BacksideOffsetHeightSpin->setSingleStep(0.1);
+        m_BacksideOffsetVerticalSpin = MakeLengthSpinBox();
+        m_BacksideOffsetVerticalSpin->ConnectUnitSignals(this);
+        m_BacksideOffsetVerticalSpin->setDecimals(2);
+        m_BacksideOffsetVerticalSpin->setSingleStep(0.1);
+        EnableOptionWidgetForDefaults(m_BacksideOffsetVerticalSpin, "backside_offset.vertical");
 
         auto* inner_layout{ new QVBoxLayout };
-        inner_layout->addWidget(m_BacksideOffsetWidthSpin);
-        inner_layout->addWidget(m_BacksideOffsetHeightSpin);
+        inner_layout->addWidget(m_BacksideOffsetHorizontalSpin);
+        inner_layout->addWidget(m_BacksideOffsetVerticalSpin);
         inner_layout->setContentsMargins(0, 0, 0, 0);
 
         auto* inner_widget{ new QWidget };
@@ -368,11 +379,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      pick_backside);
-    QObject::connect(m_BacksideOffsetWidthSpin,
+    QObject::connect(m_BacksideOffsetHorizontalSpin,
                      &LengthSpinBox::ValueChanged,
                      this,
                      change_backside_offset_width);
-    QObject::connect(m_BacksideOffsetHeightSpin,
+    QObject::connect(m_BacksideOffsetVerticalSpin,
                      &LengthSpinBox::ValueChanged,
                      this,
                      change_backside_offset_height);
@@ -410,10 +421,10 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideOffsetWidthSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetWidthSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
-    m_BacksideOffsetHeightSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetHeightSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
+    m_BacksideOffsetHorizontalSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetHorizontalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
+    m_BacksideOffsetVerticalSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetVerticalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
@@ -457,11 +468,11 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
-    m_BacksideOffsetWidthSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetWidthSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
+    m_BacksideOffsetHorizontalSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetHorizontalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
 
-    m_BacksideOffsetHeightSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetHeightSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
+    m_BacksideOffsetVerticalSpin->SetRange(-0.3_in, 0.3_in);
+    m_BacksideOffsetVerticalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);

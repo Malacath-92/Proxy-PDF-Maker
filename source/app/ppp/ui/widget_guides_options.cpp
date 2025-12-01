@@ -13,6 +13,7 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/default_project_value_actions.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
@@ -22,18 +23,23 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
 
     m_ExportExactGuidesCheckbox = new QCheckBox{ "Export Exact Guides" };
     m_ExportExactGuidesCheckbox->setToolTip("Decides whether a .svg file will be generated that contains the exact guides for the current layout");
+    EnableOptionWidgetForDefaults(m_ExportExactGuidesCheckbox, "export_exact_guides");
 
     m_EnableGuidesCheckbox = new QCheckBox{ "Enable Guides" };
     m_EnableGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on the output");
+    EnableOptionWidgetForDefaults(m_EnableGuidesCheckbox, "enable_guides");
 
     m_EnableBacksideGuidesCheckbox = new QCheckBox{ "Enable Backside Guides" };
     m_EnableBacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
+    EnableOptionWidgetForDefaults(m_EnableBacksideGuidesCheckbox, "enable_backside_guides");
 
     m_CornerGuidesCheckbox = new QCheckBox{ "Enable Corner Guides" };
     m_CornerGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered in the corner of each card");
+    EnableOptionWidgetForDefaults(m_CornerGuidesCheckbox, "corner_guides");
 
     m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
     m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
+    EnableOptionWidgetForDefaults(m_CrossGuidesCheckbox, "cross_guides");
 
     auto* guides_offset{ new LengthSpinBoxWithLabel{ "Guides O&ffset" } };
     m_GuidesOffsetSpin = guides_offset->GetWidget();
@@ -41,6 +47,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesOffsetSpin->setDecimals(3);
     m_GuidesOffsetSpin->setSingleStep(0.1);
     m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
+    EnableOptionWidgetForDefaults(m_GuidesOffsetSpin, "guides_offset_cm");
 
     auto* guides_length{ new LengthSpinBoxWithLabel{ "Guides &Length" } };
     m_GuidesLengthSpin = guides_length->GetWidget();
@@ -48,15 +55,21 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesLengthSpin->setDecimals(2);
     m_GuidesLengthSpin->setSingleStep(0.1);
     m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
+    EnableOptionWidgetForDefaults(m_GuidesLengthSpin, "guides_length_cm");
 
     m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
     m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
+    EnableOptionWidgetForDefaults(m_ExtendedGuidesCheckbox, "extended_guides");
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
+    // TODO: Implement these in the default code
+    // EnableOptionWidgetForDefaults(guides_color_a_button, "guides_color_a");
 
     auto* guides_color_b_button{ new QPushButton };
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
+    // TODO: Implement these in the default code
+    //EnableOptionWidgetForDefaults(guides_color_b_button, "guides_color_b");
 
     auto* guides_thickness{ new LengthSpinBoxWithLabel{ "Guides Thic&kness" } };
     m_GuidesThicknessSpin = guides_thickness->GetWidget();
@@ -64,6 +77,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesThicknessSpin->setDecimals(4);
     m_GuidesThicknessSpin->setSingleStep(0.01);
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
+    EnableOptionWidgetForDefaults(m_GuidesThicknessSpin, "guides_thickness_cm");
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_ExportExactGuidesCheckbox);
