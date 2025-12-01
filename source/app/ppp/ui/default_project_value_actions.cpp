@@ -72,46 +72,64 @@ nlohmann::json GetValueImpl(QLineEdit* widget)
     return widget->text().toStdString();
 }
 
-void ResetToDefault(QWidget* widget, std::string_view path)
+nlohmann::json GetDefault(std::string_view path)
 {
-    const auto value{
-        [path]()
-        {
-            const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
-            const auto user_default_value{ app->GetProjectDefault(path) };
-            if (!user_default_value.is_null())
-            {
-                return user_default_value;
-            }
-            else
-            {
-                // TODO: Get json-value of app-default per-value rather than the whole project
-                const auto app_default_json{ nlohmann::json::parse(Project{}.DumpToJson()) };
-                const auto app_default_value{ GetJsonValue(app_default_json, path) };
-                return app_default_value;
-            }
-        }()
-    };
+    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    const auto user_default_value{ app->GetProjectDefault(path) };
+    if (!user_default_value.is_null())
+    {
+        return user_default_value;
+    }
+    else
+    {
+        // TODO: Get json-value of app-default per-value rather than the whole project
+        const auto app_default_json{ nlohmann::json::parse(Project{}.DumpToJson()) };
+        const auto app_default_value{ GetJsonValue(app_default_json, path) };
+        return app_default_value;
+    }
+}
+void SetAsDefault(std::string_view path, nlohmann::json value)
+{
+    auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    app->SetProjectDefault(path, std::move(value));
+}
 
+void EnableOptionWidgetForDefaults(
+    QWidget* widget,
+    std::string_view path,
+    std::function<void(nlohmann::json)> set_value,
+    std::function<nlohmann::json()> get_value)
+{
+    QAction* reset_to_default_action{ new QAction{ "Reset to Default", widget } };
+    QAction* set_as_default_action{ new QAction{ "Set as Default", widget } };
+
+    widget->addAction(reset_to_default_action);
+    widget->addAction(set_as_default_action);
+    widget->setContextMenuPolicy(Qt::ContextMenuPolicy::ActionsContextMenu);
+
+    if (set_value == nullptr)
+    {
+        set_value = [widget](nlohmann::json value)
+        {
 #define CALL_FOR_TYPE(T)                               \
     if (auto* cast_widget{ dynamic_cast<T*>(widget) }) \
     {                                                  \
         ResetImpl(cast_widget, value);                 \
         return;                                        \
     }
-
-    CALL_FOR_TYPE(LengthSpinBox);
-    CALL_FOR_TYPE(QCheckBox);
-    CALL_FOR_TYPE(QComboBox);
-    CALL_FOR_TYPE(QDoubleSpinBox);
-    CALL_FOR_TYPE(QLineEdit);
+            CALL_FOR_TYPE(LengthSpinBox);
+            CALL_FOR_TYPE(QCheckBox);
+            CALL_FOR_TYPE(QComboBox);
+            CALL_FOR_TYPE(QDoubleSpinBox);
+            CALL_FOR_TYPE(QLineEdit);
 
 #undef CALL_FOR_TYPE
-}
-void SetAsDefault(QWidget* widget, std::string_view path)
-{
-    const auto value{
-        [widget]()
+        };
+    };
+
+    if (get_value == nullptr)
+    {
+        get_value = [widget]()
         {
 #define CALL_FOR_TYPE(T)                               \
     if (auto* cast_widget{ dynamic_cast<T*>(widget) }) \
@@ -127,28 +145,23 @@ void SetAsDefault(QWidget* widget, std::string_view path)
 #undef CALL_FOR_TYPE
 
             return nlohmann::json{};
-        }()
-    };
-
-    auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-    app->SetProjectDefault(path, value);
-}
-
-void EnableOptionWidgetForDefaults(QWidget* widget, std::string_view path)
-{
-    QAction* reset_to_default_action{ new QAction{ "Reset to Default", widget } };
-    QAction* set_as_default_action{ new QAction{ "Set as Default", widget } };
-
-    widget->addAction(reset_to_default_action);
-    widget->addAction(set_as_default_action);
-    widget->setContextMenuPolicy(Qt::ContextMenuPolicy::ActionsContextMenu);
+        };
+    }
 
     QObject::connect(reset_to_default_action,
                      &QAction::triggered,
                      widget,
-                     std::bind_front(&ResetToDefault, widget, path));
+                     [set_value = std::move(set_value),
+                      path = std::string{ path }]()
+                     {
+                         set_value(GetDefault(path));
+                     });
     QObject::connect(set_as_default_action,
                      &QAction::triggered,
                      widget,
-                     std::bind_front(&SetAsDefault, widget, path));
+                     [get_value = std::move(get_value),
+                      path = std::string{ path }]()
+                     {
+                         SetAsDefault(path, get_value());
+                     });
 }
