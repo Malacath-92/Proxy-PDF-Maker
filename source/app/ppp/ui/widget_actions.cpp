@@ -30,6 +30,7 @@ ActionsWidget::ActionsWidget(Project& project)
     cropper_progress_bar->setVisible(false);
     cropper_progress_bar->setRange(0, c_ProgressBarResolution);
     auto* render_button{ new QPushButton{ "Render PDF" } };
+    auto* new_button{ new QPushButton{ "New Project" } };
     auto* save_button{ new QPushButton{ "Save Project" } };
     auto* load_button{ new QPushButton{ "Load Project" } };
     auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
@@ -39,6 +40,7 @@ ActionsWidget::ActionsWidget(Project& project)
     const QWidget* buttons[]{
         cropper_progress_bar,
         render_button,
+        new_button,
         save_button,
         load_button,
         set_images_button,
@@ -55,11 +57,12 @@ ActionsWidget::ActionsWidget(Project& project)
     layout->setColumnMinimumWidth(1, minimum_width + 10);
     layout->addWidget(cropper_progress_bar, 0, 0, 1, 2);
     layout->addWidget(render_button, 1, 0, 1, 2);
-    layout->addWidget(save_button, 2, 0);
-    layout->addWidget(load_button, 2, 1);
-    layout->addWidget(set_images_button, 3, 0);
-    layout->addWidget(open_images_button, 3, 1);
-    layout->addWidget(render_alignment_button, 4, 0, 1, 2);
+    layout->addWidget(new_button, 2, 0, 1, 2);
+    layout->addWidget(save_button, 3, 0);
+    layout->addWidget(load_button, 3, 1);
+    layout->addWidget(set_images_button, 4, 0);
+    layout->addWidget(open_images_button, 4, 1);
+    layout->addWidget(render_alignment_button, 5, 0, 1, 2);
     setLayout(layout);
 
     const auto render{
@@ -111,6 +114,29 @@ ActionsWidget::ActionsWidget(Project& project)
                                    "PDF Rendering Error",
                                    "Failure while creating pdf, please check logs for details.");
             }
+        }
+    };
+
+    const auto new_project{
+        [=, this, &project]()
+        {
+            GenericPopup reload_window{ window(), "Resetting project..." };
+
+            const auto old_project_data{ std::move(project.m_Data) };
+            const auto reset_project_work{
+                [&project]()
+                {
+                    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+                    application.SetProjectPath("proj.json");
+                    project.LoadFromJson(Project{}.DumpToJson(), &application);
+                }
+            };
+
+            auto* main_window{ window() };
+            main_window->setEnabled(false);
+            reload_window.ShowDuringWork(reset_project_work);
+            NewProjectOpened(old_project_data, project.m_Data);
+            main_window->setEnabled(true);
         }
     };
 
@@ -229,6 +255,10 @@ ActionsWidget::ActionsWidget(Project& project)
                      &QPushButton::clicked,
                      this,
                      render);
+    QObject::connect(new_button,
+                     &QPushButton::clicked,
+                     this,
+                     new_project);
     QObject::connect(save_button,
                      &QPushButton::clicked,
                      this,
