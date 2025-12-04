@@ -56,6 +56,11 @@ PdfResults GeneratePdf(const Project& project)
     const auto page_size{ project.ComputePageSize() };
     const auto [page_width, page_height]{ page_size.pod() };
 
+    const auto space_for_header{ project.ComputeMargins().m_Top };
+    const auto header_size{ 12_pts };
+    const auto header_top{ (space_for_header - header_size) / 2.0f };
+    const bool enough_space_for_header{ space_for_header >= header_size };
+
     const auto bleed{ project.m_Data.m_BleedEdge };
     const auto corner_guides_offset{ bleed - project.m_Data.m_GuidesOffset };
 
@@ -70,6 +75,8 @@ PdfResults GeneratePdf(const Project& project)
         project.m_Data.m_BacksideEnabled ? ComputeBacksideTransforms(project, transforms)
                                          : PageImageTransforms{}
     };
+
+    const auto num_pages{ pages.size() };
 
     std::vector<PdfPage::LineData> extended_guides;
     std::vector<PdfPage::LineData> backside_extended_guides;
@@ -205,6 +212,9 @@ PdfResults GeneratePdf(const Project& project)
             : frontside_pdf.get()
     };
 
+    const auto frontside_pdf_name{ project.m_Data.m_FileName.string() };
+    const auto backside_pdf_name{ frontside_pdf_name + "_backside" };
+
     const auto draw_image{
         [&](PdfPage* page,
             const PageImage& image,
@@ -277,7 +287,8 @@ PdfResults GeneratePdf(const Project& project)
                 "Rendering page {}...\nImage number {} - {}"
             };
 
-            for (size_t i = 0; i < page.m_Images.size(); ++i)
+            const auto num_images{ page.m_Images.size() };
+            for (size_t i = 0; i < num_images; ++i)
             {
                 const auto& card{ page.m_Images[i] };
                 const auto& transform{ transforms[i] };
@@ -303,6 +314,20 @@ PdfResults GeneratePdf(const Project& project)
                         front_page->DrawDashedLine(guide, line_style);
                     }
                 }
+            }
+
+            if (enough_space_for_header)
+            {
+                const Size text_top_left{ 0_mm, page_height - header_top };
+                const Size text_bottom_right{ page_width, page_height - header_top - header_size };
+                front_page->DrawText({
+                    .m_Text{ fmt::format("{} - {}/{}",
+                                         frontside_pdf_name,
+                                         page_index + 1,
+                                         num_pages) },
+                    .m_BoundingBox{ text_top_left, text_bottom_right },
+                    .m_Backdrop{ { 1.0f, 1.0f, 1.0f } },
+                });
             }
 
             front_page->Finish();
@@ -342,6 +367,19 @@ PdfResults GeneratePdf(const Project& project)
                         back_page->DrawDashedLine(guide, line_style);
                     }
                 }
+            }
+
+            if (enough_space_for_header)
+            {
+                const Size text_top_left{ 0_mm, page_height - header_top };
+                const Size text_bottom_right{ page_width, page_height - header_top - header_size };
+                back_page->DrawText({
+                    .m_Text{ fmt::format("{} - {}/{}",
+                                         backside_pdf_name,
+                                         page_index + 1,
+                                         num_pages) },
+                    .m_BoundingBox{ text_top_left, text_bottom_right },
+                });
             }
 
             back_page->Finish();
@@ -416,10 +454,10 @@ PdfResults GeneratePdf(const Project& project)
         }
     }
 
-    auto frontside_pdf_path{ frontside_pdf->Write(project.m_Data.m_FileName) };
+    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name) };
     auto backside_pdf_path{
         backside_pdf != frontside_pdf.get() && backside_pdf != nullptr
-            ? std::optional{ backside_pdf->Write(project.m_Data.m_FileName.string() + "_backside") }
+            ? std::optional{ backside_pdf->Write(backside_pdf_name) }
             : std::nullopt
     };
 
