@@ -316,7 +316,7 @@ PdfResults GeneratePdf(const Project& project)
                 }
             }
 
-            if (enough_space_for_header)
+            if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
@@ -369,7 +369,7 @@ PdfResults GeneratePdf(const Project& project)
                 }
             }
 
-            if (enough_space_for_header)
+            if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
