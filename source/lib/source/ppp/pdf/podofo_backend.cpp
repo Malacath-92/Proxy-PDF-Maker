@@ -124,23 +124,60 @@ void PoDoFoPage::DrawImage(ImageData data)
     painter.FinishPage();
 }
 
-void PoDoFoPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
+void PoDoFoPage::DrawText(TextData data)
 {
+    const auto& bb{ data.m_BoundingBox };
     const PoDoFo::PdfRect rect{
-        ToPoDoFoPoints(bounding_box.m_TopLeft.x),
-        ToPoDoFoPoints(bounding_box.m_BottomRight.y),
-        ToPoDoFoPoints(bounding_box.m_BottomRight.x - bounding_box.m_TopLeft.x),
-        ToPoDoFoPoints(bounding_box.m_TopLeft.y - bounding_box.m_BottomRight.y),
+        ToPoDoFoPoints(bb.m_TopLeft.x),
+        ToPoDoFoPoints(bb.m_BottomRight.y),
+        ToPoDoFoPoints(bb.m_BottomRight.x - bb.m_TopLeft.x),
+        ToPoDoFoPoints(bb.m_TopLeft.y - bb.m_BottomRight.y),
     };
+    const PoDoFo::PdfString str{
+        data.m_Text.data(),
+        static_cast<PoDoFo::pdf_long>(data.m_Text.size()),
+    };
+    auto* font{ m_Document->GetFont() };
 
     PoDoFo::PdfPainter painter;
     painter.SetPage(m_Page);
+
+    if (data.m_Backdrop.has_value())
+    {
+        painter.Save();
+        painter.SetFont(font);
+
+        const PoDoFo::PdfColor col{
+            data.m_Backdrop.value().r,
+            data.m_Backdrop.value().g,
+            data.m_Backdrop.value().b,
+        };
+        painter.SetColor(col);
+
+        const auto lines{ painter.GetMultiLineTextAsLines(rect.GetWidth(), str) };
+        auto widths{ lines |
+                     std::views::transform([font](const auto& str)
+                                           { return font->GetFontMetrics()->StringWidth(str); }) };
+        const auto max_width{ *std::ranges::max_element(widths) };
+        const auto width_reduce{ (rect.GetWidth() - max_width) };
+        const PoDoFo::PdfRect backdrop_rect{
+            rect.GetLeft() + width_reduce / 2,
+            rect.GetBottom(),
+            rect.GetWidth() - width_reduce,
+            rect.GetHeight(),
+        };
+        painter.Rectangle(backdrop_rect);
+        painter.Fill();
+
+        painter.Restore();
+    }
+
     painter.Save();
 
     painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Solid, nullptr, false, 1.0, false);
-    painter.SetFont(m_Document->GetFont());
+    painter.SetFont(font);
     painter.DrawMultiLineText(rect,
-                              PoDoFo::PdfString{ text.data(), static_cast<PoDoFo::pdf_long>(text.size()) },
+                              str,
                               PoDoFo::ePdfAlignment_Center,
                               PoDoFo::ePdfVerticalAlignment_Center);
 

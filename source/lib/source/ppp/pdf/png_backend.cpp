@@ -111,13 +111,13 @@ void PngPage::DrawImage(ImageData data)
     }
 }
 
-void PngPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
+void PngPage::DrawText(TextData data)
 {
-    const auto real_left{ ToPixels(bounding_box.m_TopLeft.x) };
-    const auto real_top{ ToPixels(bounding_box.m_TopLeft.x) };
+    const auto real_left{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
+    const auto real_top{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
     const cv::Scalar black{ 0, 0, 0, 255.0f };
 
-    cv::putText(m_Page, cv::String{ text.data(), text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
+    cv::putText(m_Page, cv::String{ data.m_Text.data(), data.m_Text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
 }
 
 PngImageCache::PngImageCache(const Project& project)

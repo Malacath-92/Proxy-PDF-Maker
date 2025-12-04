@@ -450,10 +450,10 @@ fs::path GenerateTestPdf(const Project& project)
         auto* front_page{ pdf->NextPage() };
 
         {
-            const Size text_top_left{ 0_mm, page_height - page_sixteenth.y };
-            const Size text_bottom_right{ page_width, page_height - page_eighth.y };
-            front_page->DrawText("This is a test page, follow instructions to verify your settings will work fine for proxies.",
-                                 { text_top_left, text_bottom_right });
+            const Position text_top_left{ 0_mm, page_height - page_sixteenth.y };
+            const Position text_bottom_right{ page_width, page_height - page_eighth.y };
+            front_page->DrawText({ "This is a test page, follow instructions to verify your settings will work fine for proxies.",
+                                   { text_top_left, text_bottom_right } });
         }
 
         {
@@ -466,11 +466,11 @@ fs::path GenerateTestPdf(const Project& project)
 
             if (project.m_Data.m_BacksideEnabled)
             {
-                const Size backside_text_top_left{ left_line_x, page_height - page_eighth.y };
-                const Size backside_text_bottom_right{ page_width, page_half.y };
-                front_page->DrawText("Shine a light through this page, the line on the back should align with the front. "
-                                     "If not, measure the difference and paste it into the backside offset option.",
-                                     { backside_text_top_left, backside_text_bottom_right });
+                const Position backside_text_top_left{ left_line_x, page_height - page_eighth.y };
+                const Position backside_text_bottom_right{ page_width, page_half.y };
+                front_page->DrawText({ "Shine a light through this page, the line on the back should align with the front. "
+                                       "If not, measure the difference and paste it into the backside offset option.",
+                                       { backside_text_top_left, backside_text_bottom_right } });
             }
 
             const auto right_line_x{ page_fourth.x + 20_mm };
@@ -480,10 +480,10 @@ fs::path GenerateTestPdf(const Project& project)
             };
             front_page->DrawSolidLine(right_line, line_style);
 
-            const Size text_top_left{ right_line_x, page_fourth.y };
-            const Size text_bottom_right{ page_width, 0_mm };
-            front_page->DrawText("These lines should be exactly 20mm apart. If not, make sure to print at 100% scaling.",
-                                 { text_top_left, text_bottom_right });
+            const Position text_top_left{ right_line_x, page_fourth.y };
+            const Position text_bottom_right{ page_width, 0_mm };
+            front_page->DrawText({ "These lines should be exactly 20mm apart. If not, make sure to print at 100% scaling.",
+                                   { text_top_left, text_bottom_right } });
         }
     }
 

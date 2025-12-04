@@ -69,6 +69,13 @@ class PdfPage
         Size m_BottomRight;
     };
 
+    struct TextData
+    {
+        std::string_view m_Text;
+        TextBoundingBox m_BoundingBox;
+        std::optional<ColorRGB32f> m_Backdrop;
+    };
+
     virtual void DrawSolidLine(LineData data, LineStyle style) = 0;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) = 0;
@@ -79,7 +86,7 @@ class PdfPage
 
     virtual void DrawImage(ImageData data) = 0;
 
-    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) = 0;
+    virtual void DrawText(TextData data) = 0;
 
     virtual void Finish() = 0;
 
