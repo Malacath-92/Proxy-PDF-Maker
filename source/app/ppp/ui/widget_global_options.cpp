@@ -144,7 +144,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     preview_width_spin_box->setSuffix("pixels");
     preview_width_spin_box->setValue(g_Cfg.m_BasePreviewWidth / 1_pix);
     auto* preview_width{ new WidgetWithLabel{ "&Preview Width", preview_width_spin_box } };
-    preview_width->setToolTip("Requires rerunning cropper to take effect");
+    preview_width->setToolTip("Width of each card in pixels in the preview.");
 
     auto* max_dpi_spin_box{ MakeDoubleSpinBox() };
     max_dpi_spin_box->setDecimals(0);
