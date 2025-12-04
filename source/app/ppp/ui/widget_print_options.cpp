@@ -266,7 +266,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         auto* cards_layout_vertical_container{ new QWidget };
         cards_layout_vertical_container->setLayout(cards_layout_vertical_layout);
         m_CardsLayoutVertical = new WidgetWithLabel("&Vertical Layout", cards_layout_vertical_container);
-        
+
         EnableOptionWidgetForDefaults(m_CardsWidthVertical, "card_layout_vertical.width");
         EnableOptionWidgetForDefaults(m_CardsHeightVertical, "card_layout_vertical.height");
     }
