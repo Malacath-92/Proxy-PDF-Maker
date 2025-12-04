@@ -73,7 +73,7 @@ class PdfPage
     {
         std::string_view m_Text;
         TextBoundingBox m_BoundingBox;
-        std::optional<ColorRGB32f> m_Backdrop;
+        std::optional<ColorRGB32f> m_Backdrop{ std::nullopt };
     };
 
     virtual void DrawSolidLine(LineData data, LineStyle style) = 0;
