@@ -300,6 +300,7 @@ PageImageTransforms ComputeBacksideTransforms(
                 .m_Position{ backside_position + project.m_Data.m_BleedEdge },
                 .m_Size{ frontside_size },
             },
+            .m_ClipRect{ std::nullopt },
         });
     }
 
