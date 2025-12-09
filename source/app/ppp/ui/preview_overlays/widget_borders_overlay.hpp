@@ -10,7 +10,9 @@ class Project;
 class BordersOverlay : public QWidget
 {
   public:
-    BordersOverlay(const Project& project, const PageImageTransforms& transforms);
+    BordersOverlay(const Project& project,
+                   const PageImageTransforms& transforms,
+                   bool is_backside);
 
     virtual void paintEvent(QPaintEvent* event) override;
 
@@ -19,6 +21,7 @@ class BordersOverlay : public QWidget
   private:
     const Project& m_Project;
     const PageImageTransforms& m_Transforms;
+    const bool m_IsBackside;
 
     QPainterPath m_CardBorder;
 };

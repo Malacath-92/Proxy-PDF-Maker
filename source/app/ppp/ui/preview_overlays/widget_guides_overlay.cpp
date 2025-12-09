@@ -45,8 +45,7 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
     m_PenTwo.setWidth(guides_width);
 
     const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
-    const auto bleed{ m_Project.m_Data.m_BleedEdge * pixel_ratio };
-    const auto offset{ bleed - m_Project.m_Data.m_GuidesOffset * pixel_ratio };
+    const auto offset{ m_Project.m_Data.m_GuidesOffset * pixel_ratio };
 
     m_Lines.clear();
     if (m_Transforms.empty())
@@ -58,8 +57,8 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
     {
         for (const auto& transform : m_Transforms)
         {
-            const auto top_left_corner{ transform.m_Position * pixel_ratio };
-            const auto card_size{ transform.m_Size * pixel_ratio };
+            const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio };
+            const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
             const auto draw_guide{
                 [this](QLineF line, bool cross = false)
@@ -134,7 +133,7 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
         for (const auto& transform : m_Transforms)
         {
             const auto top_left_corner{
-                static_cast<dla::ivec2>((transform.m_Position + offset / pixel_ratio) / c_Precision)
+                static_cast<dla::ivec2>((transform.m_Card.m_Position + offset / pixel_ratio) / c_Precision)
             };
             if (!std::ranges::contains(unique_x, top_left_corner.x))
             {
@@ -146,7 +145,7 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
             }
 
             const auto card_size{
-                static_cast<dla::ivec2>((transform.m_Size - offset * 2 / pixel_ratio) / c_Precision)
+                static_cast<dla::ivec2>((transform.m_Card.m_Size - offset * 2 / pixel_ratio) / c_Precision)
             };
             const auto bottom_right_corner{ top_left_corner + card_size };
             if (!std::ranges::contains(unique_x, bottom_right_corner.x))

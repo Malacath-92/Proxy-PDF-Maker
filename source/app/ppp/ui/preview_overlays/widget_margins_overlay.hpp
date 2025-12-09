@@ -8,7 +8,7 @@ class Project;
 class MarginsOverlay : public QWidget
 {
   public:
-    MarginsOverlay(const Project& project);
+    MarginsOverlay(const Project& project, bool is_backside);
 
     virtual void paintEvent(QPaintEvent* event) override;
 
@@ -16,6 +16,7 @@ class MarginsOverlay : public QWidget
 
   private:
     const Project& m_Project;
+    const bool m_IsBackside;
 
     QPainterPath m_Margins;
 };

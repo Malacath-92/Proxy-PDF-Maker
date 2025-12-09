@@ -5,8 +5,9 @@
 #include <ppp/project/project.hpp>
 #include <ppp/svg/generate.hpp>
 
-MarginsOverlay::MarginsOverlay(const Project& project)
+MarginsOverlay::MarginsOverlay(const Project& project, bool is_backside)
     : m_Project{ project }
+    , m_IsBackside{ is_backside }
 {
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -26,7 +27,27 @@ void MarginsOverlay::resizeEvent(QResizeEvent* event)
     const auto pixel_ratio{ size.x / m_Project.ComputePageSize().x };
 
     const auto margins{
-        m_Project.ComputeMargins() * pixel_ratio
+        [&]() {
+            auto margins{ m_Project.ComputeMargins() * pixel_ratio };
+            if (m_IsBackside)
+            {
+                if (m_Project.m_Data.m_FlipOn == FlipPageOn::LeftEdge)
+                {
+                    std::swap(margins.m_Left, margins.m_Right);
+                }
+                else
+                {
+                    std::swap(margins.m_Top, margins.m_Bottom);
+                }
+
+                const auto backside_offset{ m_Project.m_Data.m_BacksideOffset * pixel_ratio };
+                margins.m_Left -= backside_offset.x;
+                margins.m_Right += backside_offset.x;
+                margins.m_Top -= backside_offset.y;
+                margins.m_Bottom += backside_offset.y;
+            }
+            return margins;
+        }()
     };
     const auto page_size{
         m_Project.ComputePageSize() * pixel_ratio

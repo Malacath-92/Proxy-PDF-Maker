@@ -37,7 +37,9 @@ class PrintPreviewCardImage : public CardImage
                           const Project& project,
                           CardImage::Params params,
                           size_t idx,
-                          QWidget* companion)
+                          QWidget* companion,
+                          std::optional<ClipRect> clip_rect,
+                          Size widget_size)
         : CardImage{
             card_name,
             project,
@@ -45,22 +47,10 @@ class PrintPreviewCardImage : public CardImage
         }
         , m_Index{ idx }
         , m_Companion{ companion }
+        , m_ClipRect{ clip_rect }
+        , m_WidgetSize{ widget_size }
     {
         setAcceptDrops(true);
-    }
-
-    virtual void resizeEvent(QResizeEvent* event) override
-    {
-        CardImage::resizeEvent(event);
-
-        m_Companion->resize(event->size() + 2 * QSize{ c_CompanionSizeDelta, c_CompanionSizeDelta });
-    }
-
-    virtual void moveEvent(QMoveEvent* event) override
-    {
-        CardImage::moveEvent(event);
-
-        m_Companion->move(event->pos() - QPoint{ c_CompanionSizeDelta, c_CompanionSizeDelta });
     }
 
     virtual void mousePressEvent(QMouseEvent* event) override
@@ -130,14 +120,90 @@ class PrintPreviewCardImage : public CardImage
         OnLeave();
     }
 
+    virtual void paintEvent(QPaintEvent* event) override
+    {
+        if (m_ClipRect.has_value())
+        {
+            const auto clipped_rect{ event->rect().intersected(GetClippedRect()) };
+            const auto scaled_pixmap{
+                [this]()
+                {
+                    const auto unscaled_pixmap{ pixmap() };
+                    const auto pdpr{ unscaled_pixmap.devicePixelRatio() };
+                    const auto dpr{ devicePixelRatio() };
+                    const bool scaled_contents{ hasScaledContents() };
+                    if (scaled_contents || dpr != pdpr)
+                    {
+                        const auto scaled_size{
+                            scaled_contents ? (contentsRect().size() * dpr)
+                                            : (unscaled_pixmap.size() * (dpr / pdpr))
+                        };
+                        if (!m_ScaledPixmap.has_value() || m_ScaledPixmap.value().size() != scaled_size)
+                        {
+                            m_ScaledPixmap = unscaled_pixmap.scaled(scaled_size,
+                                                                    Qt::IgnoreAspectRatio,
+                                                                    Qt::SmoothTransformation);
+                            m_ScaledPixmap.value().setDevicePixelRatio(dpr);
+                        }
+                        return m_ScaledPixmap.value();
+                    }
+                    else
+                    {
+                        return pixmap();
+                    }
+                }()
+            };
+
+            QPainter painter{ this };
+            painter.setClipRect(clipped_rect);
+            painter.drawPixmap(QPoint{ 0, 0 }, scaled_pixmap);
+            painter.end();
+        }
+        else
+        {
+            CardImage::paintEvent(event);
+        }
+    }
+
   signals:
     void DragStarted();
     void DragFinished();
     void ReorderCards(size_t form, size_t to);
 
   private:
+    QRect GetClippedRect() const
+    {
+        if (m_ClipRect.has_value())
+        {
+            const dla::ivec2 pixel_size{
+                size().width(),
+                size().height(),
+            };
+            const auto pixel_ratio{ pixel_size / m_WidgetSize };
+            const auto pixel_clip_offset{ m_ClipRect.value().m_Position * pixel_ratio };
+            const auto pixel_clip_size{ m_ClipRect.value().m_Size * pixel_ratio };
+            const QRect clipped_rect{
+                QPoint{ (int)pixel_clip_offset.x, (int)pixel_clip_offset.y },
+                QSize{ (int)pixel_clip_size.x, (int)pixel_clip_size.y },
+            };
+            return clipped_rect;
+        }
+        else
+        {
+            return rect();
+        }
+    }
+
     void OnEnter()
     {
+        {
+            const auto clipped_rect{ GetClippedRect() };
+            m_Companion->move(pos() +
+                              clipped_rect.topLeft() -
+                              QPoint{ c_CompanionSizeDelta, c_CompanionSizeDelta });
+            m_Companion->resize(clipped_rect.size() +
+                                2 * QSize{ c_CompanionSizeDelta, c_CompanionSizeDelta });
+        }
         m_Companion->setVisible(true);
         m_Companion->raise();
         raise();
@@ -151,6 +217,11 @@ class PrintPreviewCardImage : public CardImage
 
     static inline constexpr int c_CompanionSizeDelta{ 4 };
     QWidget* m_Companion{ nullptr };
+
+    std::optional<ClipRect> m_ClipRect{ std::nullopt };
+    std::optional<QPixmap> m_ScaledPixmap;
+
+    Size m_WidgetSize;
 };
 
 class PrintPreview::PagePreview : public QWidget
@@ -184,8 +255,17 @@ class PrintPreview::PagePreview : public QWidget
             const auto& [card_name, backside_short_edge, index]{
                 page.m_Images[i]
             };
-            const auto& [position, size, base_rotation]{
+            const auto& [position, size, base_rotation, card, clip_rect]{
                 transforms[i]
+            };
+
+            const auto widget_clip_rect{
+                clip_rect.and_then([position](const auto& clip_rect)
+                                   { return std::optional{
+                                         ClipRect{
+                                             clip_rect.m_Position - position,
+                                             clip_rect.m_Size }
+                                     }; })
             };
 
             const auto rotation{
@@ -223,10 +303,15 @@ class PrintPreview::PagePreview : public QWidget
                     CardImage::Params{
                         .m_RoundedCorners = rounded_corners,
                         .m_Rotation = rotation,
-                        .m_BleedEdge{ project.m_Data.m_BleedEdge },
+                        .m_BleedEdge{
+                            project.m_Data.m_BleedEdge +
+                                project.m_Data.m_EnvelopeBleedEdge,
+                        },
                     },
                     index,
                     image_companion,
+                    widget_clip_rect,
+                    size,
                 },
             };
             image_widget->EnableContextMenu(true, project);
@@ -254,15 +339,15 @@ class PrintPreview::PagePreview : public QWidget
             m_Guides->setParent(this);
         }
 
-        if (project.m_Data.m_ExportExactGuides && !params.m_IsBackside)
+        if (project.m_Data.m_ExportExactGuides)
         {
-            m_Borders = new BordersOverlay{ project, transforms };
+            m_Borders = new BordersOverlay{ project, transforms, params.m_IsBackside };
             m_Borders->setParent(this);
         }
 
         if (project.m_Data.m_MarginsMode != MarginsMode::Auto)
         {
-            m_Margins = new MarginsOverlay{ project };
+            m_Margins = new MarginsOverlay{ project, params.m_IsBackside };
             m_Margins->setParent(this);
         }
 
