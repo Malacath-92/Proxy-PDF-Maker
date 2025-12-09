@@ -14,7 +14,7 @@ static ProjectData CopyRelevant(const ProjectData& data)
         .m_CropDir{ data.m_CropDir },
         .m_UncropDir{ data.m_UncropDir },
         .m_ImageCache{ data.m_ImageCache },
-        .m_BleedEdge{ data.m_BleedEdge },
+        .m_BleedEdge{ data.m_BleedEdge + data.m_EnvelopeBleedEdge },
         .m_CardSizeChoice{ data.m_CardSizeChoice },
     };
 }
