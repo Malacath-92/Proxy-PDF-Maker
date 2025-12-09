@@ -99,26 +99,13 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(card_name);
 
     const bool has_image{ project.HasPreview(card_name) };
-    const bool has_bleed_edge{ params.m_BleedEdge > 0_mm };
 
     QPixmap pixmap{
         [&]()
         {
             if (has_image)
             {
-                if (has_bleed_edge)
-                {
-                    const Image& uncropped_image{ project.GetUncroppedPreview(card_name) };
-                    Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, project.m_Data.m_BleedEdge, 6800_dpi) };
-                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-                    return raw_pixmap;
-                }
-                else
-                {
-                    const Image& image{ project.GetCroppedPreview(card_name) };
-                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-                    return raw_pixmap;
-                }
+                return GetPixmap(project.GetPreview(card_name));
             }
             else
             {
@@ -275,24 +262,7 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
 
         ClearChildren();
 
-        QPixmap pixmap{
-            [&, this]()
-            {
-                if (m_BleedEdge > 0_mm)
-                {
-                    const Image& uncropped_image{ preview.m_UncroppedImage };
-                    Image image{ CropImage(uncropped_image, card_name, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
-                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-                    return raw_pixmap;
-                }
-                else
-                {
-                    const Image& image{ preview.m_CroppedImage };
-                    QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-                    return raw_pixmap;
-                }
-            }()
-        };
+        QPixmap pixmap{ GetPixmap(preview) };
         setPixmap(FinalizePixmap(pixmap));
 
         const bool bad_aspect_ration{ preview.m_BadAspectRatio };
@@ -310,6 +280,23 @@ void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& b
     if (m_CardName == card_name)
     {
         m_HasNonDefaultBackside = !backside.empty();
+    }
+}
+
+QPixmap CardImage::GetPixmap(const ImagePreview& preview)
+{
+    if (m_BleedEdge > 0_mm)
+    {
+        const Image& uncropped_image{ preview.m_UncroppedImage };
+        Image image{ CropImage(uncropped_image, m_CardName, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
+        QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
+        return raw_pixmap;
+    }
+    else
+    {
+        const Image& image{ preview.m_CroppedImage };
+        QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
+        return raw_pixmap;
     }
 }
 

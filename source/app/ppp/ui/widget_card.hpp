@@ -48,6 +48,7 @@ class CardImage : public QLabel
     void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
 
   private:
+    QPixmap GetPixmap(const ImagePreview& preview);
     QPixmap FinalizePixmap(const QPixmap& pixmap);
     void AddBadFormatWarning(const ImagePreview& preview);
 
@@ -66,6 +67,7 @@ class CardImage : public QLabel
 
     void ClearChildren();
 
+  private:
     fs::path m_CardName;
     Params m_OriginalParams;
 
