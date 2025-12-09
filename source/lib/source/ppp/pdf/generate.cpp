@@ -62,7 +62,8 @@ PdfResults GeneratePdf(const Project& project)
     const bool enough_space_for_header{ space_for_header >= header_size };
 
     const auto bleed{ project.m_Data.m_BleedEdge };
-    const auto corner_guides_offset{ bleed - project.m_Data.m_GuidesOffset };
+    const auto envelope_bleed{ project.m_Data.m_EnvelopeBleedEdge };
+    const auto corner_guides_offset{ project.m_Data.m_GuidesOffset };
 
     const auto pages{ DistributeCardsToPages(project) };
     const auto transforms{ ComputeTransforms(project) };
@@ -85,7 +86,7 @@ PdfResults GeneratePdf(const Project& project)
         static constexpr auto c_Precision{ 0.01_pts };
 
         const auto generate_extended_guides{
-            [page_width, page_height, bleed, corner_guides_offset](const auto& transforms)
+            [page_width, page_height, bleed, envelope_bleed, corner_guides_offset](const auto& transforms)
             {
                 std::vector<PdfPage::LineData> guides;
                 if (transforms.empty())
@@ -104,13 +105,13 @@ PdfResults GeneratePdf(const Project& project)
                 for (const auto& transform : transforms)
                 {
                     const Position position{
-                        transform.m_Position.x,
-                        page_height - transform.m_Position.y - transform.m_Size.y,
+                        transform.m_Card.m_Position.x,
+                        page_height - transform.m_Card.m_Position.y - transform.m_Card.m_Size.y,
                     };
 
                     using lvec2 = dla::tvec2<int64_t>;
                     const auto top_left_corner_exact{
-                        position + corner_guides_offset
+                        position - corner_guides_offset
                     };
                     const auto top_left_corner{
                         static_cast<lvec2>(top_left_corner_exact / c_Precision)
@@ -125,7 +126,7 @@ PdfResults GeneratePdf(const Project& project)
                     }
 
                     const auto bottom_right_corner_exact{
-                        position + transform.m_Size - corner_guides_offset
+                        position + transform.m_Card.m_Size + corner_guides_offset
                     };
                     const auto bottom_right_corner{
                         static_cast<lvec2>(bottom_right_corner_exact / c_Precision)
@@ -140,7 +141,7 @@ PdfResults GeneratePdf(const Project& project)
                     }
                 }
 
-                const auto extended_offset{ bleed + 1_mm };
+                const auto extended_offset{ bleed + envelope_bleed + 1_mm };
                 const auto min_by_approximation{
                     [](const auto& vec)
                     {
@@ -231,6 +232,23 @@ PdfResults GeneratePdf(const Project& project)
                     },
                     .m_Size{ transform.m_Size },
                     .m_Rotation = transform.m_Rotation,
+                    .m_ClipRect{
+                        transform.m_ClipRect.and_then(
+                            [&](const auto& clip_rect)
+                            {
+                                return std::optional{
+                                    ClipRect{
+                                        .m_Position{
+                                            clip_rect.m_Position.x,
+                                            page_height -
+                                                clip_rect.m_Position.y -
+                                                clip_rect.m_Size.y, // NOLINT
+                                        },
+                                        .m_Size{ clip_rect.m_Size },
+                                    },
+                                };
+                            }),
+                    },
                 };
                 page->DrawImage(image_data);
             }
@@ -253,11 +271,11 @@ PdfResults GeneratePdf(const Project& project)
             };
 
             const Position position{
-                transform.m_Position.x,
-                page_height - transform.m_Position.y - transform.m_Size.y,
+                transform.m_Card.m_Position.x,
+                page_height - transform.m_Card.m_Position.y - transform.m_Card.m_Size.y,
             };
-            const auto bottom_left{ position + corner_guides_offset };
-            const auto top_right{ position + transform.m_Size - corner_guides_offset };
+            const auto bottom_left{ position - corner_guides_offset };
+            const auto top_right{ position + transform.m_Card.m_Size + corner_guides_offset };
 
             draw_cross_at_grid(page,
                                Position{
