@@ -113,6 +113,7 @@ struct ProjectData
 
     // Card options
     Length m_BleedEdge{ 0_mm };
+    Length m_EnvelopeBleedEdge{ 0_mm };
     Size m_Spacing{ 0_mm, 0_mm };
     bool m_SpacingLinked{ true };
     CardCorners m_Corners{ CardCorners::Square };

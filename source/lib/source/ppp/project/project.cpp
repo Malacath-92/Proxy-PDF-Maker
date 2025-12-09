@@ -231,6 +231,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
+            const auto envelope_bleed_edge{ get_value("envelope_bleed_edge_cm") };
+            if (!envelope_bleed_edge.is_null())
+            {
+                m_Data.m_EnvelopeBleedEdge = envelope_bleed_edge.get<float>() * 1_cm;
+            }
+        }
+        {
             const auto& spacing{ get_value("spacing") };
             if (spacing.is_number())
             {
@@ -540,6 +547,7 @@ std::string Project::DumpToJson() const
     }
 
     json["bleed_edge_cm"] = m_Data.m_BleedEdge / 1_cm;
+    json["envelope_bleed_edge_cm"] = m_Data.m_EnvelopeBleedEdge / 1_cm;
     json["spacing"] = nlohmann::json{
         { "horizontal", m_Data.m_Spacing.x / 1_cm },
         { "vertical", m_Data.m_Spacing.y / 1_cm },
@@ -1468,7 +1476,7 @@ void Project::EnsureOutputFolder() const
 fs::path ProjectData::GetOutputFolder(const Config& config) const
 {
     return GetOutputDir(m_CropDir,
-                        m_BleedEdge,
+                        m_BleedEdge + m_EnvelopeBleedEdge,
                         config.m_ColorCube);
 }
 
@@ -1517,7 +1525,7 @@ dla::uvec2 ProjectData::ComputeCardLayout(const Config& config,
 
     auto layout{ static_cast<dla::uvec2>(dla::floor(available_space / card_size_with_bleed)) };
 
-    if (m_Spacing.x > 0_mm || m_Spacing.y > 0_mm)
+    if (m_EnvelopeBleedEdge > 0_mm || m_Spacing.x > 0_mm || m_Spacing.y > 0_mm)
     {
         const Size cards_size{ ComputeCardsSize(card_size_with_bleed, layout) };
         if (cards_size.x > available_space.x)
@@ -1596,7 +1604,8 @@ Size ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::
         return {};
     }
 
-    return card_layout * card_size_with_bleed + (card_layout - 1) * m_Spacing;
+    return card_layout * card_size_with_bleed +
+           (card_layout - 1) * m_Spacing + m_EnvelopeBleedEdge * 2;
 }
 
 Margins ProjectData::ComputeMargins(const Config& config) const
