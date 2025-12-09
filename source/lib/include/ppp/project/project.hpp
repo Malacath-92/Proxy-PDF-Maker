@@ -252,6 +252,7 @@ class Project : public QObject
     bool HasPreview(const fs::path& card_name) const;
     bool HasBadAspectRatio(const fs::path& card_name) const;
     bool HasBadRotation(const fs::path& card_name) const;
+    const ImagePreview& GetPreview(const fs::path& card_name) const;
     const Image& GetCroppedPreview(const fs::path& card_name) const;
     const Image& GetUncroppedPreview(const fs::path& card_name) const;
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;

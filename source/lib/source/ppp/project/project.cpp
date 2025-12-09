@@ -1085,21 +1085,22 @@ bool Project::HasBadRotation(const fs::path& card_name) const
     return false;
 }
 
-const Image& Project::GetCroppedPreview(const fs::path& card_name) const
+const ImagePreview& Project::GetPreview(const fs::path& card_name) const
 {
     if (m_Data.m_Previews.contains(card_name))
     {
-        return m_Data.m_Previews.at(card_name).m_CroppedImage;
+        return m_Data.m_Previews.at(card_name);
     }
-    return m_Data.m_FallbackPreview.m_CroppedImage;
+    return m_Data.m_FallbackPreview;
+}
+
+const Image& Project::GetCroppedPreview(const fs::path& card_name) const
+{
+    return GetPreview(card_name).m_CroppedImage;
 }
 const Image& Project::GetUncroppedPreview(const fs::path& card_name) const
 {
-    if (m_Data.m_Previews.contains(card_name))
-    {
-        return m_Data.m_Previews.at(card_name).m_UncroppedImage;
-    }
-    return m_Data.m_FallbackPreview.m_UncroppedImage;
+    return GetPreview(card_name).m_UncroppedImage;
 }
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& card_name) const
