@@ -160,6 +160,8 @@ struct ProjectData
     Length m_GuidesLength{ 1.5_mm };
 
     // Utility functions
+    fs::path GetOutputFolder(const Config& config) const;
+
     struct CardLayout
     {
         dla::uvec2 m_CardLayoutVertical;
@@ -208,6 +210,8 @@ class Project : public QObject
 
     void Init();
     void InitProperties();
+
+    fs::path GetOutputFolder() const;
 
     CardInfo& CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);

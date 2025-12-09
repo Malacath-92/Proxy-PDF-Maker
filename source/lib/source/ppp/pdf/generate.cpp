@@ -31,7 +31,7 @@ PdfResults GeneratePdf(const Project& project)
 
     using CrossSegment = PdfPage::CrossSegment;
 
-    const auto output_dir{ GetOutputDir(project.m_Data.m_CropDir, project.m_Data.m_BleedEdge, g_Cfg.m_ColorCube) };
+    const auto output_dir{ project.GetOutputFolder() };
 
     ColorRGB32f guides_color_a{
         static_cast<float>(project.m_Data.m_GuidesColorA.r) / 255.0f,

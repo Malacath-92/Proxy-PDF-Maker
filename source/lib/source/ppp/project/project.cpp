@@ -659,6 +659,11 @@ void Project::InitProperties()
     }
 }
 
+fs::path Project::GetOutputFolder() const
+{
+    return m_Data.GetOutputFolder(g_Cfg);
+}
+
 fs::path Project::GetCardImagePath(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
@@ -1447,9 +1452,7 @@ void Project::EnsureOutputFolder() const
     };
 
     {
-        const auto output_dir{
-            GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, g_Cfg.m_ColorCube)
-        };
+        const auto output_dir{ GetOutputFolder()};
         if (!fs::exists(output_dir))
         {
             c_CreateDirectories(output_dir);
@@ -1461,6 +1464,14 @@ void Project::EnsureOutputFolder() const
         c_CreateDirectories(m_Data.m_UncropDir);
     }
 }
+
+fs::path ProjectData::GetOutputFolder(const Config& config) const
+{
+    return GetOutputDir(m_CropDir,
+                        m_BleedEdge,
+                        config.m_ColorCube);
+}
+
 ProjectData::CardLayout ProjectData::ComputeAutoCardLayout(
     const Config& config,
     Size available_space) const

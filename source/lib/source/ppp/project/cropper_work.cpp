@@ -219,7 +219,7 @@ void CropperCropWork::run()
 
         const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
-        const fs::path output_dir{ GetOutputDir(m_Data.m_CropDir, m_Data.m_BleedEdge, m_Cfg.m_ColorCube) };
+        const fs::path output_dir{ m_Data.GetOutputFolder(m_Cfg) };
 
         const fs::path input_file{ m_ImagePath };
         const fs::path crop_dir{ m_Data.m_CropDir };
