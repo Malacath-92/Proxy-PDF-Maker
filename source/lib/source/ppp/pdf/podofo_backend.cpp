@@ -118,6 +118,27 @@ void PoDoFoPage::DrawImage(ImageData data)
     painter.SetPage(m_Page);
     painter.Save();
 
+    if (data.m_ClipRect.has_value())
+    {
+        const auto& cx{ data.m_ClipRect.value().m_Position.x };
+        const auto& cy{ data.m_ClipRect.value().m_Position.y };
+        const auto& cw{ data.m_ClipRect.value().m_Size.x };
+        const auto& ch{ data.m_ClipRect.value().m_Size.y };
+
+        const auto real_cx{ ToPoDoFoPoints(cx) };
+        const auto real_cy{ ToPoDoFoPoints(cy) };
+        const auto real_cw{ ToPoDoFoPoints(cw) };
+        const auto real_ch{ ToPoDoFoPoints(ch) };
+
+        const PoDoFo::PdfRect clip_rect{
+            real_cx,
+            real_cy,
+            real_cw,
+            real_ch,
+        };
+        painter.SetClipRect(clip_rect);
+    }
+
     painter.DrawImage(real_x, real_y, image, w_scale, h_scale);
 
     painter.Restore();

@@ -61,6 +61,7 @@ class PdfPage
         Position m_Pos;
         Size m_Size;
         Image::Rotation m_Rotation;
+        std::optional<ClipRect> m_ClipRect{ std::nullopt };
     };
 
     struct TextBoundingBox
