@@ -9,11 +9,25 @@
 
 class Project;
 
+struct CardTransform
+{
+    Position m_Position;
+    Size m_Size;
+};
+
+struct ClipRect
+{
+    Position m_Position;
+    Size m_Size;
+};
+
 struct PageImageTransform
 {
     Position m_Position;
     Size m_Size;
     Image::Rotation m_Rotation;
+    CardTransform m_Card;
+    std::optional<ClipRect> m_ClipRect;
 };
 using PageImageTransforms = std::vector<PageImageTransform>;
 
