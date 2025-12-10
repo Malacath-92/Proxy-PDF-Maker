@@ -29,7 +29,7 @@ Next we will be disabling guides and enabling `Export Exact Guides` in the `Guid
     <sup>2</sup> Disabled guides but exporting exact guides
 </p>
 
-Now we can press `Render Document`, this will generate a `_printme.svg` file which has the exact card guides. In addition we should have a `_printme.pdf` which we won't really need, but you can use it to verify that the svg and the pdf output match.
+Now we can press `Render PDF`, this will generate a `_printme.svg` file which has the exact card guides. In addition we should have a `_printme.pdf` which we won't really need, but you can use it to verify that the svg and the pdf output match.
 
 > [!NOTE]
 > Depending on what cutting machine you use you may have to set the `Paper Size` to `Fit`, `Card Orientation` to `Mixed` and play around with the vertical and horizontal layout values to get something that fits within the valid region of your registration marks.
@@ -88,7 +88,7 @@ Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown whic
 
 Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to check `Custom Margins` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Right Margin`).
 
-Lastly you can now press `Render Document` to generate the pdf.
+Lastly you can now press `Render PDF` to generate the pdf.
 
 ## Doing the Print & Cut
 
@@ -143,7 +143,7 @@ _This section is a summarization fo the 'Generating the full PDF in the App' sec
 
 ### Fine-tuning Alignment
 
-1. Click Render Document and look at the resultant PDF
+1. Click `Render PDF` and look at the resultant PDF
 2. Continue adjusting margins until the lines are perfectly aligned
 3. Save the final PDF
 
