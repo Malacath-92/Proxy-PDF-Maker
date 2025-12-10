@@ -76,8 +76,6 @@ While we are here we can also disable the outer-most cutting line. Right-click t
 > [!NOTE]
 > You currently have to restart the app for this step, but that will be fixed in the future
 
-First go to the `Global Config` and choose `PoDoFo` for the `Rendering Backend` option.
-
 Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>8</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
 
 <p align="center">
@@ -137,7 +135,7 @@ Follow the Silhouette Studio instructions up to rendering the document. Make sur
 _This section is a summarization fo the 'Generating the full PDF in the App' section._
 1. Save/Move the file to `res\base_pdfs` within the Proxy-PDF-Maker folder
 2. Restart Proxy-PDF-Maker
-3. Reopen and set Rendering Backend to PoDoFo
+3. Reopen and set Rendering Backend to PoDoFo (if using a version older than v1.0.0)
 4. Set Paper Size to Base Pdf and set Base Pdf to your proper file
 5. Set the margins to what you set them to previously
 
