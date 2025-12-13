@@ -1460,7 +1460,7 @@ void Project::EnsureOutputFolder() const
     };
 
     {
-        const auto output_dir{ GetOutputFolder()};
+        const auto output_dir{ GetOutputFolder() };
         if (!fs::exists(output_dir))
         {
             c_CreateDirectories(output_dir);

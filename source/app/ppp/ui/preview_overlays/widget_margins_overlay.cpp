@@ -27,7 +27,8 @@ void MarginsOverlay::resizeEvent(QResizeEvent* event)
     const auto pixel_ratio{ size.x / m_Project.ComputePageSize().x };
 
     const auto margins{
-        [&]() {
+        [&]()
+        {
             auto margins{ m_Project.ComputeMargins() * pixel_ratio };
             if (m_IsBackside)
             {

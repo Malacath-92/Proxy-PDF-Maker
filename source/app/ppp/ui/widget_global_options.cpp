@@ -134,7 +134,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
 
     m_ColorCube = new ComboBoxWithLabel{
-        "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube };
+        "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube
+    };
 
     auto* preview_width_spin_box{ MakeDoubleSpinBox() };
     preview_width_spin_box->setDecimals(0);
@@ -178,7 +179,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
 
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     m_Style = new ComboBoxWithLabel{
-        "&Theme", GetStyles(), application.GetTheme() };
+        "&Theme", GetStyles(), application.GetTheme()
+    };
 
     auto* plugins{ new QPushButton{ "Plugins" } };
 
