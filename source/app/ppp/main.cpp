@@ -221,6 +221,7 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
+        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, &project, &Project::CardOrderChanged);
@@ -238,6 +239,7 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &card_provider, &CardProvider::MaxDPIChanged);
@@ -288,6 +290,7 @@ int main(int argc, char** argv)
         QObject::connect(guides_options, &GuidesOptionsWidget::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
 
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(card_options, &CardOptionsWidget::CornersChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
@@ -306,6 +309,7 @@ int main(int argc, char** argv)
     {
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_options, &PrintOptionsWidget::SpacingChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
@@ -315,6 +319,7 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, guides_options, &GuidesOptionsWidget::BacksideEnabledChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, guides_options, &GuidesOptionsWidget::BaseUnitChanged);
     }

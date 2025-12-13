@@ -93,6 +93,14 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     m_BleedEdgeSpin->setSingleStep(0.1);
     EnableOptionWidgetForDefaults(m_BleedEdgeSpin, "bleed_edge_cm");
 
+    auto* envelope{ new LengthSpinBoxWithLabel{ "En&velope" } };
+    m_EnvelopeSpin = envelope->GetWidget();
+    m_EnvelopeSpin->ConnectUnitSignals(this);
+    m_EnvelopeSpin->setDecimals(2);
+    m_EnvelopeSpin->setSingleStep(0.1);
+    m_EnvelopeSpin->setToolTip("Similar to bleed edge, but doesn't increase space between cards.");
+    EnableOptionWidgetForDefaults(m_EnvelopeSpin, "envelope_bleed_edge_cm");
+
     auto* spacing_spin_boxes{ new LinkedSpinBoxes{ project.m_Data.m_SpacingLinked } };
 
     m_HorizontalSpacingSpin = spacing_spin_boxes->First();
@@ -174,6 +182,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(bleed_edge);
+    layout->addWidget(envelope);
     layout->addWidget(spacing);
     layout->addWidget(corners);
     layout->addWidget(m_BacksideCheckbox);
@@ -199,7 +208,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             project.m_Data.m_BleedEdge = v;
             BleedChanged();
 
-            const bool has_no_bleed_edge{ project.m_Data.m_BleedEdge == 0_mm };
+            const auto total_bleed{ project.m_Data.m_BleedEdge +
+                                    project.m_Data.m_EnvelopeBleedEdge };
+            const bool has_no_bleed_edge{ total_bleed == 0_mm };
             if (corners->isEnabled() != has_no_bleed_edge)
             {
                 corners->setEnabled(has_no_bleed_edge);
@@ -208,6 +219,37 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                     CornersChanged();
                 }
             }
+
+            const auto full_bleed{ m_Project.CardFullBleed() };
+            m_EnvelopeSpin->SetRange(0_mm, full_bleed - v);
+        }
+    };
+
+    auto change_envelope{
+        [this, &project, corners](Length v)
+        {
+            if (dla::math::abs(project.m_Data.m_EnvelopeBleedEdge - v) < 0.001_mm)
+            {
+                return;
+            }
+
+            project.m_Data.m_EnvelopeBleedEdge = v;
+            EnvelopeBleedChanged();
+
+            const auto total_bleed{ project.m_Data.m_BleedEdge +
+                                    project.m_Data.m_EnvelopeBleedEdge };
+            const bool has_no_bleed_edge{ total_bleed == 0_mm };
+            if (corners->isEnabled() != has_no_bleed_edge)
+            {
+                corners->setEnabled(has_no_bleed_edge);
+                if (project.m_Data.m_Corners == CardCorners::Rounded)
+                {
+                    CornersChanged();
+                }
+            }
+
+            const auto full_bleed{ m_Project.CardFullBleed() };
+            m_BleedEdgeSpin->SetRange(0_mm, full_bleed - v);
         }
     };
 
@@ -361,6 +403,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &LengthSpinBox::ValueChanged,
                      this,
                      change_bleed_edge);
+    QObject::connect(m_EnvelopeSpin,
+                     &LengthSpinBox::ValueChanged,
+                     this,
+                     change_envelope);
     QObject::connect(spacing_spin_boxes,
                      &LinkedSpinBoxes::Linked,
                      this,
@@ -460,8 +506,11 @@ void CardOptionsWidget::SetDefaults()
 {
     const auto full_bleed{ m_Project.CardFullBleed() };
 
-    m_BleedEdgeSpin->SetRange(0_mm, full_bleed);
+    m_BleedEdgeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_EnvelopeBleedEdge);
     m_BleedEdgeSpin->SetValue(m_Project.m_Data.m_BleedEdge);
+
+    m_EnvelopeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_BleedEdge);
+    m_EnvelopeSpin->SetValue(m_Project.m_Data.m_EnvelopeBleedEdge);
 
     m_HorizontalSpacingSpin->SetRange(0_mm, 1_cm);
     m_HorizontalSpacingSpin->SetValue(m_Project.m_Data.m_Spacing.x);

@@ -330,7 +330,7 @@ void GuidesOptionsWidget::CardSizeChanged()
 
 void GuidesOptionsWidget::BleedChanged()
 {
-    m_GuidesOffsetSpin->SetRange(0_mm, m_Project.m_Data.m_BleedEdge);
+    m_GuidesOffsetSpin->SetRange(0_mm, m_Project.m_Data.m_BleedEdge + m_Project.m_Data.m_EnvelopeBleedEdge);
 }
 
 void GuidesOptionsWidget::BacksideEnabledChanged()

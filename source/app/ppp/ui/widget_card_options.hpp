@@ -21,6 +21,7 @@ class CardOptionsWidget : public QWidget
 
   signals:
     void BleedChanged();
+    void EnvelopeBleedChanged();
     void SpacingChanged();
     void CornersChanged();
     void BacksideEnabledChanged();
@@ -48,6 +49,7 @@ class CardOptionsWidget : public QWidget
     Project& m_Project;
 
     LengthSpinBox* m_BleedEdgeSpin{ nullptr };
+    LengthSpinBox* m_EnvelopeSpin{ nullptr };
     LengthSpinBox* m_HorizontalSpacingSpin{ nullptr };
     LengthSpinBox* m_VerticalSpacingSpin{ nullptr };
     QComboBox* m_Corners{ nullptr };
