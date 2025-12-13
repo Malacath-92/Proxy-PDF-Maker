@@ -135,7 +135,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
 
     m_ColorCube = new ComboBoxWithLabel{
         "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube };
-    m_ColorCube->GetWidget()->setToolTip("Requires rerunning cropper");
 
     auto* preview_width_spin_box{ MakeDoubleSpinBox() };
     preview_width_spin_box->setDecimals(0);
@@ -152,7 +151,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     max_dpi_spin_box->setSingleStep(100);
     max_dpi_spin_box->setValue(g_Cfg.m_MaxDPI / 1_dpi);
     auto* max_dpi{ new WidgetWithLabel{ "&Max DPI", max_dpi_spin_box } };
-    max_dpi->setToolTip("Requires rerunning cropper");
 
     auto* card_order{ new ComboBoxWithLabel{
         "&Card Sorting",
