@@ -13,6 +13,29 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/ui/popups.hpp>
 
+std::array g_ValidDropExtensions{
+    []()
+    {
+        const std::array non_image_drop_extensions{
+            ".pdf"_p,
+            ".CUBE"_p,
+            ".qss"_p,
+        };
+
+        constexpr auto total_drop_extensions{
+            g_ValidImageExtensions.size() + non_image_drop_extensions.size()
+        };
+        std::array<fs::path, total_drop_extensions> valid_drop_extensions{};
+        std::copy(g_ValidImageExtensions.begin(),
+                  g_ValidImageExtensions.end(),
+                  valid_drop_extensions.begin());
+        std::copy(non_image_drop_extensions.begin(),
+                  non_image_drop_extensions.end(),
+                  valid_drop_extensions.begin() + g_ValidImageExtensions.size());
+        return valid_drop_extensions;
+    }()
+};
+
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
 {
     setWindowTitle("Proxy-PDF-Maker");
@@ -110,7 +133,7 @@ void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
         {
             static constexpr std::string_view c_FileUriStart{ "file:///" };
             if (uri.startsWith(c_FileUriStart.data()) &&
-                std::ranges::contains(g_ValidImageExtensions,
+                std::ranges::contains(g_ValidDropExtensions,
                                       fs::path{ uri.toStdString() }.extension()))
             {
                 // We have at least one valid image file in this
@@ -129,11 +152,26 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
     for (const auto& uri : uri_list)
     {
         static constexpr std::string_view c_FileUriStart{ "file:///" };
-        if (uri.startsWith(c_FileUriStart.data()) &&
-            std::ranges::contains(g_ValidImageExtensions,
-                                  fs::path{ uri.toStdString() }.extension()))
+        if (uri.startsWith(c_FileUriStart.data()))
         {
-            ImageDropped(uri.sliced(c_FileUriStart.size()).toStdString());
+            const fs::path path{ uri.sliced(c_FileUriStart.size()).toStdString() };
+            const auto ext{ path.extension() };
+            if (ext == ".pdf")
+            {
+                PdfDropped(path);
+            }
+            else if (ext == ".CUBE")
+            {
+                ColorCubeDropped(path);
+            }
+            else if (ext == ".qss")
+            {
+                StyleDropped(path);
+            }
+            else if (std::ranges::contains(g_ValidImageExtensions, ext))
+            {
+                ImageDropped(path);
+            }
         }
     }
 

@@ -133,9 +133,9 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Quality", jpg_quality_spin_box } };
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
 
-    auto* color_cube{ new ComboBoxWithLabel{
-        "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube } };
-    color_cube->GetWidget()->setToolTip("Requires rerunning cropper");
+    m_ColorCube = new ComboBoxWithLabel{
+        "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube };
+    m_ColorCube->GetWidget()->setToolTip("Requires rerunning cropper");
 
     auto* preview_width_spin_box{ MakeDoubleSpinBox() };
     preview_width_spin_box->setDecimals(0);
@@ -179,8 +179,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     max_worker_threads->setToolTip("Higher numbers speed up cropping and pdf generation, but cost more system resources");
 
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
-    auto* themes{ new ComboBoxWithLabel{
-        "&Theme", GetStyles(), application.GetTheme() } };
+    m_Style = new ComboBoxWithLabel{
+        "&Theme", GetStyles(), application.GetTheme() };
 
     auto* plugins{ new QPushButton{ "Plugins" } };
 
@@ -191,13 +191,13 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(backend);
     layout->addWidget(image_format);
     layout->addWidget(jpg_quality);
-    layout->addWidget(color_cube);
+    layout->addWidget(m_ColorCube);
     layout->addWidget(preview_width);
     layout->addWidget(max_dpi);
     layout->addWidget(card_order);
     layout->addWidget(card_order_direction);
     layout->addWidget(max_worker_threads);
-    layout->addWidget(themes);
+    layout->addWidget(m_Style);
     layout->addWidget(plugins);
     setLayout(layout);
 
@@ -378,7 +378,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_jpg_quality);
-    QObject::connect(color_cube->GetWidget(),
+    QObject::connect(m_ColorCube->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
                      change_color_cube);
@@ -402,7 +402,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_max_worker_threads);
-    QObject::connect(themes->GetWidget(),
+    QObject::connect(m_Style->GetWidget(),
                      &QComboBox::currentTextChanged,
                      this,
                      change_theme);
@@ -420,6 +420,58 @@ void GlobalOptionsWidget::PageSizesChanged()
 void GlobalOptionsWidget::CardSizesChanged()
 {
     SaveConfig(g_Cfg);
+}
+
+void GlobalOptionsWidget::ColorCubeAdded()
+{
+    auto* color_cube_combo_box = m_ColorCube->GetWidget();
+    const auto has_color_cube{
+        [=](const auto& color_cube_name)
+        {
+            for (int i = 0; i < color_cube_combo_box->count(); i++)
+            {
+                if (color_cube_combo_box->itemText(i).toStdString() == color_cube_name)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    for (const auto& color_cube_name : GetCubeNames())
+    {
+        if (!has_color_cube(color_cube_name))
+        {
+            color_cube_combo_box->addItem(ToQString(color_cube_name));
+        }
+    }
+}
+
+void GlobalOptionsWidget::StyleAdded()
+{
+    auto* style_combo_box = m_Style->GetWidget();
+    const auto has_style{
+        [=](const auto& style_name)
+        {
+            for (int i = 0; i < style_combo_box->count(); i++)
+            {
+                if (style_combo_box->itemText(i).toStdString() == style_name)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    for (const auto& style_name : GetStyles())
+    {
+        if (!has_style(style_name))
+        {
+            style_combo_box->addItem(ToQString(style_name));
+        }
+    }
 }
 
 #include <widget_global_options.moc>

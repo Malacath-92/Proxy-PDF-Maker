@@ -746,6 +746,32 @@ void PrintOptionsWidget::RenderBackendChanged()
     }
 }
 
+void PrintOptionsWidget::BasePdfAdded()
+{
+    auto* base_pdf_combo_box = m_BasePdf->GetWidget();
+    const auto has_base_pdf{
+        [=](const auto& base_pdf_name)
+        {
+            for (int i = 0; i < base_pdf_combo_box->count(); i++)
+            {
+                if (base_pdf_combo_box->itemText(i).toStdString() == base_pdf_name)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    };
+
+    for (const auto& base_pdf_name : GetBasePdfNames())
+    {
+        if (!has_base_pdf(base_pdf_name))
+        {
+            base_pdf_combo_box->addItem(ToQString(base_pdf_name));
+        }
+    }
+}
+
 void PrintOptionsWidget::ExternalCardSizeChanged()
 {
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));

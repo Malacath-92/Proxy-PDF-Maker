@@ -45,6 +45,8 @@ class PrintOptionsWidget : public QWidget
     void AdvancedModeChanged();
     void RenderBackendChanged();
 
+    void BasePdfAdded();
+
     void ExternalCardSizeChanged();
 
   private:

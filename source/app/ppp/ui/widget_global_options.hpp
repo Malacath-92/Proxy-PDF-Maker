@@ -4,6 +4,8 @@
 
 class Project;
 
+class ComboBoxWithLabel;
+
 class GlobalOptionsWidget : public QWidget
 {
     Q_OBJECT
@@ -32,4 +34,11 @@ class GlobalOptionsWidget : public QWidget
   public slots:
     void PageSizesChanged();
     void CardSizesChanged();
+
+    void ColorCubeAdded();
+    void StyleAdded();
+
+  private:
+    ComboBoxWithLabel* m_ColorCube{ nullptr };
+    ComboBoxWithLabel* m_Style{ nullptr };
 };
