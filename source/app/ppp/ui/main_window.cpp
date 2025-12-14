@@ -11,6 +11,8 @@
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/qt_util.hpp>
+
+#include <ppp/app.hpp>
 #include <ppp/ui/popups.hpp>
 
 std::array g_ValidDropExtensions{
@@ -38,7 +40,7 @@ std::array g_ValidDropExtensions{
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
 {
-    setWindowTitle("Proxy-PDF-Maker");
+    ProjectPathChanged();
 
     auto* window_layout{ new QHBoxLayout };
     window_layout->addWidget(tabs);
@@ -176,4 +178,11 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
     }
 
     QMainWindow::dropEvent(event);
+}
+
+void PrintProxyPrepMainWindow::ProjectPathChanged()
+{
+    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    setWindowTitle(QString{ "Proxy-PDF-Maker - %1" }
+                       .arg(ToQString(app->GetProjectPath().filename())));
 }
