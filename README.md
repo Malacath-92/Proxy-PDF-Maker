@@ -102,6 +102,9 @@ If you right-click a card in either the Card Grid or the Print Preview you will 
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that all options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
 
 > [!NOTE]
+> Most options can be right-clicked to set their current value as the default or reset their current value to defaults. These defaults are used when creating a new project or when running the CLI without an input project.
+
+> [!NOTE]
 > Some options are hidden by default and are only visible when enabling `Advanced Mode`, all such options are marked.
 
 ### Print Options
@@ -199,6 +202,9 @@ This determines how thick the guides are, it defaults to 1 point, which is equiv
 #### Bleed Edge
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
+#### Bleed Edge
+This is essentially the same as `Bleed Edge`, except that it is added around all the cards as opposed to individual cards.
+
 #### Card Spacing
 With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste. Use the 🔗 symbol to specify different horizontal and vertical spacing, be sure to verify in the print preview what you are doing.
 
@@ -238,9 +244,6 @@ Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.
 
 #### Preview Width
 Determines the resolution of previews in the card grid and the page preview. Smaller numbers result in faster cropping but worse previews.
-
-#### Default Page Size
-Dropdown to choose the default page size when creating a new project.
 
 #### Theme
 Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
