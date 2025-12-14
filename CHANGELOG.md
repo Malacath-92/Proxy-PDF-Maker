@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2025-14-12
+
+### Added
+- Most project options can now be right-clicked to set their current value as default or reset them to default.
+- A new button is available that resets all project settings to default.
+- The CLI has the option `--ignore-user-defaults` if the user wants to initialize empty projects to original default values.
+- The `Envelope` settings was added next to the `Bleed Edge` setting. It adds a bleed around all the cards rather than each individual card.
+- When dropping `.pdf` files onto the app, they are automatically copied to the `res/base_pdfs` folder and made available as base pdfs without restarting the app.
+- When dropping `.CUBE` files onto the app, they are automatically copied to the `res/cubes` folder and made available as color cubes without restarting the app.
+- When dropping `.qss` files onto the app, they are automatically copied to the `res/styles` folder and made available as styles without restarting the app.
+
+### Changed
+- Empty projects in the CLI tool are now initialized respecting defaults.
+- Documents are now rendered with document name and page number on top of each page, if there is enough space for it.
+- The default preview width was increased to 512 pixels.
+- The currently loaded project is now shown in the window title.
+
+### Removed
+- The default page size option was removed in favour of general default settings.
+- Some tooltips that were no longer useful or accurate were removed.
+
 ## [1.0.4] - 2025-26-11
 
 ### Changed
