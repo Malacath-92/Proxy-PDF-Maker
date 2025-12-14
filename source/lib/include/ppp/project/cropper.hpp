@@ -80,6 +80,7 @@ class Cropper : public QObject
     uint32_t m_TotalCropWorkToDo{ 0 };
     uint32_t m_TotalCropWorkDone{ 0 };
     uint32_t m_TotalCropWorkSkipped{ 0 };
+    uint32_t m_TotalCropWorkCancelled{ 0 };
 
     std::atomic_uint32_t m_AliveCropperWork{};
     std::atomic_uint32_t m_RunningCropperWork{};

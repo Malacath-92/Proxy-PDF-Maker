@@ -37,12 +37,13 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
                                  crop_work_seconds);
 
                          CropWorkDone(crop_work_seconds,
-                                      m_TotalCropWorkDone - m_TotalCropWorkSkipped,
+                                      m_TotalCropWorkDone - m_TotalCropWorkSkipped - m_TotalCropWorkCancelled,
                                       m_TotalCropWorkSkipped);
 
                          m_TotalCropWorkToDo = 0;
                          m_TotalCropWorkDone = 0;
                          m_TotalCropWorkSkipped = 0;
+                         m_TotalCropWorkCancelled = 0;
                      });
 }
 Cropper::~Cropper()
@@ -105,6 +106,18 @@ void Cropper::CropDirChanged()
 
 void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_preview)
 {
+    if (needs_crop)
+    {
+        if (m_CropWork.contains(card_name))
+        {
+            // If a card is added but there is already work for it that implies
+            // that the work must be outdated, thus we cancel it to make sure that
+            // we can push new work that is up to date
+            m_CropWork.at(card_name)->Cancel();
+            m_CropWork.erase(card_name);
+        }
+    }
+
     PushWork(card_name, needs_crop, needs_preview);
 }
 
@@ -239,6 +252,10 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                                  {
                                      m_TotalCropWorkSkipped++;
                                  }
+                                 else if (conclusion == CropperWork::Conclusion::Cancelled)
+                                 {
+                                     m_TotalCropWorkCancelled++;
+                                 }
 
                                  if (m_TotalCropWorkDone == m_TotalCropWorkToDo)
                                  {
@@ -246,8 +263,14 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                                  }
                                  else
                                  {
+                                     const auto visible_work_done{
+                                         m_TotalCropWorkDone - m_TotalCropWorkCancelled
+                                     };
+                                     const auto visible_work_to_do{
+                                         m_TotalCropWorkToDo - m_TotalCropWorkCancelled
+                                     };
                                      const float progress{
-                                         float(m_TotalCropWorkDone) / m_TotalCropWorkToDo,
+                                         float(visible_work_done) / visible_work_to_do,
                                      };
                                      CropProgress(progress);
                                  }
