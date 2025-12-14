@@ -353,11 +353,11 @@ int main(int argc, char** argv)
     {
         // Move user resources into the right folders
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [](const auto& path)
-                         { fs::copy_file(path, "res/base_pdfs"); });
+                         { fs::copy(path, "res/base_pdfs"); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, &project, [](const auto& path)
-                         { fs::copy_file(path, "res/cubes"); });
+                         { fs::copy(path, "res/cubes"); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, &project, [](const auto& path)
-                         { fs::copy_file(path, "res/styles"); });
+                         { fs::copy(path, "res/styles"); });
 
         // Refresh corresponding widgets
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, print_options, &PrintOptionsWidget::BasePdfAdded);
