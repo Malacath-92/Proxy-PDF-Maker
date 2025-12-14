@@ -65,11 +65,11 @@ Image CropImage(const Image& image,
         {
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(dla::math::max(0_pix, c - bleed_pixels));
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (keeping {:.1f}mm of bleed)",
                     card_name.string(),
                     dpi.value,
                     c,
-                    bleed_edge);
+                    bleed_edge / 1_mm);
         }
         else
         {
