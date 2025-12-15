@@ -27,6 +27,15 @@ inline const std::array g_ValidImageExtensions{
     ".webp"_p
 };
 
+inline const std::array g_LossyImageExtensions{
+    ".jpg"_p,
+    ".jpeg"_p,
+
+    // This is not exactly accurate, but most likely with the types images
+    // we are dealing with most likely they are compressed lossily
+    ".webp"_p
+};
+
 std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 

@@ -27,10 +27,11 @@ enum class PdfBackend
     Png,
 };
 
-enum class ImageFormat
+enum class ImageCompression
 {
-    Png,
-    Jpg
+    Lossless,
+    Lossy,
+    AsIs,
 };
 
 enum class PageOrientation
@@ -57,7 +58,7 @@ struct Config
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
     PdfBackend m_Backend{ PdfBackend::PoDoFo };
-    ImageFormat m_PdfImageFormat{ ImageFormat::Jpg };
+    ImageCompression m_PdfImageCompression{ ImageCompression::Lossy };
     std::optional<int> m_PngCompression{ std::nullopt };
     std::optional<int> m_JpgQuality{ std::nullopt };
     Unit m_BaseUnit{ Unit::Inches };

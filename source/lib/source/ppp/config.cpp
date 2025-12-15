@@ -252,14 +252,25 @@ Config LoadConfig()
             }
 
             {
-                auto pdf_image_format{ settings.value("PDF.Backend.Image.Format", "Png").toString() };
-                if (pdf_image_format == "Jpg")
+                auto pdf_image_format{ settings.value("PDF.Backend.Image.Format") };
+                if (pdf_image_format.isValid())
                 {
-                    config.m_PdfImageFormat = ImageFormat::Jpg;
+                    if (pdf_image_format.toString() == "Jpg")
+                    {
+                        config.m_PdfImageCompression = ImageCompression::Lossy;
+                    }
+                    else
+                    {
+                        config.m_PdfImageCompression = ImageCompression::Lossless;
+                    }
                 }
                 else
                 {
-                    config.m_PdfImageFormat = ImageFormat::Png;
+                    auto pdf_image_compression{ settings.value("PDF.Backend.Image.Compression", "Lossy")
+                                                    .toString()
+                                                    .toStdString() };
+                    config.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(pdf_image_compression)
+                                                       .value_or(ImageCompression::Lossy);
                 }
             }
 
@@ -439,21 +450,8 @@ void SaveConfig(Config config)
 
             const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
-
-            const char* pdf_image_format{
-                [](ImageFormat image_format)
-                {
-                    switch (image_format)
-                    {
-                    case ImageFormat::Jpg:
-                        return "Jpg";
-                    case ImageFormat::Png:
-                    default:
-                        return "Png";
-                    }
-                }(config.m_PdfImageFormat),
-            };
-            settings.setValue("PDF.Backend.Image.Format", ToQString(pdf_image_format));
+            settings.setValue("PDF.Backend.Image.Compression",
+                              ToQString(magic_enum::enum_name(config.m_PdfImageCompression)));
 
             if (config.m_PngCompression.has_value())
             {

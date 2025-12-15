@@ -9,6 +9,7 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
 inline double ToPoDoFoPoints(Length l)
@@ -247,7 +248,12 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
             : 0_mm,
     };
 
-    const auto use_png{ g_Cfg.m_PdfImageFormat == ImageFormat::Png };
+    const auto use_jpg{
+        g_Cfg.m_PdfImageCompression == ImageCompression::Lossless ||
+        (g_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
+         std::ranges::contains(g_LossyImageExtensions, image_path.extension()))
+    };
+    const auto use_png{ !use_jpg };
     // clang-format off
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_png         ? [](const Image& image)

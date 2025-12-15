@@ -122,8 +122,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     backend->setChecked(g_Cfg.m_Backend == PdfBackend::Png);
 
     auto* image_format{ new ComboBoxWithLabel{
-        "Image &Format", magic_enum::enum_names<ImageFormat>(), magic_enum::enum_name(g_Cfg.m_PdfImageFormat) } };
-    image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Jpg to reduce output size.");
+        "Image Compress&ion", magic_enum::enum_names<ImageCompression>(), magic_enum::enum_name(g_Cfg.m_PdfImageCompression) } };
+    image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Lossy to reduce output size.");
 
     auto* jpg_quality_spin_box{ MakeDoubleSpinBox() };
     jpg_quality_spin_box->setDecimals(0);
@@ -202,7 +202,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     setLayout(layout);
 
     image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
-    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
 
     auto change_advanced_mode{
         [this](Qt::CheckState s)
@@ -243,19 +243,19 @@ GlobalOptionsWidget::GlobalOptionsWidget()
             RenderBackendChanged();
 
             image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
-            jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+            jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
         }
     };
 
     auto change_image_format{
         [this, jpg_quality](const QString& t)
         {
-            g_Cfg.m_PdfImageFormat = magic_enum::enum_cast<ImageFormat>(t.toStdString())
-                                         .value_or(ImageFormat::Jpg);
+            g_Cfg.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(t.toStdString())
+                                              .value_or(ImageCompression::Lossy);
             SaveConfig(g_Cfg);
-            ImageFormatChanged();
+            ImageCompressionChanged();
 
-            jpg_quality->setVisible(g_Cfg.m_PdfImageFormat == ImageFormat::Jpg);
+            jpg_quality->setVisible(g_Cfg.m_PdfImageCompression != ImageCompression::Lossless);
         }
     };
 
