@@ -496,5 +496,6 @@ PoDoFo::PdfFont& PoDoFoDocument::GetFont()
 
 std::unique_ptr<PoDoFo::PdfImage> PoDoFoDocument::MakeImage()
 {
+    auto lock{ AquireDocumentLock() };
     return m_Document.CreateImage();
 }
