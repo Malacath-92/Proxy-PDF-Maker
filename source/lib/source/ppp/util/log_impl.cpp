@@ -274,7 +274,11 @@ void Log::LogImpl::CreateLogFile()
     namespace fs = std::filesystem;
 
     char file_name_buffer[256]{};
-    fmt::format_to_n(file_name_buffer, 255, "logs/{:%Y-%m-%d_%H-%M-%S}.log", fmt::localtime(std::time(nullptr)));
+
+    {
+        auto now = std::chrono::system_clock::now();
+        fmt::format_to_n(file_name_buffer, 255, "logs/{:%Y-%m-%d_%H-%M-%S}.log", now);
+    }
 
     fs::path logs_directory{ fs::absolute("logs") };
     if (!fs::exists(logs_directory) || !fs::is_directory(logs_directory))

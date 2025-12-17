@@ -22,7 +22,7 @@ class ProxyPDF(ConanFile):
         self.requires("podofo/0.9.7")
 
         # String Formatting
-        self.requires("fmt/9.1.0")
+        self.requires("fmt/12.1.0")
 
         # Enum Reflection
         self.requires("magic_enum/0.9.7")
