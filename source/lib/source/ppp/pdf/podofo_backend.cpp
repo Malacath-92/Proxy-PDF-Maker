@@ -16,11 +16,6 @@ inline double ToPoDoFoPoints(Length l)
     return static_cast<double>(l / 1_pts);
 }
 
-auto operator""_pdfs(const char* str, size_t len)
-{
-    return PoDoFo::PdfString{ std::string_view{ str, len } };
-}
-
 auto PoDoFoDocument::AquireDocumentLock()
 {
     return std::lock_guard{ m_Mutex };
@@ -342,12 +337,14 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
                 auto* owner{ page.GetObject().GetDocument() };
                 auto& objects{ owner->GetObjects() };
 
-                auto& save_graphics_state{ objects.CreateObject("q"_pdfs) };
-                auto& restore_graphics_state{ objects.CreateObject("Q"_pdfs) };
+                auto& save_graphics_state{ objects.CreateDictionaryObject() };
+                save_graphics_state.GetOrCreateStream().SetData("q");
+                auto& restore_graphics_state{ objects.CreateDictionaryObject() };
+                restore_graphics_state.GetOrCreateStream().SetData("Q");
 
                 auto& array{ contents.GetArray() };
-                array.insert(array.begin(), save_graphics_state.GetReference());
-                array.insert(array.end(), restore_graphics_state.GetReference());
+                array.insert(array.begin(), save_graphics_state.GetIndirectReference());
+                array.insert(array.end(), restore_graphics_state.GetIndirectReference());
             }
             else
             {
@@ -413,14 +410,17 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                 auto& owner{ page->GetDocument() };
                 auto& objects{ owner.GetObjects() };
 
-                auto& save_graphics_state{ objects.CreateObject("q"_pdfs) };
-                auto& transform_state{ objects.CreateObject(transform_str) };
-                auto& restore_graphics_state{ objects.CreateObject("Q"_pdfs) };
+                auto& save_graphics_state{ objects.CreateDictionaryObject() };
+                save_graphics_state.GetOrCreateStream().SetData("q");
+                auto& transform_state{ objects.CreateDictionaryObject() };
+                transform_state.GetOrCreateStream().SetData(transform_str.GetString());
+                auto& restore_graphics_state{ objects.CreateDictionaryObject() };
+                restore_graphics_state.GetOrCreateStream().SetData("q");
 
                 auto& array{ contents.GetArray() };
-                array.insert(array.begin(), transform_state.GetReference());
-                array.insert(array.begin(), save_graphics_state.GetReference());
-                array.insert(array.end(), restore_graphics_state.GetReference());
+                array.insert(array.begin(), transform_state.GetIndirectReference());
+                array.insert(array.begin(), save_graphics_state.GetIndirectReference());
+                array.insert(array.end(), restore_graphics_state.GetIndirectReference());
             }
             else
             {
