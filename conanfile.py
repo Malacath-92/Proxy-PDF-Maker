@@ -16,7 +16,7 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.11.0")
 
         # JSON Write/Read
-        self.requires("nlohmann_json/3.11.3")
+        self.requires("nlohmann_json/3.12.0")
 
         # PDF Write/Read
         self.requires("podofo/0.9.7")
