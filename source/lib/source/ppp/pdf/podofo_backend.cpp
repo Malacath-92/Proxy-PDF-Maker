@@ -249,7 +249,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     };
 
     const auto use_jpg{
-        g_Cfg.m_PdfImageCompression == ImageCompression::Lossless ||
+        g_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
         (g_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
          std::ranges::contains(g_LossyImageExtensions, image_path.extension()))
     };
