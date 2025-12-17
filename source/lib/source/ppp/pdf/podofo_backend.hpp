@@ -3,8 +3,9 @@
 #include <memory>
 #include <mutex>
 
-#include <podofo/doc/PdfImage.h>
-#include <podofo/doc/PdfMemDocument.h>
+#include <podofo/main/PdfImage.h>
+#include <podofo/main/PdfMemDocument.h>
+#include <podofo/main/PdfPainter.h>
 
 #include <ppp/pdf/backend.hpp>
 
@@ -26,10 +27,16 @@ class PoDoFoPage final : public PdfPage
 
     virtual void DrawText(TextData data) override;
 
-    virtual void Finish() override{};
+    virtual void Finish() override;
 
   private:
+    PoDoFoPage(PoDoFo::PdfPage* page,
+               PoDoFo::PdfPainter* painter,
+               PoDoFoDocument* document,
+               PoDoFoImageCache* image_cache);
+
     PoDoFo::PdfPage* m_Page{ nullptr };
+    PoDoFo::PdfPainter* m_Painter{ nullptr };
     PoDoFoDocument* m_Document{ nullptr };
     PoDoFoImageCache* m_ImageCache;
 };
@@ -67,8 +74,10 @@ class PoDoFoDocument final : public PdfDocument
 
     virtual fs::path Write(fs::path path) override;
 
-    PoDoFo::PdfFont* GetFont();
+    PoDoFo::PdfFont& GetFont();
     std::unique_ptr<PoDoFo::PdfImage> MakeImage();
+
+    auto AquireDocumentLock();
 
   private:
     mutable std::mutex m_Mutex;
@@ -79,8 +88,7 @@ class PoDoFoDocument final : public PdfDocument
 
     PoDoFo::PdfMemDocument m_Document;
     std::vector<PoDoFoPage> m_Pages;
+    std::vector<std::unique_ptr<PoDoFo::PdfPainter>> m_Painters;
 
     std::unique_ptr<PoDoFoImageCache> m_ImageCache;
-
-    PoDoFo::PdfFont* m_Font{ nullptr };
 };
