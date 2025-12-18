@@ -16,13 +16,13 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.11.0")
 
         # JSON Write/Read
-        self.requires("nlohmann_json/3.11.3")
+        self.requires("nlohmann_json/3.12.0")
 
         # PDF Write/Read
-        self.requires("podofo/0.9.7")
+        self.requires("podofo/1.0.3")
 
         # String Formatting
-        self.requires("fmt/9.1.0")
+        self.requires("fmt/12.1.0")
 
         # Enum Reflection
         self.requires("magic_enum/0.9.7")

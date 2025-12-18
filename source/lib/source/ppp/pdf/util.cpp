@@ -15,14 +15,15 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
     if (fs::exists(full_path))
     {
         PoDoFo::PdfMemDocument document;
-        document.Load(full_path.c_str());
+        document.Load(full_path.string());
 
-        if (document.GetPageCount() > 0)
+        const auto& pages{ document.GetPages() };
+        if (pages.GetCount() > 0)
         {
-            const PoDoFo::PdfPage* page{ document.GetPage(0) };
-            const PoDoFo::PdfRect rect{ page->GetPageSize() };
-            const Length width{ static_cast<float>(rect.GetWidth()) * 1_pts };
-            const Length height{ static_cast<float>(rect.GetHeight()) * 1_pts };
+            const PoDoFo::PdfPage& page{ pages.GetPageAt(0) };
+            const PoDoFo::Rect rect{ page.GetRect() };
+            const Length width{ static_cast<float>(rect.Width) * 1_pts };
+            const Length height{ static_cast<float>(rect.Height) * 1_pts };
             return Size{ width, height };
         }
     }
