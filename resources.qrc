@@ -15,7 +15,6 @@
         <file>res/untap.png</file>
         <file>res/styles/Combinear.qss</file>
         <file>res/styles/Darkeum.qss</file>
-        <file>res/styles/Wstartpage.qss</file>
         <file>res/styles/Material Dark.qss</file>
         <file compress="1" compress-algo="zstd">res/spinner.svg</file>
         <file compress="1" compress-algo="zstd">res/cubes/Foils Vibrance.CUBE</file>
