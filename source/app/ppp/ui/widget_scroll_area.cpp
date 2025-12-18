@@ -565,7 +565,7 @@ CardScrollArea::CardScrollArea(Project& project)
         m_Header->setLayout(global_number_layout);
 
         auto dec_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_Grid->GetCards())
                 {
@@ -575,7 +575,7 @@ CardScrollArea::CardScrollArea(Project& project)
         };
 
         auto inc_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_Grid->GetCards())
                 {
@@ -585,7 +585,7 @@ CardScrollArea::CardScrollArea(Project& project)
         };
 
         auto reset_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_Grid->GetCards())
                 {
@@ -595,7 +595,7 @@ CardScrollArea::CardScrollArea(Project& project)
         };
 
         auto remove_all_external{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [card_name, _] : m_Grid->GetCards())
                 {
