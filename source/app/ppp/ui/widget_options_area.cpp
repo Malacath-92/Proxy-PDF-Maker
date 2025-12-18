@@ -40,7 +40,7 @@ OptionsAreaWidget::OptionsAreaWidget(Project& project,
     setWidget(widget);
     setWidgetResizable(true);
     setMinimumHeight(400);
-    setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    setSizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
     setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 
