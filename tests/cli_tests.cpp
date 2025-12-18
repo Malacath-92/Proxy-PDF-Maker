@@ -56,7 +56,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
         "\x00\xaf\xe4\xc2\x3f\x2c\x4e\x6d\x00\xbf\xa0\x0c\x1f\x47\xd1\xcc"
     };
     const auto file_hash{ hash_pdf_file("_printme.pdf") };
-    REQUIRE(file_hash == QByteArray{ c_ExpectedHash });
+    REQUIRE(file_hash == QByteArray{ c_ExpectedHash, sizeof(c_ExpectedHash) - 1 });
 
     AtScopeExit delete_folders{
         []()
