@@ -38,8 +38,12 @@ class CardScrollArea : public QScrollArea
 
     Project& m_Project;
 
+    QWidget* m_Header;
+
     class CardGrid;
     CardGrid* m_Grid;
+
+    QWidget* m_OnboardingHint;
 
     // We use a timer whenever we do a full refresh
     // to avoid cases where we get multiple requests
