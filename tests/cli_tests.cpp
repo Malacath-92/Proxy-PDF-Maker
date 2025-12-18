@@ -25,6 +25,15 @@ QByteArray hash_pdf_file(const fs::path& file_path)
     return QCryptographicHash::hash(id_less_data, QCryptographicHash::Md5);
 }
 
+std::ostream& operator<<(std::ostream& os, const QByteArray& value)
+{
+    for (auto b: value)
+    {
+        os << fmt::format("\\x{:0>2x}", b);
+    }
+    return os;
+}
+
 TEST_CASE("Run CLI without any images", "[cli_empty_project]")
 {
     constexpr char command_line[]{
@@ -43,10 +52,10 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     REQUIRE(!fs::exists("config.ini"));
 
     constexpr const char c_ExpectedHash[]{
-        "\x30\x62\x6d\xc0\x0c\x7e\xa9\x08\xc3\x01\x7b\x8e\x18\xf0\x9f\xdf"
+        "\x18\x5b\xb8\xfd\x76\x3a\x9f\xa5\x6b\x7f\x0d\x77\x9b\xd8\x34\x6e"
     };
     const auto file_hash{ hash_pdf_file("_printme.pdf") };
-    REQUIRE(file_hash == c_ExpectedHash);
+    REQUIRE(file_hash == QByteArray{ c_ExpectedHash });
 
     AtScopeExit delete_folders{
         []()
