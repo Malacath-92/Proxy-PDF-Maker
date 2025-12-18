@@ -40,6 +40,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
         PROXY_PDF_CLI_EXE
         " --render"
         " --deterministic"
+        " --ignore-user-defaults"
         " --project"
         " --image_dir no_images"
     };
@@ -52,7 +53,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     REQUIRE(!fs::exists("config.ini"));
 
     constexpr const char c_ExpectedHash[]{
-        "\x18\x5b\xb8\xfd\x76\x3a\x9f\xa5\x6b\x7f\x0d\x77\x9b\xd8\x34\x6e"
+        "\x00\xaf\xe4\xc2\x3f\x2c\x4e\x6d\x00\xbf\xa0\x0c\x1f\x47\xd1\xcc"
     };
     const auto file_hash{ hash_pdf_file("_printme.pdf") };
     REQUIRE(file_hash == QByteArray{ c_ExpectedHash });
