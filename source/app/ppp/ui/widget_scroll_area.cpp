@@ -668,10 +668,6 @@ CardScrollArea::CardScrollArea(Project& project)
                          image_folder_link_activated);
     }
 
-    m_Header->setVisible(m_Grid->HasCards());
-    m_Grid->setVisible(m_Grid->HasCards());
-    m_OnboardingHint->setVisible(!m_Grid->HasCards());
-
     auto* card_area_layout{ new QVBoxLayout };
     card_area_layout->addWidget(m_Header);
     card_area_layout->addWidget(m_Grid);
@@ -681,6 +677,10 @@ CardScrollArea::CardScrollArea(Project& project)
 
     auto* card_area{ new QWidget };
     card_area->setLayout(card_area_layout);
+
+    m_Header->setVisible(m_Grid->HasCards());
+    m_Grid->setVisible(m_Grid->HasCards());
+    m_OnboardingHint->setVisible(!m_Grid->HasCards());
 
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
