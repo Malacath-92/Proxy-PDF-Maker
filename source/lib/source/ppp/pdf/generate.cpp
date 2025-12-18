@@ -24,8 +24,8 @@ PdfResults GeneratePdf(const Project& project)
         {
             const auto end_point{ std::chrono::high_resolution_clock::now() };
             const auto duration{ end_point - start_point };
-            LogInfo("PDF Generation finished in {}...",
-                    std::chrono::duration_cast<std::chrono::seconds>(duration));
+            LogInfo("PDF Generation finished in {}s...",
+                    std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0f);
         }
     };
 
