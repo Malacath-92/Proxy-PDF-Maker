@@ -7,7 +7,9 @@
 #include <fmt/ranges.h>
 
 #include <QCheckBox>
+#include <QDropEvent>
 #include <QLabel>
+#include <QMimeData>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QProgressBar>
@@ -30,6 +32,28 @@
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
 
+class DownloaderTextEdit : public QTextEdit
+{
+    virtual void insertFromMimeData(const QMimeData* source) override
+    {
+        if (source->hasText())
+        {
+            const auto url{ QUrl::fromUserInput(source->text()) };
+            if (url.isValid() && url.isLocalFile() && QFile::exists(url.toLocalFile()))
+            {
+                QFile file{ url.toLocalFile() };
+                if (file.open(QFile::OpenModeFlag::ReadOnly))
+                {
+                    insertPlainText(file.readAll());
+                    return;
+                }
+            }
+        }
+
+        QTextEdit::insertFromMimeData(source);
+    }
+};
+
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
                                        PluginInterface& router)
@@ -40,7 +64,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
-    m_TextInput = new QTextEdit;
+    m_TextInput = new DownloaderTextEdit;
     m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA) or MPC Autofill xml");
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
