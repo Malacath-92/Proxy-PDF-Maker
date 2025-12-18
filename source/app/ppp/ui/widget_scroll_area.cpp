@@ -652,7 +652,7 @@ CardScrollArea::CardScrollArea(Project& project)
         m_OnboardingHint->setLayout(onboarding_layout);
 
         auto image_folder_link_activated{
-            [=, &project](const QString& link)
+            [](const QString& link)
             {
                 const auto url{ QUrl::fromUserInput(link) };
                 if (url.isValid())
