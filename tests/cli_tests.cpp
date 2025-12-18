@@ -27,7 +27,7 @@ QByteArray hash_pdf_file(const fs::path& file_path)
 
 std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 {
-    for (auto b: value)
+    for (auto b : value)
     {
         os << fmt::format("\\x{:0>2x}", b);
     }
