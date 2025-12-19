@@ -67,6 +67,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_TextInput = new DownloaderTextEdit;
     m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA) or MPC Autofill xml");
 
+    m_Settings = new QCheckBox{ "Adjust Settings" };
+    m_Settings->setChecked(true);
+
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
 
@@ -102,6 +105,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
+    layout->addWidget(m_Settings);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
     layout->addWidget(m_Hint);
@@ -118,7 +122,6 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             m_Hint->setVisible(true);
             m_FillCornersCheckbox->setEnabled(true);
 
-            ValidateSettings();
             switch (m_InputType)
             {
             case InputType::Decklist:
@@ -142,8 +145,6 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                      text_changed);
 
     m_OutputDir.setAutoRemove(true);
-
-    ValidateSettings();
 
     m_Router.PauseCropper();
 }
@@ -199,6 +200,8 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
 
 void MtgDownloaderPopup::DoDownload()
 {
+    ValidateSettings();
+
     if (m_InputType == InputType::None)
     {
         SelectInputTypePopup type_selector{ nullptr };
@@ -208,7 +211,6 @@ void MtgDownloaderPopup::DoDownload()
         setEnabled(true);
 
         m_InputType = type_selector.GetInputType();
-        ValidateSettings();
 
         DoDownload();
         return;
@@ -386,6 +388,11 @@ void MtgDownloaderPopup::UninstallLogHook()
 
 void MtgDownloaderPopup::ValidateSettings()
 {
+    if (!m_Settings->isChecked())
+    {
+        return;
+    }
+
     if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
     {
         m_Router.SetCardSizeChoice("Standard");
