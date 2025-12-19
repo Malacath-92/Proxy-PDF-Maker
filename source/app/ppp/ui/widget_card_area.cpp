@@ -576,6 +576,7 @@ void CardScrollArea::showEvent(QShowEvent* event)
 }
 
 CardArea::CardArea(Project& project)
+    : m_Project{ project }
 {
     {
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
@@ -626,24 +627,26 @@ CardArea::CardArea(Project& project)
         auto* global_decrement_button{ new QPushButton{ "-" } };
         auto* global_increment_button{ new QPushButton{ "+" } };
         auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
-        auto* remove_external_button{ new QPushButton{ "Remove All External Cards" } };
+        m_RemoveExternalCards = new QPushButton{ "Remove All External Cards" };
 
         global_decrement_button->setToolTip("Remove one from all");
         global_increment_button->setToolTip("Add one to all");
         global_set_zero_button->setToolTip("Set all to zero");
-        remove_external_button->setToolTip("Removes all cards not part of the images folder");
+        m_RemoveExternalCards->setToolTip("Removes all cards not part of the images folder");
 
         auto* global_number_layout{ new QHBoxLayout };
         global_number_layout->addWidget(global_label);
         global_number_layout->addWidget(global_decrement_button);
         global_number_layout->addWidget(global_increment_button);
         global_number_layout->addWidget(global_set_zero_button);
-        global_number_layout->addWidget(remove_external_button);
+        global_number_layout->addWidget(m_RemoveExternalCards);
         global_number_layout->addStretch();
         global_number_layout->setContentsMargins(6, 0, 6, 0);
 
         m_Header = new QWidget;
         m_Header->setLayout(global_number_layout);
+
+        m_RemoveExternalCards->setVisible(project.HasExternalCards());
 
         auto dec_number{
             [=, &project]()
@@ -678,9 +681,12 @@ CardArea::CardArea(Project& project)
         auto remove_all_external{
             [=, &project]()
             {
-                for (auto& [card_name, _] : m_ScrollArea->GetGrid().GetCards())
+                for (auto& card : m_Project.m_Data.m_Cards)
                 {
-                    project.RemoveExternalCard(card_name);
+                    if (card.m_ExternalPath.has_value())
+                    {
+                        project.RemoveExternalCard(card.m_Name);
+                    }
                 }
             }
         };
@@ -697,7 +703,7 @@ CardArea::CardArea(Project& project)
                          &QPushButton::clicked,
                          this,
                          reset_number);
-        QObject::connect(remove_external_button,
+        QObject::connect(m_RemoveExternalCards,
                          &QPushButton::clicked,
                          this,
                          remove_all_external);
@@ -722,7 +728,7 @@ CardArea::CardArea(Project& project)
     QObject::connect(&m_RefreshTimer,
                      &QTimer::timeout,
                      this,
-                     [this]()
+                     [this, &project]()
                      {
                          m_ScrollArea->FullRefresh();
 
@@ -732,6 +738,7 @@ CardArea::CardArea(Project& project)
                          m_ScrollArea->setVisible(grid.HasCards());
                      });
 }
+
 void CardArea::NewProjectOpened()
 {
     FullRefresh();
@@ -771,6 +778,8 @@ void CardArea::CardOrderDirectionChanged()
 
 void CardArea::CardAdded(const fs::path& card_name)
 {
+    m_RemoveExternalCards->setVisible(m_Project.HasExternalCards());
+
     const auto& grid{ m_ScrollArea->GetGrid() };
     if (grid.HasCard(card_name))
     {
@@ -782,6 +791,8 @@ void CardArea::CardAdded(const fs::path& card_name)
 
 void CardArea::CardRemoved(const fs::path& card_name)
 {
+    m_RemoveExternalCards->setVisible(m_Project.HasExternalCards());
+
     const auto& grid{ m_ScrollArea->GetGrid() };
     if (!grid.HasCard(card_name))
     {

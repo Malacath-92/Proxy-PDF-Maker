@@ -228,6 +228,8 @@ class Project : public QObject
     CardInfo& PutCard(CardInfo card);
     std::optional<CardInfo> EatCard(const fs::path& card_name);
 
+    bool HasExternalCards() const;
+
     fs::path GetCardImagePath(const fs::path& card_name) const;
     bool IsCardExternal(const fs::path& card_name) const;
 

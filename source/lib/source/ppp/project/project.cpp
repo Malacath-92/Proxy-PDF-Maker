@@ -680,6 +680,13 @@ fs::path Project::GetOutputFolder() const
     return m_Data.GetOutputFolder(g_Cfg);
 }
 
+bool Project::HasExternalCards() const
+{
+    return std::ranges::any_of(m_Data.m_Cards,
+                               [](const auto& card)
+                               { return !card.m_Transient && card.m_ExternalPath.has_value(); });
+}
+
 fs::path Project::GetCardImagePath(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
@@ -693,7 +700,7 @@ bool Project::IsCardExternal(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
     {
-        return card->m_ExternalPath.has_value();
+        return !card->m_Transient && card->m_ExternalPath.has_value();
     }
     return false;
 }
@@ -920,6 +927,7 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
     {
         --card->m_Hidden;
         card->m_Transient = false;
+        card->m_ExternalPath = std::nullopt;
 
         if (m_Data.m_BacksideEnabled && !card->m_Backside.empty())
         {

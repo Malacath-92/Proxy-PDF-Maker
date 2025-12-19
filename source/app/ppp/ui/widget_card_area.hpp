@@ -5,6 +5,8 @@
 
 #include <ppp/util.hpp>
 
+class QPushButton;
+
 class Project;
 class CardScrollArea;
 
@@ -33,9 +35,11 @@ class CardArea : public QWidget
     void FullRefresh();
 
   private:
+    const Project& m_Project;
     QWidget* m_OnboardingHint;
 
     QWidget* m_Header;
+    QPushButton* m_RemoveExternalCards;
     CardScrollArea* m_ScrollArea;
 
     // We use a timer whenever we do a full refresh
