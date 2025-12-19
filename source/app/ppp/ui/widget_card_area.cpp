@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_scroll_area.hpp>
+#include <ppp/ui/widget_card_area.hpp>
 
 #include <ranges>
 
@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QScrollArea>
 #include <QScrollBar>
 
 #include <ppp/qt_util.hpp>
@@ -334,7 +335,7 @@ class DummyCardWidget : public CardWidget
     // clang-format on
 };
 
-class CardScrollArea::CardGrid : public QWidget
+class CardGrid : public QWidget
 {
     Q_OBJECT
 
@@ -521,109 +522,61 @@ class CardScrollArea::CardGrid : public QWidget
     uint32_t m_Rows;
 };
 
+class CardScrollArea : public QScrollArea
+{
+  public:
+    CardScrollArea(Project& project);
+
+    CardGrid& GetGrid()
+    {
+        return *m_Grid;
+    }
+
+    void FullRefresh();
+
+  private:
+    int ComputeMinimumWidth();
+
+    virtual void showEvent(QShowEvent* event) override;
+
+    Project& m_Project;
+
+    CardGrid* m_Grid;
+};
+
 CardScrollArea::CardScrollArea(Project& project)
     : m_Project{ project }
 {
-    m_RefreshTimer.setSingleShot(true);
-    m_RefreshTimer.setInterval(50);
-    QObject::connect(&m_RefreshTimer,
-                     &QTimer::timeout,
-                     this,
-                     [this]()
-                     {
-                         m_Grid->FullRefresh();
-
-                         m_Header->setVisible(m_Grid->HasCards());
-                         m_Grid->setVisible(m_Grid->HasCards());
-                         m_OnboardingHint->setVisible(!m_Grid->HasCards());
-
-                         setMinimumWidth(ComputeMinimumWidth());
-                     });
-
-    {
-        auto* global_label{ new QLabel{ "Global Controls:" } };
-        auto* global_decrement_button{ new QPushButton{ "-" } };
-        auto* global_increment_button{ new QPushButton{ "+" } };
-        auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
-        auto* remove_external_button{ new QPushButton{ "Remove All External Cards" } };
-
-        global_decrement_button->setToolTip("Remove one from all");
-        global_increment_button->setToolTip("Add one to all");
-        global_set_zero_button->setToolTip("Set all to zero");
-        remove_external_button->setToolTip("Removes all cards not part of the images folder");
-
-        auto* global_number_layout{ new QHBoxLayout };
-        global_number_layout->addWidget(global_label);
-        global_number_layout->addWidget(global_decrement_button);
-        global_number_layout->addWidget(global_increment_button);
-        global_number_layout->addWidget(global_set_zero_button);
-        global_number_layout->addWidget(remove_external_button);
-        global_number_layout->addStretch();
-        global_number_layout->setContentsMargins(6, 0, 6, 0);
-
-        m_Header = new QWidget;
-        m_Header->setLayout(global_number_layout);
-
-        auto dec_number{
-            [=, &project]()
-            {
-                for (auto& [_, card] : m_Grid->GetCards())
-                {
-                    card->DecrementNumber(project);
-                }
-            }
-        };
-
-        auto inc_number{
-            [=, &project]()
-            {
-                for (auto& [_, card] : m_Grid->GetCards())
-                {
-                    card->IncrementNumber(project);
-                }
-            }
-        };
-
-        auto reset_number{
-            [=, &project]()
-            {
-                for (auto& [_, card] : m_Grid->GetCards())
-                {
-                    card->ApplyNumber(project, 0);
-                }
-            }
-        };
-
-        auto remove_all_external{
-            [=, &project]()
-            {
-                for (auto& [card_name, _] : m_Grid->GetCards())
-                {
-                    project.RemoveExternalCard(card_name);
-                }
-            }
-        };
-
-        QObject::connect(global_decrement_button,
-                         &QPushButton::clicked,
-                         this,
-                         dec_number);
-        QObject::connect(global_increment_button,
-                         &QPushButton::clicked,
-                         this,
-                         inc_number);
-        QObject::connect(global_set_zero_button,
-                         &QPushButton::clicked,
-                         this,
-                         reset_number);
-        QObject::connect(remove_external_button,
-                         &QPushButton::clicked,
-                         this,
-                         remove_all_external);
-    }
-
     m_Grid = new CardGrid{ project };
 
+    setWidgetResizable(true);
+    setFrameShape(QFrame::Shape::NoFrame);
+    setWidget(m_Grid);
+
+    setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
+}
+
+void CardScrollArea::FullRefresh()
+{
+    m_Grid->FullRefresh();
+    setMinimumWidth(ComputeMinimumWidth());
+}
+
+int CardScrollArea::ComputeMinimumWidth()
+{
+    const auto margins{ widget()->layout()->contentsMargins() };
+    return m_Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
+}
+
+void CardScrollArea::showEvent(QShowEvent* event)
+{
+    QScrollArea::showEvent(event);
+
+    setMinimumWidth(ComputeMinimumWidth());
+}
+
+CardArea::CardArea(Project& project)
+{
     {
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
@@ -668,65 +621,158 @@ CardScrollArea::CardScrollArea(Project& project)
                          image_folder_link_activated);
     }
 
+    {
+        auto* global_label{ new QLabel{ "Global Controls:" } };
+        auto* global_decrement_button{ new QPushButton{ "-" } };
+        auto* global_increment_button{ new QPushButton{ "+" } };
+        auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
+        auto* remove_external_button{ new QPushButton{ "Remove All External Cards" } };
+
+        global_decrement_button->setToolTip("Remove one from all");
+        global_increment_button->setToolTip("Add one to all");
+        global_set_zero_button->setToolTip("Set all to zero");
+        remove_external_button->setToolTip("Removes all cards not part of the images folder");
+
+        auto* global_number_layout{ new QHBoxLayout };
+        global_number_layout->addWidget(global_label);
+        global_number_layout->addWidget(global_decrement_button);
+        global_number_layout->addWidget(global_increment_button);
+        global_number_layout->addWidget(global_set_zero_button);
+        global_number_layout->addWidget(remove_external_button);
+        global_number_layout->addStretch();
+        global_number_layout->setContentsMargins(6, 0, 6, 0);
+
+        m_Header = new QWidget;
+        m_Header->setLayout(global_number_layout);
+
+        auto dec_number{
+            [=, &project]()
+            {
+                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
+                {
+                    card->DecrementNumber(project);
+                }
+            }
+        };
+
+        auto inc_number{
+            [=, &project]()
+            {
+                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
+                {
+                    card->IncrementNumber(project);
+                }
+            }
+        };
+
+        auto reset_number{
+            [=, &project]()
+            {
+                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
+                {
+                    card->ApplyNumber(project, 0);
+                }
+            }
+        };
+
+        auto remove_all_external{
+            [=, &project]()
+            {
+                for (auto& [card_name, _] : m_ScrollArea->GetGrid().GetCards())
+                {
+                    project.RemoveExternalCard(card_name);
+                }
+            }
+        };
+
+        QObject::connect(global_decrement_button,
+                         &QPushButton::clicked,
+                         this,
+                         dec_number);
+        QObject::connect(global_increment_button,
+                         &QPushButton::clicked,
+                         this,
+                         inc_number);
+        QObject::connect(global_set_zero_button,
+                         &QPushButton::clicked,
+                         this,
+                         reset_number);
+        QObject::connect(remove_external_button,
+                         &QPushButton::clicked,
+                         this,
+                         remove_all_external);
+    }
+
+    m_ScrollArea = new CardScrollArea{ project };
+
     auto* card_area_layout{ new QVBoxLayout };
-    card_area_layout->addWidget(m_Header);
-    card_area_layout->addWidget(m_Grid);
     card_area_layout->addWidget(m_OnboardingHint);
-    card_area_layout->addStretch();
-    card_area_layout->setSpacing(0);
+    card_area_layout->addWidget(m_Header);
+    card_area_layout->addWidget(m_ScrollArea);
 
-    auto* card_area{ new QWidget };
-    card_area->setLayout(card_area_layout);
+    setLayout(card_area_layout);
 
-    m_Header->setVisible(m_Grid->HasCards());
-    m_Grid->setVisible(m_Grid->HasCards());
-    m_OnboardingHint->setVisible(!m_Grid->HasCards());
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    m_OnboardingHint->setVisible(!grid.HasCards());
+    m_Header->setVisible(grid.HasCards());
+    m_ScrollArea->setVisible(grid.HasCards());
 
-    setWidgetResizable(true);
-    setFrameShape(QFrame::Shape::NoFrame);
-    setWidget(card_area);
+    m_RefreshTimer.setSingleShot(true);
+    m_RefreshTimer.setInterval(50);
+    QObject::connect(&m_RefreshTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         m_ScrollArea->FullRefresh();
 
-    setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
+                         const auto& grid{ m_ScrollArea->GetGrid() };
+                         m_OnboardingHint->setVisible(!grid.HasCards());
+                         m_Header->setVisible(grid.HasCards());
+                         m_ScrollArea->setVisible(grid.HasCards());
+                     });
 }
-
-void CardScrollArea::NewProjectOpened()
+void CardArea::NewProjectOpened()
 {
     FullRefresh();
 }
 
-void CardScrollArea::ImageDirChanged()
+void CardArea::ImageDirChanged()
 {
     FullRefresh();
 }
 
-void CardScrollArea::BacksideEnabledChanged()
+void CardArea::BacksideEnabledChanged()
 {
-    m_Grid->BacksideEnabledChanged();
+    auto& grid{ m_ScrollArea->GetGrid() };
+    grid.BacksideEnabledChanged();
 }
 
-void CardScrollArea::BacksideDefaultChanged()
+void CardArea::BacksideDefaultChanged()
 {
-    m_Grid->BacksideDefaultChanged();
+    auto& grid{ m_ScrollArea->GetGrid() };
+    grid.BacksideDefaultChanged();
 }
 
-void CardScrollArea::DisplayColumnsChanged()
+void CardArea::DisplayColumnsChanged()
 {
     FullRefresh();
 }
 
-void CardScrollArea::CardOrderChanged()
+void CardArea::CardOrderChanged()
 {
     FullRefresh();
 }
 
-void CardScrollArea::CardOrderDirectionChanged()
+void CardArea::CardOrderDirectionChanged()
 {
     FullRefresh();
 }
 
-void CardScrollArea::CardAdded(const fs::path& card_name)
+void CardArea::CardAdded(const fs::path& card_name)
 {
-    if (m_Grid->HasCard(card_name))
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    if (grid.HasCard(card_name))
     {
         return;
     }
@@ -734,9 +780,10 @@ void CardScrollArea::CardAdded(const fs::path& card_name)
     FullRefresh();
 }
 
-void CardScrollArea::CardRemoved(const fs::path& card_name)
+void CardArea::CardRemoved(const fs::path& card_name)
 {
-    if (!m_Grid->HasCard(card_name))
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    if (!grid.HasCard(card_name))
     {
         return;
     }
@@ -744,9 +791,10 @@ void CardScrollArea::CardRemoved(const fs::path& card_name)
     FullRefresh();
 }
 
-void CardScrollArea::CardRenamed(const fs::path& old_card_name, const fs::path& /*new_card_name*/)
+void CardArea::CardRenamed(const fs::path& old_card_name, const fs::path& /*new_card_name*/)
 {
-    if (!m_Grid->HasCard(old_card_name))
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    if (!grid.HasCard(old_card_name))
     {
         return;
     }
@@ -754,34 +802,22 @@ void CardScrollArea::CardRenamed(const fs::path& old_card_name, const fs::path& 
     FullRefresh();
 }
 
-void CardScrollArea::CardVisibilityChanged(const fs::path& card_name, bool visible)
+void CardArea::CardVisibilityChanged(const fs::path& card_name, bool visible)
 {
-    if (visible && !m_Grid->HasCard(card_name))
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    if (visible && !grid.HasCard(card_name))
     {
         FullRefresh();
     }
-    else if (!visible && m_Grid->HasCard(card_name))
+    else if (!visible && grid.HasCard(card_name))
     {
         FullRefresh();
     }
 }
 
-void CardScrollArea::FullRefresh()
+void CardArea::FullRefresh()
 {
     m_RefreshTimer.start();
 }
 
-int CardScrollArea::ComputeMinimumWidth()
-{
-    const auto margins{ widget()->layout()->contentsMargins() };
-    return m_Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
-}
-
-void CardScrollArea::showEvent(QShowEvent* event)
-{
-    QScrollArea::showEvent(event);
-
-    setMinimumWidth(ComputeMinimumWidth());
-}
-
-#include <widget_scroll_area.moc>
+#include <widget_card_area.moc>

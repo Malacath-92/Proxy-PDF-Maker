@@ -1,18 +1,19 @@
 #pragma once
 
-#include <QScrollArea>
+#include <QWidget>
 #include <QTimer>
 
 #include <ppp/util.hpp>
 
 class Project;
+class CardScrollArea;
 
-class CardScrollArea : public QScrollArea
+class CardArea : public QWidget
 {
     Q_OBJECT
 
   public:
-    CardScrollArea(Project& project);
+    CardArea(Project& project);
 
   public slots:
     void NewProjectOpened();
@@ -32,18 +33,10 @@ class CardScrollArea : public QScrollArea
     void FullRefresh();
 
   private:
-    int ComputeMinimumWidth();
-
-    virtual void showEvent(QShowEvent* event) override;
-
-    Project& m_Project;
+    QWidget* m_OnboardingHint;
 
     QWidget* m_Header;
-
-    class CardGrid;
-    CardGrid* m_Grid;
-
-    QWidget* m_OnboardingHint;
+    CardScrollArea* m_ScrollArea;
 
     // We use a timer whenever we do a full refresh
     // to avoid cases where we get multiple requests

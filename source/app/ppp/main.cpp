@@ -38,7 +38,7 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/ui/widget_options_area.hpp>
 #include <ppp/ui/widget_print_options.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
-#include <ppp/ui/widget_scroll_area.hpp>
+#include <ppp/ui/widget_card_area.hpp>
 
 #include <ppp/plugins/plugin_interface.hpp>
 
@@ -136,9 +136,9 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
-    auto* scroll_area{ new CardScrollArea{ project } };
+    auto* card_area{ new CardArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
-    auto* tabs{ new MainTabs{ scroll_area, print_preview } };
+    auto* tabs{ new MainTabs{ card_area, print_preview } };
 
     auto* actions{ new ActionsWidget{ project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
@@ -151,7 +151,7 @@ int main(int argc, char** argv)
                      { cropper.PauseWork(); });
     QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, [&cropper]()
                      { cropper.RestartWork(); });
-    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, scroll_area, &CardScrollArea::FullRefresh);
+    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area, &CardArea::FullRefresh);
 
     QObject::connect(
         &plugin_router,
@@ -250,20 +250,20 @@ int main(int argc, char** argv)
     }
 
     {
-        QObject::connect(&card_provider, &CardProvider::CardAdded, scroll_area, &CardScrollArea::CardAdded);
-        QObject::connect(&card_provider, &CardProvider::CardRemoved, scroll_area, &CardScrollArea::CardRemoved);
-        QObject::connect(&card_provider, &CardProvider::CardRenamed, scroll_area, &CardScrollArea::CardRenamed);
+        QObject::connect(&card_provider, &CardProvider::CardAdded, card_area, &CardArea::CardAdded);
+        QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area, &CardArea::CardRemoved);
+        QObject::connect(&card_provider, &CardProvider::CardRenamed, card_area, &CardArea::CardRenamed);
 
-        QObject::connect(&project, &Project::CardVisibilityChanged, scroll_area, &CardScrollArea::CardVisibilityChanged);
+        QObject::connect(&project, &Project::CardVisibilityChanged, card_area, &CardArea::CardVisibilityChanged);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, scroll_area, &CardScrollArea::NewProjectOpened);
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, scroll_area, &CardScrollArea::ImageDirChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, scroll_area, &CardScrollArea::BacksideEnabledChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, scroll_area, &CardScrollArea::BacksideDefaultChanged);
-        QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, scroll_area, &CardScrollArea::FullRefresh);
-        QObject::connect(global_options, &GlobalOptionsWidget::DisplayColumnsChanged, scroll_area, &CardScrollArea::DisplayColumnsChanged);
-        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, scroll_area, &CardScrollArea::CardOrderChanged);
-        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, scroll_area, &CardScrollArea::CardOrderDirectionChanged);
+        QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
+        QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
+        QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, card_area, &CardArea::FullRefresh);
+        QObject::connect(global_options, &GlobalOptionsWidget::DisplayColumnsChanged, card_area, &CardArea::DisplayColumnsChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, card_area, &CardArea::CardOrderChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::CardOrderDirectionChanged, card_area, &CardArea::CardOrderDirectionChanged);
     }
 
     {
