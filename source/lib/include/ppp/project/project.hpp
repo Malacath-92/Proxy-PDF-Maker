@@ -123,6 +123,7 @@ struct ProjectData
     bool m_SeparateBacksides{ false };
     fs::path m_BacksideDefault{ "__back.png" };
     Position m_BacksideOffset{ 0_mm, 0_mm };
+    Angle m_BacksideRotation{ 0_deg };
     std::string m_BacksideAutoPattern{ "__back_$" };
 
     // PDF generation options

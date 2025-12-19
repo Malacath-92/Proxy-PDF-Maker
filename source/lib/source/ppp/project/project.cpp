@@ -307,6 +307,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
+            auto backside_rotation{ get_value("backside_rotation") };
+            if (backside_rotation.is_number())
+            {
+                m_Data.m_BacksideRotation = backside_rotation.get<float>() * 1_deg;
+            }
+        }
+        {
             const auto backside_auto_pattern{ get_value("backside_auto_pattern") };
             if (!backside_auto_pattern.is_null())
             {
@@ -563,6 +570,7 @@ std::string Project::DumpToJson() const
         { "horizontal", m_Data.m_BacksideOffset.x / 1_cm },
         { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
     };
+    json["backside_rotation"] = m_Data.m_BacksideRotation / 1_deg;
     json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
     json["card_size"] = m_Data.m_CardSizeChoice;

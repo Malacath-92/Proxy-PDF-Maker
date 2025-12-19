@@ -1,5 +1,7 @@
 #include <ppp/pdf/podofo_backend.hpp>
 
+#include <numbers>
+
 #include <dla/vector_math.h>
 
 #include <podofo/podofo.h>
@@ -215,6 +217,16 @@ void PoDoFoPage::DrawText(TextData data)
                                  params);
 }
 
+void PoDoFoPage::RotateFutureContent(Angle angle)
+{
+    const PoDoFo::Vector2 center{
+        m_Page->GetRect().Width / 2,
+        m_Page->GetRect().Height / 2,
+    };
+    const auto matrix{ PoDoFo::Matrix::CreateRotation(center, angle / 180_deg * std::numbers::pi) };
+    m_Painter->GraphicsState.ConcatenateTransformationMatrix(matrix);
+}
+
 void PoDoFoPage::Finish()
 {
     m_Painter->FinishDrawing();
@@ -384,6 +396,8 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                                 m_Pages.size() % 2 == 0 };
         if (is_backside)
         {
+            const auto sa{ std::sin(m_Project.m_Data.m_BacksideRotation / 180_deg * std::numbers::pi) };
+            const auto ca{ -std::cos(m_Project.m_Data.m_BacksideRotation / 180_deg * std::numbers::pi) };
             const auto dx{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.x) };
             const auto dy{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.y) };
 
@@ -394,8 +408,8 @@ PoDoFoPage* PoDoFoDocument::NextPage()
                     transform_stream.flags(std::ios_base::fixed);
                     transform_stream.precision(15);
                     transform_stream << 1.0 << " " // scale-x
-                                     << 0.0 << " " // rot-1
-                                     << 0.0 << " " // rot-2
+                                     << sa << " "  // rot-1
+                                     << ca << " "  // rot-2
                                      << 1.0 << " " // scale-y
                                      << -dx << " " // trans-x
                                      << dy << " "  // trans-y

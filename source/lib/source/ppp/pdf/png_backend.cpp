@@ -34,7 +34,7 @@ void PngPage::DrawSolidLine(LineData data, LineStyle style)
 
     const cv::Scalar color_cv{ style.m_Color.b * 255, style.m_Color.g * 255, style.m_Color.r * 255, 255.0f };
 
-    cv::rectangle(m_Page, from, to, color_cv, cv::FILLED);
+    cv::rectangle(TargetImage(), from, to, color_cv, cv::FILLED);
 }
 
 void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
@@ -67,7 +67,7 @@ void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const cv::Scalar color_a{ style.m_Color.b * 255, style.m_Color.g * 255, style.m_Color.r * 255, 255.0f };
     const cv::Scalar color_b{ style.m_SecondColor.b * 255, style.m_SecondColor.g * 255, style.m_SecondColor.r * 255, 255.0f };
 
-    cv::rectangle(m_Page, from, to, color_a, cv::FILLED);
+    cv::rectangle(TargetImage(), from, to, color_a, cv::FILLED);
 
     const auto dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
     const auto dash_freq{ dash_size / dla::distance(data.m_From, data.m_To) };
@@ -76,7 +76,7 @@ void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
         const float alpha{ i * dash_freq * 2.0f };
         const cv::Point sub_from{ from + alpha * delta };
         const cv::Point sub_to{ from + 2 * perp + (alpha + dash_freq / 2.0f) * delta };
-        cv::rectangle(m_Page, sub_from, sub_to, color_b, cv::FILLED);
+        cv::rectangle(TargetImage(), sub_from, sub_to, color_b, cv::FILLED);
     }
 }
 
@@ -95,7 +95,7 @@ void PngPage::DrawImage(ImageData data)
         const auto real_w{ static_cast<int32_t>(m_CardSize.x / 1_pix) };
         const auto real_h{ static_cast<int32_t>(m_CardSize.y / 1_pix) };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            .copyTo(m_Page(cv::Rect(real_x, real_y, real_w, real_h)));
+            .copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
     }
     else
     {
@@ -107,7 +107,7 @@ void PngPage::DrawImage(ImageData data)
         const auto real_w{ ToPixels(w) };
         const auto real_h{ ToPixels(h) };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            .copyTo(m_Page(cv::Rect(real_x, real_y, real_w, real_h)));
+            .copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
     }
 }
 
@@ -117,7 +117,43 @@ void PngPage::DrawText(TextData data)
     const auto real_top{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
     const cv::Scalar black{ 0, 0, 0, 255.0f };
 
-    cv::putText(m_Page, cv::String{ data.m_Text.data(), data.m_Text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
+    cv::putText(TargetImage(), cv::String{ data.m_Text.data(), data.m_Text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
+}
+
+void PngPage::RotateFutureContent(Angle angle)
+{
+    const auto next_angle{
+        m_RotatedImages.empty() ? angle
+                                : m_RotatedImages.back().m_Angle + angle
+    };
+    m_RotatedImages.push_back({
+        cv::Mat::zeros(cv::Size{
+                           static_cast<int32_t>(m_PageSize.x / 1_pix),
+                           static_cast<int32_t>(m_PageSize.y / 1_pix) },
+                       CV_8UC4),
+        next_angle,
+    });
+}
+
+void PngPage::Finish()
+{
+    const cv::Size page_size{ static_cast<int32_t>(m_PageSize.x / 1_pix), static_cast<int32_t>(m_PageSize.y / 1_pix) };
+    const cv::Point2f center{ m_PageSize.x / 2_pix, m_PageSize.y / 2_pix };
+    for (const auto& [img, angle] : m_RotatedImages)
+    {
+        const auto transform_matrix{ cv::getRotationMatrix2D(center, angle / 1_deg, 1.0) };
+
+        cv::Mat rotated;
+        cv::warpAffine(img, rotated, transform_matrix, page_size);
+
+        rotated.copyTo(m_Page);
+    }
+}
+
+cv::Mat& PngPage::TargetImage()
+{
+    return m_RotatedImages.empty() ? m_Page
+                                   : m_RotatedImages.back().m_Image;
 }
 
 PngImageCache::PngImageCache(const Project& project)

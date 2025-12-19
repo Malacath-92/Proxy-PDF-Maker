@@ -27,6 +27,8 @@ class PoDoFoPage final : public PdfPage
 
     virtual void DrawText(TextData data) override;
 
+    virtual void RotateFutureContent(Angle angle) override;
+
     virtual void Finish() override;
 
   private:

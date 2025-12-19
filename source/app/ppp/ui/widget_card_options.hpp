@@ -4,6 +4,7 @@
 
 class QCheckBox;
 class QComboBox;
+class QDoubleSpinBox;
 class QPushButton;
 class QSlider;
 class QLineEdit;
@@ -28,6 +29,7 @@ class CardOptionsWidget : public QWidget
     void SeparateBacksidesEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
+    void BacksideRotationChanged();
     void CardBacksideChanged();
 
     void BaseUnitChanged();
@@ -60,6 +62,8 @@ class CardOptionsWidget : public QWidget
     LengthSpinBox* m_BacksideOffsetHorizontalSpin{ nullptr };
     LengthSpinBox* m_BacksideOffsetVerticalSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
+    QDoubleSpinBox* m_BacksideRotationSpin{ nullptr };
+    QWidget* m_BacksideRotation{ nullptr };
     QLineEdit* m_BacksideAutoPattern{ nullptr };
     QWidget* m_BacksideAuto{ nullptr };
 };

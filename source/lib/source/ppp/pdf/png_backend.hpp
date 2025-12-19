@@ -26,11 +26,24 @@ class PngPage final : public PdfPage
 
     virtual void DrawText(TextData data) override;
 
-    virtual void Finish() override{};
+    virtual void RotateFutureContent(Angle angle) override;
+
+    virtual void Finish() override;
 
   private:
+    cv::Mat& TargetImage();
+
     const Project* m_Project;
+
+    struct RotatedImage
+    {
+        cv::Mat m_Image;
+        Angle m_Angle;
+    };
+
     cv::Mat m_Page{};
+    std::vector<RotatedImage> m_RotatedImages;
+
     bool m_PerfectFit{};
     PixelSize m_CardSize{};
     PixelSize m_PageSize{};

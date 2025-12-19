@@ -89,6 +89,8 @@ class PdfPage
 
     virtual void DrawText(TextData data) = 0;
 
+    virtual void RotateFutureContent(Angle angle) = 0;
+
     virtual void Finish() = 0;
 
   protected:

@@ -177,6 +177,16 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         m_BacksideOffset = backside_offset_widget;
     }
 
+    auto* backside_rotation{ new DoubleSpinBoxWithLabel{ "Backside Rotation" } };
+    m_BacksideRotationSpin = backside_rotation->GetWidget();
+    m_BacksideRotationSpin->setDecimals(2);
+    m_BacksideRotationSpin->setSingleStep(0.1);
+    m_BacksideRotationSpin->setRange(-10, 10);
+    m_BacksideRotationSpin->setSuffix("deg");
+    EnableOptionWidgetForDefaults(m_BacksideRotationSpin, "backside_rotation");
+
+    m_BacksideRotation = backside_rotation;
+
     m_BacksideAutoPattern = new QLineEdit{ ToQString(project.m_Data.m_BacksideAutoPattern) };
     m_BacksideAuto = new WidgetWithLabel{ "Auto-&Pattern", m_BacksideAutoPattern };
 
@@ -190,6 +200,7 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
     layout->addWidget(m_BacksideOffset);
+    layout->addWidget(m_BacksideRotation);
     layout->addWidget(m_BacksideAuto);
 
     layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
@@ -365,6 +376,14 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         }
     };
 
+    auto change_backside_rotation{
+        [this, &project](float v)
+        {
+            project.m_Data.m_BacksideRotation = v * 1_deg;
+            BacksideRotationChanged();
+        }
+    };
+
     auto change_backside_auto_pattern{
         [this, &project](const QString& pattern)
         {
@@ -447,6 +466,10 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                      &LengthSpinBox::ValueChanged,
                      this,
                      change_backside_offset_height);
+    QObject::connect(m_BacksideRotationSpin,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_backside_rotation);
     QObject::connect(m_BacksideAutoPattern,
                      &QLineEdit::textChanged,
                      this,
@@ -549,7 +572,8 @@ void CardOptionsWidget::SetDefaults()
 
 void CardOptionsWidget::SetAdvancedWidgetsVisibility()
 {
-    // Note: Everything currently available in basic mode
+    // Note: Everything else currently available in basic mode
+    m_BacksideRotation->setVisible(g_Cfg.m_AdvancedMode);
 }
 
 void CardOptionsWidget::SetBacksideAutoPatternTooltip()

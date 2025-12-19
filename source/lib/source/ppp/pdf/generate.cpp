@@ -359,6 +359,11 @@ PdfResults GeneratePdf(const Project& project)
                 "Rendering backside for page {}...\nImage number {} - {}"
             };
 
+            if (project.m_Data.m_BacksideRotation != 0_deg)
+            {
+                back_page->RotateFutureContent(project.m_Data.m_BacksideRotation);
+            }
+
             for (size_t i = 0; i < backside_page.m_Images.size(); ++i)
             {
                 const auto& card{ backside_page.m_Images[i] };

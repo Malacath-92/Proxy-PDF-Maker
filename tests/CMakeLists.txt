@@ -11,7 +11,7 @@ target_link_libraries(catch2_main
 	INTERFACE
 	Catch2::Catch2WithMain)
 
-function(proxyPdfAddTest NAME)
+function(proxyPdfAddTest NAME SHOULD_COPY_DEPENDENCIES)
 	message(STATUS "\tAdding test " ${NAME})
 
 	set(TEST_NAME ${NAME})
@@ -28,22 +28,26 @@ function(proxyPdfAddTest NAME)
 		VS_DEBUGGER_COMMAND_ARGUMENTS ""
 		VS_DEBUGGER_WORKING_DIRECTORY $<TARGET_FILE_DIR:${TEST_NAME}>)
 
-	# --------------------------------------------------
-	# Create a custom command that copies files that tests need
-	add_custom_command(TARGET ${TEST_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different
-			"${CMAKE_SOURCE_DIR}/fallback.png"
-			"${CMAKE_SOURCE_DIR}/res/cubes/Foils Vibrance.CUBE"
-			"${CMAKE_SOURCE_DIR}/tests/madness.CUBE"
-			"$<TARGET_FILE_DIR:${TEST_NAME}>"
-		COMMENT "Copying test dependencies to $<TARGET_FILE_DIR:${TEST_NAME}>")
+	if (${SHOULD_COPY_DEPENDENCIES})
+		# --------------------------------------------------
+		# Create a custom command that copies files that tests need
+		add_custom_command(TARGET ${TEST_NAME} POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+				"${CMAKE_SOURCE_DIR}/fallback.png"
+				"${CMAKE_SOURCE_DIR}/res/cubes/Foils Vibrance.CUBE"
+				"${CMAKE_SOURCE_DIR}/tests/madness.CUBE"
+				"$<TARGET_FILE_DIR:${TEST_NAME}>"
+			COMMENT "Copying test dependencies to $<TARGET_FILE_DIR:${TEST_NAME}>")
+	endif()
 endfunction()
 
 message(STATUS "Discovering all tests...")
 file(GLOB files "*.cpp")
+set(PPP_NEEDS_TEST_DEPENDENCIES_COMMAND TRUE)
 foreach(file ${files})
 	get_filename_component(filename ${file} NAME_WE)
-	proxyPdfAddTest(${filename})
+	proxyPdfAddTest(${filename} ${PPP_NEEDS_TEST_DEPENDENCIES_COMMAND})
+	set(PPP_NEEDS_TEST_DEPENDENCIES_COMMAND FALSE)
 endforeach()
 
 # --------------------------------------------------

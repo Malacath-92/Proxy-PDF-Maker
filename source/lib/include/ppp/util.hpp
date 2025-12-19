@@ -20,10 +20,19 @@ struct pixel
     static constexpr const char* id = "pixels";
     static constexpr const char* symbol = "pixels";
 };
+struct angle
+{
+    static constexpr const char* id = "degrees";
+    static constexpr const char* symbol = "deg";
+};
 // NOLINTEND
 } // namespace dla::unit_name
+
 using pixel_tag = dla::unit_tag<dla::unit_name::pixel>;
 using Pixel = dla::base_unit<pixel_tag>;
+
+using angle_tag = dla::unit_tag<dla::unit_name::angle>;
+using Angle = dla::base_unit<angle_tag>;
 
 using Size = dla::tvec2<Length>;
 using Position = dla::tvec2<Length>;
@@ -51,6 +60,9 @@ constexpr auto operator""_dpi(unsigned long long v) { return Pixel{ float(v) } /
 
 constexpr auto operator""_pix(long double v) { return Pixel(float(v)); }
 constexpr auto operator""_pix(unsigned long long v) { return Pixel{ float(v) }; }
+
+constexpr auto operator""_deg(long double v) { return Angle(float(v)); }
+constexpr auto operator""_deg(unsigned long long v) { return Angle{ float(v) }; }
 
 inline auto operator""_p(const char *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
