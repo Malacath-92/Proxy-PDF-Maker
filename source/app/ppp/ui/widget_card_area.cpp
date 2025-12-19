@@ -626,7 +626,7 @@ CardArea::CardArea(Project& project)
         auto* global_label{ new QLabel{ "Global Controls:" } };
         auto* global_decrement_button{ new QPushButton{ "-" } };
         auto* global_increment_button{ new QPushButton{ "+" } };
-        auto* global_set_zero_button{ new QPushButton{ "Reset All" } };
+        auto* global_set_zero_button{ new QPushButton{ "Zero All" } };
         m_RemoveExternalCards = new QPushButton{ "Remove All External Cards" };
 
         global_decrement_button->setToolTip("Remove one from all");
