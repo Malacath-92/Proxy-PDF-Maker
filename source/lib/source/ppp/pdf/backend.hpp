@@ -77,6 +77,8 @@ class PdfPage
         std::optional<ColorRGB32f> m_Backdrop{ std::nullopt };
     };
 
+    virtual void SetPageName(std::string_view page_name) = 0;
+
     virtual void DrawSolidLine(LineData data, LineStyle style) = 0;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) = 0;

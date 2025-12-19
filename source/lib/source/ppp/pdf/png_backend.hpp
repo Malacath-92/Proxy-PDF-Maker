@@ -18,6 +18,8 @@ class PngPage final : public PdfPage
   public:
     virtual ~PngPage() override = default;
 
+    virtual void SetPageName(std::string_view page_name) override;
+
     virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
@@ -34,6 +36,8 @@ class PngPage final : public PdfPage
     cv::Mat& TargetImage();
 
     const Project* m_Project;
+
+    std::string m_PageName;
 
     struct RotatedImage
     {

@@ -334,15 +334,25 @@ PdfResults GeneratePdf(const Project& project)
                 }
             }
 
+            const auto page_name{
+                transforms.size() == 1
+                    ? fmt::format("{}/{} - {}",
+                                  page_index + 1,
+                                  num_pages,
+                                  page.m_Images.front().m_Image.get().string())
+                    : fmt::format("{} - {}/{}",
+                                  frontside_pdf_name,
+                                  page_index + 1,
+                                  num_pages)
+            };
+            front_page->SetPageName(page_name);
+
             if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
                 front_page->DrawText({
-                    .m_Text{ fmt::format("{} - {}/{}",
-                                         frontside_pdf_name,
-                                         page_index + 1,
-                                         num_pages) },
+                    .m_Text{ page_name },
                     .m_BoundingBox{ text_top_left, text_bottom_right },
                     .m_Backdrop{ { 1.0f, 1.0f, 1.0f } },
                 });
@@ -392,15 +402,25 @@ PdfResults GeneratePdf(const Project& project)
                 }
             }
 
+            const auto page_name{
+                backside_transforms.size() == 1
+                    ? fmt::format("{}/{} - {}",
+                                  page_index + 1,
+                                  num_pages,
+                                  backside_page.m_Images.front().m_Image.get().string())
+                    : fmt::format("{} - {}/{}",
+                                  backside_pdf_name,
+                                  page_index + 1,
+                                  num_pages)
+            };
+            back_page->SetPageName(page_name);
+
             if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
                 back_page->DrawText({
-                    .m_Text{ fmt::format("{} - {}/{}",
-                                         backside_pdf_name,
-                                         page_index + 1,
-                                         num_pages) },
+                    .m_Text{ page_name },
                     .m_BoundingBox{ text_top_left, text_bottom_right },
                 });
             }

@@ -19,6 +19,8 @@ class PoDoFoPage final : public PdfPage
   public:
     virtual ~PoDoFoPage() override = default;
 
+    virtual void SetPageName(std::string_view /*page_name*/) override{};
+
     virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;

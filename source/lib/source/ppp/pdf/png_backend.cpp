@@ -11,6 +11,11 @@ inline int32_t ToPixels(Length l)
     return static_cast<int32_t>(std::ceil(l * g_Cfg.m_MaxDPI / 1_pix));
 }
 
+void PngPage::SetPageName(std::string_view page_name)
+{
+    m_PageName = fs::path{ page_name }.replace_extension().string();
+}
+
 void PngPage::DrawSolidLine(LineData data, LineStyle style)
 {
     const auto& fx{ data.m_From.x };
@@ -265,6 +270,7 @@ PngPage* PngDocument::NextPage()
     std::lock_guard lock{ m_Mutex };
     auto& new_page{ m_Pages.emplace_back() };
     new_page.m_Project = &m_Project;
+    new_page.m_PageName = std::to_string(m_Pages.size());
     new_page.m_PerfectFit = m_Project.m_Data.m_PageSize == Config::c_FitSize;
     new_page.m_CardSize = m_PrecomputedCardSize;
     new_page.m_PageSize = m_PrecomputedPageSize;
@@ -299,7 +305,10 @@ fs::path PngDocument::Write(fs::path path)
         const PngPage& page{ m_Pages[i] };
 #endif
 
-        const fs::path png_path{ png_folder / fs::path{ std::to_string(i) }.replace_extension(".png") };
+        auto page_name{ page.m_PageName };
+        std::ranges::replace(page_name, '/', '_');
+        std::ranges::replace(page_name, '.', '_');
+        const fs::path png_path{ png_folder / fs::path{ page_name }.replace_extension(".png") };
         {
             const auto png_path_str{ png_path.string() };
             LogInfo("Saving to {}...", png_path_str);
