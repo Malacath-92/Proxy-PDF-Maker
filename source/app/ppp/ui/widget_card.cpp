@@ -109,11 +109,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
             }
             else
             {
-                const int width{ static_cast<int>(g_Cfg.m_BasePreviewWidth.value) };
-                const int height{ static_cast<int>(width / m_CardRatio) };
-                QPixmap raw_pixmap{ width, height };
-                raw_pixmap.fill(QColor::fromRgb(0x808080));
-                return raw_pixmap;
+                return GetEmptyPixmap();
             }
         }()
     };
@@ -145,6 +141,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
         m_Spinner = spinner;
     }
 
+    QObject::connect(&project, &Project::PreviewRemoved, this, &CardImage::PreviewRemoved);
     QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
     QObject::connect(&project, &Project::CardBacksideChanged, this, &CardImage::CardBacksideChanged);
     QObject::connect(&project, &Project::BacksideEnabledChanged, this, [this](bool enabled)
@@ -254,6 +251,25 @@ int CardImage::heightForWidth(int width) const
     }
 }
 
+void CardImage::PreviewRemoved(const fs::path& card_name)
+{
+    if (m_CardName == card_name)
+    {
+        setPixmap(FinalizePixmap(GetEmptyPixmap()));
+
+        m_BadAspectRatio = false;
+
+        ClearChildren();
+
+        auto* spinner{ new SpinnerWidget };
+
+        QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+        layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
+
+        m_Spinner = spinner;
+    }
+}
+
 void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
 {
     if (m_CardName == card_name)
@@ -283,7 +299,7 @@ void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& b
     }
 }
 
-QPixmap CardImage::GetPixmap(const ImagePreview& preview)
+QPixmap CardImage::GetPixmap(const ImagePreview& preview) const
 {
     if (m_BleedEdge > 0_mm)
     {
@@ -300,7 +316,16 @@ QPixmap CardImage::GetPixmap(const ImagePreview& preview)
     }
 }
 
-QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap)
+QPixmap CardImage::GetEmptyPixmap() const
+{
+    const int width{ static_cast<int>(g_Cfg.m_BasePreviewWidth.value) };
+    const int height{ static_cast<int>(width / m_CardRatio) };
+    QPixmap raw_pixmap{ width, height };
+    raw_pixmap.fill(QColor::fromRgb(0x808080));
+    return raw_pixmap;
+}
+
+QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
 {
     QPixmap finalized_pixmap{ pixmap };
 

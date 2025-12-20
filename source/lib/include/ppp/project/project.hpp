@@ -329,6 +329,7 @@ class Project : public QObject
 
     void BacksideEnabledChanged(bool backside_enabled);
 
+    void PreviewRemoved(const fs::path& card_name);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);

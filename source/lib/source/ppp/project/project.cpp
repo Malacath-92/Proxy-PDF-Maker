@@ -961,6 +961,11 @@ void Project::CardRemoved(const fs::path& card_name)
             auto& front_card{ *FindCard(frontside.value()) };
             front_card.m_BacksideAutoAssigned = false;
         }
+
+        if (m_Data.m_Previews.erase(card_name) != 0)
+        {
+            PreviewRemoved(card_name);
+        }
     }
 
     RemoveCardFromList(card_name);

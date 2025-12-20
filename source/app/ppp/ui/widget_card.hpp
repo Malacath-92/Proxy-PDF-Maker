@@ -44,12 +44,14 @@ class CardImage : public QLabel
     virtual int heightForWidth(int width) const override;
 
   private slots:
+    void PreviewRemoved(const fs::path& card_name);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
     void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
 
   private:
-    QPixmap GetPixmap(const ImagePreview& preview);
-    QPixmap FinalizePixmap(const QPixmap& pixmap);
+    QPixmap GetPixmap(const ImagePreview& preview) const;
+    QPixmap GetEmptyPixmap() const;
+    QPixmap FinalizePixmap(const QPixmap& pixmap) const;
     void AddBadFormatWarning(const ImagePreview& preview);
 
     void ContextMenuRequested(QPoint pos);
