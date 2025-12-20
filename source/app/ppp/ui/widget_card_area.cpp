@@ -649,7 +649,7 @@ CardArea::CardArea(Project& project)
         m_RemoveExternalCards->setVisible(project.HasExternalCards());
 
         auto dec_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
                 {
@@ -659,7 +659,7 @@ CardArea::CardArea(Project& project)
         };
 
         auto inc_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
                 {
@@ -669,7 +669,7 @@ CardArea::CardArea(Project& project)
         };
 
         auto reset_number{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
                 {
@@ -679,7 +679,7 @@ CardArea::CardArea(Project& project)
         };
 
         auto remove_all_external{
-            [=, &project]()
+            [this, &project]()
             {
                 for (auto& card : m_Project.m_Data.m_Cards)
                 {
