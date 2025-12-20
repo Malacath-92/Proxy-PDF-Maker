@@ -22,7 +22,7 @@ class ScryfallDownloader : public CardArtDownloader
     ScryfallDownloader(std::vector<QString> skip_files, const QString& backside_pattern);
     virtual ~ScryfallDownloader() override;
 
-    virtual bool ParseInput(const QString& decklist) override;
+    virtual bool ParseInput(const QString& input) override;
     virtual bool BeginDownload(QNetworkAccessManager& network_manager) override;
     virtual void HandleReply(QNetworkReply* reply) override;
 
@@ -40,7 +40,19 @@ class ScryfallDownloader : public CardArtDownloader
     static bool HasBackside(const QJsonDocument& card_info);
     static QString CardBackFilename(const QString& card_back_id);
 
+    enum class RequestType
+    {
+        CardInfo,
+        CardImage,
+        BacksideImage,
+    };
+
+    QNetworkReply* DoRequestWithMetadata(QString request_uri, QString file_name, size_t index, RequestType request_type);
+    QNetworkReply* DoRequestWithoutMetadata(QString request_uri);
+
     bool NextRequest();
+
+    std::vector<QString> m_Queries;
 
     std::vector<DecklistCard> m_Cards;
     std::unordered_map<QString, size_t> m_FileNameIndexMap;
@@ -49,19 +61,15 @@ class ScryfallDownloader : public CardArtDownloader
     std::vector<BacksideRequest> m_Backsides;
     uint32_t m_Downloads{ 0 };
 
-    enum class RequestType
-    {
-        CardInfo,
-        CardImage,
-        BacksideImage,
-    };
+    uint32_t m_Progress{ 0 };
+
     struct MetaData
     {
         QString m_FileName;
         size_t m_Index;
         RequestType m_Type;
     };
-    std::unordered_map<QNetworkReply*, MetaData> m_ReplyMetaData;
+    std::unordered_map<const QNetworkReply*, MetaData> m_ReplyMetaData;
 
     size_t m_TotalRequests{};
     std::vector<QNetworkReply*> m_Requests{};

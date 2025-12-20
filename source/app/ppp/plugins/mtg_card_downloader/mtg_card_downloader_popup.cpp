@@ -28,8 +28,8 @@
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
-#include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
+#include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
 
 class DownloaderTextEdit : public QTextEdit
@@ -65,7 +65,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     setWindowFlags(Qt::WindowType::Dialog);
 
     m_TextInput = new DownloaderTextEdit;
-    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA) or MPC Autofill xml");
+    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), MPC Autofill xml, or a Scryfall query prepended with $");
 
     m_Settings = new QCheckBox{ "Adjust Settings" };
     m_Settings->setChecked(true);
@@ -126,6 +126,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             {
             case InputType::Decklist:
                 m_Hint->setText("Input inferred as decklist...");
+                break;
+            case InputType::ScryfallQuery:
+                m_Hint->setText("Input inferred as Scryfall query...");
                 break;
             case InputType::MPCAutofill:
                 m_Hint->setText("Input inferred as MPC Autofill xml...");
@@ -247,7 +250,13 @@ void MtgDownloaderPopup::DoDownload()
     {
     default:
     case InputType::Decklist:
-        LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
+        [[fallthrough]];
+    case InputType::ScryfallQuery:
+        LogInfo("Downloading {} to {}",
+                m_InputType == InputType::Decklist
+                    ? "Decklist"
+                    : "Scryfall query",
+                m_OutputDir.path().toStdString());
         m_Downloader = std::make_unique<ScryfallDownloader>(
             std::move(skip_images),
             ToQString(m_Project.m_Data.m_BacksideAutoPattern));
@@ -411,6 +420,11 @@ void MtgDownloaderPopup::ValidateSettings()
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
 {
+    if (text.startsWith("$"))
+    {
+        return InputType::ScryfallQuery;
+    }
+
     if (text.startsWith("<order>") && text.endsWith("</order>"))
     {
         return InputType::MPCAutofill;

@@ -22,6 +22,7 @@ class PluginInterface;
 enum class InputType
 {
     Decklist,
+    ScryfallQuery,
     MPCAutofill,
     None,
 };

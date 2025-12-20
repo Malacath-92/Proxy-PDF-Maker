@@ -1,9 +1,10 @@
-#include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
+#include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 
 #include <ranges>
 #include <vector>
 
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMetaEnum>
@@ -37,14 +38,30 @@ ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files,
 }
 ScryfallDownloader::~ScryfallDownloader() = default;
 
-bool ScryfallDownloader::ParseInput(const QString& decklist)
+bool ScryfallDownloader::ParseInput(const QString& input)
 {
-    auto decklist_type{ InferDecklistType(decklist) };
-    m_Cards = ParseDecklist(decklist_type, decklist);
-
-    for (size_t i = 0; i < m_Cards.size(); i++)
+    if (input.startsWith("$"))
     {
-        m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
+        const auto lines{
+            input.split(QRegularExpression{ "[\r\n]" }, Qt::SplitBehaviorFlags::SkipEmptyParts)
+        };
+        for (const auto& line : lines)
+        {
+            if (line.startsWith("$"))
+            {
+                m_Queries.push_back(line.sliced(1));
+            }
+        }
+    }
+    else
+    {
+        auto decklist_type{ InferDecklistType(input) };
+        m_Cards = ParseDecklist(decklist_type, input);
+
+        for (size_t i = 0; i < m_Cards.size(); i++)
+        {
+            m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
+        }
     }
 
     return true;
@@ -52,7 +69,14 @@ bool ScryfallDownloader::ParseInput(const QString& decklist)
 
 bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
-    m_TotalRequests = static_cast<uint32_t>(m_Cards.size()) * 2;
+    if (!m_Queries.empty())
+    {
+        m_TotalRequests = m_Queries.size();
+    }
+    else
+    {
+        m_TotalRequests = static_cast<uint32_t>(m_Cards.size()) * 2;
+    }
 
     Progress(0, static_cast<int>(m_TotalRequests));
 
@@ -68,53 +92,90 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
         return;
     }
 
-    const auto& meta_data{ m_ReplyMetaData[reply] };
-    if (meta_data.m_Type == RequestType::CardInfo)
+    if (!m_Queries.empty())
     {
-        const auto& card{ m_Cards[meta_data.m_Index] };
         auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
-        if (!card.m_Set.has_value())
+
+        for (const auto& card : reply_json["data"].toArray())
         {
-            m_CardInfos.push_back(std::move(reply_json));
-        }
-        else if (!card.m_CollectorNumber.has_value())
-        {
-            m_CardInfos.push_back(QJsonDocument{
-                reply_json["data"][0].toObject(),
+            auto card_name{ card.toObject()["name"].toString() };
+            auto card_set{ card.toObject()["set"].toString() };
+            auto card_collector_number{ card.toObject()["collector_number"].toString() };
+            auto card_file_name{ QString{ "%2 (%3) - %1.png" }
+                                     .arg(card_name)
+                                     .arg(card_set.toUpper())
+                                     .arg(card_collector_number.rightJustified(4, '0')) };
+            m_Cards.push_back(DecklistCard{
+                .m_Name{ std::move(card_name) },
+                .m_FileName{ std::move(card_file_name) },
+                .m_Amount = 1,
+                .m_Set{ std::move(card_set) },
+                .m_CollectorNumber{ std::move(card_collector_number) },
             });
+            m_TotalRequests += 2;
+        }
+
+        if (reply_json["has_more"].toBool())
+        {
+            DoRequestWithoutMetadata(reply_json["next_page"].toString());
         }
         else
         {
-            m_CardInfos.push_back(std::move(reply_json));
+            m_Queries.pop_back();
+            m_Progress++;
         }
-
-        Progress(static_cast<int>(m_CardInfos.size()),
-                 static_cast<int>(m_TotalRequests));
     }
     else
     {
-        auto image_available{
-            [this, reply](const QString& file_name)
-            {
-                LogInfo("Received data of {}", file_name.toStdString());
-                ImageAvailable(reply->readAll(), file_name);
-                ++m_Downloads;
-                Progress(static_cast<int>(m_Downloads + m_CardInfos.size()),
-                         static_cast<int>(m_TotalRequests));
-            },
-        };
-        if (meta_data.m_Type == RequestType::CardImage)
+        const auto& meta_data{ m_ReplyMetaData[reply] };
+        if (meta_data.m_Type == RequestType::CardInfo)
         {
             const auto& card{ m_Cards[meta_data.m_Index] };
-            image_available(card.m_FileName);
+            auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
+            if (!card.m_Set.has_value())
+            {
+                m_CardInfos.push_back(std::move(reply_json));
+            }
+            else if (!card.m_CollectorNumber.has_value())
+            {
+                m_CardInfos.push_back(QJsonDocument{
+                    reply_json["data"][0].toObject(),
+                });
+            }
+            else
+            {
+                m_CardInfos.push_back(std::move(reply_json));
+            }
+
+            m_Progress++;
         }
-        else if (meta_data.m_Type == RequestType::BacksideImage)
+        else
         {
-            const auto& backside_card{ m_Backsides[meta_data.m_Index] };
-            const auto file_name{ BacksideFilename(backside_card.m_Front.m_FileName) };
-            image_available(file_name);
+            auto image_available{
+                [this, reply](const QString& file_name)
+                {
+                    LogInfo("Received data of {}", file_name.toStdString());
+                    ImageAvailable(reply->readAll(), file_name);
+                    m_Downloads++;
+                    m_Progress++;
+                },
+            };
+            if (meta_data.m_Type == RequestType::CardImage)
+            {
+                const auto& card{ m_Cards[meta_data.m_Index] };
+                image_available(card.m_FileName);
+            }
+            else if (meta_data.m_Type == RequestType::BacksideImage)
+            {
+                const auto& backside_card{ m_Backsides[meta_data.m_Index] };
+                const auto file_name{ BacksideFilename(backside_card.m_Front.m_FileName) };
+                image_available(file_name);
+            }
         }
     }
+
+    Progress(static_cast<int>(m_Progress),
+             static_cast<int>(m_TotalRequests));
 
     reply->deleteLater();
     m_ScryfallTimer.start();
@@ -191,30 +252,46 @@ QString ScryfallDownloader::CardBackFilename(const QString& card_back_id)
     return card_back_id + ".png";
 }
 
+QNetworkReply* ScryfallDownloader::DoRequestWithMetadata(QString request_uri,
+                                                         QString file_name,
+                                                         size_t index,
+                                                         RequestType request_type)
+{
+    auto* reply{ DoRequestWithoutMetadata(std::move(request_uri)) };
+    m_ReplyMetaData[reply] = MetaData{
+        std::move(file_name),
+        index,
+        request_type,
+    };
+    return reply;
+}
+
+QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
+{
+    QNetworkRequest get_request{ std::move(request_uri) };
+    QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+
+    QObject::connect(reply,
+                     &QNetworkReply::errorOccurred,
+                     reply,
+                     [reply](QNetworkReply::NetworkError error)
+                     {
+                         LogError("Error during request {}: {}",
+                                  reply->request().url().toString().toStdString(),
+                                  QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
+                     });
+
+    return reply;
+}
+
 bool ScryfallDownloader::NextRequest()
 {
-    auto do_request{
-        [this](QString request_uri, QString file_name, size_t index, RequestType request_type)
-        {
-            QNetworkRequest get_request{ std::move(request_uri) };
-            QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
-            m_ReplyMetaData[reply] = MetaData{
-                std::move(file_name),
-                index,
-                request_type,
-            };
-
-            QObject::connect(reply,
-                             &QNetworkReply::errorOccurred,
-                             reply,
-                             [reply](QNetworkReply::NetworkError error)
-                             {
-                                 LogError("Error during request {}: {}",
-                                          reply->request().url().toString().toStdString(),
-                                          QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
-                             });
-        },
-    };
+    if (!m_Queries.empty())
+    {
+        DoRequestWithoutMetadata(QString("https://api.scryfall.com/cards/search?q=%1")
+                                     .arg(QUrl::toPercentEncoding(m_Queries.back())));
+        return true;
+    }
 
     const auto cards_in_deck{ m_Cards.size() };
     const bool want_more_infos{ m_CardInfos.size() < cards_in_deck };
@@ -248,7 +325,7 @@ bool ScryfallDownloader::NextRequest()
                 }
             }()
         };
-        do_request(std::move(request_uri), card.m_FileName, index, RequestType::CardInfo);
+        DoRequestWithMetadata(std::move(request_uri), card.m_FileName, index, RequestType::CardInfo);
         return true;
     }
     else if (want_more_arts)
@@ -286,12 +363,12 @@ bool ScryfallDownloader::NextRequest()
             {
                 const auto& card_faces{ card_info["card_faces"] };
                 const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
-                do_request(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
+                DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
             }
             else
             {
                 const auto& request_uri{ card_info["image_uris"]["png"] };
-                do_request(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
+                DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
 
                 if (card_info["card_back_id"].isString())
                 {
@@ -331,7 +408,7 @@ bool ScryfallDownloader::NextRequest()
         const size_t index{ m_Downloads - cards_in_deck };
         const auto& backside_card{ m_Backsides[index] };
         LogInfo("Requesting backside artwork for card {}", backside_card.m_Front.m_Name.toStdString());
-        do_request(backside_card.m_Uri, BacksideFilename(backside_card.m_Front.m_FileName), index, RequestType::BacksideImage);
+        DoRequestWithMetadata(backside_card.m_Uri, BacksideFilename(backside_card.m_Front.m_FileName), index, RequestType::BacksideImage);
 
         return true;
     }
