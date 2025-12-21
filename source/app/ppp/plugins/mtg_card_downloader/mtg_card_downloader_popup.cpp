@@ -82,6 +82,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_ProgressBar = new QProgressBar;
     m_ProgressBar->setTextVisible(true);
     m_ProgressBar->setVisible(false);
+    m_ProgressBar->setFormat("%v/%m Requests");
 
     auto* buttons{ new QWidget{} };
     {
