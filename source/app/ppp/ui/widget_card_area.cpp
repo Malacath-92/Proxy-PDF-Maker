@@ -539,13 +539,10 @@ class CardScrollArea : public QScrollArea
 
     virtual void showEvent(QShowEvent* event) override;
 
-    Project& m_Project;
-
     CardGrid* m_Grid;
 };
 
 CardScrollArea::CardScrollArea(Project& project)
-    : m_Project{ project }
 {
     m_Grid = new CardGrid{ project };
 
@@ -728,7 +725,7 @@ CardArea::CardArea(Project& project)
     QObject::connect(&m_RefreshTimer,
                      &QTimer::timeout,
                      this,
-                     [this, &project]()
+                     [this]()
                      {
                          m_ScrollArea->FullRefresh();
 
