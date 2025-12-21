@@ -1003,6 +1003,20 @@ void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_car
         AutoMatchBackside(new_card_name);
         std::ranges::replace(m_Data.m_CardsList, old_card_name, new_card_name);
     }
+
+    const bool old_hidden{ old_card_name.string().starts_with("__") };
+    const bool new_hidden{ new_card_name.string().starts_with("__") };
+    if (old_hidden != new_hidden)
+    {
+        if (old_hidden)
+        {
+            UnhideCard(new_card_name);
+        }
+        else
+        {
+            HideCard(new_card_name);
+        }
+    }
 }
 
 void Project::CardModified(const fs::path& card_name)
