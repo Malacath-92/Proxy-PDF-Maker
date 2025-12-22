@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QGridLayout>
 #include <QHBoxLayout>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
@@ -113,7 +114,7 @@ class SelectableCardGrid : public QWidget
     SelectableCardGrid(const Project& project,
                        std::span<const fs::path> ignored_images)
     {
-        auto* grid_layout{ new QGridLayout };
+        // Make all cards and dummies ahead of time
         {
             for (auto& card_info : project.GetCards())
             {
@@ -124,25 +125,69 @@ class SelectableCardGrid : public QWidget
                     continue;
                 }
 
-                const auto i{ m_Cards.size() };
                 auto* card_widget{ new SelectableCard{ card_name, project } };
                 card_widget->installEventFilter(this);
-                const auto x{ static_cast<int>(i / c_Columns) };
-                const auto y{ static_cast<int>(i % c_Columns) };
-                grid_layout->addWidget(card_widget, x, y);
-
-                m_Cards.push_back(card_widget);
+                m_Cards.push_back({ card_widget, ToQString(card_name).toLower() });
             }
 
-            for (size_t j = m_Cards.size(); j < c_Columns; j++)
+            for (size_t j = 0; j < c_Columns; j++)
             {
-                auto* card_widget{ new QWidget };
-                grid_layout->addWidget(card_widget, 0, static_cast<int>(j));
+                auto* dummy_widget{ new QWidget };
 
-                QSizePolicy size_policy{ card_widget->sizePolicy() };
+                QSizePolicy size_policy{ dummy_widget->sizePolicy() };
                 size_policy.setRetainSizeWhenHidden(true);
-                card_widget->setSizePolicy(size_policy);
-                card_widget->setVisible(false);
+                dummy_widget->setSizePolicy(size_policy);
+                dummy_widget->setVisible(false);
+
+                m_Dummies.push_back(dummy_widget);
+            }
+        }
+
+        ApplyFilter("");
+    }
+
+    void ApplyFilter(const QString& filter)
+    {
+        // Remove cards from the old layout
+        if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
+        {
+            for (auto& [card, card_name] : m_Cards)
+            {
+                old_layout->removeWidget(card);
+                card->setParent(nullptr);
+            }
+            for (auto* dummy : m_Dummies)
+            {
+                old_layout->removeWidget(dummy);
+                dummy->setParent(nullptr);
+            }
+            delete old_layout;
+        }
+
+        auto* grid_layout{ new QGridLayout };
+
+        {
+            const QString filter_lower{ filter.toLower() };
+            size_t i{ 0 };
+
+            // Put cards into the layout, if the filter permits
+            for (auto& [card, card_name] : m_Cards)
+            {
+                if (filter.isEmpty() || card_name.contains(filter_lower))
+                {
+                    const auto x{ static_cast<int>(i / c_Columns) };
+                    const auto y{ static_cast<int>(i % c_Columns) };
+                    grid_layout->addWidget(card, x, y);
+
+                    ++i;
+                }
+            }
+
+            // Fill empty columns with dummies
+            for (size_t j = i; j < c_Columns; j++)
+            {
+                auto* dummy_widget{ m_Dummies[j] };
+                grid_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
             }
 
             for (int c = 0; c < grid_layout->columnCount(); c++)
@@ -150,12 +195,12 @@ class SelectableCardGrid : public QWidget
                 grid_layout->setColumnStretch(c, 1);
             }
 
-            m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(m_Cards.size()) / c_Columns));
+            m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / c_Columns));
         }
 
         setLayout(grid_layout);
 
-        setMinimumWidth(TotalWidthFromItemWidth(m_Cards[0]->minimumWidth()));
+        setMinimumWidth(TotalWidthFromItemWidth(m_Cards[0].m_Widget->minimumWidth()));
         setMinimumHeight(SelectableCardGrid::heightForWidth(minimumWidth()));
         adjustSize();
     }
@@ -188,7 +233,7 @@ class SelectableCardGrid : public QWidget
         const auto spacing{ layout()->spacing() };
 
         const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (c_Columns - 1)) / c_Columns };
-        const auto item_height{ m_Cards[0]->heightForWidth(static_cast<int>(item_width)) };
+        const auto item_height{ m_Cards[0].m_Widget->heightForWidth(static_cast<int>(item_width)) };
 
         const auto height{ item_height * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1) };
         return static_cast<int>(height);
@@ -243,7 +288,13 @@ class SelectableCardGrid : public QWidget
     QObject* m_ClickStart{ nullptr };
     SelectableCard* m_Selected{ nullptr };
 
-    std::vector<SelectableCard*> m_Cards;
+    struct Card
+    {
+        SelectableCard* m_Widget;
+        QString m_NameLowercase;
+    };
+    std::vector<Card> m_Cards;
+    std::vector<QWidget*> m_Dummies;
 
     static inline constexpr uint32_t c_Columns{ 6 };
     uint32_t m_Rows;
@@ -259,6 +310,9 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
 
     setWindowFlags(Qt::WindowType::Dialog);
     setWindowTitle("Choose Image");
+
+    m_Filter = new QLineEdit;
+    m_Filter->setPlaceholderText("Filter");
 
     const auto& cards{ project.GetCards() };
     const auto num_valid_ignored_images{
@@ -306,11 +360,19 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     window_buttons->setLayout(buttons_layout);
 
     auto* outer_layout{ new QVBoxLayout };
+    outer_layout->addWidget(m_Filter);
     outer_layout->addWidget(grid_scroll);
     outer_layout->addWidget(window_buttons);
 
     setLayout(outer_layout);
 
+    QObject::connect(m_Filter,
+                     &QLineEdit::textChanged,
+                     this,
+                     [this](const QString& text)
+                     {
+                         m_Grid->ApplyFilter(text);
+                     });
     QObject::connect(ok_button,
                      &QPushButton::clicked,
                      this,

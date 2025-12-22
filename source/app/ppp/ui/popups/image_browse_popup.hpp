@@ -2,6 +2,8 @@
 
 #include <ppp/ui/popups.hpp>
 
+class QLineEdit;
+
 class Project;
 class SelectableCardGrid;
 
@@ -17,5 +19,6 @@ class ImageBrowsePopup : public PopupBase
     std::optional<fs::path> Show();
 
   private:
+    QLineEdit* m_Filter{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };
 };
