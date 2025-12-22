@@ -2,8 +2,8 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_print_preview.hpp>
 #include <ppp/ui/widget_card_area.hpp>
+#include <ppp/ui/widget_print_preview.hpp>
 
 MainTabs::MainTabs(CardArea* card_area, PrintPreview* print_preview)
 {

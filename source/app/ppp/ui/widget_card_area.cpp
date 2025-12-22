@@ -89,7 +89,7 @@ class CardWidget : public QFrame
 
         const auto margins{ layout()->contentsMargins() };
         const auto minimum_img_width{ card_widget->minimumWidth() };
-        const auto minimum_width{ minimum_img_width + margins.left() + margins.right() };
+        const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
         setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
 
         setFrameShape(Shape::Box);
@@ -168,6 +168,11 @@ class CardWidget : public QFrame
                 stacked_widget->RefreshBackside(backside_image);
             }
         }
+
+        const auto margins{ layout()->contentsMargins() };
+        const auto minimum_img_width{ m_ImageWidget->minimumWidth() };
+        const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
+        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
     }
 
   private:
@@ -371,13 +376,9 @@ class CardGrid : public QWidget
         return static_cast<int>(height);
     }
 
-    virtual void resizeEvent(QResizeEvent* event) override
+    virtual void resizeEvent(QResizeEvent* event)
     {
         QWidget::resizeEvent(event);
-
-        const auto width{ event->size().width() };
-        const auto height{ heightForWidth(width) };
-        setFixedHeight(height);
     }
 
     void BacksideEnabledChanged()
@@ -489,7 +490,7 @@ class CardGrid : public QWidget
 
         setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
         setMinimumHeight(heightForWidth(minimumWidth()));
-        adjustSize();
+        setFixedHeight(heightForWidth(size().width()));
     }
 
     bool HasCard(const fs::path& card_name) const
@@ -533,11 +534,13 @@ class CardScrollArea : public QScrollArea
     }
 
     void FullRefresh();
+    void RefreshGridSize();
 
   private:
-    int ComputeMinimumWidth();
+    int ComputeMinimumWidth() const;
 
     virtual void showEvent(QShowEvent* event) override;
+    virtual void resizeEvent(QResizeEvent* event) override;
 
     CardGrid* m_Grid;
 };
@@ -557,19 +560,34 @@ void CardScrollArea::FullRefresh()
 {
     m_Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
+    RefreshGridSize();
 }
 
-int CardScrollArea::ComputeMinimumWidth()
+void CardScrollArea::RefreshGridSize()
 {
-    const auto margins{ widget()->layout()->contentsMargins() };
-    return m_Grid->minimumWidth() + 2 * verticalScrollBar()->width() + margins.left() + margins.right();
+    const auto width{ size().width() };
+    const auto height{ m_Grid->heightForWidth(width) };
+    m_Grid->setFixedHeight(height);
+}
+
+int CardScrollArea::ComputeMinimumWidth() const
+{
+    const auto margins{ contentsMargins() };
+    const auto scrollbar_width{ verticalScrollBar()->isVisible() ? verticalScrollBar()->width() : 0 };
+    return m_Grid->minimumWidth() + 2 * scrollbar_width + margins.left() + margins.right();
 }
 
 void CardScrollArea::showEvent(QShowEvent* event)
 {
     QScrollArea::showEvent(event);
-
     setMinimumWidth(ComputeMinimumWidth());
+    RefreshGridSize();
+}
+
+void CardScrollArea::resizeEvent(QResizeEvent* event)
+{
+    QScrollArea::resizeEvent(event);
+    RefreshGridSize();
 }
 
 CardArea::CardArea(Project& project)

@@ -571,8 +571,6 @@ StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* back
     this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
     this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
 
-    adjustSize();
-
     m_Image = image;
     m_Backside = backside;
     m_BacksideContainer = backside_container;

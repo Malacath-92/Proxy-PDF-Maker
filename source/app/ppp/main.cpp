@@ -32,13 +32,13 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_actions.hpp>
+#include <ppp/ui/widget_card_area.hpp>
 #include <ppp/ui/widget_card_options.hpp>
 #include <ppp/ui/widget_global_options.hpp>
 #include <ppp/ui/widget_guides_options.hpp>
 #include <ppp/ui/widget_options_area.hpp>
 #include <ppp/ui/widget_print_options.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
-#include <ppp/ui/widget_card_area.hpp>
 
 #include <ppp/plugins/plugin_interface.hpp>
 

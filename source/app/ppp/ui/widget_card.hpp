@@ -23,7 +23,7 @@ class CardImage : public QLabel
         bool m_RoundedCorners{ true };
         Image::Rotation m_Rotation{ Image::Rotation::None };
         Length m_BleedEdge{ 0_mm };
-        Pixel m_MinimumWidth{ 130_pix };
+        Pixel m_MinimumWidth{ 0_pix };
     };
 
     CardImage(const fs::path& card_name, const Project& project, Params params);
