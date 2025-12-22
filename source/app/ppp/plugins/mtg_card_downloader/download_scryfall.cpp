@@ -103,9 +103,19 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
         for (const auto& card : data)
         {
-            auto card_name{ card.toObject()["name"].toString() };
-            auto card_set{ card.toObject()["set"].toString() };
-            auto card_collector_number{ card.toObject()["collector_number"].toString() };
+            const auto card_obj{ card.toObject() };
+            auto card_name{
+                [&]()
+                {
+                    if (card_obj.contains("card_faces"))
+                    {
+                        return card_obj["card_faces"][0]["name"].toString();
+                    }
+                    return card_obj["name"].toString();
+                }()
+            };
+            auto card_set{ card_obj["set"].toString() };
+            auto card_collector_number{ card_obj["collector_number"].toString() };
             auto card_file_name{ QString{ "%2 (%3) - %1.png" }
                                      .arg(card_name)
                                      .arg(card_set.toUpper())
