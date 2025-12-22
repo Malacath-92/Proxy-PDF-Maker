@@ -221,6 +221,9 @@ To change the backside for an individual card, click on the backside for that ca
 #### Backside Offset
 In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Backside Offset` field.
 
+#### Backside Rotation [Advanced Mode]
+Some printers may even print at a slight angle. To compensate for this when printing double-sided you'll have to measure the angle with a test print and input it into this field. Each backside will be rotated counter-clockwise around its center-point by the chosen angle.
+
 ### Global Config
 
 #### Units
