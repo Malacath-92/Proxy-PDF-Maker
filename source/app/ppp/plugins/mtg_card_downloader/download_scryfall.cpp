@@ -96,7 +96,12 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
     {
         auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
 
-        for (const auto& card : reply_json["data"].toArray())
+        const auto data{ reply_json["data"].toArray() };
+        LogInfo("Adding {} cards for query {}...",
+                data.size(),
+                m_Queries.back().toStdString());
+
+        for (const auto& card : data)
         {
             auto card_name{ card.toObject()["name"].toString() };
             auto card_set{ card.toObject()["set"].toString() };
@@ -117,7 +122,10 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
         if (reply_json["has_more"].toBool())
         {
-            DoRequestWithoutMetadata(reply_json["next_page"].toString());
+            m_QueryMoreData = reply_json["next_page"].toString();
+            LogInfo("Query {} has more data, fetching {}...",
+                    m_Queries.back().toStdString(),
+                    m_QueryMoreData.value().toStdString());
         }
         else
         {
@@ -268,6 +276,12 @@ QNetworkReply* ScryfallDownloader::DoRequestWithMetadata(QString request_uri,
 
 QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
 {
+    if (request_uri.isEmpty())
+    {
+        LogError("Empty request... Download cancelled...");
+        return nullptr;
+    }
+
     QNetworkRequest get_request{ std::move(request_uri) };
     QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
 
@@ -286,6 +300,13 @@ QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
 
 bool ScryfallDownloader::NextRequest()
 {
+    if (m_QueryMoreData.has_value())
+    {
+        DoRequestWithoutMetadata(std::move(m_QueryMoreData.value()));
+        m_QueryMoreData.reset();
+        return true;
+    }
+
     if (!m_Queries.empty())
     {
         DoRequestWithoutMetadata(QString("https://api.scryfall.com/cards/search?q=%1")
@@ -372,30 +393,34 @@ bool ScryfallDownloader::NextRequest()
 
                 if (card_info["card_back_id"].isString())
                 {
-                    LogInfo("Requesting card back id for card {}", card.m_Name.toStdString());
                     const auto& card_back_id{ card_info["card_back_id"].toString() };
-
-                    if (!std::ranges::contains(m_SkipFiles, card_back_id))
+                    if (!std::ranges::contains(m_Backsides, card_back_id, [](const auto& req)
+                                               { return req.m_Front.m_Name; }))
                     {
-                        const auto card_back_uri{ QString{ "https://backs.scryfall.io/png/%1/%2/%3.png" }
-                                                      .arg(card_back_id[0])
-                                                      .arg(card_back_id[1])
-                                                      .arg(card_back_id) };
+                        LogInfo("Requesting card back id for card {}", card.m_Name.toStdString());
 
-                        m_Backsides.push_back(BacksideRequest{
-                            .m_Uri{ card_back_uri },
-                            .m_Front{
-                                .m_Name{ card_back_id },
-                                .m_FileName{ CardBackFilename(card_back_id) },
-                                .m_Amount = 0,
+                        if (!std::ranges::contains(m_SkipFiles, card_back_id))
+                        {
+                            const auto card_back_uri{ QString{ "https://backs.scryfall.io/png/%1/%2/%3.png" }
+                                                          .arg(card_back_id[0])
+                                                          .arg(card_back_id[1])
+                                                          .arg(card_back_id) };
 
-                                .m_Set{ std::nullopt },
-                                .m_CollectorNumber{ std::nullopt },
-                            },
-                        });
-                        ++m_TotalRequests;
+                            m_Backsides.push_back(BacksideRequest{
+                                .m_Uri{ card_back_uri },
+                                .m_Front{
+                                    .m_Name{ card_back_id },
+                                    .m_FileName{ CardBackFilename(card_back_id) },
+                                    .m_Amount = 0,
 
-                        m_SkipFiles.push_back(card_back_id);
+                                    .m_Set{ std::nullopt },
+                                    .m_CollectorNumber{ std::nullopt },
+                                },
+                            });
+                            ++m_TotalRequests;
+
+                            m_SkipFiles.push_back(card_back_id);
+                        }
                     }
                 }
             }

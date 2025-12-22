@@ -53,6 +53,7 @@ class ScryfallDownloader : public CardArtDownloader
     bool NextRequest();
 
     std::vector<QString> m_Queries;
+    std::optional<QString> m_QueryMoreData;
 
     std::vector<DecklistCard> m_Cards;
     std::unordered_map<QString, size_t> m_FileNameIndexMap;
