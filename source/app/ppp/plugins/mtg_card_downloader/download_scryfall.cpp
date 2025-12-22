@@ -378,7 +378,7 @@ bool ScryfallDownloader::NextRequest()
             LogInfo("Skipping card {}", card.m_Name.toStdString());
             m_Downloads++;
             m_Progress++;
-            Progress(static_cast<int>(m_Downloads + m_CardInfos.size()),
+            Progress(static_cast<int>(m_Progress),
                      static_cast<int>(m_TotalRequests));
             return NextRequest();
         }
