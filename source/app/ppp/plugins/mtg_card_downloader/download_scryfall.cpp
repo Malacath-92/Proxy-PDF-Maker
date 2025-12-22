@@ -133,9 +133,8 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
         if (reply_json["has_more"].toBool())
         {
             m_QueryMoreData = reply_json["next_page"].toString();
-            LogInfo("Query {} has more data, fetching {}...",
-                    m_Queries.back().toStdString(),
-                    m_QueryMoreData.value().toStdString());
+            LogInfo("Query {} has more data, fetching next page...",
+                    m_Queries.back().toStdString());
         }
         else
         {
@@ -383,6 +382,7 @@ bool ScryfallDownloader::NextRequest()
         {
             LogInfo("Skipping card {}", card.m_Name.toStdString());
             m_Downloads++;
+            m_Progress++;
             Progress(static_cast<int>(m_Downloads + m_CardInfos.size()),
                      static_cast<int>(m_TotalRequests));
             return NextRequest();
