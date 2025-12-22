@@ -725,6 +725,13 @@ bool Project::UnhideCard(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
     {
+        if (card->m_Hidden == 0)
+        {
+            LogError("Attempting to unhide card {}, but it is already visible...",
+                     card_name.string());
+            return false;
+        }
+
         card->m_Hidden--;
         const bool visible{ card->m_Hidden == 0 };
         if (visible)
