@@ -22,7 +22,7 @@ struct ScryfallDownloader::BacksideRequest
 };
 
 ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files,
-                                       const QString& backside_pattern)
+                                       const std::optional<QString>& backside_pattern)
     : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
     m_ScryfallTimer.setInterval(100);
@@ -365,19 +365,6 @@ bool ScryfallDownloader::NextRequest()
         const auto& card_info{ m_CardInfos[index] };
         const bool has_backside{ HasBackside(card_info) };
 
-        if (has_backside &&
-            !std::ranges::contains(m_SkipFiles, BacksideFilename(card.m_FileName)))
-        {
-            const auto& card_faces{ card_info["card_faces"] };
-            const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
-
-            m_Backsides.push_back(BacksideRequest{
-                .m_Uri{ back_face_uri.toString() },
-                .m_Front{ card },
-            });
-            ++m_TotalRequests;
-        }
-
         if (std::ranges::contains(m_SkipFiles, card.m_FileName))
         {
             LogInfo("Skipping card {}", card.m_Name.toStdString());
@@ -395,18 +382,32 @@ bool ScryfallDownloader::NextRequest()
                 const auto& card_faces{ card_info["card_faces"] };
                 const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
                 DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
+
+                if (IncludeBacksides())
+                {
+                    if (has_backside &&
+                        !std::ranges::contains(m_SkipFiles, BacksideFilename(card.m_FileName)))
+                    {
+                        const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
+
+                        m_Backsides.push_back(BacksideRequest{
+                            .m_Uri{ back_face_uri.toString() },
+                            .m_Front{ card },
+                        });
+                        ++m_TotalRequests;
+                    }
+                }
             }
             else
             {
                 const auto& request_uri{ card_info["image_uris"]["png"] };
                 DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
 
-                if (card_info["card_back_id"].isString())
+                if (IncludeBacksides())
                 {
-                    const auto& card_back_id{ card_info["card_back_id"].toString() };
-                    if (!std::ranges::contains(m_Backsides, card_back_id, [](const auto& req)
-                                               { return req.m_Front.m_Name; }))
+                    if (card_info["card_back_id"].isString())
                     {
+                        const auto& card_back_id{ card_info["card_back_id"].toString() };
                         LogInfo("Requesting card back id for card {}", card.m_Name.toStdString());
 
                         if (!std::ranges::contains(m_SkipFiles, card_back_id))

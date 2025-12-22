@@ -11,7 +11,7 @@
 #include <ppp/util/log.hpp>
 
 MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files,
-                                     const QString& backside_pattern)
+                                     const std::optional<QString>& backside_pattern)
     : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
 }
@@ -71,6 +71,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
             }
         }
 
+        if (IncludeBacksides())
         {
             QDomElement backs{ order.firstChildElement("backs") };
             if (!backs.isNull())
@@ -126,6 +127,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
         }
     }
 
+    if (IncludeBacksides())
     {
         QDomElement backside{ order.firstChildElement("cardback") };
         if (backside.isNull())
@@ -221,7 +223,10 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
             queue_download(card.m_Backside.value().m_Name, card.m_Backside.value().m_Id);
         }
     }
-    queue_download("__back.png", m_Set.m_BacksideId);
+    if (m_Set.m_BacksideId.has_value())
+    {
+        queue_download("__back.png", m_Set.m_BacksideId.value());
+    }
 
     m_TotalRequests = m_PendingRequests.size();
     Progress(0, static_cast<int>(m_TotalRequests));

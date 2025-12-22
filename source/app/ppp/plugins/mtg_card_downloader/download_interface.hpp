@@ -15,7 +15,8 @@ class CardArtDownloader : public QObject
     Q_OBJECT
 
   public:
-    CardArtDownloader(std::vector<QString> skip_files, QString backside_pattern);
+    CardArtDownloader(std::vector<QString> skip_files,
+                      const std::optional<QString>& backside_pattern);
     virtual ~CardArtDownloader() = default;
 
     virtual bool ParseInput(const QString& xml) = 0;
@@ -35,20 +36,29 @@ class CardArtDownloader : public QObject
     void ImageAvailable(const QByteArray& image_data, const QString& file_name);
 
   protected:
+    bool IncludeBacksides() const;
     QString BacksideFilename(const QString& file_name) const;
 
     std::vector<QString> m_SkipFiles;
 
   private:
+    bool m_IncludeBacksides;
     QString m_BacksidePrefix;
     QString m_BacksideSuffix;
 };
 
-inline CardArtDownloader::CardArtDownloader(std::vector<QString> skip_files, QString backside_pattern)
+inline CardArtDownloader::CardArtDownloader(std::vector<QString> skip_files,
+                                            const std::optional<QString>& backside_pattern)
     : m_SkipFiles{ std::move(skip_files) }
-    , m_BacksidePrefix{ backside_pattern.split('$')[0] }
-    , m_BacksideSuffix{ backside_pattern.split('$')[1] }
+    , m_IncludeBacksides{ backside_pattern.has_value() }
+    , m_BacksidePrefix{ backside_pattern.has_value() ? backside_pattern.value().split('$')[0] : "" }
+    , m_BacksideSuffix{ backside_pattern.has_value() ? backside_pattern.value().split('$')[1] : "" }
 {
+}
+
+inline bool CardArtDownloader::IncludeBacksides() const
+{
+    return m_IncludeBacksides;
 }
 
 inline QString CardArtDownloader::BacksideFilename(const QString& file_name) const

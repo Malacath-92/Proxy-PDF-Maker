@@ -11,7 +11,8 @@ class MPCFillDownloader : public CardArtDownloader
     Q_OBJECT
 
   public:
-    MPCFillDownloader(std::vector<QString> skip_files, const QString& backside_pattern);
+    MPCFillDownloader(std::vector<QString> skip_files,
+                      const std::optional<QString>& backside_pattern);
 
     virtual bool ParseInput(const QString& xml) override;
     virtual bool BeginDownload(QNetworkAccessManager& network_manager) override;
@@ -42,7 +43,7 @@ class MPCFillDownloader : public CardArtDownloader
     struct MPCFillSet
     {
         std::vector<MPCFillCard> m_Frontsides;
-        QString m_BacksideId;
+        std::optional<QString> m_BacksideId;
     };
     struct CardParseResult
     {

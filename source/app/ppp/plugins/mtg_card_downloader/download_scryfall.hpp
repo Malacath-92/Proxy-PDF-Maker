@@ -19,7 +19,8 @@ class ScryfallDownloader : public CardArtDownloader
     Q_OBJECT
 
   public:
-    ScryfallDownloader(std::vector<QString> skip_files, const QString& backside_pattern);
+    ScryfallDownloader(std::vector<QString> skip_files,
+                       const std::optional<QString>& backside_pattern);
     virtual ~ScryfallDownloader() override;
 
     virtual bool ParseInput(const QString& input) override;

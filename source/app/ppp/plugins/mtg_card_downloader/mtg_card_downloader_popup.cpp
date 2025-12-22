@@ -70,6 +70,9 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_Settings = new QCheckBox{ "Adjust Settings" };
     m_Settings->setChecked(true);
 
+    m_Backsides = new QCheckBox{ "Download Backsides" };
+    m_Backsides->setChecked(true);
+
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
 
@@ -107,6 +110,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
     layout->addWidget(m_Settings);
+    layout->addWidget(m_Backsides);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
     layout->addWidget(m_Hint);
@@ -247,6 +251,12 @@ void MtgDownloaderPopup::DoDownload()
         std::ranges::to<std::vector>()
     };
 
+    const auto backside_pattern{
+        m_Backsides->isChecked()
+            ? std::optional{ ToQString(m_Project.m_Data.m_BacksideAutoPattern) }
+            : std::nullopt
+    };
+
     switch (m_InputType)
     {
     default:
@@ -260,13 +270,13 @@ void MtgDownloaderPopup::DoDownload()
                 m_OutputDir.path().toStdString());
         m_Downloader = std::make_unique<ScryfallDownloader>(
             std::move(skip_images),
-            ToQString(m_Project.m_Data.m_BacksideAutoPattern));
+            backside_pattern);
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
         m_Downloader = std::make_unique<MPCFillDownloader>(
             std::move(skip_images),
-            ToQString(m_Project.m_Data.m_BacksideAutoPattern));
+            backside_pattern);
         break;
     }
 
@@ -408,9 +418,9 @@ void MtgDownloaderPopup::ValidateSettings()
         m_Router.SetCardSizeChoice("Standard");
     }
 
-    if (!m_Project.m_Data.m_BacksideEnabled)
+    if (m_Backsides->isChecked() != m_Project.m_Data.m_BacksideEnabled)
     {
-        m_Router.SetEnableBackside(true);
+        m_Router.SetEnableBackside(m_Backsides->isChecked());
     }
 
     if (m_Project.m_Data.m_BacksideAutoPattern.empty())

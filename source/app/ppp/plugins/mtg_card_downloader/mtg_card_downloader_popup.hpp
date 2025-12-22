@@ -56,6 +56,7 @@ class MtgDownloaderPopup : public PopupBase
 
     QTextEdit* m_TextInput{ nullptr };
     QCheckBox* m_Settings{ nullptr };
+    QCheckBox* m_Backsides{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
     QLabel* m_Hint{ nullptr };
