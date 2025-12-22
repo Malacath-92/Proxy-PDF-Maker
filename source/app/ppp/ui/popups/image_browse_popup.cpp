@@ -43,16 +43,26 @@ class SelectableCard : public QFrame
         setMinimumWidth(m_CardImage->minimumWidth() + lineWidth() * 2);
     }
 
+    bool ToggleSelected()
+    {
+        m_Selected ? Unselect() : Select();
+        return m_Selected;
+    }
+
     void Select()
     {
         m_Selected = true;
-        setStyleSheet("QFrame{ background-color: purple; }");
+        setStyleSheet("QFrame{ background-color: blue; }");
     }
 
     void Unselect()
     {
         m_Selected = false;
-        if (!underMouse())
+        if (underMouse())
+        {
+            setStyleSheet("QFrame{ background-color: purple; }");
+        }
+        else
         {
             setStyleSheet("QFrame{ background-color: transparent; }");
         }
@@ -209,14 +219,16 @@ class SelectableCardGrid : public QWidget
             QMouseEvent* mouse_event{ static_cast<QMouseEvent*>(event) };
             if (mouse_event->button() == Qt::MouseButton::LeftButton && m_ClickStart == obj)
             {
-                if (auto* card{ dynamic_cast<SelectableCard*>(m_Selected) })
+                auto* card{ dynamic_cast<SelectableCard*>(m_ClickStart) };
+                if (card != nullptr)
                 {
-                    card->Unselect();
-                }
-                if (auto* card{ dynamic_cast<SelectableCard*>(m_ClickStart) })
-                {
-                    card->Select();
-                    m_Selected = card;
+                    auto* current_selected{ dynamic_cast<SelectableCard*>(m_Selected) };
+                    if (current_selected != nullptr && current_selected != card)
+                    {
+                        current_selected->Unselect();
+                    }
+
+                    m_Selected = card->ToggleSelected() ? card : nullptr;
                 }
                 return true;
             }
