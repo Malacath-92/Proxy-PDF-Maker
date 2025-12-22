@@ -84,7 +84,7 @@ Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown whic
     <sup>8</sup> Setting up the Base Pdf option
 </p>
 
-Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to check `Custom Margins` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Right Margin`).
+Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to set `Margins Mode` to `Simple` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Top Margin`).
 
 Lastly you can now press `Render PDF` to generate the pdf.
 
@@ -97,6 +97,9 @@ Lastly you just print as usual, laminate, sticker, whatever you like. Then you p
 ### Initial Setup
 
 Follow the Silhouette Studio instructions up to rendering the document. Make sure you only have `Export Exact Guides` enabled under `Guides Options`. It's recommended to set margins to at least 1.25 cm, but we recommend setting margins to around ~2.5 cm for reasons explained later.
+
+1. In the `Print Options`, set the `Margins Mode` to `Linked`
+2. Change the `All Margins` value to something between 1.25cm and 2.5cm, you may have to do some trial-and-error to find a good value.
 
 ### Creating the Cricut Project
 
