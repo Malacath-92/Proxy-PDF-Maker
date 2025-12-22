@@ -51,6 +51,7 @@ class PngPage final : public PdfPage
     bool m_PerfectFit{};
     PixelSize m_CardSize{};
     PixelSize m_PageSize{};
+    int32_t m_PageHeight{};
     PngImageCache* m_ImageCache;
 };
 

@@ -24,9 +24,9 @@ void PngPage::DrawSolidLine(LineData data, LineStyle style)
     const auto& ty{ data.m_To.y };
 
     const auto real_fx{ ToPixels(fx) };
-    const auto real_fy{ ToPixels(fy) };
+    const auto real_fy{ m_PageHeight - ToPixels(fy) };
     const auto real_tx{ ToPixels(tx) };
-    const auto real_ty{ ToPixels(ty) };
+    const auto real_ty{ m_PageHeight - ToPixels(ty) };
     const auto real_w{ (ToPixels(style.m_Thickness) / 2) * 2 };
 
     const cv::Point line_from{ real_fx, real_fy };
@@ -56,9 +56,9 @@ void PngPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const auto& ty{ data.m_To.y };
 
     const auto real_fx{ ToPixels(fx) };
-    const auto real_fy{ ToPixels(fy) };
+    const auto real_fy{ m_PageHeight - ToPixels(fy) };
     const auto real_tx{ ToPixels(tx) };
-    const auto real_ty{ ToPixels(ty) };
+    const auto real_ty{ m_PageHeight - ToPixels(ty) };
     const auto real_w{ (ToPixels(style.m_Thickness) / 2) * 2 };
 
     const cv::Point line_from{ real_fx, real_fy };
@@ -95,10 +95,10 @@ void PngPage::DrawImage(ImageData data)
     {
         const auto card_idx_x{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(x)) / m_CardSize.x))) };
         const auto card_idx_y{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(y)) / m_CardSize.y))) };
-        const auto real_x{ card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix) };
-        const auto real_y{ card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) };
         const auto real_w{ static_cast<int32_t>(m_CardSize.x / 1_pix) };
         const auto real_h{ static_cast<int32_t>(m_CardSize.y / 1_pix) };
+        const auto real_x{ card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix) };
+        const auto real_y{ m_PageHeight - card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) + real_h };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
             .copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
     }
@@ -108,7 +108,7 @@ void PngPage::DrawImage(ImageData data)
         const auto& h{ data.m_Size.y };
 
         const auto real_x{ ToPixels(x) };
-        const auto real_y{ ToPixels(y) };
+        const auto real_y{ m_PageHeight - ToPixels(y + h) };
         const auto real_w{ ToPixels(w) };
         const auto real_h{ ToPixels(h) };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
@@ -118,11 +118,36 @@ void PngPage::DrawImage(ImageData data)
 
 void PngPage::DrawText(TextData data)
 {
-    const auto real_left{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
-    const auto real_top{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
-    const cv::Scalar black{ 0, 0, 0, 255.0f };
+    const cv::String cv_text{ data.m_Text.data(), data.m_Text.size() };
+    const auto font_face{ cv::FONT_HERSHEY_TRIPLEX };
+    const auto font_scale{ 3.0 };
+    const auto font_thickness{ 3 };
+    const auto text_size{ cv::getTextSize(cv_text, font_face, font_scale, font_thickness, nullptr) };
 
-    cv::putText(TargetImage(), cv::String{ data.m_Text.data(), data.m_Text.size() }, cv::Point{ real_left, real_top }, cv::FONT_HERSHEY_PLAIN, 12, black);
+    const auto real_width{ ToPixels(data.m_BoundingBox.m_BottomRight.x - data.m_BoundingBox.m_TopLeft.x) };
+    const auto real_left{ ToPixels(data.m_BoundingBox.m_TopLeft.x) };
+
+    const auto aligned_left{ real_left + (real_width - text_size.width) / 2 };
+    const auto real_top{ m_PageHeight - ToPixels(data.m_BoundingBox.m_TopLeft.y) };
+    const auto aligned_top{ real_top + text_size.height };
+
+    if (data.m_Backdrop.has_value())
+    {
+        const cv::Rect rect{
+            aligned_left - 5, real_top - 5, text_size.width + 10, text_size.height + 10
+        };
+        const cv::Scalar color{ data.m_Backdrop->b * 255, data.m_Backdrop->g * 255, data.m_Backdrop->r * 255, 255.0f };
+        cv::rectangle(TargetImage(), rect, color, cv::FILLED);
+    }
+
+    const cv::Scalar black{ 0, 0, 0, 255.0f };
+    cv::putText(TargetImage(),
+                cv::String{ data.m_Text.data(), data.m_Text.size() },
+                cv::Point{ aligned_left, aligned_top },
+                font_face,
+                font_scale,
+                black,
+                font_thickness);
 }
 
 void PngPage::RotateFutureContent(Angle angle)
@@ -274,6 +299,7 @@ PngPage* PngDocument::NextPage()
     new_page.m_PerfectFit = m_Project.m_Data.m_PageSize == Config::c_FitSize;
     new_page.m_CardSize = m_PrecomputedCardSize;
     new_page.m_PageSize = m_PrecomputedPageSize;
+    new_page.m_PageHeight = static_cast<int32_t>(m_PrecomputedPageSize.y / 1_pix);
     new_page.m_Page = cv::Mat::zeros(cv::Size{
                                          static_cast<int32_t>(m_PrecomputedPageSize.x / 1_pix),
                                          static_cast<int32_t>(m_PrecomputedPageSize.y / 1_pix) },
