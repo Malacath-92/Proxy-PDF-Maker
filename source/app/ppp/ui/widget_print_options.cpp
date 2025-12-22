@@ -536,6 +536,22 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                 const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
                 m_CardsLayoutHorizontal->setEnabled(layout_horizontal);
                 m_CardsLayoutHorizontal->setVisible(layout_horizontal);
+
+                m_Project.m_Data.m_CardLayoutVertical = dla::uvec2{ 0, 0 };
+                if (layout_vertical)
+                {
+                    m_Project.m_Data.m_CardLayoutVertical.x = static_cast<uint32_t>(m_CardsWidthVertical->value());
+                    m_Project.m_Data.m_CardLayoutVertical.y = static_cast<uint32_t>(m_CardsHeightVertical->value());
+                }
+
+                m_Project.m_Data.m_CardLayoutHorizontal = dla::uvec2{ 0, 0 };
+                if (layout_horizontal)
+                {
+                    m_Project.m_Data.m_CardLayoutHorizontal.x = static_cast<uint32_t>(m_CardsWidthHorizontal->value());
+                    m_Project.m_Data.m_CardLayoutHorizontal.y = static_cast<uint32_t>(m_CardsHeightHorizontal->value());
+                }
+
+                CardLayoutChanged();
             }
 
             if (m_Project.CacheCardLayout())
@@ -548,6 +564,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
             RefreshMargins(false);
         }
     };
+
     auto change_cards_width_vertical{
         [=, this](double v)
         {
