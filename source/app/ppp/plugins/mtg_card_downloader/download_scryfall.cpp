@@ -141,6 +141,14 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
             m_Queries.pop_back();
             m_Progress++;
         }
+
+        if (m_Queries.empty())
+        {
+            for (size_t i = 0; i < m_Cards.size(); i++)
+            {
+                m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
+            }
+        }
     }
     else
     {
