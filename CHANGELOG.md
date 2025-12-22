@@ -6,6 +6,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-23-12
+
+### Added
+- The card area now contains tiny on-boarding instructions when no cards are loaded.
+- Dropping a text file onto the MtG Downloader Plugin will now insert the contents of that text file.
+- A new (unfortunately not as niche as it should be) `Backside Rotation` option was added that allows specifying an angle at which to rotate backsides.
+- The MtG Downloader Plugin now gives the user the option not to change settings.
+- In the same vein, the Plugin has an option not to download backsides.
+- You can now paste `$` followed by a Scryfall query into the MtG Downloader Plugin to download all the cards that the query returns.
+- The progress bar in the MtG Downloader Plugin now gives a bit more detail on the progress.
+- In the image browser (e.g. when selecting a backside) there is now a filter available, that is automatically focused when the window opens.
+
+### Changed
+- The `Image Format` option in the `Global Config` is now named `Image Compression` and has different options to more clearly state what the option does. The old setting will be automatically migrated.
+- A new version of the Pdf library is now used, which brings with it a small speed-up.
+- When setting the `Render to Png` option is used, the output `.png` files will now be named as the pages would be in a pdf document.
+- If a page contains only a single card, the page will now be given the name of that card.
+- The global controls in the card area are now no longer scrolling with the cards.
+- In the card area, the `Remove All External Cards` button is now only shown when the project actually contains external cards.
+- The `Reset All` button was relabeled to `Zero All` to make it clearer what it does.
+
+### Fixed
+- The options side-panel and the card area should no longer shrink such that parts of their contents are obstructed on small screens.
+- When a card is removed from the project while the app runs, all widgets showing that card will now be properly reset.
+- When an image file that is loaded into the app is renamed to remove/add `__` from the beginning of the file, it is now correctly shown/hidden.
+- Using the `Fit` page size and `Mixed` card orientation the preview now shows the actual layout rather than the layout before those settings were chosen.
+- With the `Render to Png` option, the document is no longer render bottom to top.
+
+### Removed
+- The `Wstartpage` theme is no shipped with the app.
+
 ## [1.1.4] - 2025-14-12
 
 ### Added
