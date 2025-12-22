@@ -376,11 +376,6 @@ class CardGrid : public QWidget
         return static_cast<int>(height);
     }
 
-    virtual void resizeEvent(QResizeEvent* event)
-    {
-        QWidget::resizeEvent(event);
-    }
-
     void BacksideEnabledChanged()
     {
         FullRefresh();
