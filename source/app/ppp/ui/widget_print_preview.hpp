@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <QScrollArea>
 #include <QTimer>
 
@@ -22,12 +24,15 @@ class PrintPreview : public QScrollArea
 
     virtual void resizeEvent(QResizeEvent* event) override;
     virtual void wheelEvent(QWheelEvent* event) override;
+    virtual void keyReleaseEvent(QKeyEvent* event) override;
 
   signals:
     void RestoreCardsOrder();
     void ReorderCards(size_t from, size_t to);
 
   private:
+    void GoToPage(uint32_t page);
+
     class PagePreview;
 
     Project& m_Project;
@@ -45,4 +50,7 @@ class PrintPreview : public QScrollArea
     // to avoid cases where we get multiple requests
     // in quick succession
     QTimer m_RefreshTimer;
+
+    std::optional<uint32_t> m_TargetPage{ std::nullopt };
+    QTimer m_NumberTypeTimer;
 };

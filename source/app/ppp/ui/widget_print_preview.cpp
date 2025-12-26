@@ -564,15 +564,6 @@ PrintPreview::PrintPreview(Project& project)
 
     m_ScrollTimer.setInterval(1);
     m_ScrollTimer.setSingleShot(false);
-
-    m_ScrollUpWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Up };
-    m_ScrollUpWidget->setParent(this);
-    m_ScrollUpWidget->setVisible(false);
-
-    m_ScrollDownWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Down };
-    m_ScrollDownWidget->setParent(this);
-    m_ScrollDownWidget->setVisible(false);
-
     QObject::connect(&m_ScrollTimer,
                      &QTimer::timeout,
                      this,
@@ -588,6 +579,14 @@ PrintPreview::PrintPreview(Project& project)
                          }
                      });
 
+    m_ScrollUpWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Up };
+    m_ScrollUpWidget->setParent(this);
+    m_ScrollUpWidget->setVisible(false);
+
+    m_ScrollDownWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Down };
+    m_ScrollDownWidget->setParent(this);
+    m_ScrollDownWidget->setVisible(false);
+
     QObject::connect(static_cast<ArrowWidget*>(m_ScrollUpWidget),
                      &ArrowWidget::OnEnter,
                      &m_ScrollTimer,
@@ -605,6 +604,16 @@ PrintPreview::PrintPreview(Project& project)
                      &ArrowWidget::OnLeave,
                      &m_ScrollTimer,
                      &QTimer::stop);
+
+    m_NumberTypeTimer.setSingleShot(true);
+    m_NumberTypeTimer.setInterval(500);
+    QObject::connect(&m_NumberTypeTimer,
+                     &QTimer::timeout,
+                     this,
+                     [this]()
+                     {
+                         m_TargetPage.reset();
+                     });
 }
 
 void PrintPreview::Refresh()
@@ -814,6 +823,56 @@ void PrintPreview::wheelEvent(QWheelEvent* event)
     if (!m_ScrollUpWidget->isVisible())
     {
         QScrollArea::wheelEvent(event);
+    }
+}
+
+void PrintPreview::keyReleaseEvent(QKeyEvent* event)
+{
+    const auto key{ event->key() };
+    if (key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9)
+    {
+        const auto num{ static_cast<uint32_t>(key - Qt::Key::Key_0) };
+        m_TargetPage = m_TargetPage.value_or(0) * 10 + num;
+        m_NumberTypeTimer.start();
+
+        GoToPage(m_TargetPage.value());
+    }
+}
+
+void PrintPreview::GoToPage(uint32_t page)
+{
+    const auto get_nth_page{
+        [this](uint32_t n) -> const PagePreview*
+        {
+            for (const auto* child : widget()->children())
+            {
+                if (child->isWidgetType())
+                {
+                    if (const auto* page{ dynamic_cast<const PagePreview*>(child) })
+                    {
+                        --n;
+                        if (n == 0)
+                        {
+                            return page;
+                        }
+                    }
+                }
+            }
+            return nullptr;
+        }
+    };
+
+    if (const auto* nth_page{ get_nth_page(page) })
+    {
+        const auto page_pos{ nth_page->pos().y() - widget()->layout()->spacing() };
+        const auto widget_height{ widget()->height() };
+        const auto maximum{ verticalScrollBar()->maximum() };
+        verticalScrollBar()->setValue(maximum * page_pos / (widget_height - height()));
+    }
+    else if (get_nth_page(1) != nullptr)
+    {
+        const auto maximum{ verticalScrollBar()->maximum() };
+        verticalScrollBar()->setValue(maximum );
     }
 }
 
