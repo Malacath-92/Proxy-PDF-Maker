@@ -826,7 +826,7 @@ void PrintPreview::wheelEvent(QWheelEvent* event)
     }
 }
 
-void PrintPreview::keyReleaseEvent(QKeyEvent* event)
+void PrintPreview::keyPressEvent(QKeyEvent* event)
 {
     const auto key{ event->key() };
     if (key >= Qt::Key::Key_0 && key <= Qt::Key::Key_9)
@@ -836,44 +836,67 @@ void PrintPreview::keyReleaseEvent(QKeyEvent* event)
         m_NumberTypeTimer.start();
 
         GoToPage(m_TargetPage.value());
+
+        event->accept();
+    }
+    else if (key == Qt::Key::Key_PageUp || key == Qt::Key::Key_PageDown)
+    {
+        if (const auto* first_page{ GetNthPage(1) })
+        {
+            auto* scroll_bar{ verticalScrollBar() };
+            const auto page_size{ first_page->height() + widget()->layout()->spacing() };
+            if (key == Qt::Key::Key_PageUp)
+            {
+                scroll_bar->setValue(scroll_bar->value() - page_size);
+            }
+            else
+            {
+                scroll_bar->setValue(scroll_bar->value() + page_size);
+            }
+
+            event->accept();
+        }
+    }
+
+    if (!event->isAccepted())
+    {
+        QScrollArea::keyPressEvent(event);
     }
 }
 
 void PrintPreview::GoToPage(uint32_t page)
 {
-    const auto get_nth_page{
-        [this](uint32_t n) -> const PagePreview*
-        {
-            for (const auto* child : widget()->children())
-            {
-                if (child->isWidgetType())
-                {
-                    if (const auto* page{ dynamic_cast<const PagePreview*>(child) })
-                    {
-                        --n;
-                        if (n == 0)
-                        {
-                            return page;
-                        }
-                    }
-                }
-            }
-            return nullptr;
-        }
-    };
-
-    if (const auto* nth_page{ get_nth_page(page) })
+    if (const auto* nth_page{ GetNthPage(page) })
     {
         const auto page_pos{ nth_page->pos().y() - widget()->layout()->spacing() };
         const auto widget_height{ widget()->height() };
         const auto maximum{ verticalScrollBar()->maximum() };
         verticalScrollBar()->setValue(maximum * page_pos / (widget_height - height()));
     }
-    else if (get_nth_page(1) != nullptr)
+    else if (GetNthPage(1) != nullptr)
     {
         const auto maximum{ verticalScrollBar()->maximum() };
-        verticalScrollBar()->setValue(maximum );
+        verticalScrollBar()->setValue(maximum);
     }
+}
+
+const PrintPreview::PagePreview* PrintPreview::GetNthPage(uint32_t n) const
+{
+    for (const auto* child : widget()->children())
+    {
+        if (child->isWidgetType())
+        {
+            if (const auto* page{ dynamic_cast<const PagePreview*>(child) })
+            {
+                --n;
+                if (n == 0)
+                {
+                    return page;
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 #include <widget_print_preview.moc>

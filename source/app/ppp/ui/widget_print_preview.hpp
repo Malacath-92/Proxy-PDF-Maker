@@ -24,7 +24,7 @@ class PrintPreview : public QScrollArea
 
     virtual void resizeEvent(QResizeEvent* event) override;
     virtual void wheelEvent(QWheelEvent* event) override;
-    virtual void keyReleaseEvent(QKeyEvent* event) override;
+    virtual void keyPressEvent(QKeyEvent* event) override;
 
   signals:
     void RestoreCardsOrder();
@@ -34,6 +34,7 @@ class PrintPreview : public QScrollArea
     void GoToPage(uint32_t page);
 
     class PagePreview;
+    const PagePreview* GetNthPage(uint32_t n) const;
 
     Project& m_Project;
 
