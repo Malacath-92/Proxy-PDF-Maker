@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2025-23-12
+## [1.2.0] - 2025-26-12
 
 ### Added
 - The card area now contains tiny on-boarding instructions when no cards are loaded.
