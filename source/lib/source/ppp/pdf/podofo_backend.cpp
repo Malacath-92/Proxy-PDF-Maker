@@ -2,6 +2,8 @@
 
 #include <numbers>
 
+#include <dla/matrix_math.h>
+#include <dla/transform.h>
 #include <dla/vector_math.h>
 
 #include <podofo/podofo.h>
@@ -13,17 +15,12 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-inline double ToPoDoFoPoints(Length l)
+static double ToPoDoFoPoints(Length l)
 {
     return static_cast<double>(l / 1_pts);
 }
 
-auto PoDoFoDocument::AquireDocumentLock()
-{
-    return std::lock_guard{ m_Mutex };
-}
-
-auto Save(PoDoFo::PdfPainter& painter)
+static auto Save(PoDoFo::PdfPainter& painter)
 {
     painter.Save();
     return AtScopeExit{
@@ -32,6 +29,91 @@ auto Save(PoDoFo::PdfPainter& painter)
             painter.Restore();
         }
     };
+}
+
+static PoDoFo::PdfString MakeTransformString(const dla::trans2<double>& trans)
+{
+    PoDoFo::PdfStringStream transform_stream;
+    transform_stream << trans[0][0] << " " // scale-x
+                     << trans[1][0] << " " // rot-1
+                     << trans[0][1] << " " // rot-2
+                     << trans[1][1] << " " // scale-y
+                     << trans[0][2] << " " // trans-x
+                     << trans[1][2] << " " // trans-y
+                     << "cm"
+                     << std::endl;
+    return PoDoFo::PdfString{ transform_stream.TakeString() };
+}
+
+static PoDoFo::PdfString MakeTransformString(Offset offset,
+                                             Angle angle)
+{
+    const auto dx{ -ToPoDoFoPoints(offset.x) };
+    const auto dy{ ToPoDoFoPoints(offset.y) };
+    const auto fa{ angle / 180_deg * std::numbers::pi };
+
+    const auto rot{ dla::make_rotation(fa) };
+    const auto tra{ dla::make_translation(dla::dvec2{ dx, dy }) };
+    const auto trans{ rot * tra };
+
+    return MakeTransformString(trans);
+}
+
+static PoDoFo::PdfString MakeTransformString(Offset offset,
+                                             Angle angle,
+                                             Offset pivot)
+{
+    const auto dx{ -ToPoDoFoPoints(offset.x) };
+    const auto dy{ ToPoDoFoPoints(offset.y) };
+    const auto px{ ToPoDoFoPoints(pivot.x) };
+    const auto py{ ToPoDoFoPoints(pivot.y) };
+    const auto fa{ angle / 180_deg * std::numbers::pi };
+
+    const auto piv_to{ dla::make_translation(dla::dvec2{ px, py }) };
+    const auto rot{ dla::make_rotation(fa) };
+    const auto piv_from{ dla::make_translation(-dla::dvec2{ px, py }) };
+    const auto tra{ dla::make_translation(dla::dvec2{ dx, dy }) };
+    const auto trans{ piv_to * rot * piv_from * tra };
+
+    return MakeTransformString(trans);
+}
+
+static void WrapPage(PoDoFo::PdfPage& page,
+                     const PoDoFo::PdfString& prepend,
+                     const PoDoFo::PdfString& append)
+{
+    auto& contents{ page.GetContents()->GetObject() };
+    if (contents.IsArray())
+    {
+        auto* owner{ page.GetObject().GetDocument() };
+        auto& objects{ owner->GetObjects() };
+
+        auto& prepend_obj{ objects.CreateDictionaryObject() };
+        prepend_obj.GetOrCreateStream().SetData(prepend.GetString());
+        auto& append_obj{ objects.CreateDictionaryObject() };
+        append_obj.GetOrCreateStream().SetData(append.GetString());
+
+        auto& array{ contents.GetArray() };
+        array.insert(array.begin(), prepend_obj.GetIndirectReference());
+        array.insert(array.end(), append_obj.GetIndirectReference());
+    }
+    else
+    {
+        auto* contents_stream{ contents.GetStream() };
+        const auto stream_data{ contents_stream->GetCopy() };
+
+        auto out_stream{ contents_stream->GetOutputStream() };
+        out_stream.Write(prepend);
+        out_stream.Write("\n");
+        out_stream.Write(stream_data);
+        out_stream.Write("\n");
+        out_stream.Write(append);
+    }
+}
+
+auto PoDoFoDocument::AquireDocumentLock()
+{
+    return std::lock_guard{ m_Mutex };
 }
 
 PoDoFoPage::PoDoFoPage(PoDoFo::PdfPage* page,
@@ -324,50 +406,81 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 
 PoDoFoDocument::PoDoFoDocument(const Project& project)
     : m_Project{ project }
-    , m_BaseDocument{
-        project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf")
-            ? new PoDoFo::PdfMemDocument
-            : nullptr
-    }
 {
     m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project);
 
-    if (m_BaseDocument != nullptr)
+    if (project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf"))
     {
+        // Load base-pdf
         const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.m_Data.m_BasePdf + ".pdf" } };
-        m_BaseDocument->Load(full_path.string());
+        PoDoFo::PdfMemDocument temp_document;
+        temp_document.Load(full_path.string());
+
+        // Copy pages into our own pdf
+        m_BaseDocument.reset(new PoDoFo::PdfMemDocument);
+        m_BaseDocument->GetPages().InsertDocumentPageAt(0, temp_document, 0); // front-page
+
+        if (m_Project.m_Data.m_BacksideEnabled)
+        {
+            // Do all user-declared transformations on the backside page
+            m_BaseDocument->GetPages().InsertDocumentPageAt(1, temp_document, 0); // back-page
+            auto& backside_page{ m_BaseDocument->GetPages().GetPageAt(1) };
+
+            const PoDoFo::PdfString prepend{
+                [this, &backside_page]() -> PoDoFo::PdfString
+                {
+                    const auto page_width{ backside_page.GetRectRaw().GetWidth() };
+                    const auto page_height{ backside_page.GetRectRaw().GetHeight() };
+                    const Offset pivot{
+                        1_pts * page_width / 2,
+                        1_pts * page_height / 2,
+                    };
+                    return MakeTransformString(m_Project.m_Data.m_BacksideOffset,
+                                               m_Project.m_Data.m_BacksideRotation,
+                                               pivot);
+                }()
+            };
+
+            WrapPage(backside_page, prepend, "");
+        }
 
         {
             // Some pdf files, most likely written by Cairo, have a transform at the start of the page
             // that is not wrapped with q/Q, since the assumption is that the pdf won't be edited. To
             // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
-            auto& page{ m_BaseDocument->GetPages().GetPageAt(0) };
+            const auto contain_naked_transforms{
+                [](PoDoFo::PdfPage& page)
+                {
+                    const PoDoFo::PdfString prepend{ "q" };
+                    const PoDoFo::PdfString append{
+                        [&page]() -> PoDoFo::PdfString
+                        {
+                            const auto rotation{ page.GetRotation() };
+                            if (rotation != 0)
+                            {
+                                const auto angle{ rotation * 1_deg };
+                                const auto page_width{ page.GetRectRaw().GetWidth() };
+                                const auto page_height{ page.GetRectRaw().GetHeight() };
+                                const Offset pivot{
+                                    1_pts * page_width / 2,
+                                    1_pts * page_height / 2,
+                                };
+                                const auto transform_str{ MakeTransformString(-offset, angle) };
+                                return "Q\n" + std::string{ transform_str.GetString() };
+                            }
+                            return "Q";
+                        }()
+                    };
 
-            auto& contents{ page.GetContents()->GetObject() };
-            if (contents.IsArray())
+                    WrapPage(page, prepend, append);
+                }
+            };
+
+            contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(0));
+
+            if (m_Project.m_Data.m_BacksideEnabled)
             {
-                auto* owner{ page.GetObject().GetDocument() };
-                auto& objects{ owner->GetObjects() };
-
-                auto& save_graphics_state{ objects.CreateDictionaryObject() };
-                save_graphics_state.GetOrCreateStream().SetData("q");
-                auto& restore_graphics_state{ objects.CreateDictionaryObject() };
-                restore_graphics_state.GetOrCreateStream().SetData("Q");
-
-                auto& array{ contents.GetArray() };
-                array.insert(array.begin(), save_graphics_state.GetIndirectReference());
-                array.insert(array.end(), restore_graphics_state.GetIndirectReference());
-            }
-            else
-            {
-                auto* contents_stream{ contents.GetStream() };
-
-                const auto stream_data{ contents_stream->GetCopy() };
-
-                auto out_stream{ contents_stream->GetOutputStream() };
-                out_stream.Write("q ");
-                out_stream.Write(stream_data);
-                out_stream.Write(" Q");
+                contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(1));
             }
         }
     }
@@ -387,67 +500,20 @@ PoDoFoPage* PoDoFoDocument::NextPage()
     PoDoFo::PdfPage* page{ nullptr };
     if (m_BaseDocument != nullptr)
     {
-        m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 0);
+        const bool is_frontside{ !m_Project.m_Data.m_BacksideEnabled ||
+                                 m_Pages.size() % 2 == 0 };
+        if (is_frontside)
+        {
+            m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 0);
+        }
+        else
+        {
+            m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 1);
+        }
+
         page = &m_Document
                     .GetPages()
                     .GetPageAt(new_page_idx);
-
-        const bool is_backside{ m_Project.m_Data.m_BacksideEnabled &&
-                                m_Pages.size() % 2 == 0 };
-        if (is_backside)
-        {
-            const auto sa{ std::sin(m_Project.m_Data.m_BacksideRotation / 180_deg * std::numbers::pi) };
-            const auto ca{ -std::cos(m_Project.m_Data.m_BacksideRotation / 180_deg * std::numbers::pi) };
-            const auto dx{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.x) };
-            const auto dy{ ToPoDoFoPoints(m_Project.m_Data.m_BacksideOffset.y) };
-
-            const auto transform_str{
-                [&]()
-                {
-                    std::ostringstream transform_stream;
-                    transform_stream.flags(std::ios_base::fixed);
-                    transform_stream.precision(15);
-                    transform_stream << 1.0 << " " // scale-x
-                                     << sa << " "  // rot-1
-                                     << ca << " "  // rot-2
-                                     << 1.0 << " " // scale-y
-                                     << -dx << " " // trans-x
-                                     << dy << " "  // trans-y
-                                     << "cm " << std::endl;
-                    return PoDoFo::PdfString{ transform_stream.str() };
-                }(),
-            };
-
-            auto& contents{ page->GetContents()->GetObject() };
-            if (contents.IsArray())
-            {
-                auto& owner{ page->GetDocument() };
-                auto& objects{ owner.GetObjects() };
-
-                auto& save_graphics_state{ objects.CreateDictionaryObject() };
-                save_graphics_state.GetOrCreateStream().SetData("q");
-                auto& transform_state{ objects.CreateDictionaryObject() };
-                transform_state.GetOrCreateStream().SetData(transform_str.GetString());
-                auto& restore_graphics_state{ objects.CreateDictionaryObject() };
-                restore_graphics_state.GetOrCreateStream().SetData("q");
-
-                auto& array{ contents.GetArray() };
-                array.insert(array.begin(), transform_state.GetIndirectReference());
-                array.insert(array.begin(), save_graphics_state.GetIndirectReference());
-                array.insert(array.end(), restore_graphics_state.GetIndirectReference());
-            }
-            else
-            {
-                auto* contents_stream{ contents.GetStream() };
-                const auto stream_data{ contents_stream->GetCopy() };
-
-                auto out_stream{ contents_stream->GetOutputStream() };
-                out_stream.Write("q ");
-                out_stream.Write(transform_str);
-                out_stream.Write(stream_data);
-                out_stream.Write(" Q");
-            }
-        }
     }
     else
     {
