@@ -459,11 +459,22 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
                             if (rotation != 0)
                             {
                                 const auto angle{ rotation * 1_deg };
-                                const auto page_width{ page.GetRectRaw().GetWidth() };
-                                const auto page_height{ page.GetRectRaw().GetHeight() };
-                                const Offset pivot{
-                                    1_pts * page_width / 2,
-                                    1_pts * page_height / 2,
+                                const auto offset{
+                                    [&]() -> Offset
+                                    {
+                                        const auto page_width{ page.GetRect().Width };
+                                        const auto page_height{ page.GetRect().Height };
+                                        switch (rotation)
+                                        {
+                                        case 90:
+                                            return { 0_pts, page_height * 1_pts };
+                                        case 180:
+                                            return { page_width * 1_pts, page_height * 1_pts };
+                                        case 270:
+                                            return { page_width * 1_pts, 0_pts };
+                                        }
+                                        std::unreachable();
+                                    }()
                                 };
                                 const auto transform_str{ MakeTransformString(-offset, angle) };
                                 return "Q\n" + std::string{ transform_str.GetString() };
