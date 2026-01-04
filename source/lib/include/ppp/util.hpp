@@ -36,6 +36,7 @@ using Angle = dla::base_unit<angle_tag>;
 
 using Size = dla::tvec2<Length>;
 using Position = dla::tvec2<Length>;
+using Offset = dla::tvec2<Length>;
 using PixelSize = dla::tvec2<Pixel>;
 using PixelDensity = decltype(Pixel{} / Length{});
 
