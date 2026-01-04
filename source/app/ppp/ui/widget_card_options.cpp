@@ -330,6 +330,8 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                 m_BacksideDefaultPreview->setVisible(enabled);
                 m_BacksideOffset->setEnabled(enabled);
                 m_BacksideOffset->setVisible(enabled);
+                m_BacksideRotation->setEnabled(enabled);
+                m_BacksideRotation->setVisible(enabled);
                 m_BacksideAuto->setEnabled(enabled);
                 m_BacksideAuto->setVisible(enabled);
                 BacksideEnabledChanged();
@@ -562,6 +564,11 @@ void CardOptionsWidget::SetDefaults()
 
     m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
+
+    m_BacksideRotationSpin->setValue(m_Project.m_Data.m_BacksideRotation / 1_deg);
+
+    m_BacksideRotation->setEnabled(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideRotation->setVisible(m_Project.m_Data.m_BacksideEnabled);
 
     m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
     SetBacksideAutoPatternTooltip();
