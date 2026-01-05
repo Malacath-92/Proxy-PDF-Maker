@@ -529,6 +529,8 @@ fs::path GenerateTestPdf(const Project& project)
 
     {
         auto* front_page{ pdf->NextPage() };
+        AtScopeExit finish_page{ [&]()
+                                 { front_page->Finish(); } };
 
         {
             const Position text_top_left{ 0_mm, page_height - page_sixteenth.y };
@@ -571,6 +573,8 @@ fs::path GenerateTestPdf(const Project& project)
     if (project.m_Data.m_BacksideEnabled)
     {
         auto* back_page{ pdf->NextPage() };
+        AtScopeExit finish_page{ [&]()
+                                 { back_page->Finish(); } };
 
         const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset.x };
         const PdfPage::LineData line{
