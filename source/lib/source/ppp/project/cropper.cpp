@@ -88,6 +88,11 @@ void Cropper::Start()
     m_State = State::Running;
 }
 
+bool Cropper::HasWork() const
+{
+    return m_AliveCropperWork.load(std::memory_order_relaxed) != 0;
+}
+
 void Cropper::ClearCropWork()
 {
     OnClearCropWork();

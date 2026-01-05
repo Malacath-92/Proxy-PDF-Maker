@@ -24,6 +24,7 @@ class Cropper : public QObject
     ~Cropper();
 
     void Start();
+    bool HasWork() const;
 
     void ClearCropWork();
     void ClearPreviewWork();

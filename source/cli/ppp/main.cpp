@@ -335,40 +335,21 @@ int main(int argc, char** argv)
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
 
-    QTimer idle_timer;
-    idle_timer.setSingleShot(true);
-    idle_timer.setInterval(500);
-    QObject::connect(&cropper,
-                     &Cropper::CropWorkStart,
-                     &idle_timer,
-                     &QTimer::stop);
-
     if (cli.m_WaitForCropper)
     {
         if (cli.m_Render)
         {
-            const auto render_and_quit{
-                [&]
-                {
-                    GeneratePdf(project);
-                    app.quit();
-                }
-            };
-            QObject::connect(&idle_timer,
-                             &QTimer::timeout,
-                             &project,
-                             render_and_quit);
             QObject::connect(&cropper,
                              &Cropper::CropWorkDone,
                              &project,
-                             render_and_quit);
+                             [&]
+                             {
+                                 GeneratePdf(project);
+                                 app.quit();
+                             });
         }
         else
         {
-            QObject::connect(&idle_timer,
-                             &QTimer::timeout,
-                             &app,
-                             &QCoreApplication::quit);
             QObject::connect(&cropper,
                              &Cropper::CropWorkDone,
                              &app,
@@ -378,7 +359,18 @@ int main(int argc, char** argv)
 
     cropper.Start();
     card_provider.Start();
-    idle_timer.start();
+
+    if (!cropper.HasWork())
+    {
+        LogInfo("No crop work to do...");
+        
+        if (cli.m_Render)
+        {
+            GeneratePdf(project);
+        }
+
+        return 0;
+    }
 
     return app.exec();
 }
