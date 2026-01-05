@@ -34,7 +34,6 @@ struct CommandLineOptions
     bool m_IgnoreUserDefaults{ false };
 
     bool m_Render{ false };
-    bool m_WaitForCropper{ false };
 
     bool m_Deterministic{ false };
 
@@ -50,7 +49,6 @@ Command Line Interface for Proxy-PDF-Maker
     --help                  Display this information.
     --ignore-user-defaults  Do not load user-defaults that were set from
                             within the GUI application.
-    --cropper               Wait for the cropper, then quit.
     --render                Wait for the cropper, render the pdf, then quit.
     --project <file>        Load the project from this file.
     --project <json>        Load the project from this json blob.
@@ -165,7 +163,7 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         const std::string_view arg{ argv[i] };
         if (arg == "--cropper")
         {
-            cli.m_WaitForCropper = true;
+            LogInfo("--cropper argument has been deprecated, it will be ignored.");
         }
         else if (arg == "--ignore-user-defaults")
         {
@@ -173,7 +171,6 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         }
         else if (arg == "--render")
         {
-            cli.m_WaitForCropper = true;
             cli.m_Render = true;
         }
         else if (arg == "--deterministic")
@@ -335,26 +332,23 @@ int main(int argc, char** argv)
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
 
-    if (cli.m_WaitForCropper)
+    if (cli.m_Render)
     {
-        if (cli.m_Render)
-        {
-            QObject::connect(&cropper,
-                             &Cropper::CropWorkDone,
-                             &project,
-                             [&]
-                             {
-                                 GeneratePdf(project);
-                                 app.quit();
-                             });
-        }
-        else
-        {
-            QObject::connect(&cropper,
-                             &Cropper::CropWorkDone,
-                             &app,
-                             &QCoreApplication::quit);
-        }
+        QObject::connect(&cropper,
+                         &Cropper::CropWorkDone,
+                         &project,
+                         [&]
+                         {
+                             GeneratePdf(project);
+                             app.quit();
+                         });
+    }
+    else
+    {
+        QObject::connect(&cropper,
+                         &Cropper::CropWorkDone,
+                         &app,
+                         &QCoreApplication::quit);
     }
 
     cropper.Start();
@@ -363,7 +357,7 @@ int main(int argc, char** argv)
     if (!cropper.HasWork())
     {
         LogInfo("No crop work to do...");
-        
+
         if (cli.m_Render)
         {
             GeneratePdf(project);
