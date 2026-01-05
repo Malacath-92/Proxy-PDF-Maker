@@ -469,7 +469,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                m_Data.m_GuidesLength.value = get_value("guides_cm");
+                m_Data.m_GuidesLength.value = get_value("guides_length");
             }
         }
     }
