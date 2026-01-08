@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-01
+
+### Added
+- In the preview, you can now type a number to go to that page.
+- You can also use Page-Up/Down to scroll pages in the preview.
+
+### Fixed
+- When margins are set to `Linked` everything will now correctly compute on the fly.
+- The `Backside Rotation` option will now load correctly.
+- When using backside offset/rotation with a base pdf, the base pdf will now align correctly.
+- When using backsides, an extra erroneous transform is no longer applied to the frontside.
+- The CLI tool will no longer timeout unexpectedly during cropping, leading to a generated pdf with missing images.
+- An issue that caused project files from v1.0.3 and older not to load correctly was fixed.
+- The alignment page was fixed and is no longer blank.
+
+### Removed
+- The `--cropper` argument was removed from the CLI tool, as it makes no sense to not enable it.
+
 ## [1.2.0] - 2025-26-12
 
 ### Added
