@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-01
+
+### Fixed
+- The card and page info now update directly when changing units.
+- The scroll bars when drag-and-dropping now correctly scale the scroll speed based on how close to the preview edge the mouse is.
+
 ## [1.3.0] - 2026-08-01
 
 ### Added
