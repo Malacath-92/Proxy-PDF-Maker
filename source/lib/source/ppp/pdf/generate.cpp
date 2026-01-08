@@ -199,8 +199,6 @@ PdfResults GeneratePdf(const Project& project)
     };
 
     auto frontside_pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
-    frontside_pdf->ReservePages(pages.size() +
-                                (backsides_on_same_pdf ? pages.size() : 0));
 
     auto unique_backside_pdf{
         backsides_on_separate_pdf
@@ -212,6 +210,19 @@ PdfResults GeneratePdf(const Project& project)
             ? unique_backside_pdf.get()
             : frontside_pdf.get()
     };
+
+    if (backsides_on_same_pdf)
+    {
+        frontside_pdf->ReservePages(2 * pages.size());
+    }
+    else
+    {
+        frontside_pdf->ReservePages(pages.size());
+        if (backsides_on_separate_pdf)
+        {
+            backside_pdf->ReservePages(pages.size());
+        }
+    }
 
     const auto frontside_pdf_name{ project.m_Data.m_FileName.string() };
     const auto backside_pdf_name{ frontside_pdf_name + "_backside" };
