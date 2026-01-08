@@ -503,7 +503,7 @@ void PoDoFoDocument::ReservePages(size_t pages)
     m_Pages.reserve(pages);
 }
 
-PoDoFoPage* PoDoFoDocument::NextPage()
+PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
 {
     auto lock{ AquireDocumentLock() };
 
@@ -511,9 +511,7 @@ PoDoFoPage* PoDoFoDocument::NextPage()
     PoDoFo::PdfPage* page{ nullptr };
     if (m_BaseDocument != nullptr)
     {
-        const bool is_frontside{ !m_Project.m_Data.m_BacksideEnabled ||
-                                 m_Pages.size() % 2 == 0 };
-        if (is_frontside)
+        if (!is_backside)
         {
             m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 0);
         }

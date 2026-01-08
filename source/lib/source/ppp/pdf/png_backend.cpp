@@ -290,7 +290,7 @@ void PngDocument::ReservePages(size_t pages)
     m_Pages.reserve(pages);
 }
 
-PngPage* PngDocument::NextPage()
+PngPage* PngDocument::NextPage(bool /*is_backside*/)
 {
     std::lock_guard lock{ m_Mutex };
     auto& new_page{ m_Pages.emplace_back() };

@@ -74,7 +74,7 @@ class PoDoFoDocument final : public PdfDocument
     virtual ~PoDoFoDocument() override = default;
 
     virtual void ReservePages(size_t pages) override;
-    virtual PoDoFoPage* NextPage() override;
+    virtual PoDoFoPage* NextPage(bool is_backside) override;
 
     virtual fs::path Write(fs::path path) override;
 

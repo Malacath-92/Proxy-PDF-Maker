@@ -85,7 +85,7 @@ class PngDocument final : public PdfDocument
     virtual ~PngDocument() override;
 
     virtual void ReservePages(size_t pages) override;
-    virtual PngPage* NextPage() override;
+    virtual PngPage* NextPage(bool is_backside) override;
 
     virtual fs::path Write(fs::path path) override;
 

@@ -451,13 +451,13 @@ PdfResults GeneratePdf(const Project& project)
         const Page& page{ pages[p] };
 #endif
 
-        PdfPage* front_page{ frontside_pdf->NextPage() };
+        PdfPage* front_page{ frontside_pdf->NextPage(false) };
         generate_work.push_back([draw_front_page, front_page, &page, p]()
                                 { draw_front_page(front_page, page, p); });
 
         if (project.m_Data.m_BacksideEnabled)
         {
-            PdfPage* back_page{ backside_pdf->NextPage() };
+            PdfPage* back_page{ backside_pdf->NextPage(true) };
             const auto& backside_page{ backside_pages[p] };
             generate_work.push_back([draw_back_page, back_page, &backside_page, p]()
                                     { draw_back_page(back_page, backside_page, p); });
@@ -539,7 +539,7 @@ fs::path GenerateTestPdf(const Project& project)
     };
 
     {
-        auto* front_page{ pdf->NextPage() };
+        auto* front_page{ pdf->NextPage(false) };
         AtScopeExit finish_page{ [&]()
                                  { front_page->Finish(); } };
 
@@ -583,7 +583,7 @@ fs::path GenerateTestPdf(const Project& project)
 
     if (project.m_Data.m_BacksideEnabled)
     {
-        auto* back_page{ pdf->NextPage() };
+        auto* back_page{ pdf->NextPage(true) };
         AtScopeExit finish_page{ [&]()
                                  { back_page->Finish(); } };
 
