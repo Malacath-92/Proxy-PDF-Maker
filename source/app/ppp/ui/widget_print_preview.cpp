@@ -434,7 +434,7 @@ class PrintPreview::PagePreview : public QWidget
     MarginsOverlay* m_Margins{ nullptr };
 };
 
-class ArrowWidget : public QFrame
+class ArrowWidget : public QWidget
 {
     Q_OBJECT
 
@@ -448,89 +448,42 @@ class ArrowWidget : public QFrame
     ArrowWidget(ArrowDir dir)
         : m_Dir{ dir }
     {
-        setStyleSheet("QFrame{ background-color: purple; }");
-
-        setFrameStyle(QFrame::Shape::Panel | QFrame::Shadow::Sunken);
-        setLineWidth(5);
-
         setAcceptDrops(true);
 
-        QGraphicsOpacityEffect* effect{ new QGraphicsOpacityEffect{ this } };
-        effect->setOpacity(0.75);
-        setGraphicsEffect(effect);
-    }
-
-    virtual void paintEvent(QPaintEvent* event) override
-    {
-        QFrame::paintEvent(event);
-
-        const auto height{ geometry().height() };
-
-        const auto arrow_height{ static_cast<int>(height / 2) };
-        const auto arrow_side{ static_cast<int>(2 * arrow_height / std::sqrtf(3)) };
-        const QPoint arrow_base{
-            geometry().center().x(), (height - arrow_height) / 2 + (m_Dir == ArrowDir::Up ? arrow_height : 0)
-        };
-
-        const auto dir{ static_cast<int>(m_Dir) };
-
-        const QPoint p1{ arrow_base.x(), arrow_base.y() + dir * arrow_height };
-        const QPoint p2{ arrow_base.x() + arrow_side / 2, arrow_base.y() };
-        const QPoint p3{ arrow_base.x() - arrow_side / 2, arrow_base.y() };
-
-        const auto arrow_center{ (p1 + p2 + p3) / 3 };
-        const auto arrow_outer_side{ static_cast<int>(arrow_side + lineWidth() * 3) };
-        const auto p1_outer{ arrow_center + (p1 - arrow_center) * arrow_outer_side / arrow_side };
-        const auto p2_outer{ arrow_center + (p2 - arrow_center) * arrow_outer_side / arrow_side };
-        const auto p3_outer{ arrow_center + (p3 - arrow_center) * arrow_outer_side / arrow_side };
-
-        QPainterPath arrow_path{};
-        arrow_path.addPolygon(QPolygon{ p1, p2, p3, p1 });
-
-        QPainterPath light_path{};
-        QPainterPath midlight_path{};
-        QPainterPath dark_path{};
-
-        if ((frameShadow() & QFrame::Shadow::Sunken) == QFrame::Shadow::Sunken)
         {
-            light_path.addPolygon(QPolygon{ p2_outer, p3_outer, arrow_center, p2_outer });
-            midlight_path.addPolygon(QPolygon{ p1_outer, p2_outer, arrow_center, p1_outer });
-            dark_path.addPolygon(QPolygon{ p3_outer, p1_outer, arrow_center, p3_outer });
+            QSizePolicy size_policy{ sizePolicy() };
+            size_policy.setRetainSizeWhenHidden(true);
+            setSizePolicy(size_policy);
         }
-        else
-        {
-            dark_path.addPolygon(QPolygon{ p2_outer, p3_outer, arrow_center, p2_outer });
-            midlight_path.addPolygon(QPolygon{ p1_outer, p2_outer, arrow_center, p1_outer });
-            light_path.addPolygon(QPolygon{ p3_outer, p1_outer, arrow_center, p3_outer });
-        }
-
-        QColor color_base{ QColor{ Qt::GlobalColor::darkMagenta } };
-        QBrush light_brush{ color_base.lighter(130) };
-        QBrush midlight_brush{ color_base.lighter(115) };
-        QBrush mid_brush{ color_base };
-        QBrush dark_brush{ color_base.darker(125) };
-
-        QPainter painter{ this };
-        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
-        painter.fillPath(light_path, light_brush);
-        painter.fillPath(midlight_path, midlight_brush);
-        painter.fillPath(dark_path, dark_brush);
-        painter.fillPath(arrow_path, mid_brush);
-        painter.end();
     }
 
     virtual void dragEnterEvent(QDragEnterEvent* event) override
     {
-        QFrame::dragEnterEvent(event);
-        setFrameShadow(QFrame::Shadow::Raised);
+        QWidget::dragEnterEvent(event);
+        event->accept();
         OnEnter();
     }
 
     virtual void dragLeaveEvent(QDragLeaveEvent* event) override
     {
-        QFrame::dragLeaveEvent(event);
-        setFrameShadow(QFrame::Shadow::Sunken);
+        QWidget::dragLeaveEvent(event);
         OnLeave();
+    }
+
+    virtual void dragMoveEvent(QDragMoveEvent* event) override
+    {
+        QWidget::dragMoveEvent(event);
+
+        const auto mouse_y{ event->position().toPoint().y() };
+        const auto my_height{ height() };
+        const auto diff{ m_Dir == ArrowDir::Up ? my_height - mouse_y
+                                               : mouse_y };
+        m_Alpha = static_cast<float>(diff) / my_height * 0.9f + 0.1f;
+    }
+
+    float GetAlpha() const
+    {
+        return m_Alpha;
     }
 
   signals:
@@ -538,6 +491,7 @@ class ArrowWidget : public QFrame
     void OnLeave();
 
   private:
+    float m_Alpha{ 0 };
     ArrowDir m_Dir;
 };
 
@@ -571,11 +525,13 @@ PrintPreview::PrintPreview(Project& project)
                      {
                          if (m_ScrollUpWidget->underMouse())
                          {
-                             verticalScrollBar()->setValue(verticalScrollBar()->value() - m_ScrollSpeed);
+                             const auto alpha{ static_cast<const ArrowWidget*>(m_ScrollUpWidget)->GetAlpha() };
+                             verticalScrollBar()->setValue(verticalScrollBar()->value() - m_ScrollSpeed * alpha);
                          }
                          else
                          {
-                             verticalScrollBar()->setValue(verticalScrollBar()->value() + m_ScrollSpeed);
+                             const auto alpha{ static_cast<const ArrowWidget*>(m_ScrollDownWidget)->GetAlpha() };
+                             verticalScrollBar()->setValue(verticalScrollBar()->value() + m_ScrollSpeed * alpha);
                          }
                      });
 
@@ -808,7 +764,7 @@ void PrintPreview::resizeEvent(QResizeEvent* event)
 {
     QScrollArea::resizeEvent(event);
 
-    const auto scroll_widget_size{ event->size().height() / 8 };
+    const auto scroll_widget_size{ event->size().height() / 7 };
 
     m_ScrollUpWidget->resize(QSize{ event->size().width(), scroll_widget_size });
     m_ScrollDownWidget->resize(QSize{ event->size().width(), scroll_widget_size });

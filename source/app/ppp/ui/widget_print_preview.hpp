@@ -42,7 +42,7 @@ class PrintPreview : public QScrollArea
     QWidget* m_ScrollDownWidget{ nullptr };
 
     QTimer m_ScrollTimer{};
-    int m_ScrollSpeed{ 4 };
+    int m_ScrollSpeed{ 40 };
 
     PageImageTransforms m_FrontsideTransforms;
     PageImageTransforms m_BacksideTransforms;
