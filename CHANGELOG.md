@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-08-01
+
+### Fixed
+- The app will now successfully generate sheets again when generating separate backsides.
+- When generating separate backsides with a base pdf and backside offset or rotation, it will now correctly transform the right pages of the base pdf.
+
 ## [1.3.1] - 2026-08-01
 
 ### Fixed
