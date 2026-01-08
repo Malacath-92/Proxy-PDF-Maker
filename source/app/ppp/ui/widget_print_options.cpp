@@ -697,6 +697,15 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      &QComboBox::currentTextChanged,
                      this,
                      change_flip_on);
+
+    QObject::connect(this,
+                     &PrintOptionsWidget::BaseUnitChanged,
+                     this,
+                     [this]()
+                     {
+                         m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
+                         m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
+                     });
 }
 
 void PrintOptionsWidget::NewProjectOpened()
