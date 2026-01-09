@@ -596,6 +596,7 @@ void PrintPreview::Refresh()
                          [this]()
                          {
                              m_Dragging = true;
+                             m_DraggingStarted = true;
                              m_DragScrollTimer.start();
                          });
         QObject::connect(page,
@@ -753,6 +754,17 @@ void PrintPreview::dragMoveEvent(QDragMoveEvent* event)
     const auto mouse_y{ event->position().toPoint().y() };
     const auto my_height{ height() };
     m_DragScrollAlpha = static_cast<float>(mouse_y) / my_height;
+
+    // Don't scroll until we move out from a scrolling area after
+    // starting to drag
+    if (m_DraggingStarted)
+    {
+        m_DraggingStarted = false;
+        if (ComputeDragScrollDiff() != 0)
+        {
+            m_DraggingStarted = true;
+        }
+    }
 }
 
 void PrintPreview::GoToPage(uint32_t page)
@@ -792,7 +804,11 @@ const PrintPreview::PagePreview* PrintPreview::GetNthPage(uint32_t n) const
 
 int PrintPreview::ComputeDragScrollDiff() const
 {
-    qDebug() << m_DragScrollAlpha;
+    if (m_DraggingStarted)
+    {
+        return 0;
+    }
+
     const auto [beta, sign]{
         [this]()
         {
@@ -815,7 +831,6 @@ int PrintPreview::ComputeDragScrollDiff() const
         return 0;
     }
 
-    qDebug() << static_cast<int>(sign * beta * beta * beta * c_DragScrollSpeed);
     return static_cast<int>(sign * beta * beta * beta * c_DragScrollSpeed);
 }
 

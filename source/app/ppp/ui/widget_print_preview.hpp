@@ -45,6 +45,7 @@ class PrintPreview : public QScrollArea
     Project& m_Project;
 
     bool m_Dragging{ false };
+    bool m_DraggingStarted{ false };
     QTimer m_DragScrollTimer{};
     float m_DragScrollAlpha{ 0.5f };
     static inline constexpr int c_DragScrollSpeed{ 15 };
