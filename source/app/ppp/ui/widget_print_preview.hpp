@@ -8,6 +8,7 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
+class PagePreview;
 
 class PrintPreview : public QScrollArea
 {
@@ -37,7 +38,6 @@ class PrintPreview : public QScrollArea
   private:
     void GoToPage(uint32_t page);
 
-    class PagePreview;
     const PagePreview* GetNthPage(uint32_t n) const;
 
     int ComputeDragScrollDiff() const;
