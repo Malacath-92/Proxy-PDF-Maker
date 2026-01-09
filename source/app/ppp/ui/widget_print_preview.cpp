@@ -235,6 +235,7 @@ class PrintPreview::PagePreview : public QWidget
         bool m_IsBackside;
     };
     PagePreview(Project& project,
+                QObject* event_filter,
                 const Page& page,
                 const PageImageTransforms& transforms,
                 Params params)
@@ -316,6 +317,7 @@ class PrintPreview::PagePreview : public QWidget
             };
             image_widget->EnableContextMenu(true, project);
             image_widget->setParent(m_ImageContainer);
+            image_widget->installEventFilter(event_filter);
 
             QObject::connect(image_widget,
                              &PrintPreviewCardImage::DragStarted,
@@ -434,67 +436,6 @@ class PrintPreview::PagePreview : public QWidget
     MarginsOverlay* m_Margins{ nullptr };
 };
 
-class ArrowWidget : public QWidget
-{
-    Q_OBJECT
-
-  public:
-    enum class ArrowDir
-    {
-        Up = -1,
-        Down = +1,
-    };
-
-    ArrowWidget(ArrowDir dir)
-        : m_Dir{ dir }
-    {
-        setAcceptDrops(true);
-
-        {
-            QSizePolicy size_policy{ sizePolicy() };
-            size_policy.setRetainSizeWhenHidden(true);
-            setSizePolicy(size_policy);
-        }
-    }
-
-    virtual void dragEnterEvent(QDragEnterEvent* event) override
-    {
-        QWidget::dragEnterEvent(event);
-        event->accept();
-        OnEnter();
-    }
-
-    virtual void dragLeaveEvent(QDragLeaveEvent* event) override
-    {
-        QWidget::dragLeaveEvent(event);
-        OnLeave();
-    }
-
-    virtual void dragMoveEvent(QDragMoveEvent* event) override
-    {
-        QWidget::dragMoveEvent(event);
-
-        const auto mouse_y{ event->position().toPoint().y() };
-        const auto my_height{ height() };
-        const auto diff{ m_Dir == ArrowDir::Up ? my_height - mouse_y
-                                               : mouse_y };
-        m_Alpha = static_cast<float>(diff) / my_height * 0.9f + 0.1f;
-    }
-
-    float GetAlpha() const
-    {
-        return m_Alpha;
-    }
-
-  signals:
-    void OnEnter();
-    void OnLeave();
-
-  private:
-    float m_Alpha{ 0 };
-    ArrowDir m_Dir;
-};
-
 PrintPreview::PrintPreview(Project& project)
     : m_Project{ project }
 {
@@ -516,50 +457,18 @@ PrintPreview::PrintPreview(Project& project)
     // We only do this to get QDragMoveEvent
     setAcceptDrops(true);
 
-    m_ScrollTimer.setInterval(1);
-    m_ScrollTimer.setSingleShot(false);
-    QObject::connect(&m_ScrollTimer,
+    m_DragScrollTimer.setInterval(1);
+    m_DragScrollTimer.setSingleShot(false);
+    QObject::connect(&m_DragScrollTimer,
                      &QTimer::timeout,
                      this,
                      [this]()
                      {
-                         if (m_ScrollUpWidget->underMouse())
+                         if (const auto diff{ ComputeDragScrollDiff() })
                          {
-                             const auto alpha{ static_cast<const ArrowWidget*>(m_ScrollUpWidget)->GetAlpha() };
-                             verticalScrollBar()->setValue(verticalScrollBar()->value() - m_ScrollSpeed * alpha);
-                         }
-                         else
-                         {
-                             const auto alpha{ static_cast<const ArrowWidget*>(m_ScrollDownWidget)->GetAlpha() };
-                             verticalScrollBar()->setValue(verticalScrollBar()->value() + m_ScrollSpeed * alpha);
+                             verticalScrollBar()->setValue(verticalScrollBar()->value() - diff);
                          }
                      });
-
-    m_ScrollUpWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Up };
-    m_ScrollUpWidget->setParent(this);
-    m_ScrollUpWidget->setVisible(false);
-
-    m_ScrollDownWidget = new ArrowWidget{ ArrowWidget::ArrowDir::Down };
-    m_ScrollDownWidget->setParent(this);
-    m_ScrollDownWidget->setVisible(false);
-
-    QObject::connect(static_cast<ArrowWidget*>(m_ScrollUpWidget),
-                     &ArrowWidget::OnEnter,
-                     &m_ScrollTimer,
-                     static_cast<void (QTimer::*)()>(&QTimer::start));
-    QObject::connect(static_cast<ArrowWidget*>(m_ScrollUpWidget),
-                     &ArrowWidget::OnLeave,
-                     &m_ScrollTimer,
-                     &QTimer::stop);
-
-    QObject::connect(static_cast<ArrowWidget*>(m_ScrollDownWidget),
-                     &ArrowWidget::OnEnter,
-                     &m_ScrollTimer,
-                     static_cast<void (QTimer::*)()>(&QTimer::start));
-    QObject::connect(static_cast<ArrowWidget*>(m_ScrollDownWidget),
-                     &ArrowWidget::OnLeave,
-                     &m_ScrollTimer,
-                     &QTimer::stop);
 
     m_NumberTypeTimer.setSingleShot(true);
     m_NumberTypeTimer.setInterval(500);
@@ -604,6 +513,7 @@ void PrintPreview::Refresh()
         empty_layout->addWidget(empty_label);
         empty_layout->addWidget(new PagePreview{
             m_Project,
+            nullptr,
             Page{},
             m_FrontsideTransforms,
             PagePreview::Params{
@@ -666,6 +576,7 @@ void PrintPreview::Refresh()
             {
                 return new PagePreview{
                     m_Project,
+                    this,
                     page.m_Page,
                     page.m_Transforms.get(),
                     PagePreview::Params{
@@ -684,16 +595,16 @@ void PrintPreview::Refresh()
                          this,
                          [this]()
                          {
-                             m_ScrollUpWidget->setVisible(true);
-                             m_ScrollDownWidget->setVisible(true);
+                             m_Dragging = true;
+                             m_DragScrollTimer.start();
                          });
         QObject::connect(page,
                          &PagePreview::DragFinished,
                          this,
                          [this]()
                          {
-                             m_ScrollUpWidget->setVisible(false);
-                             m_ScrollDownWidget->setVisible(false);
+                             m_Dragging = false;
+                             m_DragScrollTimer.stop();
                          });
         QObject::connect(page,
                          &PagePreview::ReorderCards,
@@ -760,26 +671,35 @@ void PrintPreview::CardOrderDirectionChanged()
     }
 }
 
-void PrintPreview::resizeEvent(QResizeEvent* event)
-{
-    QScrollArea::resizeEvent(event);
-
-    const auto scroll_widget_size{ event->size().height() / 7 };
-
-    m_ScrollUpWidget->resize(QSize{ event->size().width(), scroll_widget_size });
-    m_ScrollDownWidget->resize(QSize{ event->size().width(), scroll_widget_size });
-
-    m_ScrollUpWidget->move(QPoint{ 0, 0 });
-    m_ScrollDownWidget->move(QPoint{ 0, event->size().height() - scroll_widget_size });
-}
-
 void PrintPreview::wheelEvent(QWheelEvent* event)
 {
-    // Don't use wheel events if the scroll widgets are visible
-    if (!m_ScrollUpWidget->isVisible())
+    // Don't use wheel events if we are executing a drag-and-drop
+    if (!m_Dragging)
     {
         QScrollArea::wheelEvent(event);
     }
+}
+
+bool PrintPreview::eventFilter(QObject* watched, QEvent* event)
+{
+    if (const auto* card{ dynamic_cast<PrintPreviewCardImage*>(watched) })
+    {
+        if (event->type() == QEvent::Type::DragMove)
+        {
+            const auto* drag_move_event{ static_cast<QDragMoveEvent*>(event) };
+            const auto pos_card{ drag_move_event->position().toPoint() };
+            const auto pos_global{ card->mapToGlobal(pos_card) };
+            const auto pos_local{ mapFromGlobal(pos_global) };
+            QDragMoveEvent local_event{ pos_local,
+                                        drag_move_event->possibleActions(),
+                                        drag_move_event->mimeData(),
+                                        drag_move_event->buttons(),
+                                        drag_move_event->modifiers() };
+            dragMoveEvent(&local_event);
+        }
+    }
+
+    return QObject::eventFilter(watched, event);
 }
 
 void PrintPreview::keyPressEvent(QKeyEvent* event)
@@ -820,6 +740,21 @@ void PrintPreview::keyPressEvent(QKeyEvent* event)
     }
 }
 
+void PrintPreview::dragEnterEvent(QDragEnterEvent* event)
+{
+    QWidget::dragEnterEvent(event);
+    event->accept();
+}
+
+void PrintPreview::dragMoveEvent(QDragMoveEvent* event)
+{
+    QWidget::dragMoveEvent(event);
+
+    const auto mouse_y{ event->position().toPoint().y() };
+    const auto my_height{ height() };
+    m_DragScrollAlpha = static_cast<float>(mouse_y) / my_height;
+}
+
 void PrintPreview::GoToPage(uint32_t page)
 {
     if (const auto* nth_page{ GetNthPage(page) })
@@ -853,6 +788,35 @@ const PrintPreview::PagePreview* PrintPreview::GetNthPage(uint32_t n) const
         }
     }
     return nullptr;
+}
+
+int PrintPreview::ComputeDragScrollDiff() const
+{
+    qDebug() << m_DragScrollAlpha;
+    const auto [beta, sign]{
+        [this]()
+        {
+            static constexpr auto c_Lower{ 0.4f };
+            static constexpr auto c_Upper{ 1.0f - c_Lower };
+            if (m_DragScrollAlpha < c_Lower)
+            {
+                return std::pair{ (c_Lower - m_DragScrollAlpha) / c_Lower, 1 };
+            }
+            else if (m_DragScrollAlpha > c_Upper)
+            {
+                return std::pair{ (m_DragScrollAlpha - c_Upper) / c_Lower, -1 };
+            }
+            return std::pair{ 0.0f, 0 };
+        }()
+    };
+
+    if (sign == 0)
+    {
+        return 0;
+    }
+
+    qDebug() << static_cast<int>(sign * beta * beta * beta * c_DragScrollSpeed);
+    return static_cast<int>(sign * beta * beta * beta * c_DragScrollSpeed);
 }
 
 #include <widget_print_preview.moc>

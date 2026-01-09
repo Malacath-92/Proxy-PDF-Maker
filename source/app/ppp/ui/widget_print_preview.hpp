@@ -22,9 +22,13 @@ class PrintPreview : public QScrollArea
     void CardOrderChanged();
     void CardOrderDirectionChanged();
 
-    virtual void resizeEvent(QResizeEvent* event) override;
     virtual void wheelEvent(QWheelEvent* event) override;
     virtual void keyPressEvent(QKeyEvent* event) override;
+
+    virtual bool eventFilter(QObject* watched, QEvent* event) override;
+
+    virtual void dragEnterEvent(QDragEnterEvent* event) override;
+    virtual void dragMoveEvent(QDragMoveEvent* event) override;
 
   signals:
     void RestoreCardsOrder();
@@ -36,13 +40,14 @@ class PrintPreview : public QScrollArea
     class PagePreview;
     const PagePreview* GetNthPage(uint32_t n) const;
 
+    int ComputeDragScrollDiff() const;
+
     Project& m_Project;
 
-    QWidget* m_ScrollUpWidget{ nullptr };
-    QWidget* m_ScrollDownWidget{ nullptr };
-
-    QTimer m_ScrollTimer{};
-    int m_ScrollSpeed{ 40 };
+    bool m_Dragging{ false };
+    QTimer m_DragScrollTimer{};
+    float m_DragScrollAlpha{ 0.5f };
+    static inline constexpr int c_DragScrollSpeed{ 15 };
 
     PageImageTransforms m_FrontsideTransforms;
     PageImageTransforms m_BacksideTransforms;
