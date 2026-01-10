@@ -6,6 +6,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QScrollBar>
+#include <QStyleOptionSlider>
 #include <QVBoxLayout>
 
 #include <ppp/qt_util.hpp>
@@ -18,6 +19,59 @@
 
 #include <ppp/ui/widget_print_preview_card.hpp>
 #include <ppp/ui/widget_print_preview_page.hpp>
+
+class PreviewScrollBar : public QScrollBar
+{
+  public:
+    using QScrollBar::QScrollBar;
+
+    virtual void dragEnterEvent(QDragEnterEvent* event) override
+    {
+        event->accept();
+    }
+
+    virtual void dragMoveEvent(QDragMoveEvent* event) override
+    {
+        QStyleOptionSlider opt;
+        initStyleOption(&opt);
+
+        const QRect sr{ style()->subControlRect(QStyle::CC_ScrollBar,
+                                                &opt,
+                                                QStyle::SC_ScrollBarSlider,
+                                                this) };
+        const auto slider_length{ sr.height() };
+
+        const auto pixel_pos_to_range_value{
+            [&, this](int pos)
+            {
+                const QRect gr{ style()->subControlRect(QStyle::CC_ScrollBar,
+                                                        &opt,
+                                                        QStyle::SC_ScrollBarGroove,
+                                                        this) };
+                const auto slider_min{ gr.y() };
+                const auto slider_max{ gr.bottom() - slider_length + 1 };
+                return QStyle::sliderValueFromPosition(minimum(),
+                                                       maximum(),
+                                                       pos - slider_min,
+                                                       slider_max - slider_min,
+                                                       opt.upsideDown);
+            }
+        };
+
+        const auto pos{ event->position().toPoint() };
+        // const auto m{ style()->pixelMetric(QStyle::PM_MaximumDragDistance, &opt, this) };
+        // if (m >= 0)
+        //{
+        //     QRect r{ rect() };
+        //     r.adjust(-m, -m, m, m);
+        //     if (!r.contains(pos))
+        //     {
+        //         newPosition = d->snapBackPosition;
+        //     }
+        // }
+        setSliderPosition(pixel_pos_to_range_value(pos.y() - slider_length / 2));
+    }
+};
 
 PrintPreview::PrintPreview(Project& project)
     : m_Project{ project }
@@ -37,8 +91,12 @@ PrintPreview::PrintPreview(Project& project)
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
 
+    setVerticalScrollBar(new PreviewScrollBar);
+
     // We only do this to get QDragMoveEvent
     setAcceptDrops(true);
+    verticalScrollBar()->setAcceptDrops(true);
+    verticalScrollBar()->installEventFilter(this);
 
     m_DragScrollTimer.setInterval(1);
     m_DragScrollTimer.setSingleShot(false);
@@ -283,6 +341,13 @@ bool PrintPreview::eventFilter(QObject* watched, QEvent* event)
                                         drag_move_event->buttons(),
                                         drag_move_event->modifiers() };
             dragMoveEvent(&local_event);
+        }
+    }
+    else if (auto* scroll_bar{ dynamic_cast<QScrollBar*>(watched) })
+    {
+        if (event->type() == QEvent::Type::DragEnter)
+        {
+            m_DragScrollAlpha = 0.5f;
         }
     }
 
