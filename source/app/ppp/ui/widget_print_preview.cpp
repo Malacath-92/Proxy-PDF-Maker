@@ -343,7 +343,7 @@ bool PrintPreview::eventFilter(QObject* watched, QEvent* event)
             dragMoveEvent(&local_event);
         }
     }
-    else if (auto* scroll_bar{ dynamic_cast<QScrollBar*>(watched) })
+    else if ([[maybe_unused]] auto* scroll_bar{ dynamic_cast<QScrollBar*>(watched) })
     {
         if (event->type() == QEvent::Type::DragEnter)
         {
