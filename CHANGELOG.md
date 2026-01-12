@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-12-01
+
+### Added
+- Under `Print Options` there is now a checkbox to determine whether to render the header on each page.
+
+### Fixed
+- Scrolling during drag-and-drop in the preview was reworked to make it more reliable and usable.
+- When a bug happens during drag-and-drop that results in invalid card sorting the project will no longer break and result in startup crashes but the bugged reordering is instead ignored.
+
 ## [1.3.2] - 2026-08-01
 
 ### Fixed
