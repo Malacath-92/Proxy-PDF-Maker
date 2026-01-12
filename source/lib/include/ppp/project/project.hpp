@@ -255,7 +255,7 @@ class Project : public QObject
     void CardOrderDirectionChanged();
 
     void RestoreCardsOrder();
-    void ReorderCards(size_t from, size_t to);
+    bool ReorderCards(size_t from, size_t to);
 
     bool HasPreview(const fs::path& card_name) const;
     bool HasBadAspectRatio(const fs::path& card_name) const;

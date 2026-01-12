@@ -382,8 +382,26 @@ int main(int argc, char** argv)
             &project,
             [&](size_t from, size_t to)
             {
-                project.ReorderCards(from, to);
-                print_preview->RequestRefresh();
+                if (project.ReorderCards(from, to))
+                {
+                    print_preview->RequestRefresh();
+                }
+                else
+                {
+                    // clang-formt off
+                    QString message{
+                        QString{
+                            "Failed reordering cards, moving %1 to %2",
+                        }
+                            .arg(from)
+                            .arg(to)
+                    };
+                    // clang-formt on
+                    main_window->Toast(
+                        ToastType::Error,
+                        "Drag-and-Drop Error",
+                        std::move(message));
+                }
             },
             Qt::ConnectionType::QueuedConnection);
     }

@@ -214,6 +214,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
             {
                 for (const size_t idx : cards_order)
                 {
+                    if (idx >= m_Data.m_Cards.size())
+                    {
+                        m_Data.m_CardsList.clear();
+                        LogError("Cards sorting could not be read correctly, invalid index {} contained.",
+                                 idx);
+                        break;
+                    }
                     m_Data.m_CardsList.push_back(m_Data.m_Cards[idx].m_Name);
                 }
             }
@@ -901,9 +908,16 @@ void Project::RestoreCardsOrder()
     m_Data.m_CardsList.clear();
 }
 
-void Project::ReorderCards(size_t from, size_t to)
+bool Project::ReorderCards(size_t from, size_t to)
 {
-    if (m_Data.m_CardsList.empty())
+    if (from >= m_Data.m_Cards.size() ||
+        to >= m_Data.m_Cards.size())
+    {
+        return false;
+    }
+
+    const bool generate_new{ m_Data.m_CardsList.empty() };
+    if (generate_new)
     {
         m_Data.m_CardsList = GenerateDefaultCardsSorting();
     }
@@ -914,6 +928,8 @@ void Project::ReorderCards(size_t from, size_t to)
 
     const auto to_it{ m_Data.m_CardsList.begin() + to };
     m_Data.m_CardsList.insert(to_it, from_card);
+
+    return true;
 }
 
 CardInfo& Project::CardAdded(const fs::path& card_name)
