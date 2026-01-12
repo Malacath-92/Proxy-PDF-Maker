@@ -147,6 +147,7 @@ struct ProjectData
     PageOrientation m_Orientation{ PageOrientation::Portrait };
     FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };
     fs::path m_FileName{ "_printme" };
+    bool m_RenderPageHeader{ true };
 
     // Guides options
     bool m_ExportExactGuides{ false };

@@ -63,6 +63,7 @@ class PrintOptionsWidget : public QWidget
     Project& m_Project;
 
     QLineEdit* m_PrintOutput{ nullptr };
+    QCheckBox* m_RenderHeader{ nullptr };
     QComboBox* m_CardSize{ nullptr };
     QComboBox* m_PaperSize{ nullptr };
     ComboBoxWithLabel* m_BasePdf{ nullptr };

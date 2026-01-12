@@ -422,6 +422,14 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
         m_Data.m_FileName = get_value("file_name").get<std::string>();
 
+        {
+            const auto render_header{ get_value("render_header") };
+            if (!render_header.is_null())
+            {
+                m_Data.m_RenderPageHeader = render_header;
+            }
+        }
+
         m_Data.m_ExportExactGuides = get_value("export_exact_guides");
         m_Data.m_EnableGuides = get_value("enable_guides");
         m_Data.m_BacksideEnableGuides = get_value("enable_backside_guides");
@@ -619,6 +627,7 @@ std::string Project::DumpToJson() const
     json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
     json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
     json["file_name"] = m_Data.m_FileName.string();
+    json["render_header"] = m_Data.m_RenderPageHeader;
 
     json["export_exact_guides"] = m_Data.m_ExportExactGuides;
     json["enable_guides"] = m_Data.m_EnableGuides;

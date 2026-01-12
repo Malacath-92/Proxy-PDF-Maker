@@ -60,6 +60,7 @@ PdfResults GeneratePdf(const Project& project)
     const auto header_size{ 12_pts };
     const auto header_top{ (space_for_header - header_size) / 2.0f };
     const bool enough_space_for_header{ space_for_header >= header_size };
+    const bool do_render_header{ project.m_Data.m_RenderPageHeader && enough_space_for_header };
 
     const auto bleed{ project.m_Data.m_BleedEdge };
     const auto envelope_bleed{ project.m_Data.m_EnvelopeBleedEdge };
@@ -358,7 +359,7 @@ PdfResults GeneratePdf(const Project& project)
             };
             front_page->SetPageName(page_name);
 
-            if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
+            if (!g_Cfg.m_DeterminsticPdfOutput && do_render_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
@@ -426,7 +427,7 @@ PdfResults GeneratePdf(const Project& project)
             };
             back_page->SetPageName(page_name);
 
-            if (!g_Cfg.m_DeterminsticPdfOutput && enough_space_for_header)
+            if (!g_Cfg.m_DeterminsticPdfOutput && do_render_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };

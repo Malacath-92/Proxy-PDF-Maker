@@ -37,6 +37,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.m_Data.m_FileName.string() } };
     m_PrintOutput = print_output->GetWidget();
 
+    m_RenderHeader = new QCheckBox{ "Render Header" };
+    m_RenderHeader->setToolTip("Determines whether the header of each page will be rendered or not.");
+    EnableOptionWidgetForDefaults(m_RenderHeader, "render_header");
+
     WidgetWithLabel* card_size;
     {
         m_CardSize = MakeComboBox(
@@ -299,6 +303,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);
+    layout->addWidget(m_RenderHeader);
     layout->addWidget(card_size);
     layout->addWidget(paper_size);
     layout->addWidget(m_BasePdf);
@@ -323,6 +328,13 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         [=, this](QString t)
         {
             m_Project.m_Data.m_FileName = t.toStdString();
+        }
+    };
+
+    auto change_render_header{
+        [=, this](Qt::CheckState s)
+        {
+            m_Project.m_Data.m_RenderPageHeader = s == Qt::CheckState::Checked;
         }
     };
 
@@ -629,10 +641,14 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         }
     };
 
-    QObject::connect(print_output->GetWidget(),
+    QObject::connect(m_PrintOutput,
                      &QLineEdit::textChanged,
                      this,
                      change_output);
+    QObject::connect(m_RenderHeader,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_render_header);
     QObject::connect(m_CardSize,
                      &QComboBox::currentTextChanged,
                      this,
@@ -809,6 +825,7 @@ void PrintOptionsWidget::ExternalCardSizeChanged()
 void PrintOptionsWidget::SetDefaults()
 {
     m_PrintOutput->setText(ToQString(m_Project.m_Data.m_FileName));
+    m_RenderHeader->setChecked(m_Project.m_Data.m_RenderPageHeader);
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
     m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
     m_CardOrientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_CardOrientation)));
@@ -879,7 +896,7 @@ void PrintOptionsWidget::SetDefaults()
 
 void PrintOptionsWidget::SetAdvancedWidgetsVisibility()
 {
-    // Always enabled: m_PrintOutput, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
+    // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
     m_LeftMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
     m_TopMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
     m_RightMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
