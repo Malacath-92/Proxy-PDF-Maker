@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-19-01
+
+### Added
+-  There is now a filter available in the card grid that filters based on file names.
+
+### Changed
+- The extended guides are now a solid color, always picking the darker of the two guide colors.
+
+### Fixed
+- Opening an image browser, e.g. when choosing the default backside, while no cards are loaded in the project will no longer crash the app.
+
 ## [1.3.3] - 2026-12-01
 
 ### Added
