@@ -325,16 +325,20 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
                               { return !img.m_Transient; })
     };
     const auto has_cards{ num_valid_images > num_valid_ignored_images };
+
+    QWidget* grid{ nullptr };
     if (has_cards)
     {
         m_Grid = new SelectableCardGrid{ project, ignored_images };
+        grid = m_Grid;
     }
-
-    auto* grid{
-        cards.empty()
-            ? static_cast<QWidget*>(new QLabel{ "No cards..." })
-            : m_Grid
-    };
+    else
+    {
+        auto* error_label{ new QLabel{ num_valid_images == 0 ? "No cards loaded..."
+                                                             : "No other cards loaded..." } };
+        error_label->setAlignment(Qt::AlignmentFlag::AlignCenter);
+        grid = error_label;
+    }
 
     auto* grid_scroll{ new QScrollArea };
     grid_scroll->setWidget(grid);
@@ -342,7 +346,7 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     grid_scroll->setMinimumWidth(
         [=]()
         {
-            const auto margins{ grid->layout()->contentsMargins() };
+            const auto margins{ has_cards ? grid->layout()->contentsMargins() : QMargins{} };
             return grid->minimumWidth() + 2 * grid_scroll->verticalScrollBar()->width() + margins.left() + margins.right();
         }());
 
@@ -371,7 +375,10 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
                      this,
                      [this](const QString& text)
                      {
-                         m_Grid->ApplyFilter(text);
+                         if (m_Grid != nullptr)
+                         {
+                             m_Grid->ApplyFilter(text);
+                         }
                      });
     QObject::connect(ok_button,
                      &QPushButton::clicked,
