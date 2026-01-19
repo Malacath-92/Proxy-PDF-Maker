@@ -8,6 +8,7 @@
 #include <fmt/chrono.h>
 
 #include <dla/scalar_math.h>
+#include <dla/vector_math.h>
 
 #include <ppp/util/log.hpp>
 
@@ -33,15 +34,32 @@ PdfResults GeneratePdf(const Project& project)
 
     const auto output_dir{ project.GetOutputFolder() };
 
+    const auto get_luminosity{
+        [](const ColorRGB8& col)
+        {
+            const auto& min{ dla::min_element(col) };
+            const auto& max{ dla::max_element(col) };
+            return (min + max) / 2;
+        }
+    };
+    const auto color_a_luminosity{ get_luminosity(project.m_Data.m_GuidesColorA) };
+    const auto color_b_luminosity{ get_luminosity(project.m_Data.m_GuidesColorB) };
+    const bool color_a_darker{ color_a_luminosity < color_b_luminosity };
+
+    const auto& darker_color{ color_a_darker ? project.m_Data.m_GuidesColorA
+                                             : project.m_Data.m_GuidesColorB };
+    const auto& lighter_color{ color_a_darker ? project.m_Data.m_GuidesColorB
+                                              : project.m_Data.m_GuidesColorA };
+
     ColorRGB32f guides_color_a{
-        static_cast<float>(project.m_Data.m_GuidesColorA.r) / 255.0f,
-        static_cast<float>(project.m_Data.m_GuidesColorA.g) / 255.0f,
-        static_cast<float>(project.m_Data.m_GuidesColorA.b) / 255.0f,
+        static_cast<float>(darker_color.r) / 255.0f,
+        static_cast<float>(darker_color.g) / 255.0f,
+        static_cast<float>(darker_color.b) / 255.0f,
     };
     ColorRGB32f guides_color_b{
-        static_cast<float>(project.m_Data.m_GuidesColorB.r) / 255.0f,
-        static_cast<float>(project.m_Data.m_GuidesColorB.g) / 255.0f,
-        static_cast<float>(project.m_Data.m_GuidesColorB.b) / 255.0f,
+        static_cast<float>(lighter_color.r) / 255.0f,
+        static_cast<float>(lighter_color.g) / 255.0f,
+        static_cast<float>(lighter_color.b) / 255.0f,
     };
 
     PdfPage::DashedLineStyle line_style{
@@ -341,7 +359,7 @@ PdfResults GeneratePdf(const Project& project)
                 {
                     for (const auto& guide : extended_guides)
                     {
-                        front_page->DrawDashedLine(guide, line_style);
+                        front_page->DrawSolidLine(guide, line_style);
                     }
                 }
             }
@@ -409,7 +427,7 @@ PdfResults GeneratePdf(const Project& project)
                 {
                     for (const auto& guide : backside_extended_guides)
                     {
-                        back_page->DrawDashedLine(guide, line_style);
+                        back_page->DrawSolidLine(guide, line_style);
                     }
                 }
             }
