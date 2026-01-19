@@ -5,6 +5,7 @@
 
 #include <ppp/util.hpp>
 
+class QLineEdit;
 class QPushButton;
 
 class Project;
@@ -40,6 +41,7 @@ class CardArea : public QWidget
 
     QWidget* m_Header;
     QPushButton* m_RemoveExternalCards;
+    QLineEdit* m_Filter;
     CardScrollArea* m_ScrollArea;
 
     // We use a timer whenever we do a full refresh

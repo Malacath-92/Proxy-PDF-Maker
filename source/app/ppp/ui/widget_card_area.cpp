@@ -391,16 +391,74 @@ class CardGrid : public QWidget
 
     void FullRefresh()
     {
-        std::unordered_map<fs::path, CardWidget*> old_cards{
-            std::move(m_Cards)
-        };
-        m_Cards = {};
+        const auto cols{ g_Cfg.m_DisplayColumns };
+        for (size_t j = m_Dummies.size(); j < cols; j++)
+        {
+            fs::path card_name{ fmt::format("__dummy__{}", j) };
+            auto* dummy{ new DummyCardWidget{ card_name, m_Project } };
+            m_Dummies.push_back(dummy);
+        }
+
+        {
+            std::unordered_map<fs::path, CardWidget*> old_cards{
+                std::move(m_Cards)
+            };
+            m_Cards = {};
+
+            auto eat_or_make_card{
+                [this, &old_cards](const fs::path& card_name) -> CardWidget*
+                {
+                    auto it{ old_cards.find(card_name) };
+                    if (it == old_cards.end())
+                    {
+                        return new CardWidget{ card_name, m_Project };
+                    }
+
+                    CardWidget* card{ it->second };
+                    old_cards.erase(it);
+                    card->Refresh(m_Project);
+                    return card;
+                }
+            };
+
+            for (const auto& card_info : m_Project.GetCards())
+            {
+                const bool hidden{ card_info.m_Hidden > 0 };
+                if (hidden)
+                {
+                    continue;
+                }
+
+                const auto& card_name{ card_info.m_Name };
+                auto* card_widget{ eat_or_make_card(card_name) };
+                m_Cards[card_name] = card_widget;
+            }
+
+            for (auto& [card_name, card] : old_cards)
+            {
+                delete card;
+            }
+        }
+
+        ApplyFilter(m_CurrentFilter);
+    }
+
+    void ApplyFilter(const QString& filter)
+    {
+        m_CurrentFilter = filter;
+        m_FirstItem = nullptr;
 
         if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
         {
-            for (auto& [card_name, card] : old_cards)
+            for (auto& [card_name, card] : m_Cards)
             {
                 old_layout->removeWidget(card);
+                card->setParent(nullptr);
+            }
+            for (auto* dummy : m_Dummies)
+            {
+                old_layout->removeWidget(dummy);
+                dummy->setParent(nullptr);
             }
             delete old_layout;
         }
@@ -409,50 +467,29 @@ class CardGrid : public QWidget
         this_layout->setContentsMargins(9, 9, 9, 9);
         setLayout(this_layout);
 
-        auto eat_or_make_card{
-            [this, &old_cards](const fs::path& card_name, auto ctor) -> CardWidget*
-            {
-                auto it{ old_cards.find(card_name) };
-                if (it == old_cards.end())
-                {
-                    return ctor(card_name, m_Project);
-                }
-
-                CardWidget* card{ it->second };
-                old_cards.erase(it);
-                card->Refresh(m_Project);
-                return card;
-            }
-        };
-        auto eat_or_make_real_card{
-            [&](const fs::path& card_name)
-            {
-                return eat_or_make_card(card_name, [](auto&&... args)
-                                        { return new CardWidget{ std::forward<decltype(args)>(args)... }; });
-            }
-        };
-        auto eat_or_make_dummy_card{
-            [&](const fs::path& card_name)
-            {
-                return eat_or_make_card(card_name, [](auto&&... args)
-                                        { return new DummyCardWidget{ std::forward<decltype(args)>(args)... }; });
-            }
-        };
-
-        size_t i{ 0 };
         const auto cols{ g_Cfg.m_DisplayColumns };
+
+        const QString filter_lower{ filter.toLower() };
+        size_t i{ 0 };
+
         for (const auto& card_info : m_Project.GetCards())
         {
             const auto& card_name{ card_info.m_Name };
-
-            const bool hidden{ card_info.m_Hidden > 0 };
-            if (hidden)
+            if (!m_Cards.contains(card_name))
             {
                 continue;
             }
 
-            auto* card_widget{ eat_or_make_real_card(card_name) };
-            m_Cards[card_name] = card_widget;
+            if (!filter.isEmpty() && !ToQString(card_name).toLower().contains(filter_lower))
+            {
+                continue;
+            }
+
+            auto* card_widget{ m_Cards.at(card_name) };
+            if (m_FirstItem == nullptr)
+            {
+                m_FirstItem = card_widget;
+            }
 
             const auto x{ static_cast<int>(i / cols) };
             const auto y{ static_cast<int>(i % cols) };
@@ -462,10 +499,13 @@ class CardGrid : public QWidget
 
         for (size_t j = i; j < cols; j++)
         {
-            fs::path card_name{ fmt::format("__dummy__{}", j) };
-            auto* card_widget{ eat_or_make_dummy_card(card_name) };
-            m_Cards[std::move(card_name)] = card_widget;
-            this_layout->addWidget(card_widget, 0, static_cast<int>(j));
+            auto* dummy_widget{ m_Dummies[j] };
+            if (m_FirstItem == nullptr)
+            {
+                m_FirstItem = dummy_widget;
+            }
+
+            this_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
             ++i;
         }
 
@@ -474,12 +514,6 @@ class CardGrid : public QWidget
             this_layout->setColumnStretch(c, 1);
         }
 
-        for (auto& [card_name, card] : old_cards)
-        {
-            delete card;
-        }
-
-        m_FirstItem = m_Cards.begin()->second;
         m_Columns = cols;
         m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / m_Columns));
 
@@ -495,12 +529,7 @@ class CardGrid : public QWidget
 
     bool HasCards() const
     {
-        return std::ranges::any_of(
-            m_Cards | std::views::keys,
-            [](const auto& key)
-            {
-                return !key.string().starts_with("__dummy_");
-            });
+        return !m_Cards.empty();
     }
 
     std::unordered_map<fs::path, CardWidget*>& GetCards()
@@ -512,10 +541,13 @@ class CardGrid : public QWidget
     Project& m_Project;
 
     std::unordered_map<fs::path, CardWidget*> m_Cards;
+    std::vector<CardWidget*> m_Dummies;
     CardWidget* m_FirstItem;
 
     uint32_t m_Columns;
     uint32_t m_Rows;
+
+    QString m_CurrentFilter{ "" };
 };
 
 class CardScrollArea : public QScrollArea
@@ -530,6 +562,8 @@ class CardScrollArea : public QScrollArea
 
     void FullRefresh();
     void RefreshGridSize();
+
+    void ApplyFilter(const QString& filter);
 
   private:
     int ComputeMinimumWidth() const;
@@ -563,6 +597,11 @@ void CardScrollArea::RefreshGridSize()
     const auto width{ size().width() };
     const auto height{ m_Grid->heightForWidth(width) };
     m_Grid->setFixedHeight(height);
+}
+
+void CardScrollArea::ApplyFilter(const QString& filter)
+{
+    m_Grid->ApplyFilter(filter);
 }
 
 int CardScrollArea::ComputeMinimumWidth() const
@@ -637,24 +676,28 @@ CardArea::CardArea(Project& project)
         auto* global_decrement_button{ new QPushButton{ "-" } };
         auto* global_increment_button{ new QPushButton{ "+" } };
         auto* global_set_zero_button{ new QPushButton{ "Zero All" } };
+        m_Filter = new QLineEdit;
+        m_Filter->setPlaceholderText("Filter");
         m_RemoveExternalCards = new QPushButton{ "Remove All External Cards" };
 
         global_decrement_button->setToolTip("Remove one from all");
         global_increment_button->setToolTip("Add one to all");
         global_set_zero_button->setToolTip("Set all to zero");
+        m_Filter->setToolTip("Filter by filename");
         m_RemoveExternalCards->setToolTip("Removes all cards not part of the images folder");
 
-        auto* global_number_layout{ new QHBoxLayout };
-        global_number_layout->addWidget(global_label);
-        global_number_layout->addWidget(global_decrement_button);
-        global_number_layout->addWidget(global_increment_button);
-        global_number_layout->addWidget(global_set_zero_button);
-        global_number_layout->addWidget(m_RemoveExternalCards);
-        global_number_layout->addStretch();
-        global_number_layout->setContentsMargins(6, 0, 6, 0);
+        auto* header_layout{ new QHBoxLayout };
+        header_layout->addWidget(global_label);
+        header_layout->addWidget(global_decrement_button);
+        header_layout->addWidget(global_increment_button);
+        header_layout->addWidget(global_set_zero_button);
+        header_layout->addWidget(m_Filter);
+        header_layout->addWidget(m_RemoveExternalCards);
+        header_layout->addStretch();
+        header_layout->setContentsMargins(6, 0, 6, 0);
 
         m_Header = new QWidget;
-        m_Header->setLayout(global_number_layout);
+        m_Header->setLayout(header_layout);
 
         m_RemoveExternalCards->setVisible(project.HasExternalCards());
 
@@ -688,6 +731,13 @@ CardArea::CardArea(Project& project)
             }
         };
 
+        auto apply_filter{
+            [this](const QString& text)
+            {
+                m_ScrollArea->ApplyFilter(text);
+            }
+        };
+
         auto remove_all_external{
             [this, &project]()
             {
@@ -713,6 +763,10 @@ CardArea::CardArea(Project& project)
                          &QPushButton::clicked,
                          this,
                          reset_number);
+        QObject::connect(m_Filter,
+                         &QLineEdit::textChanged,
+                         this,
+                         apply_filter);
         QObject::connect(m_RemoveExternalCards,
                          &QPushButton::clicked,
                          this,
