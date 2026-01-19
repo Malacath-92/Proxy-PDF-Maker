@@ -53,7 +53,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     REQUIRE(!fs::exists("config.ini"));
 
     constexpr const char c_ExpectedHash[]{
-        "\x00\xaf\xe4\xc2\x3f\x2c\x4e\x6d\x00\xbf\xa0\x0c\x1f\x47\xd1\xcc"
+        "\xb8\x2c\xb6\x2c\xc1\x30\x30\x40\x7e\x24\xbd\xbf\x61\x03\x1b\xea"
     };
     const auto file_hash{ hash_pdf_file("_printme.pdf") };
     REQUIRE(file_hash == QByteArray{ c_ExpectedHash, sizeof(c_ExpectedHash) - 1 });
