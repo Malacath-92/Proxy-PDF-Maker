@@ -54,7 +54,10 @@ Now we can open a new project in _Silhouette Studio_ and choose the right page s
     <sup>5</sup> Resizing and centering guides in Silhouette Studio
 </p>
 
-Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible<sup>6</sup>. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
+Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible<sup>6</sup>. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it on your Desktop. Remember this for later!
+
+> [!NOTE]
+> On versions before v1.1.0 you will have to manually copy this `cutting_base.pdf` to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
 
 <p align="center">
     <img src="./images/silhouette_print_and_cut.png" alt="Print & Cut"/>
@@ -74,9 +77,9 @@ While we are here we can also disable the outer-most cutting line. Right-click t
 ## Generating the full PDF in the App
 
 > [!NOTE]
-> You currently have to restart the app for this step, but that will be fixed in the future
+> On versions before v1.1.0 you will have restart the app at this point.
 
-Now we change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>8</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
+First go to your Desktop and drag-and-drop the `cutting_base.pdf` onto the app. Now change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>8</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
 
 <p align="center">
     <img src="./images/base_pdf.png" alt="Base Pdf"/>
