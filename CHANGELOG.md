@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-20-01
+
+### Fixed
+- The alignment test now applies the user's chosen backside rotation.
+
 ## [1.4.0] - 2026-19-01
 
 ### Added

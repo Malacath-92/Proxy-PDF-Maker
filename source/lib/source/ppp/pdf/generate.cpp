@@ -606,6 +606,11 @@ fs::path GenerateTestPdf(const Project& project)
         AtScopeExit finish_page{ [&]()
                                  { back_page->Finish(); } };
 
+        if (project.m_Data.m_BacksideRotation != 0_deg)
+        {
+            back_page->RotateFutureContent(project.m_Data.m_BacksideRotation);
+        }
+
         const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset.x };
         const PdfPage::LineData line{
             .m_From{ backside_left_line_x, 0_mm },
