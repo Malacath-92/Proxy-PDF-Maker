@@ -14,6 +14,8 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/ui/widget_double_spin_box.hpp>
+
 class WidgetWithLabel : public QWidget
 {
   public:
@@ -41,6 +43,17 @@ class ComboBoxWithLabel : public WidgetWithLabel
                       std::span<const std::string> tooltips,
                       std::string_view default_option);
 
+    template<Enum T>
+    ComboBoxWithLabel(std::string_view label_text,
+                      T default_option)
+        : ComboBoxWithLabel{
+            label_text,
+            magic_enum::enum_names<T>(),
+            magic_enum::enum_name(default_option)
+        }
+    {
+    }
+
     virtual QComboBox* GetWidget() const override;
 };
 
@@ -66,4 +79,12 @@ class DoubleSpinBoxWithLabel : public WidgetWithLabel
     DoubleSpinBoxWithLabel(std::string_view label_text);
 
     virtual QDoubleSpinBox* GetWidget() const override;
+};
+
+class LengthSpinBoxWithLabel : public WidgetWithLabel
+{
+  public:
+    LengthSpinBoxWithLabel(std::string_view label_text);
+
+    virtual LengthSpinBox* GetWidget() const override;
 };

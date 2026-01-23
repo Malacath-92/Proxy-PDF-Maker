@@ -1,4 +1,4 @@
-name: MacOS - Arm64
+name: MacOS - ARM64
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
   macos-arm64-debug:
     uses: ./.github/workflows/CI.yml
     with:
-      os: MacOS-Arm64
+      os: MacOS-ARM64
       compiler: AppleClang
       runs_on: macos-14
       build_type: Debug
@@ -19,7 +19,7 @@ jobs:
   macos-arm64-release:
     uses: ./.github/workflows/CI.yml
     with:
-      os: MacOS-Arm64
+      os: MacOS-ARM64
       compiler: AppleClang
       runs_on: macos-14
       build_type: Release

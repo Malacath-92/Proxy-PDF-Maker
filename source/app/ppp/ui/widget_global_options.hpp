@@ -2,17 +2,16 @@
 
 #include <QWidget>
 
-class QComboBox;
-
-class PrintProxyPrepApplication;
 class Project;
+
+class ComboBoxWithLabel;
 
 class GlobalOptionsWidget : public QWidget
 {
     Q_OBJECT
 
   public:
-    GlobalOptionsWidget(PrintProxyPrepApplication& application);
+    GlobalOptionsWidget();
 
   signals:
     void AdvancedModeChanged();
@@ -20,11 +19,14 @@ class GlobalOptionsWidget : public QWidget
     void BaseUnitChanged();
     void DisplayColumnsChanged();
     void RenderBackendChanged();
-    void ImageFormatChanged();
+    void ImageCompressionChanged();
     void JpgQualityChanged();
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();
+    void CardOrderChanged();
+    void CardOrderDirectionChanged();
+    void MaxWorkerThreadsChanged();
 
     void PluginEnabled(std::string_view plugin_name);
     void PluginDisabled(std::string_view plugin_name);
@@ -33,6 +35,10 @@ class GlobalOptionsWidget : public QWidget
     void PageSizesChanged();
     void CardSizesChanged();
 
+    void ColorCubeAdded();
+    void StyleAdded();
+
   private:
-    QComboBox* m_PageSizes{ nullptr };
+    ComboBoxWithLabel* m_ColorCube{ nullptr };
+    ComboBoxWithLabel* m_Style{ nullptr };
 };

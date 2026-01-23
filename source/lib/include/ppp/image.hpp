@@ -9,8 +9,6 @@
 #include <ppp/color.hpp>
 #include <ppp/util.hpp>
 
-class QPixmap;
-
 using EncodedImage = std::vector<std::byte>;
 using EncodedImageView = std::span<const std::byte>;
 
@@ -37,8 +35,6 @@ class [[nodiscard]] Image
     EncodedImage EncodePng(std::optional<int32_t> compression = std::nullopt) const;
     EncodedImage EncodeJpg(std::optional<int32_t> quality = std::nullopt) const;
 
-    QPixmap StoreIntoQtPixmap() const;
-
     explicit operator bool() const;
     bool Valid() const;
 
@@ -55,6 +51,7 @@ class [[nodiscard]] Image
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
 
+    Image EnsureAlpha() const;
     Image ApplyAlpha(const ColorRGB8& color) const;
 
     Image RoundCorners(::Size real_size, ::Length corner_radius) const;

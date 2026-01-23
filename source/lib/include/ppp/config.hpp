@@ -8,17 +8,30 @@
 #include <ppp/units.hpp>
 #include <ppp/util.hpp>
 
+enum class CardOrder
+{
+    Alphabetical,
+    LastModified,
+    LastAdded,
+};
+
+enum class CardOrderDirection
+{
+    Ascending,
+    Descending,
+};
+
 enum class PdfBackend
 {
-    LibHaru,
     PoDoFo,
     Png,
 };
 
-enum class ImageFormat
+enum class ImageCompression
 {
-    Png,
-    Jpg
+    Lossless,
+    Lossy,
+    AsIs,
 };
 
 enum class PageOrientation
@@ -31,21 +44,31 @@ struct Config
 {
     bool m_AdvancedMode{ false };
 
+    bool m_CheckVersionOnStartup{ true };
+
     bool m_EnableFancyUncrop{ true };
-    Pixel m_BasePreviewWidth{ 248_pix };
+    Pixel m_BasePreviewWidth{ 512_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
+    CardOrder m_CardOrder{ CardOrder::Alphabetical };
+    CardOrderDirection m_CardOrderDirection{ CardOrderDirection::Ascending };
+    uint32_t m_MaxWorkerThreads{ 16 };
     uint32_t m_DisplayColumns{ 5 };
-    std::string m_DefaultCardSize{ "Standard" };
-    std::string m_DefaultPageSize{ "Letter" };
+    std::optional<std::string> m_DefaultCardSize{};
+    std::optional<std::string> m_DefaultPageSize{};
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
-    PdfBackend m_Backend{ PdfBackend::LibHaru };
-    ImageFormat m_PdfImageFormat{ ImageFormat::Png };
+    PdfBackend m_Backend{ PdfBackend::PoDoFo };
+    ImageCompression m_PdfImageCompression{ ImageCompression::Lossy };
     std::optional<int> m_PngCompression{ std::nullopt };
     std::optional<int> m_JpgQuality{ std::nullopt };
     Unit m_BaseUnit{ Unit::Inches };
 
-    std::unordered_map<std::string, bool> m_PluginsState;
+    bool m_DeterminsticPdfOutput{ false };
+
+    std::unordered_map<std::string, bool> m_PluginsState{};
+
+    // Hidden options, just doing someone a solid
+    bool m_RenderZeroBleedRoundedEdges{ false };
 
     static inline constexpr std::string_view c_FitSize{ "Fit" };
     static inline constexpr std::string_view c_BasePDFSize{ "Base Pdf" };
@@ -143,6 +166,10 @@ struct Config
     void SetPdfBackend(PdfBackend backend);
 
     std::string_view GetFirstValidPageSize() const;
+    const SizeInfo& GetFirstValidPageSizeInfo() const;
+
+    std::string_view GetFirstValidCardSize() const;
+    const CardSizeInfo& GetFirstValidCardSizeInfo() const;
 };
 
 Config LoadConfig();

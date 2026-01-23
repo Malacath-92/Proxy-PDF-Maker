@@ -7,4 +7,4 @@
 class QApplication;
 
 std::vector<std::string> GetStyles();
-void SetStyle(QApplication& application, std::string_view style);
+void SetStyle(std::string_view style);

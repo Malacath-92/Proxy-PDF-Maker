@@ -3,7 +3,7 @@
 #include <QIcon>
 #include <QWidget>
 
-class QDoubleSpinBox;
+class LengthSpinBox;
 class QToolButton;
 
 class LinkedSpinBoxes : public QWidget
@@ -13,8 +13,8 @@ class LinkedSpinBoxes : public QWidget
   public:
     LinkedSpinBoxes(bool initially_linked);
 
-    QDoubleSpinBox* First();
-    QDoubleSpinBox* Second();
+    LengthSpinBox* First();
+    LengthSpinBox* Second();
 
   signals:
     void Linked();
@@ -24,7 +24,7 @@ class LinkedSpinBoxes : public QWidget
     QIcon m_LinkedIcon;
     QIcon m_UnLinkedIcon;
 
-    QDoubleSpinBox* m_First;
-    QDoubleSpinBox* m_Second;
+    LengthSpinBox* m_First;
+    LengthSpinBox* m_Second;
     QToolButton* m_ChainButton;
 };

@@ -2,12 +2,12 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/widget_card_area.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
-#include <ppp/ui/widget_scroll_area.hpp>
 
-MainTabs::MainTabs(CardScrollArea* scroll_area, PrintPreview* print_preview)
+MainTabs::MainTabs(CardArea* card_area, PrintPreview* print_preview)
 {
-    addTab(scroll_area, "Cards");
+    addTab(card_area, "Cards");
     addTab(print_preview, "Preview");
 
     auto current_changed{

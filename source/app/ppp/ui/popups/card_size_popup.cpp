@@ -4,6 +4,7 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <QCursor>
 #include <QDoubleSpinBox>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
@@ -13,6 +14,7 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QTableWidget>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <ppp/qt_util.hpp>
@@ -158,21 +160,29 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [this]()
                      {
+                         static constexpr auto c_MakeNumberEditFromNumber{
+                             [](double number)
+                             {
+                                 QLocale locale{};
+                                 return c_MakeNumberEdit(locale.toString(number, 'f', 1));
+                             }
+                         };
+
                          int i{ m_Table->rowCount() };
                          m_Table->insertRow(i);
                          m_Table->setCellWidget(i, 0, new QLineEdit{ "New Card" });
 
                          // card size
-                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("3,3"));
-                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("4,4"));
+                         m_Table->setCellWidget(i, 1, c_MakeNumberEditFromNumber(3.3));
+                         m_Table->setCellWidget(i, 2, c_MakeNumberEditFromNumber(4.4));
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          // input bleed
-                         m_Table->setCellWidget(i, 4, c_MakeNumberEdit("0,1"));
+                         m_Table->setCellWidget(i, 4, c_MakeNumberEditFromNumber(0.1));
                          m_Table->setCellWidget(i, 5, MakeComboBox(Unit::Inches));
 
                          // corner radius
-                         m_Table->setCellWidget(i, 6, c_MakeNumberEdit("0,1"));
+                         m_Table->setCellWidget(i, 6, c_MakeNumberEditFromNumber(0.1));
                          m_Table->setCellWidget(i, 7, MakeComboBox(Unit::Inches));
 
                          // scale
@@ -194,6 +204,12 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                      [this]()
                      {
                          const auto selected_rows{ m_Table->selectionModel()->selectedRows() };
+                         if (selected_rows.isEmpty())
+                         {
+                             QToolTip::showText(QCursor::pos(), "No row selected", this);
+                             return;
+                         }
+
                          for (const auto& i : selected_rows | std::views::reverse)
                          {
                              m_Table->removeRow(i.row());

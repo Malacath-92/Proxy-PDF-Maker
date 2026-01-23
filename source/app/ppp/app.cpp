@@ -9,7 +9,10 @@
 
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 
+#include <nlohmann/json.hpp>
+
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 #include <ppp/ui/main_window.hpp>
@@ -133,6 +136,48 @@ void PrintProxyPrepApplication::SetObjectVisibility(const QString& object_name, 
     m_ObjectVisibilities[object_name] = visible;
 }
 
+nlohmann::json PrintProxyPrepApplication::GetProjectDefault(std::string_view path) const
+{
+    return GetJsonValue(path);
+}
+void PrintProxyPrepApplication::SetProjectDefault(std::string_view path, nlohmann::json value)
+{
+    SetJsonValue(path, std::move(value));
+}
+
+nlohmann::json PrintProxyPrepApplication::GetJsonValue(std::string_view path) const
+{
+    if (m_DefaultProjectData == nullptr)
+    {
+        return nlohmann::json{};
+    }
+
+    try
+    {
+        return ::GetJsonValue(*m_DefaultProjectData, path);
+    }
+    catch (...)
+    {
+        return nlohmann::json{};
+    }
+}
+void PrintProxyPrepApplication::SetJsonValue(std::string_view path, nlohmann::json value)
+{
+    if (m_DefaultProjectData == nullptr)
+    {
+        m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::value_t::object);
+    }
+
+    try
+    {
+        ::SetJsonValue(*m_DefaultProjectData, path, std::move(value));
+    }
+    catch (...)
+    {
+        LogError("Invalid path {} when setting default project value.", path);
+    }
+}
+
 bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 {
     if (auto* key_event{ dynamic_cast<QKeyEvent*>(event) })
@@ -177,6 +222,22 @@ void PrintProxyPrepApplication::Load()
                 { "Global Config", false },
             };
         }
+
+        if (settings.contains("project_defaults"))
+        {
+            try
+            {
+                const auto json_blob{ settings.value("project_defaults").toString().toStdString() };
+                m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::parse(json_blob));
+            }
+            catch (const std::exception& e)
+            {
+                LogError("Failed loading project defaults, continuing with original defaults: {}", e.what());
+
+                // Shouldn't be set, but better safe than sorry'
+                m_DefaultProjectData.reset();
+            }
+        }
     }
 }
 void PrintProxyPrepApplication::Save() const
@@ -195,5 +256,18 @@ void PrintProxyPrepApplication::Save() const
             settings.setValue(object_name, visible);
         }
         settings.endGroup();
+    }
+
+    if (m_DefaultProjectData != nullptr)
+    {
+        try
+        {
+            const auto json_blob{ m_DefaultProjectData->dump() };
+            settings.setValue("project_defaults", ToQString(json_blob));
+        }
+        catch (const std::exception& e)
+        {
+            LogError("Failed wring project defaults, they will be rest on next load: {}", e.what());
+        }
     }
 }

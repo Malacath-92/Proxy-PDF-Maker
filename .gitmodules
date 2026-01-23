@@ -1,3 +1,6 @@
 [submodule "submodules/dla"]
 	path = submodules/dla
 	url = https://github.com/Malacath-92/dla.git
+[submodule "submodules/qt-toast"]
+	path = submodules/qt-toast
+	url = https://github.com/Malacath-92/qt-toast.git

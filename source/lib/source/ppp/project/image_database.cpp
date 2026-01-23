@@ -6,7 +6,10 @@
 
 #include <nlohmann/json.hpp>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
@@ -15,7 +18,11 @@ bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
            static_cast<int32_t>(std::floor(lhs.m_Width.value)) != static_cast<int32_t>(std::floor(rhs.m_Width.value)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.x / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.x / 0.001_mm)) ||
            static_cast<int32_t>(std::floor(lhs.m_CardSize.y / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_CardSize.y / 0.001_mm)) ||
-           static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm));
+           static_cast<int32_t>(std::floor(lhs.m_FullBleedEdge / 0.001_mm)) != static_cast<int32_t>(std::floor(rhs.m_FullBleedEdge / 0.001_mm)) ||
+           lhs.m_ColorCube != rhs.m_ColorCube ||
+           lhs.m_Rotation != rhs.m_Rotation ||
+           lhs.m_BleedType != rhs.m_BleedType ||
+           lhs.m_BadAspectRatioHandling != rhs.m_BadAspectRatioHandling;
 }
 
 // NOLINTNEXTLINE
@@ -34,6 +41,25 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
     entry.m_Params.m_CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_CardSize.y = json["card_size"]["height"].get<int32_t>() * 0.001_mm;
     entry.m_Params.m_FullBleedEdge = json["card_input_bleed"].get<int32_t>() * 0.001_mm;
+    if (json.contains("color_cube"))
+    {
+        entry.m_Params.m_ColorCube = json["color_cube"];
+    }
+    if (json.contains("rotation"))
+    {
+        entry.m_Params.m_Rotation = magic_enum::enum_cast<Image::Rotation>(json["rotation"].get_ref<const std::string&>())
+                                        .value_or(Image::Rotation::None);
+    }
+    if (json.contains("bleed_type"))
+    {
+        entry.m_Params.m_BleedType = magic_enum::enum_cast<BleedType>(json["bleed_type"].get_ref<const std::string&>())
+                                         .value_or(BleedType::Default);
+    }
+    if (json.contains("ratio_handling"))
+    {
+        entry.m_Params.m_BadAspectRatioHandling = magic_enum::enum_cast<BadAspectRatioHandling>(json["ratio_handling"].get_ref<const std::string&>())
+                                                      .value_or(BadAspectRatioHandling::Default);
+    }
 }
 
 // NOLINTNEXTLINE
@@ -58,9 +84,35 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
         },
     };
     json["card_input_bleed"] = static_cast<int32_t>(entry.m_Params.m_FullBleedEdge / 0.001_mm);
+    json["color_cube"] = entry.m_Params.m_ColorCube;
+    json["rotation"] = magic_enum::enum_name(entry.m_Params.m_Rotation);
+    json["bleed_type"] = magic_enum::enum_name(entry.m_Params.m_BleedType);
+    json["ratio_handling"] = magic_enum::enum_name(entry.m_Params.m_BadAspectRatioHandling);
 }
 
-ImageDataBase ImageDataBase::Read(const fs::path& path)
+ImageDataBase ImageDataBase::FromFile(const fs::path& path)
+{
+    if (fs::exists(path))
+    {
+        try
+        {
+            const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
+            if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
+            {
+                throw std::logic_error{ "Image databse version not compatible with App version..." };
+            }
+
+            return ImageDataBase{ json["db"].get<DataBaseMap>(), path };
+        }
+        catch (const std::exception& e)
+        {
+            fmt::print("Failed loading image database, continuing with an empty image database: {}", e.what());
+        }
+    }
+    return ImageDataBase{ path };
+}
+
+ImageDataBase& ImageDataBase::Read(const fs::path& path)
 {
     try
     {
@@ -70,21 +122,29 @@ ImageDataBase ImageDataBase::Read(const fs::path& path)
             throw std::logic_error{ "Image databse version not compatible with App version..." };
         }
 
-        ImageDataBase image_db{};
-        image_db.m_DataBase = json["db"].get<decltype(image_db.m_DataBase)>();
-        return image_db;
+        std::lock_guard lock{ m_Mutex };
+        m_DataBase = json["db"].get<DataBaseMap>();
+        m_Path = path;
     }
     catch (const std::exception& e)
     {
         fmt::print("{}", e.what());
+
         // Failed loading image database, continuing with an empty image databse...
-        return ImageDataBase{};
+        std::lock_guard lock{ m_Mutex };
+        m_DataBase.clear();
+        m_Path.clear();
     }
+
+    return *this;
 }
 
-void ImageDataBase::Write(const fs::path& path)
+void ImageDataBase::Write()
 {
-    if (std::ofstream file{ path })
+    LogInfo("Writing image database to {}", m_Path.string());
+
+    std::lock_guard lock{ m_Mutex };
+    if (std::ofstream file{ m_Path })
     {
         nlohmann::json json{};
         json["version"] = ImageDbFormatVersion();
@@ -97,6 +157,7 @@ void ImageDataBase::Write(const fs::path& path)
 
 bool ImageDataBase::FindEntry(const fs::path& destination) const
 {
+    std::lock_guard lock{ m_Mutex };
     return m_DataBase.contains(destination);
 }
 
@@ -122,6 +183,7 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
         return cur_hash;
     }
 
+    std::lock_guard lock{ m_Mutex };
     auto it{ m_DataBase.find(destination) };
     if (it != m_DataBase.end())
     {
@@ -143,8 +205,21 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
 
 void ImageDataBase::PutEntry(const fs::path& destination, QByteArray source_hash, ImageParameters params)
 {
+    std::lock_guard lock{ m_Mutex };
     m_DataBase[destination] = ImageDataBaseEntry{
         .m_SourceHash{ std::move(source_hash) },
         .m_Params{ params },
     };
+}
+
+ImageDataBase::ImageDataBase(fs::path path)
+    : m_Path{ std::move(path) }
+{
+}
+
+ImageDataBase::ImageDataBase(DataBaseMap database,
+                             fs::path path)
+    : m_DataBase{ std::move(database) }
+    , m_Path{ std::move(path) }
+{
 }

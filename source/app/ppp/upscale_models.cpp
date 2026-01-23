@@ -9,7 +9,12 @@
 
 #include <opencv2/opencv.hpp>
 
+#include <magic_enum/magic_enum.hpp>
+
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include <ppp/app.hpp>
 #include <ppp/image.hpp>
@@ -122,12 +127,10 @@ void LoadModel(PrintProxyPrepApplication& application, std::string_view model_na
     auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
 
     ONNXTensorElementDataType elem_type = tensor_info.GetElementType();
-    LogError("Element type: {}", elem_type);
+    LogError("Element type: {}", magic_enum::enum_name(elem_type));
 
     std::vector<int64_t> input_shape = tensor_info.GetShape();
-    LogError("Input shape: ");
-    for (auto d : input_shape)
-        LogError("{}", d);
+    LogError("Input shape: ", input_shape);
 
     application.SetUpscaleModel(std::string{ model_name }, std::move(session));
 }

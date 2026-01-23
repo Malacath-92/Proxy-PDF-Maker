@@ -17,14 +17,34 @@ Proxy PDF Maker is an app for creating PDF files for at-home printing of TCG Pro
 
 Go to the [Releases](https://github.com/Malacath-92/Proxy-PDF-Maker/releases) page and grab the latest version for your platform. Unzip this into any folder of your choice and you should be good to go.
 
+## Windows
 On Windows you will additionally have to install Visual Studio Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 
-# Running the Program
+## Ubunutu
+On Linux systems you may have to mark the file as exectuable via the `chmod` command, e.g.
+```sh
+chmod +x proxy_pdf
+```
+
+## macOS
+On macOS 15+ you have to trust the binary to run it. This process is a bit more involved and is outlined in the [MAC-OS-INSTALLATION](https://github.com/Malacath-92/Proxy-PDF-Maker/blob/main/MAC-OS-INSTALLATION.md) guide.
+
+# Quick-Start Guide
 
 > [!NOTE]
 > This app was initially designed to work with card images that include a bleed edge. However it should be able to handle images without bleed edge by generating it on the fly. Be aware though that this is done based on aspect-ratio, so the images need to align as good as possible to avoid stretching and squishing. Card size and bleed edge can be further configured by users and changed per-game.
 
-First, throw some images in the `images` folder. Then start the program to start setting up your page by changing the amount of cards you want. Previews will drop in as they get available. When you want to render you have to wait for the progress bar in the top-right, while that is still visible the program is cropping.
+The following is an outline for creating your first project:
+- Start the app, ideally by just double-clicking the executable.
+- Add images either by
+    - copying/moving them into the `images` folder that was created for you or
+    - dragging image files directly onto the app window.
+- Set the amount you want for each card by pressing the `+` or `-` buttons for each card.
+- Open the preview by pressing it in the top-left corner of the app window and verify everything is as you want.
+- Press the `Render PDF` button in the top-right corner that will appear once the loading bar is done.
+- Wait for rendering to be finished, the rendered pdf should be opened automatically.
+
+From here you have to explore the different options the app has to offer on the right-hand side. Be sure to always have the preview open while changing values there so you know how the final pdf will be affected.
 
 <p align="center">
     <img src="./readme_images/sample_project.png" alt="Sample Project" width=400/>
@@ -42,8 +62,6 @@ First, throw some images in the `images` folder. Then start the program to start
 > [!NOTE]
 > Images starting with `__` will not be visible in the program. These can however still be used as backsides for other cards.
 
-Below is an outline of the different parts of the app and most importantly the many options that you can work with.
-
 <p align="center">
     <img src="./readme_images/sample_project_backsides.png" alt="Sample Project with Backsides" width=400/>
     <img src="./readme_images/sample_preview_backsides.png" alt="Sample Preview with Backsides" width=400/>
@@ -57,14 +75,34 @@ Below is an outline of the different parts of the app and most importantly the m
     The app supports arbitrary card sizes, here shown with YuGiOh cards
 </p>
 
-## Cards
-The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a +/-, use these to adjust how many copies for each card you want. On the top you have global controls to +/- all cards or reset them back to 1.
+Following is an outline of the different parts of the app and most importantly the many options that you can work with.
+
+## Card Grid
+The left half of the window contains a grid of all cards you placed in the `images` folder. Below each image is a text input field and a `+` and `-` button, use these to adjust how many copies for each card you want. On the top you have global controls to `+`/`-` all cards or reset them all to 0.
 
 ## Print Preview
 On the top-left you can switch over to the `Preview`, which shows you a preview of the printed page. It should update automatically when you change printing settings on the right.
 
+## Context Menu
+If you right-click a card in either the Card Grid or the Print Preview you will open the card's context menu. In this menu you will see various options for the card:
+- _Remove External Card_: Removes the card from the project. **Only visible if the card is an external card.**
+- _Reset Backside_: Resets the backside for this card back to the default. **Only visible if the card has a non-default backside and backsides are enabled.**
+- Bleed Options:
+    - _Infer Input Bleed_: Default setting. The app will try to determine whether the image has a bleed edge or not.
+    - _Assume Full Bleed_: The image has a full bleed edge.
+    - _Assume No Bleed_: The image does not have any bleed edge.
+- Aspect Ratio Options: **Only visible if the image has an unexpected aspect ratio**
+    - _Reset Aspect Ratio_: Reset the aspect ratio to the images original aspect ratio.
+    - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+    - _Fix Aspect Ratio: Stretch_: Stretches the image in one dimension to make it have the expected aspect ratio.
+- _Rotate Left_: Rotates the image by 90 degrees counter-clockwise.
+- _Rotate Right_: Rotates the image by 90 degrees clockwise.
+
 ## Options
-The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that most options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
+The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that all options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
+
+> [!NOTE]
+> Most options can be right-clicked to set their current value as the default or reset their current value to defaults. These defaults are used when creating a new project or when running the CLI without an input project.
 
 > [!NOTE]
 > Some options are hidden by default and are only visible when enabling `Advanced Mode`, all such options are marked.
@@ -106,7 +144,7 @@ Determines the size of a page in the generated pdf. Page sizes are defined in `c
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
 ##### Paper Size: Base Pdf
-The `Base Pdf` option is only available with the `PoDoFo` render backend. It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
+It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
 
 #### Cards Size
 Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
@@ -164,6 +202,9 @@ This determines how thick the guides are, it defaults to 1 point, which is equiv
 #### Bleed Edge
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
+#### Bleed Edge
+This is essentially the same as `Bleed Edge`, except that it is added around all the cards as opposed to individual cards.
+
 #### Card Spacing
 With this option you can add a gap between cards. This may be an alternative to adding a bleed edge or may be used in conjunction to have decent spacing and only a small amount of ink waste. Use the 🔗 symbol to specify different horizontal and vertical spacing, be sure to verify in the print preview what you are doing.
 
@@ -177,8 +218,11 @@ The default backside is `__back.png`, if that file is not available a question m
 
 To change the backside for an individual card, click on the backside for that card in the card grid and browse to the image you want.
 
-#### Offset
-In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Offset` field.
+#### Backside Offset
+In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Backside Offset` field.
+
+#### Backside Rotation [Advanced Mode]
+Some printers may even print at a slight angle. To compensate for this when printing double-sided you'll have to measure the angle with a test print and input it into this field. Each backside will be rotated counter-clockwise around its center-point by the chosen angle.
 
 ### Global Config
 
@@ -188,12 +232,8 @@ This determines what units all measurements are displayed in. The option `points
 #### Display Columns
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
 
-#### Rendering Backend
-Choose here the backend for rendering the final output file. `LibHaru` and `PoDoFo` will render to a `.pdf` file, while `Png` will render to a set of png files.
-- `LibHaru` and `PoDoFo` are largely the same however
-    - The two could have each their own bugs, so if you experience a crash during rendering try switching to the other
-    - `PoDoFo` is required if you want to render images on top of an existing `.pdf` file via the `Base PDF` page size  
-- `Png` output is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software
+#### Render to Png
+Sometimes you may want to render out `.png` files instead of `.pdf` files. This is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software. Note that each page will be output to a separate file, including backsides.
 
 #### Image Format
 This determines whether images are encoded to `.png` or `.jpg` before writing them to the PDF. Use `Jpg` to reduce file size.
@@ -208,9 +248,6 @@ Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.
 #### Preview Width
 Determines the resolution of previews in the card grid and the page preview. Smaller numbers result in faster cropping but worse previews.
 
-#### Default Page Size
-Dropdown to choose the default page size when creating a new project.
-
 #### Theme
 Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
 - Default (OS specific)
@@ -224,9 +261,9 @@ Choose a theme from among all themes found in the folder `res/styles`, which hav
 Opens a window with all available game-specific plugins. Use the checkboxes to enable or disable the plugins.
 
 ## Actions
-At the top of the options you can see an untitled section, which are all buttons do perform various actions.
+At the top of the options you can see an untitled section, which are all buttons that perform various actions.
 
-### Render Document
+### Render PDF
 When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
 
 ### Save Project
@@ -242,7 +279,21 @@ Lets you choose a folder in which you have your images, this is saved with the p
 Opens the image folder for this project in a file explorer.
 
 ### Alignment Test
-Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned. 
+Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned.
+
+# CLI
+The app also ships with `proxy_pdf_cli`, which is a command line interface to run cropping and generation. If you don't know what this means then this is probably not for you. With all the features available in the app it should be possible to generate sheets without large amounts of effort. But it's possible to change all project properties via the CLI, please refer to `--help` for more details.
+
+# Donations
+
+I provide this app free of charge and work on it as a hobby and I have no running costs other than the time I spend on it. I use it myself as well, so it's existence is not dependent on it having other users. As such there is no need to monetize this app and I have no plans to sell it as opposed to having it freely available. Despite all this I have had numereous users asking to contribute financially to the project via a donation. So if you are one of those users, feel free to contribute with any amount to buy me a coffee or contribute to a christmas present, I greatly appreciate these contributions. Everyone else, pleaes don't feel any obligation to spend any money on this project.
+
+
+<p align="center">
+  <a href="https://www.paypal.me/Malacath92/5USD">
+    <img src="https://raw.githubusercontent.com/stefan-niedermann/paypal-donate-button/master/paypal-donate-button.png" alt="Donate with PayPal" width=250/>
+  </a>
+</p>
 
 # Troubleshooting:
 - If you need support for a new feature, please open an Issue. Press F1 to get an about window, this contains information about the program and a link to the issues page. If you report an issue include a screenshot of this window.

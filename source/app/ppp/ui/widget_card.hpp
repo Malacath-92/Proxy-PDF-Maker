@@ -6,6 +6,10 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/project/card_info.hpp>
+
+class QAction;
+
 class Project;
 struct ImagePreview;
 
@@ -19,16 +23,18 @@ class CardImage : public QLabel
         bool m_RoundedCorners{ true };
         Image::Rotation m_Rotation{ Image::Rotation::None };
         Length m_BleedEdge{ 0_mm };
-        Pixel m_MinimumWidth{ 130_pix };
+        Pixel m_MinimumWidth{ 0_pix };
     };
 
-    CardImage(const fs::path& image_name, const Project& project, Params params);
+    CardImage(const fs::path& card_name, const Project& project, Params params);
 
-    void Refresh(const fs::path& image_name, const Project& project, Params params);
+    void Refresh(const fs::path& card_name, const Project& project, Params params);
 
-    const fs::path& GetImageName() const
+    void EnableContextMenu(bool enable, Project& project);
+
+    const fs::path& GetCardName() const
     {
-        return m_ImageName;
+        return m_CardName;
     }
 
     virtual bool hasHeightForWidth() const override
@@ -38,13 +44,33 @@ class CardImage : public QLabel
     virtual int heightForWidth(int width) const override;
 
   private slots:
-    void PreviewUpdated(const fs::path& image_name, const ImagePreview& preview);
+    void PreviewRemoved(const fs::path& card_name);
+    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
+    void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
 
   private:
-    QPixmap FinalizePixmap(const QPixmap& pixmap);
-    void AddBadFormatWarning();
+    QPixmap GetPixmap(const ImagePreview& preview) const;
+    QPixmap GetEmptyPixmap() const;
+    QPixmap FinalizePixmap(const QPixmap& pixmap) const;
+    void AddBadFormatWarning(const ImagePreview& preview);
 
-    fs::path m_ImageName;
+    void ContextMenuRequested(QPoint pos);
+
+    void RemoveExternalCard(Project& project);
+
+    void ResetBackside(Project& project);
+
+    void ChangeBleedType(Project& project, BleedType bleed_type);
+    void ChangeBadAspectRatioHandling(Project& project,
+                                      BadAspectRatioHandling ratio_handling);
+
+    void RotateImageLeft(Project& project);
+    void RotateImageRight(Project& project);
+
+    void ClearChildren();
+
+  private:
+    fs::path m_CardName;
     Params m_OriginalParams;
 
     bool m_Rotated;
@@ -54,7 +80,30 @@ class CardImage : public QLabel
     Length m_BleedEdge;
     Length m_CornerRadius;
 
+    bool m_IsExternalCard{ false };
+    bool m_BacksideEnabled{ false };
+    bool m_HasNonDefaultBackside{ false };
+    bool m_BadAspectRatio{ false };
+    BleedType m_BleedType{ BleedType::Default };
+    BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
+
+    QWidget* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
+
+    QAction* m_RemoveExternalCardAction{ nullptr };
+
+    QAction* m_ResetBacksideAction{ nullptr };
+
+    QAction* m_InferBleedAction{ nullptr };
+    QAction* m_ForceFullBleedAction{ nullptr };
+    QAction* m_ForceNoBleedAction{ nullptr };
+
+    QAction* m_FixRatioIgnoreAction{ nullptr };
+    QAction* m_FixRatioExpandAction{ nullptr };
+    QAction* m_FixRatioStretchAction{ nullptr };
+
+    QAction* m_RotateLeftAction{ nullptr };
+    QAction* m_RotateRightAction{ nullptr };
 };
 
 class BacksideImage : public CardImage
@@ -72,9 +121,12 @@ class StackedCardBacksideView : public QStackedWidget
     Q_OBJECT
 
   public:
-    StackedCardBacksideView(QWidget* image, QWidget* backside);
+    StackedCardBacksideView(CardImage* image, QWidget* backside);
 
     void RefreshBackside(QWidget* new_backside);
+
+    void RotateImageLeft();
+    void RotateImageRight();
 
     virtual bool hasHeightForWidth() const override
     {
@@ -83,7 +135,6 @@ class StackedCardBacksideView : public QStackedWidget
     virtual int heightForWidth(int width) const override;
 
   signals:
-    void BacksideReset();
     void BacksideClicked();
 
   private:
@@ -94,7 +145,7 @@ class StackedCardBacksideView : public QStackedWidget
     virtual void leaveEvent(QEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
 
-    QWidget* m_Image;
+    CardImage* m_Image;
     QWidget* m_Backside;
     QWidget* m_BacksideContainer;
 };

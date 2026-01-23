@@ -6,6 +6,226 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-20-01
+
+### Fixed
+- The alignment test now applies the user's chosen backside rotation.
+
+## [1.4.0] - 2026-19-01
+
+### Added
+-  There is now a filter available in the card grid that filters based on file names.
+
+### Changed
+- The extended guides are now a solid color, always picking the darker of the two guide colors.
+
+### Fixed
+- Opening an image browser, e.g. when choosing the default backside, while no cards are loaded in the project will no longer crash the app.
+
+## [1.3.3] - 2026-12-01
+
+### Added
+- Under `Print Options` there is now a checkbox to determine whether to render the header on each page.
+
+### Fixed
+- Scrolling during drag-and-drop in the preview was reworked to make it more reliable and usable.
+- When a bug happens during drag-and-drop that results in invalid card sorting the project will no longer break and result in startup crashes but the bugged reordering is instead ignored.
+
+## [1.3.2] - 2026-08-01
+
+### Fixed
+- The app will now successfully generate sheets again when generating separate backsides.
+- When generating separate backsides with a base pdf and backside offset or rotation, it will now correctly transform the right pages of the base pdf.
+
+## [1.3.1] - 2026-08-01
+
+### Fixed
+- The card and page info now update directly when changing units.
+- The scroll bars when drag-and-dropping now correctly scale the scroll speed based on how close to the preview edge the mouse is.
+
+## [1.3.0] - 2026-08-01
+
+### Added
+- In the preview, you can now type a number to go to that page.
+- You can also use Page-Up/Down to scroll pages in the preview.
+
+### Fixed
+- When margins are set to `Linked` everything will now correctly compute on the fly.
+- The `Backside Rotation` option will now load correctly.
+- When using backside offset/rotation with a base pdf, the base pdf will now align correctly.
+- When using backsides, an extra erroneous transform is no longer applied to the frontside.
+- The CLI tool will no longer timeout unexpectedly during cropping, leading to a generated pdf with missing images.
+- An issue that caused project files from v1.0.3 and older not to load correctly was fixed.
+- The alignment page was fixed and is no longer blank.
+
+### Removed
+- The `--cropper` argument was removed from the CLI tool, as it makes no sense to not enable it.
+
+## [1.2.0] - 2025-26-12
+
+### Added
+- The card area now contains tiny on-boarding instructions when no cards are loaded.
+- Dropping a text file onto the MtG Downloader Plugin will now insert the contents of that text file.
+- A new (unfortunately not as niche as it should be) `Backside Rotation` option was added that allows specifying an angle at which to rotate backsides.
+- The MtG Downloader Plugin now gives the user the option not to change settings.
+- In the same vein, the Plugin has an option not to download backsides.
+- You can now paste `$` followed by a Scryfall query into the MtG Downloader Plugin to download all the cards that the query returns.
+- The progress bar in the MtG Downloader Plugin now gives a bit more detail on the progress.
+- In the image browser (e.g. when selecting a backside) there is now a filter available, that is automatically focused when the window opens.
+
+### Changed
+- The `Image Format` option in the `Global Config` is now named `Image Compression` and has different options to more clearly state what the option does. The old setting will be automatically migrated.
+- A new version of the Pdf library is now used, which brings with it a small speed-up.
+- When setting the `Render to Png` option is used, the output `.png` files will now be named as the pages would be in a pdf document.
+- If a page contains only a single card, the page will now be given the name of that card.
+- The global controls in the card area are now no longer scrolling with the cards.
+- In the card area, the `Remove All External Cards` button is now only shown when the project actually contains external cards.
+- The `Reset All` button was relabeled to `Zero All` to make it clearer what it does.
+
+### Fixed
+- The options side-panel and the card area should no longer shrink such that parts of their contents are obstructed on small screens.
+- When a card is removed from the project while the app runs, all widgets showing that card will now be properly reset.
+- When an image file that is loaded into the app is renamed to remove/add `__` from the beginning of the file, it is now correctly shown/hidden.
+- Using the `Fit` page size and `Mixed` card orientation the preview now shows the actual layout rather than the layout before those settings were chosen.
+- With the `Render to Png` option, the document is no longer render bottom to top.
+
+### Removed
+- The `Wstartpage` theme is no shipped with the app.
+
+## [1.1.4] - 2025-14-12
+
+### Added
+- Most project options can now be right-clicked to set their current value as default or reset them to default.
+- A new button is available that resets all project settings to default.
+- The CLI has the option `--ignore-user-defaults` if the user wants to initialize empty projects to original default values.
+- The `Envelope` settings was added next to the `Bleed Edge` setting. It adds a bleed around all the cards rather than each individual card.
+- When dropping `.pdf` files onto the app, they are automatically copied to the `res/base_pdfs` folder and made available as base pdfs without restarting the app.
+- When dropping `.CUBE` files onto the app, they are automatically copied to the `res/cubes` folder and made available as color cubes without restarting the app.
+- When dropping `.qss` files onto the app, they are automatically copied to the `res/styles` folder and made available as styles without restarting the app.
+
+### Changed
+- Empty projects in the CLI tool are now initialized respecting defaults.
+- Documents are now rendered with document name and page number on top of each page, if there is enough space for it.
+- The default preview width was increased to 512 pixels.
+- The currently loaded project is now shown in the window title.
+
+### Removed
+- The default page size option was removed in favour of general default settings.
+- Some tooltips that were no longer useful or accurate were removed.
+
+## [1.0.4] - 2025-26-11
+
+### Changed
+- Enabled extended guides by default.
+- Cutting guides will now always contain at least three dashes.
+
+### Fixed
+- The cli will no longer freeze when running with no images.
+- Running the cli will no longer save a config.ini file.
+- Loading the image database the first time will no longer emit an error.
+
+## [1.0.3] - 2025-21-11
+
+### Fixed
+- Extended guides are now moved in the right direction when changing vertical margins.
+- When switching to simple margins control it no longer happens that the layout changes unexpectedly.
+
+## [1.0.2] - 2025-19-11
+
+### Fixed
+- The pathes exported in the .dxf file with the `Export Exact Guides` is now closed.
+
+## [1.0.1] - 2025-18-11
+
+### Changed
+- The default units are now `mm`.
+- The label for restoring card order was made more general to make sense with user settings.
+- Selected color cube will now be applied to previews as well.
+
+### Fixed
+- Some settings will no longer get messed up when changing units.
+- The backside of a card will now correctly update when resetting it to default.
+- A potential bug in the pdf generation that could result in corrupt pdf files is now gone.
+
+## [1.0.0] - 2025-16-11
+
+### Added
+- When right-clicking on cards in the card grid or in the preview a new context menu will show up that gives a number of options for changing how images are interpreted:
+    - _Remove External Card_: Removes the card from the project. **Only visible if the card is an external card.**
+    - _Reset Backside_: Resets the backside for this card back to the default. **Only visible if the card has a non-default backside and backsides are enabled.**
+    - Bleed Options:
+        - _Infer Input Bleed_: Default setting. The app will try to determine whether the image has a bleed edge or not.
+        - _Assume Full Bleed_: The image has a full bleed edge.
+        - _Assume No Bleed_: The image does not have any bleed edge.
+    - Aspect Ratio Options: **Only visible if the image has an unexpected aspect ratio**
+        - _Reset Aspect Ratio_: Reset the aspect ratio to the images original aspect ratio.
+        - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+        - _Fix Aspect Ratio: Stretch_: Stretches the image in one dimension to make it have the expected aspect ratio.
+    - _Rotate Left_: Rotates the image by 90 degrees counter-clockwise.
+    - _Rotate Right_: Rotates the image by 90 degrees clockwise.
+- It is now possible to drag-and-drop images into the app, these are treated as external cards and can be removed in the context menu for each card.
+- A toast notification will now show when a new version is available to download.
+- A toast notification will now show when the cropper has finished working, giving details on what work was done.
+- A toast notification will now show when there were errors when rendering a pdf.
+- A toast notification will now show when the MtG Downloader plugin finished downloading.
+- The backside offset option has been extended to also allow for vertical alignment.
+- On common request, a donation option was added to the README.
+- There are now two global options to choose how cards are sorted by default.
+- When hovering a card image it will now show the name of the card, with some exceptions.
+- A new `Render to Png` checkbox is now available that is the same as changing the old `Render Backend` option to `Png`.
+- You can now split front- and backside pages into separate pdfs with the new `Separate Backsides-PDF` option.
+- The app can now also load `.webp` files.
+- An additional executable `proxy_pdf_cli` is available to run a full project cycle from the command line.
+
+### Changed
+- The render button now specifies `Render PDF` or `Render PNG` based on what setting the user has selected.
+- The default output format is now set to Jpg at 100% quality.
+- The base pdf is now also offset for backsides, which allows e.g. cutting from the back when using an autoplotter.
+- When the MtG Downloader is done, the `Cancel` button will be relabled to `Close` to reduce confusion.
+- The threshold for showing the bad aspect ratio warning was increased, reducing how often users get the warning when it's so miniscule they likely won't be able to notice distortion.
+- The bad aspect ratio warning was changed to a bad rotation warning in cases where the ratio is the inverse of the expected ratio.
+- Cards will now maintain their chose amount even when hidden (e.g. when they are declared a backside).
+- Backsides will now unhide when the backside setting is disabled.
+
+### Removed
+- The `Render Backend` option was removed in favor of a `Render to Png` option.
+- The `LibHaru` dependency was removed as it didn't have any benefits over the now default `PoDoFo` backend.
+- The button to reset backside has been moved to a card's context menu.
+
+### Fixed
+- The window title now shows the correct name.
+- Only 16 log files will be kept now, as opposed to the previous 256.
+- When writing a .dxf file all cards will now be in the right positions.
+- When writing a .dxf file a header with units will be included that will allow some apps to import the file with correct sizes.
+- The print preview will now update when cards are added or removed at runtime.
+- The app will no longer sometimes crash when a crop job needs to retry.
+- The `Guides Thickness` will now be respected in the preview, as good as possible given technical restrictions.
+- The guides are no longer sized incorrectly on first time opening the print preview.
+- Changing some settings no longer causes unnecessary hiccups in the app.
+
+## [0.15.0] - 2025-07-10
+
+### Added
+- New auto backside setting that makes front-back matching automatic based on file names.
+
+### Changed
+- Run cropper and pdf generation in a configurable thread pool for much faster turnaround.
+
+### Fixed
+- Increased tolerance for bad aspect ratio warning.
+
+## [0.14.4] - 2025-27-09
+
+### Fixed
+- When adding a new paper/card size the initial values will now respect system locale
+- When attempting to delete a paper/card size the
+
+## [0.14.3] - 2025-27-09
+
+### Fixed
+- Fixed some precision issues with guides offset.
+- Fixed other precision issues with extended guides.
+
 ## [0.14.2] - 2025-17-09
 
 ### Changed

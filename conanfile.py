@@ -6,35 +6,36 @@ class ProxyPDF(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        # UI and App Framework
-        self.requires("qt/6.7.3")
+        # GUI and App Framework
+        self.requires("qt/6.8.3")
 
-        # Modern Formatting and Printing
-        self.requires("fmt/9.1.0")
+        # File System Watcher
+        self.requires("efsw/1.4.1")
 
-        # Enum "Reflection"
-        self.requires("magic_enum/0.9.7")
-
-        # json I/O
-        self.requires("nlohmann_json/3.11.3")
-
-        # Image I/O and Manipulation
+        # Image Procession
         self.requires("opencv/4.11.0")
 
-        # PDF Generation
-        self.requires("podofo/0.9.7")
-        self.requires("libharu/2.4.4")
+        # JSON Write/Read
+        # Note: onnxruntime uses this, but doesn't yet support the latest
+        self.requires("nlohmann_json/3.12.0", override=True)
 
-        # Filesystem Watcher
-        self.requires("efsw/1.4.1")
+        # PDF Write/Read
+        self.requires("podofo/1.0.3")
+
+        # String Formatting
+        self.requires("fmt/12.1.0")
+
+        # Enum Reflection
+        self.requires("magic_enum/0.9.7")
 
         # Image Upscaling
         self.requires("onnxruntime/1.18.1")
 
-        # Testing
+        # Unit Testing
         self.requires("catch2/3.7.1")
 
         # Conflict Resolution
+        self.requires("date/3.0.4", override=True)
         self.requires("zstd/1.5.7", override=True)
         self.requires("openjpeg/2.5.2", override=True)
         self.requires("icu/74.2", override=True)
@@ -65,6 +66,7 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].objdetect = False
         self.options["opencv"].stitching = False
         self.options["opencv"].with_tiff = False
+        self.options["opencv"].with_eigen = False
         self.options["opencv"].with_ffmpeg = False
         self.options["opencv"].with_openexr = False
         self.options["opencv"].with_wayland = False

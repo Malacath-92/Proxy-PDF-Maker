@@ -9,8 +9,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <QPixmap>
-
 namespace pngcrc
 {
 static uint32_t CRC(const uchar* buf, int len)
@@ -329,25 +327,6 @@ EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
     return {};
 }
 
-QPixmap Image::StoreIntoQtPixmap() const
-{
-    switch (m_Impl.channels())
-    {
-    case 1:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_Grayscale8));
-    case 3:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
-    case 4:
-    {
-        cv::Mat img;
-        cv::cvtColor(m_Impl, img, cv::COLOR_BGR2RGBA);
-        return QPixmap::fromImage(QImage(img.ptr(), img.cols, img.rows, img.step, QImage::Format_RGBA8888));
-    }
-    default:
-        return QPixmap{ static_cast<int>(Width() / 1_pix), static_cast<int>(Height() / 1_pix) };
-    }
-}
-
 Image::operator bool() const
 {
     return !m_Impl.empty();
@@ -413,6 +392,19 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
                        static_cast<int>(right.value),
                        cv::BORDER_REFLECT,
                        0xFFFFFFFF);
+    return img;
+}
+
+Image Image::EnsureAlpha() const
+{
+
+    if (m_Impl.channels() == 4)
+    {
+        return Image{ m_Impl };
+    }
+
+    Image img{};
+    cv::cvtColor(m_Impl, img.m_Impl, cv::COLOR_RGB2RGBA);
     return img;
 }
 
@@ -530,7 +522,7 @@ Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) c
     {
         channels[i].convertTo(channels[i], CV_32FC1, 1.0f / 255);
     }
-    
+
     // Cut off anything from the source image that isn't part of the threshold area
     for (size_t i = 0; i < 3; ++i)
     {

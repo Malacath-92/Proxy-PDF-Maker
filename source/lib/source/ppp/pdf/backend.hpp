@@ -36,7 +36,7 @@ class PdfPage
     struct DashedLineStyle : LineStyle
     {
         ColorRGB32f m_SecondColor;
-        Length m_DashSize{ m_Thickness };
+        Length m_TargetDashSize{ m_Thickness };
     };
 
     enum class CrossSegment
@@ -61,6 +61,7 @@ class PdfPage
         Position m_Pos;
         Size m_Size;
         Image::Rotation m_Rotation;
+        std::optional<ClipRect> m_ClipRect{ std::nullopt };
     };
 
     struct TextBoundingBox
@@ -68,6 +69,15 @@ class PdfPage
         Size m_TopLeft;
         Size m_BottomRight;
     };
+
+    struct TextData
+    {
+        std::string_view m_Text;
+        TextBoundingBox m_BoundingBox;
+        std::optional<ColorRGB32f> m_Backdrop{ std::nullopt };
+    };
+
+    virtual void SetPageName(std::string_view page_name) = 0;
 
     virtual void DrawSolidLine(LineData data, LineStyle style) = 0;
 
@@ -79,7 +89,9 @@ class PdfPage
 
     virtual void DrawImage(ImageData data) = 0;
 
-    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) = 0;
+    virtual void DrawText(TextData data) = 0;
+
+    virtual void RotateFutureContent(Angle angle) = 0;
 
     virtual void Finish() = 0;
 
@@ -90,6 +102,8 @@ class PdfPage
         dla::vec2{ -1.0f, +1.0f },
         dla::vec2{ +1.0f, +1.0f },
     };
+
+    static Length ComputeFinalDashSize(Length line_length, Length dash_size);
 };
 
 class PdfDocument
@@ -97,7 +111,8 @@ class PdfDocument
   public:
     virtual ~PdfDocument() = default;
 
-    virtual PdfPage* NextPage() = 0;
+    virtual void ReservePages(size_t pages) = 0;
+    virtual PdfPage* NextPage(bool is_backside) = 0;
 
     virtual fs::path Write(fs::path path) = 0;
 };

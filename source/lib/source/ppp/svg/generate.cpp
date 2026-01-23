@@ -30,7 +30,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                const Project& project)
 {
     QPainterPath card_border;
-    if (project.m_Data.m_BleedEdge > 0_mm)
+    if (project.m_Data.m_BleedEdge > 0_mm || project.m_Data.m_EnvelopeBleedEdge > 0_mm)
     {
         const QRectF rect{
             origin.x,
@@ -45,7 +45,6 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
     const auto pixel_ratio{ pixel_size / cards_size };
 
     const auto transforms{ ComputeTransforms(project) };
-    const auto bleed_edge{ project.m_Data.m_BleedEdge * pixel_ratio };
     const auto corner_radius{ project.CardCornerRadius() * pixel_ratio };
     const auto margins{ project.ComputeMargins() };
 
@@ -62,14 +61,14 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 
     for (const auto& transform : transforms)
     {
-        const auto top_left_corner{ transform.m_Position * pixel_ratio - cards_offset };
-        const auto card_size{ transform.m_Size * pixel_ratio };
+        const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio - cards_offset };
+        const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
         const QRectF rect{
-            origin.x + top_left_corner.x + bleed_edge.x,
-            origin.y + top_left_corner.y + bleed_edge.y,
-            card_size.x - bleed_edge.x * 2.0f,
-            card_size.y - bleed_edge.x * 2.0f,
+            origin.x + top_left_corner.x,
+            origin.y + top_left_corner.y,
+            card_size.x,
+            card_size.y,
         };
         card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
     }
@@ -106,6 +105,21 @@ void GenerateCardsSvg(const Project& project)
 
 void GenerateCardsDxf(const Project& project)
 {
+    /*
+     * Tbh, .dxf files kinda suck, but some tools will require subscriptions for importiong .svg files, so here we are
+     * A .dxf file works like this: (shitty tl;dr incoming)
+     *   a single line group code
+     *   followed by a value for that code
+     * Some entities will expect certain values following it, always preceeded by the corresponding group code
+     * Group codes used here are:
+     *   0       : Entity Type
+     *   8       : Layer Name
+     *   9       : Variable Name ID (used in HEADER)
+     *   10      : Primary Point, aka X value
+     *   20      : Y value
+     *   66      : "Entities Follow" flag
+     *   70 - 78 : Various integer values
+     */
     const auto dxf_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".dxf") };
 
     LogInfo("Generating card path...");
@@ -120,7 +134,7 @@ POLYLINE
   66
 1
   70
-9
+1
 )";
             return AtScopeExit{
                 [&output]()
@@ -152,11 +166,25 @@ VERTEX
     output << R"(  0
 SECTION
   2
+HEADER
+  9
+$MEASUREMENT
+  70
+1
+  9
+$INSUNITS
+  70
+4
+  0
+ENDSEC
+  0
+SECTION
+  2
 ENTITIES
 )";
 
     const auto cards_size{ project.ComputeCardsSize() / 1_mm };
-    if (project.m_Data.m_BleedEdge > 0_mm)
+    if (project.m_Data.m_BleedEdge > 0_mm || project.m_Data.m_EnvelopeBleedEdge > 0_mm)
     {
         auto poly_line{ start_poly_line() };
 
@@ -167,7 +195,6 @@ ENTITIES
     }
 
     const auto transforms{ ComputeTransforms(project) };
-    const auto bleed_edge{ project.m_Data.m_BleedEdge / 1_mm };
     const auto radius{ project.CardCornerRadius() / 1_mm };
     const auto margins{ project.ComputeMargins() / 1_mm };
 
@@ -183,12 +210,12 @@ ENTITIES
 
     for (const auto& transform : transforms)
     {
-        const dla::vec2 position{ transform.m_Position.x / 1_mm, cards_size.y - transform.m_Position.y / 1_mm };
-        const auto card_size{ transform.m_Size / 1_mm - bleed_edge * 2.0f };
+        const auto top_left_corner{ transform.m_Card.m_Position / 1_mm };
+        const auto card_size{ transform.m_Card.m_Size / 1_mm };
 
-        const auto left{ position.x + bleed_edge - cards_offset.x };
+        const auto left{ top_left_corner.x - cards_offset.x };
         const auto right{ left + card_size.x };
-        const auto top{ position.y + bleed_edge - cards_offset.y };
+        const auto top{ cards_size.y - (top_left_corner.y - cards_offset.y) };
         const auto bottom{ top - card_size.y };
 
         auto poly_line{ start_poly_line() };

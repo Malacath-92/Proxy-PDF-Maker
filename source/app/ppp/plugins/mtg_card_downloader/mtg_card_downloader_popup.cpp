@@ -8,8 +8,10 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QDropEvent>
 #include <QLabel>
 #include <QMetaEnum>
+#include <QMimeData>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QProgressBar>
@@ -26,12 +28,35 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/upscale_models.hpp>
 
+#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
-#include <ppp/plugins/mtg_card_downloader/download_decklist.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
+#include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
+
+class DownloaderTextEdit : public QTextEdit
+{
+    virtual void insertFromMimeData(const QMimeData* source) override
+    {
+        if (source->hasText())
+        {
+            const auto url{ QUrl::fromUserInput(source->text()) };
+            if (url.isValid() && url.isLocalFile() && QFile::exists(url.toLocalFile()))
+            {
+                QFile file{ url.toLocalFile() };
+                if (file.open(QFile::OpenModeFlag::ReadOnly))
+                {
+                    insertPlainText(file.readAll());
+                    return;
+                }
+            }
+        }
+
+        QTextEdit::insertFromMimeData(source);
+    }
+};
 
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
@@ -43,8 +68,14 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
-    m_TextInput = new QTextEdit;
-    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA) or MPC Autofill xml");
+    m_TextInput = new DownloaderTextEdit;
+    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), MPC Autofill xml, or a Scryfall query prepended with $");
+
+    m_Settings = new QCheckBox{ "Adjust Settings" };
+    m_Settings->setChecked(true);
+
+    m_Backsides = new QCheckBox{ "Download Backsides" };
+    m_Backsides->setChecked(true);
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
@@ -61,22 +92,23 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_ProgressBar = new QProgressBar;
     m_ProgressBar->setTextVisible(true);
     m_ProgressBar->setVisible(false);
+    m_ProgressBar->setFormat("%v/%m Requests");
 
     auto* buttons{ new QWidget{} };
     {
         m_DownloadButton = new QPushButton{ "Download" };
-        auto* cancel_button{ new QPushButton{ "Cancel" } };
+        m_CancelButton = new QPushButton{ "Cancel" };
 
         auto* layout{ new QHBoxLayout };
         layout->addWidget(m_DownloadButton);
-        layout->addWidget(cancel_button);
+        layout->addWidget(m_CancelButton);
         buttons->setLayout(layout);
 
         QObject::connect(m_DownloadButton,
                          &QPushButton::clicked,
                          this,
                          &MtgDownloaderPopup::DoDownload);
-        QObject::connect(cancel_button,
+        QObject::connect(m_CancelButton,
                          &QPushButton::clicked,
                          this,
                          &QDialog::close);
@@ -84,6 +116,8 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
+    layout->addWidget(m_Settings);
+    layout->addWidget(m_Backsides);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
     layout->addWidget(upscale);
@@ -102,11 +136,13 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
             m_FillCornersCheckbox->setEnabled(true);
             m_UpscaleModel->setEnabled(true);
 
-            ValidateSettings();
             switch (m_InputType)
             {
             case InputType::Decklist:
                 m_Hint->setText("Input inferred as decklist...");
+                break;
+            case InputType::ScryfallQuery:
+                m_Hint->setText("Input inferred as Scryfall query...");
                 break;
             case InputType::MPCAutofill:
                 m_Hint->setText("Input inferred as MPC Autofill xml...");
@@ -146,8 +182,6 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
     m_OutputDir.setAutoRemove(true);
 
-    ValidateSettings();
-
     m_Router.PauseCropper();
 }
 
@@ -174,6 +208,7 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
 
     if (m_FillCornersCheckbox->isChecked() && !m_Downloader->ProvidesBleedEdge())
     {
+        LogInfo("Filling corners for card {}", file_name.toStdString());
         auto image{
             Image::Decode(EncodedImageView{
                 reinterpret_cast<const std::byte*>(image_data.constData()),
@@ -197,6 +232,8 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
         const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
         if (upscale_model != "None")
         {
+            LogInfo("Upscaling card {}", file_name.toStdString());
+
             const auto image{ Image::Read(m_OutputDir.filePath(file_name).toStdString()) };
             QFile::rename(m_OutputDir.filePath(file_name),
                           m_OutputDir.filePath("orig_" + file_name));
@@ -215,6 +252,8 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
 
 void MtgDownloaderPopup::DoDownload()
 {
+    ValidateSettings();
+
     if (m_InputType == InputType::None)
     {
         SelectInputTypePopup type_selector{ nullptr };
@@ -224,7 +263,6 @@ void MtgDownloaderPopup::DoDownload()
         setEnabled(true);
 
         m_InputType = type_selector.GetInputType();
-        ValidateSettings();
 
         DoDownload();
         return;
@@ -313,16 +351,32 @@ void MtgDownloaderPopup::DoDownload()
         std::ranges::to<std::vector>()
     };
 
+    const auto backside_pattern{
+        m_Backsides->isChecked()
+            ? std::optional{ ToQString(m_Project.m_Data.m_BacksideAutoPattern) }
+            : std::nullopt
+    };
+
     switch (m_InputType)
     {
     default:
     case InputType::Decklist:
-        LogInfo("Downloading Decklist to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<ScryfallDownloader>(std::move(skip_images));
+        [[fallthrough]];
+    case InputType::ScryfallQuery:
+        LogInfo("Downloading {} to {}",
+                m_InputType == InputType::Decklist
+                    ? "Decklist"
+                    : "Scryfall query",
+                m_OutputDir.path().toStdString());
+        m_Downloader = std::make_unique<ScryfallDownloader>(
+            std::move(skip_images),
+            backside_pattern);
         break;
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<MPCFillDownloader>(std::move(skip_images));
+        m_Downloader = std::make_unique<MPCFillDownloader>(
+            std::move(skip_images),
+            backside_pattern);
         break;
     }
 
@@ -405,7 +459,7 @@ void MtgDownloaderPopup::FinalizeDownload()
             {
                 fs::remove(target_dir / img);
             }
-            m_Project.m_Data.m_Cards.erase(img);
+            m_Project.CardRemoved(img);
         }
     }
 
@@ -420,30 +474,25 @@ void MtgDownloaderPopup::FinalizeDownload()
             fs::rename(output_dir / path, target_dir / path);
         }
 
-        auto& card_info{
-            m_Project.m_Data.m_Cards[path]
-        };
+        m_Project.CardAdded(path);
+        m_Project.SetCardCount(path, m_Downloader->GetAmount(card));
 
-        const bool hidden{ card.startsWith("__") };
-        if (hidden)
+        if (const std::optional backside{ m_Downloader->GetBackside(card) })
         {
-            card_info.m_Num = 0;
-        }
-        else
-        {
-            card_info.m_Num = m_Downloader->GetAmount(card);
-
-            if (const std::optional backside{ m_Downloader->GetBackside(card) })
-            {
-                card_info.m_Backside = backside.value().toStdString();
-                m_Project.m_Data.m_Cards[card_info.m_Backside].m_Hidden++;
-            }
+            m_Project.SetBacksideImage(path, backside.value().toStdString());
         }
     }
     m_Project.m_Data.m_BacksideDefault = "__back.png";
 
     m_Router.RefreshCardGrid();
     m_Router.UnpauseCropper();
+
+    m_CancelButton->setText("Close");
+
+    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+    main_window->Toast(ToastType::Info,
+                       "MtG Download done",
+                       "All files have been downloaded, you can now close the plugin.");
 }
 
 void MtgDownloaderPopup::InstallLogHook()
@@ -470,19 +519,34 @@ void MtgDownloaderPopup::UninstallLogHook()
 
 void MtgDownloaderPopup::ValidateSettings()
 {
+    if (!m_Settings->isChecked())
+    {
+        return;
+    }
+
     if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
     {
         m_Router.SetCardSizeChoice("Standard");
     }
 
-    if (!m_Project.m_Data.m_BacksideEnabled)
+    if (m_Backsides->isChecked() != m_Project.m_Data.m_BacksideEnabled)
     {
-        m_Router.SetEnableBackside(true);
+        m_Router.SetEnableBackside(m_Backsides->isChecked());
+    }
+
+    if (m_Project.m_Data.m_BacksideAutoPattern.empty())
+    {
+        m_Router.SetBacksideAutoPattern("__back_$");
     }
 }
 
 InputType MtgDownloaderPopup::StupidInferSource(const QString& text)
 {
+    if (text.startsWith("$"))
+    {
+        return InputType::ScryfallQuery;
+    }
+
     if (text.startsWith("<order>") && text.endsWith("</order>"))
     {
         return InputType::MPCAutofill;

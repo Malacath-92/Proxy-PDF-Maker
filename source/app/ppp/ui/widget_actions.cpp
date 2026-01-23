@@ -17,9 +17,10 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
-ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& project)
+ActionsWidget::ActionsWidget(Project& project)
 {
     setObjectName("Actions");
 
@@ -28,7 +29,8 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     cropper_progress_bar->setTextVisible(false);
     cropper_progress_bar->setVisible(false);
     cropper_progress_bar->setRange(0, c_ProgressBarResolution);
-    auto* render_button{ new QPushButton{ "Render Document" } };
+    auto* render_button{ new QPushButton{ "Render PDF" } };
+    auto* new_button{ new QPushButton{ "New Project" } };
     auto* save_button{ new QPushButton{ "Save Project" } };
     auto* load_button{ new QPushButton{ "Load Project" } };
     auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
@@ -38,6 +40,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     const QWidget* buttons[]{
         cropper_progress_bar,
         render_button,
+        new_button,
         save_button,
         load_button,
         set_images_button,
@@ -54,27 +57,34 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     layout->setColumnMinimumWidth(1, minimum_width + 10);
     layout->addWidget(cropper_progress_bar, 0, 0, 1, 2);
     layout->addWidget(render_button, 1, 0, 1, 2);
-    layout->addWidget(save_button, 2, 0);
-    layout->addWidget(load_button, 2, 1);
-    layout->addWidget(set_images_button, 3, 0);
-    layout->addWidget(open_images_button, 3, 1);
-    layout->addWidget(render_alignment_button, 4, 0, 1, 2);
+    layout->addWidget(new_button, 2, 0, 1, 2);
+    layout->addWidget(save_button, 3, 0);
+    layout->addWidget(load_button, 3, 1);
+    layout->addWidget(set_images_button, 4, 0);
+    layout->addWidget(open_images_button, 4, 1);
+    layout->addWidget(render_alignment_button, 5, 0, 1, 2);
     setLayout(layout);
 
     const auto render{
         [=, this, &project]()
         {
-            GenericPopup render_window{ window(), "Rendering PDF..." };
+            auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+            GenericPopup render_window{ main_window, "Rendering PDF..." };
 
+            bool do_error_toast{ false };
             const auto render_work{
-                [=, &project, &render_window]()
+                [=, &project, &render_window, &do_error_toast]()
                 {
                     const auto uninstall_log_hook{ render_window.InstallLogHook() };
 
                     try
                     {
-                        const auto file_path{ GeneratePdf(project) };
-                        OpenFile(file_path);
+                        const auto [frontside_path, backside_path]{ GeneratePdf(project) };
+                        OpenFile(frontside_path);
+                        if (backside_path.has_value())
+                        {
+                            OpenFile(backside_path.value());
+                        }
 
                         if (project.m_Data.m_ExportExactGuides)
                         {
@@ -85,22 +95,57 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        render_window.Sleep(3_s);
+                        do_error_toast = !main_window->hasFocus();
+                        if (!do_error_toast)
+                        {
+                            render_window.Sleep(3_s);
+                        }
                     }
                 }
             };
 
-            window()->setEnabled(false);
+            main_window->setEnabled(false);
             render_window.ShowDuringWork(render_work);
-            window()->setEnabled(true);
+            main_window->setEnabled(true);
+
+            if (do_error_toast && !main_window->hasFocus())
+            {
+                main_window->Toast(ToastType::Error,
+                                   "PDF Rendering Error",
+                                   "Failure while creating pdf, please check logs for details.");
+            }
+        }
+    };
+
+    const auto new_project{
+        [=, this, &project]()
+        {
+            GenericPopup reload_window{ window(), "Resetting project..." };
+
+            const auto old_project_data{ std::move(project.m_Data) };
+            const auto reset_project_work{
+                [&project]()
+                {
+                    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+                    application.SetProjectPath("proj.json");
+                    project.LoadFromJson(Project{}.DumpToJson(), &application);
+                }
+            };
+
+            auto* main_window{ window() };
+            main_window->setEnabled(false);
+            reload_window.ShowDuringWork(reset_project_work);
+            NewProjectOpened(old_project_data, project.m_Data);
+            main_window->setEnabled(true);
         }
     };
 
     const auto save_project{
-        [=, &project, &application]()
+        [=, &project]()
         {
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
             {
+                auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
                 application.SetProjectPath(new_project_json.value());
                 project.Dump(new_project_json.value());
             }
@@ -108,15 +153,17 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     };
 
     const auto load_project{
-        [=, this, &project, &application]()
+        [=, this, &project]()
         {
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
             {
+                auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
                 if (new_project_json != application.GetProjectPath())
                 {
                     application.SetProjectPath(new_project_json.value());
                     GenericPopup reload_window{ window(), "Reloading project..." };
 
+                    const auto old_project_data{ std::move(project.m_Data) };
                     const auto load_project_work{
                         [=, &project]()
                         {
@@ -127,7 +174,7 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     auto* main_window{ window() };
                     main_window->setEnabled(false);
                     reload_window.ShowDuringWork(load_project_work);
-                    NewProjectOpened();
+                    NewProjectOpened(old_project_data, project.m_Data);
                     main_window->setEnabled(true);
                 }
             }
@@ -141,14 +188,16 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
             {
                 if (new_image_dir != project.m_Data.m_ImageDir)
                 {
-                    project.m_Data.m_ImageDir = new_image_dir.value();
+                    const auto old_image_dir{ std::move(project.m_Data.m_ImageDir) };
+
+                    project.m_Data.m_ImageDir = std::move(new_image_dir).value();
                     project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
                     project.m_Data.m_UncropDir = project.m_Data.m_ImageDir / "uncrop";
                     project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
 
                     project.Init();
 
-                    ImageDirChanged();
+                    ImageDirChanged(old_image_dir, project.m_Data.m_ImageDir);
                 }
             }
         }
@@ -164,10 +213,12 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
     const auto render_alignment{
         [this, &project]()
         {
-            GenericPopup render_align_window{ window(), "Rendering alignment PDF..." };
+            auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+            GenericPopup render_align_window{ main_window, "Rendering alignment PDF..." };
 
+            bool do_error_toast{ false };
             const auto render_work{
-                [=, &project, &render_align_window]()
+                [=, &project, &render_align_window, &do_error_toast]()
                 {
                     const auto uninstall_log_hook{ render_align_window.InstallLogHook() };
                     try
@@ -178,14 +229,25 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                     catch (const std::exception& e)
                     {
                         LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        render_align_window.Sleep(3_s);
+                        do_error_toast = !main_window->hasFocus();
+                        if (!do_error_toast)
+                        {
+                            render_align_window.Sleep(3_s);
+                        }
                     }
                 }
             };
 
-            window()->setEnabled(false);
+            main_window->setEnabled(false);
             render_align_window.ShowDuringWork(render_work);
-            window()->setEnabled(true);
+            main_window->setEnabled(true);
+
+            if (do_error_toast && !main_window->hasFocus())
+            {
+                main_window->Toast(ToastType::Error,
+                                   "PDF Rendering Error",
+                                   "Failure while creating pdf, please check logs for details.");
+            }
         }
     };
 
@@ -193,6 +255,10 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
                      &QPushButton::clicked,
                      this,
                      render);
+    QObject::connect(new_button,
+                     &QPushButton::clicked,
+                     this,
+                     new_project);
     QObject::connect(save_button,
                      &QPushButton::clicked,
                      this,
@@ -216,6 +282,9 @@ ActionsWidget::ActionsWidget(PrintProxyPrepApplication& application, Project& pr
 
     m_CropperProgressBar = cropper_progress_bar;
     m_RenderButton = render_button;
+
+    // Just to set the right default text
+    RenderBackendChanged();
 }
 
 void ActionsWidget::CropperWorking()
@@ -235,4 +304,16 @@ void ActionsWidget::CropperProgress(float progress)
 {
     const int progress_whole{ static_cast<int>(progress * c_ProgressBarResolution) };
     m_CropperProgressBar->setValue(progress_whole);
+}
+
+void ActionsWidget::RenderBackendChanged()
+{
+    switch (g_Cfg.m_Backend)
+    {
+    case PdfBackend::PoDoFo:
+        m_RenderButton->setText("Render PDF");
+        break;
+    case PdfBackend::Png:
+        m_RenderButton->setText("Render PNG");
+    }
 }

@@ -23,6 +23,7 @@ class PluginInterface;
 enum class InputType
 {
     Decklist,
+    ScryfallQuery,
     MPCAutofill,
     None,
 };
@@ -55,12 +56,15 @@ class MtgDownloaderPopup : public PopupBase
     InputType m_InputType{ InputType::None };
 
     QTextEdit* m_TextInput{ nullptr };
+    QCheckBox* m_Settings{ nullptr };
+    QCheckBox* m_Backsides{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
     QComboBox* m_UpscaleModel{ nullptr };
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
     QPushButton* m_DownloadButton{ nullptr };
+    QPushButton* m_CancelButton{ nullptr };
 
     QTemporaryDir m_OutputDir{};
 

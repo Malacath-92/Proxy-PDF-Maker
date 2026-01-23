@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 
-#include <podofo/doc/PdfImage.h>
-#include <podofo/doc/PdfMemDocument.h>
+#include <podofo/main/PdfImage.h>
+#include <podofo/main/PdfMemDocument.h>
+#include <podofo/main/PdfPainter.h>
 
 #include <ppp/pdf/backend.hpp>
 
@@ -17,18 +19,28 @@ class PoDoFoPage final : public PdfPage
   public:
     virtual ~PoDoFoPage() override = default;
 
+    virtual void SetPageName(std::string_view /*page_name*/) override{};
+
     virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
 
     virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
+    virtual void DrawText(TextData data) override;
 
-    virtual void Finish() override{};
+    virtual void RotateFutureContent(Angle angle) override;
+
+    virtual void Finish() override;
 
   private:
+    PoDoFoPage(PoDoFo::PdfPage* page,
+               PoDoFo::PdfPainter* painter,
+               PoDoFoDocument* document,
+               PoDoFoImageCache* image_cache);
+
     PoDoFo::PdfPage* m_Page{ nullptr };
+    PoDoFo::PdfPainter* m_Painter{ nullptr };
     PoDoFoDocument* m_Document{ nullptr };
     PoDoFoImageCache* m_ImageCache;
 };
@@ -36,12 +48,14 @@ class PoDoFoPage final : public PdfPage
 class PoDoFoImageCache
 {
   public:
-    PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project);
+    PoDoFoImageCache(PoDoFoDocument& document, const Project& project);
 
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    PoDoFo::PdfMemDocument* m_Document;
+    mutable std::recursive_mutex m_Mutex;
+
+    PoDoFoDocument& m_Document;
     const Project& m_Project;
 
     struct ImageCacheEntry
@@ -59,21 +73,26 @@ class PoDoFoDocument final : public PdfDocument
     PoDoFoDocument(const Project& project);
     virtual ~PoDoFoDocument() override = default;
 
-    virtual PoDoFoPage* NextPage() override;
+    virtual void ReservePages(size_t pages) override;
+    virtual PoDoFoPage* NextPage(bool is_backside) override;
 
     virtual fs::path Write(fs::path path) override;
 
-    PoDoFo::PdfFont* GetFont();
+    PoDoFo::PdfFont& GetFont();
+    std::unique_ptr<PoDoFo::PdfImage> MakeImage();
+
+    auto AquireDocumentLock();
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     std::unique_ptr<PoDoFo::PdfMemDocument> m_BaseDocument;
 
     PoDoFo::PdfMemDocument m_Document;
     std::vector<PoDoFoPage> m_Pages;
+    std::vector<std::unique_ptr<PoDoFo::PdfPainter>> m_Painters;
 
     std::unique_ptr<PoDoFoImageCache> m_ImageCache;
-
-    PoDoFo::PdfFont* m_Font{ nullptr };
 };
