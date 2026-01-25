@@ -73,6 +73,8 @@ While we are here we can also disable the outer-most cutting line. Right-click t
     <sup>7</sup> Splitting cutting guides into separate paths
 </p>
 
+Now make sure to save this project! You will need it again when you do the cutting later.
+
 
 ## Generating the full PDF in the App
 
@@ -93,7 +95,7 @@ Lastly you can now press `Render PDF` to generate the pdf.
 
 ## Doing the Print & Cut
 
-Lastly you just print as usual, laminate, sticker, whatever you like. Then you place your prints on the mat, insert into your machine and send the cutting instructions. The actual settings, tools, and method for cutting highly depend on your material and machine, so we won't go into details about that here.
+Lastly you just print as usual, laminate, sticker, whatever you like. Next open the Silhouette Studio project you created earlier. Then you place your prints on the mat, insert into your machine and press `Send` in Silhouette Studio. The actual settings, tools, and method for cutting highly depend on your material and machine, so we won't go into details about that here.
 
 ## _Cricut Design Space_ Specific Instructions
 
