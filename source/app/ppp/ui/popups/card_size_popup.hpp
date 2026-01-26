@@ -15,6 +15,7 @@ class CardSizePopup : public PopupBase
     ~CardSizePopup();
 
     virtual void showEvent(QShowEvent* event) override;
+    virtual void resizeEvent(QResizeEvent* event) override;
 
   signals:
     void CardSizesChanged(const std::map<std::string, Config::CardSizeInfo>& card_sizes);
@@ -22,5 +23,11 @@ class CardSizePopup : public PopupBase
   private:
     void Apply();
 
+    int ComputeColumnsWidth();
+    int ComputeTableWidth();
+    int ComputeWidthToCoverTable();
+    void AutoResizeToTable();
+
     QTableWidget* m_Table{ nullptr };
+    bool m_BlockResizeEvents{ false };
 };

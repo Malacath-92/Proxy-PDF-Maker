@@ -15,6 +15,7 @@ class PaperSizePopup : public PopupBase
     ~PaperSizePopup();
 
     virtual void showEvent(QShowEvent* event) override;
+    virtual void resizeEvent(QResizeEvent* event) override;
 
   signals:
     void PageSizesChanged(const std::map<std::string, Config::SizeInfo>& page_sizes);
@@ -22,5 +23,11 @@ class PaperSizePopup : public PopupBase
   private:
     void Apply();
 
+    int ComputeColumnsWidth();
+    int ComputeTableWidth();
+    int ComputeWidthToCoverTable();
+    void AutoResizeToTable();
+
     QTableWidget* m_Table{ nullptr };
+    bool m_BlockResizeEvents{ false };
 };
