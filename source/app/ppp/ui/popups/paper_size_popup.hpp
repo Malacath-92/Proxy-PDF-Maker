@@ -20,6 +20,10 @@ class PaperSizePopup : public PopupBase
   signals:
     void PageSizesChanged(const std::map<std::string, Config::SizeInfo>& page_sizes);
 
+  protected:
+    virtual QByteArray GetGeometry() override;
+    virtual void RestoreGeometry(const QByteArray& geometry) override;
+
   private:
     void Apply();
 

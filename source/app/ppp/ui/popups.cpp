@@ -16,6 +16,7 @@
 
 #include <ppp/project/image_ops.hpp>
 
+#include <ppp/app.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
@@ -118,6 +119,26 @@ void PopupBase::showEvent(QShowEvent* event)
     {
         Recenter();
     }
+
+    if (m_PersistGeometry)
+    {
+        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        if (auto geometry{ app->LoadWindowGeometry(objectName()) })
+        {
+            RestoreGeometry(std::move(geometry).value());
+        }
+    }
+}
+
+void PopupBase::closeEvent(QCloseEvent* event)
+{
+    if (m_PersistGeometry)
+    {
+        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        app->SaveWindowGeometry(objectName(), GetGeometry());
+    }
+
+    QDialog::closeEvent(event);
 }
 
 void PopupBase::resizeEvent(QResizeEvent* event)
@@ -143,6 +164,16 @@ void PopupBase::Recenter()
     const auto center{ rect().center() };
     const auto offset{ QPoint(parent_half_size.width(), parent_half_size.height()) - center };
     move(offset);
+}
+
+QByteArray PopupBase::GetGeometry()
+{
+    return saveGeometry();
+}
+
+void PopupBase::RestoreGeometry(const QByteArray& geometry)
+{
+    restoreGeometry(geometry);
 }
 
 class WorkThread : public QThread

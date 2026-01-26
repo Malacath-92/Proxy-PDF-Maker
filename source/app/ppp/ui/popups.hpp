@@ -34,14 +34,20 @@ class PopupBase : public QDialog
     void Show();
 
     virtual void showEvent(QShowEvent* event) override;
+    virtual void closeEvent(QCloseEvent* event) override;
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
   protected:
     void Recenter();
 
+    virtual QByteArray GetGeometry();
+    virtual void RestoreGeometry(const QByteArray& geometry);
+
     bool m_AutoCenter{ true };
     bool m_AutoCenterOnShow{ true };
+
+    bool m_PersistGeometry{ false };
 };
 
 class GenericPopup : public PopupBase

@@ -20,6 +20,10 @@ class CardSizePopup : public PopupBase
   signals:
     void CardSizesChanged(const std::map<std::string, Config::CardSizeInfo>& card_sizes);
 
+  protected:
+    virtual QByteArray GetGeometry() override;
+    virtual void RestoreGeometry(const QByteArray& geometry) override;
+
   private:
     void Apply();
 

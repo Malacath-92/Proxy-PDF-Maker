@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <optional>
 
 #include <QApplication>
 
@@ -24,6 +25,9 @@ class PrintProxyPrepApplication
 
     void SetMainWindow(QMainWindow* main_window);
     QMainWindow* GetMainWindow() const;
+
+    std::optional<QByteArray> LoadWindowGeometry(const QString& object_name) const;
+    void SaveWindowGeometry(const QString& object_name, QByteArray geometry);
 
     void SetProjectPath(fs::path project_path);
     const fs::path& GetProjectPath() const;
@@ -50,6 +54,7 @@ class PrintProxyPrepApplication
     void Save() const;
 
     QMainWindow* m_MainWindow{ nullptr };
+    std::unordered_map<QString, QByteArray> m_WindowGeometries;
 
     fs::path m_ProjectPath{ cwd() / "proj.json" };
     std::string m_Theme{ "Default" };

@@ -56,6 +56,19 @@ QMainWindow* PrintProxyPrepApplication::GetMainWindow() const
     return m_MainWindow;
 }
 
+std::optional<QByteArray> PrintProxyPrepApplication::LoadWindowGeometry(const QString& object_name) const
+{
+    if (m_WindowGeometries.contains(object_name))
+    {
+        return m_WindowGeometries.at(object_name);
+    }
+    return std::nullopt;
+}
+void PrintProxyPrepApplication::SaveWindowGeometry(const QString& object_name, QByteArray geometry)
+{
+    m_WindowGeometries[object_name] = std::move(geometry);
+}
+
 void PrintProxyPrepApplication::SetProjectPath(fs::path project_path)
 {
     m_ProjectPath = std::move(project_path);
@@ -192,6 +205,16 @@ void PrintProxyPrepApplication::Load()
             };
         }
 
+        if (settings.childGroups().contains("Windows", Qt::CaseInsensitive))
+        {
+            settings.beginGroup("Windows");
+            for (const auto& key : settings.allKeys())
+            {
+                m_WindowGeometries[key] = settings.value(key).toByteArray();
+            }
+            settings.endGroup();
+        }
+
         if (settings.contains("project_defaults"))
         {
             try
@@ -223,6 +246,16 @@ void PrintProxyPrepApplication::Save() const
         for (const auto& [object_name, visible] : m_ObjectVisibilities)
         {
             settings.setValue(object_name, visible);
+        }
+        settings.endGroup();
+    }
+
+    if (!m_WindowGeometries.empty())
+    {
+        settings.beginGroup("Windows");
+        for (const auto& [window_name, geometry] : m_WindowGeometries)
+        {
+            settings.setValue(window_name, geometry);
         }
         settings.endGroup();
     }

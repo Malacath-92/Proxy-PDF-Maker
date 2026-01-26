@@ -27,8 +27,11 @@ CardSizePopup::CardSizePopup(QWidget* parent,
     : PopupBase{ parent }
 {
     m_AutoCenter = false;
+    m_PersistGeometry = true;
+
     setWindowFlags(Qt::WindowType::Dialog);
     setWindowTitle("Edit Card Sizes");
+    setObjectName("CardSizePopup");
 
     static constexpr auto c_MakeNumberEdit{
         [](QString initial_string)
@@ -303,6 +306,41 @@ void CardSizePopup::resizeEvent(QResizeEvent* event)
     }
 
     PopupBase::resizeEvent(event);
+}
+
+QByteArray CardSizePopup::GetGeometry()
+{
+    QByteArray geometry{ PopupBase::GetGeometry() };
+
+    auto* header{ m_Table->horizontalHeader() };
+    for (int i = 0; i < m_Table->columnCount(); i++)
+    {
+        const auto column_width{ header->sectionSize(i) };
+        static_assert(sizeof(column_width) == sizeof(int));
+        const auto column_width_data{ std::bit_cast<std::array<char, sizeof(column_width)>>(column_width) };
+        geometry += QByteArray::fromRawData(column_width_data.data(), column_width_data.size());
+    }
+
+    return geometry;
+}
+
+void CardSizePopup::RestoreGeometry(const QByteArray& geometry)
+{
+    const auto num_columns{ m_Table->columnCount() };
+    const auto columns_start{ geometry.size() - num_columns * sizeof(int) };
+
+    auto* header{ m_Table->horizontalHeader() };
+    for (int i = 0; i < num_columns; i++)
+    {
+        const auto column_offset{ i * sizeof(int) };
+        const auto column_width_bytes{ geometry.sliced(columns_start + column_offset, sizeof(int)) };
+        std::array<char, sizeof(int)> column_width_data{};
+        std::copy(column_width_bytes.begin(), column_width_bytes.end(), column_width_data.begin());
+        const auto column_width{ std::bit_cast<int>(column_width_data) };
+        header->resizeSection(i, column_width);
+    }
+
+    PopupBase::RestoreGeometry(geometry.sliced(0, columns_start));
 }
 
 void CardSizePopup::Apply()
