@@ -217,7 +217,7 @@ void PaperSizePopup::resizeEvent(QResizeEvent* event)
                 auto* header{ m_Table->horizontalHeader() };
 
                 int total_columns_width{ 0 };
-                for (int i = 1; i < m_Table->columnCount(); i++)
+                for (int i = 0; i < m_Table->columnCount(); i++)
                 {
                     const auto relative_column_width{
                         static_cast<float>(m_Table->columnWidth(i)) / old_columns_width
@@ -230,8 +230,10 @@ void PaperSizePopup::resizeEvent(QResizeEvent* event)
                     total_columns_width += new_column_width;
                 }
 
-                const auto width_left_for_zeroth{ new_columns_width - total_columns_width };
-                header->resizeSection(0, width_left_for_zeroth);
+                const auto left_over{ new_columns_width - total_columns_width };
+                const auto random_section{ rand() % m_Table->columnCount() };
+                const auto section_width{ header->sectionSize(random_section) };
+                header->resizeSection(random_section, section_width + left_over);
 
                 m_BlockResizeEvents = false;
             }
