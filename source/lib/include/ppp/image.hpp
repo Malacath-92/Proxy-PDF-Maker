@@ -56,7 +56,7 @@ class [[nodiscard]] Image
 
     Image RoundCorners(::Size real_size, ::Length corner_radius) const;
 
-    Image FillCorners(::Length corner_radius, ::Size physical_size) const;
+    Image FillCorners(::Size real_size, ::Length corner_radius) const;
 
     Image ApplyColorCube(const cv::Mat& color_cube) const;
 

@@ -187,7 +187,7 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
             }),
         };
         const auto image_with_corners{
-            image.FillCorners(m_Project.CardCornerRadius(), m_Project.CardSize())
+            image.FillCorners(m_Project.CardSize(), m_Project.CardCornerRadius() * 1.65f)
         };
         image_with_corners.Write(m_OutputDir.filePath(file_name).toStdString());
     }

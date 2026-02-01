@@ -502,17 +502,13 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
     return Image{ out_impl };
 }
 
-Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) const
+Image Image::FillCorners(::Size real_size, ::Length corner_radius) const
 {
-    if (m_Impl.channels() != 4)
-    {
-        Image copy{};
-        copy.m_Impl = m_Impl.clone();
-        return copy;
-    }
+    Image rounded{ RoundCorners(real_size, corner_radius) };
+    cv::Mat img{ rounded.m_Impl };
 
     std::vector<cv::Mat> channels{};
-    cv::split(m_Impl, channels);
+    cv::split(img, channels);
 
     // Threshold alpha so we only have those pixels left that were completely opaque
     cv::threshold(channels[3], channels[3], 254, 255, cv::THRESH_BINARY);
