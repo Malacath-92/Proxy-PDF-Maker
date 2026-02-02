@@ -27,7 +27,7 @@ class PoDoFoPage final : public PdfPage
 
     virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawText(TextData data) override;
+    virtual TextBoundingBox DrawText(TextData data) override;
 
     virtual void RotateFutureContent(Angle angle) override;
 

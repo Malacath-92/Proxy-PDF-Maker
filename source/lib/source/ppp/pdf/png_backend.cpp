@@ -11,6 +11,11 @@ inline int32_t ToPixels(Length l)
     return static_cast<int32_t>(std::ceil(l * g_Cfg.m_MaxDPI / 1_pix));
 }
 
+inline Length FromPixels(int p)
+{
+    return p * 1_pix / g_Cfg.m_MaxDPI;
+}
+
 void PngPage::SetPageName(std::string_view page_name)
 {
     m_PageName = fs::path{ page_name }.replace_extension().string();
@@ -116,7 +121,7 @@ void PngPage::DrawImage(ImageData data)
     }
 }
 
-void PngPage::DrawText(TextData data)
+PngPage::TextBoundingBox PngPage::DrawText(TextData data)
 {
     const cv::String cv_text{ data.m_Text.data(), data.m_Text.size() };
     const auto font_face{ cv::FONT_HERSHEY_TRIPLEX };
@@ -131,10 +136,19 @@ void PngPage::DrawText(TextData data)
     const auto real_top{ m_PageHeight - ToPixels(data.m_BoundingBox.m_TopLeft.y) };
     const auto aligned_top{ real_top + text_size.height };
 
+    const auto left{ FromPixels(aligned_left) };
+    const auto top{ FromPixels(aligned_top) };
+    const auto right{ FromPixels(aligned_left + text_size.width) };
+    const auto bottom{ FromPixels(aligned_top + text_size.height) };
+    const TextBoundingBox out_bb{
+        .m_TopLeft{ left, top },
+        .m_BottomRight{ right, bottom },
+    };
+
     if (data.m_Backdrop.has_value())
     {
         const cv::Rect rect{
-            aligned_left - 5, real_top - 5, text_size.width + 10, text_size.height + 10
+            aligned_left - 5, aligned_top - 5, text_size.width + 10, text_size.height + 10
         };
         const cv::Scalar color{ data.m_Backdrop->b * 255, data.m_Backdrop->g * 255, data.m_Backdrop->r * 255, 255.0f };
         cv::rectangle(TargetImage(), rect, color, cv::FILLED);
@@ -148,6 +162,8 @@ void PngPage::DrawText(TextData data)
                 font_scale,
                 black,
                 font_thickness);
+
+    return out_bb;
 }
 
 void PngPage::RotateFutureContent(Angle angle)

@@ -89,7 +89,7 @@ class PdfPage
 
     virtual void DrawImage(ImageData data) = 0;
 
-    virtual void DrawText(TextData data) = 0;
+    virtual TextBoundingBox DrawText(TextData data) = 0;
 
     virtual void RotateFutureContent(Angle angle) = 0;
 

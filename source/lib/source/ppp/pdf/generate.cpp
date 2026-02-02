@@ -550,6 +550,8 @@ fs::path GenerateTestPdf(const Project& project)
     const auto page_eighth{ page_size / 8 };
     const auto page_sixteenth{ page_size / 16 };
 
+    auto top_alignment_line_y{ 0_mm };
+
     auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
 
     PdfPage::LineStyle line_style{
@@ -581,9 +583,16 @@ fs::path GenerateTestPdf(const Project& project)
             {
                 const Position backside_text_top_left{ left_line_x, page_height - page_eighth.y };
                 const Position backside_text_bottom_right{ page_width, page_half.y };
-                front_page->DrawText({ "Shine a light through this page, the line on the back should align with the front. "
-                                       "If not, measure the difference and paste it into the backside offset option.",
-                                       { backside_text_top_left, backside_text_bottom_right } });
+                const auto text_bb{ front_page->DrawText({ "Shine a light through this page, the line on the back should align with the front. "
+                                                           "If not, measure the difference and paste it into the backside offset option.",
+                                                           { backside_text_top_left, backside_text_bottom_right } }) };
+
+                top_alignment_line_y = text_bb.m_TopLeft.y + 5_mm;
+                const PdfPage::LineData top_line{
+                    .m_From{ 0_mm, top_alignment_line_y },
+                    .m_To{ page_width, top_alignment_line_y },
+                };
+                front_page->DrawSolidLine(top_line, line_style);
             }
 
             const auto right_line_x{ page_fourth.x + 20_mm };
@@ -617,6 +626,13 @@ fs::path GenerateTestPdf(const Project& project)
             .m_To{ backside_left_line_x, page_height },
         };
         back_page->DrawSolidLine(line, line_style);
+
+        const auto backside_top_line_y{ top_alignment_line_y + project.m_Data.m_BacksideOffset.y };
+        const PdfPage::LineData top_line{
+            .m_From{ 0_mm, backside_top_line_y },
+            .m_To{ page_width, backside_top_line_y },
+        };
+        back_page->DrawSolidLine(top_line, line_style);
     }
 
     return pdf->Write("alignment.pdf");

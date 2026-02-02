@@ -20,6 +20,11 @@ static double ToPoDoFoPoints(Length l)
     return static_cast<double>(l / 1_pts);
 }
 
+static Length FromPoDoFoPoints(double p)
+{
+    return p * 1_pts;
+}
+
 static auto Save(PoDoFo::PdfPainter& painter)
 {
     painter.Save();
@@ -244,7 +249,7 @@ void PoDoFoPage::DrawImage(ImageData data)
     m_Painter->DrawImage(*image, real_x, real_y, w_scale, h_scale);
 }
 
-void PoDoFoPage::DrawText(TextData data)
+PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
 {
     const auto& bb{ data.m_BoundingBox };
     const PoDoFo::Rect rect{
@@ -259,6 +264,36 @@ void PoDoFoPage::DrawText(TextData data)
     auto save{ Save(*m_Painter) };
     m_Painter->TextState.SetFont(font, 12);
 
+    const auto out_bb{
+        [&, this]()
+        {
+            const auto& text_state{ m_Painter->TextState.GetState() };
+            const auto get_string_length{
+                [&](const auto& str)
+                { return text_state.Font->GetStringLength(str, text_state); }
+            };
+
+            const auto lines{ text_state.SplitTextAsLines(str, rect.Width) };
+
+            auto widths{ lines | std::views::transform(get_string_length) };
+            const auto max_width{ *std::ranges::max_element(widths) };
+            const auto width_reduce{ rect.Width - max_width };
+
+            const auto total_height{ font.GetLineSpacing(text_state) * lines.size() };
+            const auto height_reduce{ rect.Height - total_height };
+
+            const auto left{ FromPoDoFoPoints(rect.GetLeft() + width_reduce / 2) };
+            const auto bottom{ FromPoDoFoPoints(rect.GetBottom() + height_reduce / 2) };
+            const auto right{ left + FromPoDoFoPoints(rect.Width - width_reduce) };
+            const auto top{ bottom + FromPoDoFoPoints(rect.Height - height_reduce) };
+            const TextBoundingBox bb{
+                .m_TopLeft{ left, top },
+                .m_BottomRight{ right, bottom },
+            };
+            return bb;
+        }()
+    };
+
     if (data.m_Backdrop.has_value())
     {
         const PoDoFo::PdfColor col{
@@ -267,22 +302,12 @@ void PoDoFoPage::DrawText(TextData data)
             data.m_Backdrop.value().b,
         };
 
-        const auto& text_state{ m_Painter->TextState.GetState() };
-        const auto get_string_length{
-            [&](const auto& str)
-            { return text_state.Font->GetStringLength(str, text_state); }
-        };
-
-        const auto lines{ text_state.SplitTextAsLines(str, rect.Width) };
-        auto widths{ lines |
-                     std::views::transform(get_string_length) };
-        const auto max_width{ *std::ranges::max_element(widths) };
-        const auto width_reduce{ (rect.Width - max_width) };
-        const PoDoFo::Rect backdrop_rect{
-            rect.GetLeft() + width_reduce / 2,
-            rect.GetBottom(),
-            rect.Width - width_reduce,
-            rect.Height,
+        const auto backdrop_rect{
+            PoDoFo::Rect::FromCorners(
+                ToPoDoFoPoints(out_bb.m_TopLeft.x),
+                ToPoDoFoPoints(out_bb.m_TopLeft.y),
+                ToPoDoFoPoints(out_bb.m_BottomRight.x),
+                ToPoDoFoPoints(out_bb.m_BottomRight.y))
         };
 
         auto save_backdrop{ Save(*m_Painter) };
@@ -297,6 +322,8 @@ void PoDoFoPage::DrawText(TextData data)
     m_Painter->DrawTextMultiLine(str,
                                  rect,
                                  params);
+
+    return out_bb;
 }
 
 void PoDoFoPage::RotateFutureContent(Angle angle)
