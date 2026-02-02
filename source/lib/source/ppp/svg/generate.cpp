@@ -19,7 +19,7 @@ void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color)
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
     QPen pen{};
-    pen.setWidth(1);
+    pen.setWidth(0.1);
     pen.setColor(color);
     painter.setPen(pen);
     painter.drawPath(path);
@@ -33,8 +33,8 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
     if (project.m_Data.m_BleedEdge > 0_mm || project.m_Data.m_EnvelopeBleedEdge > 0_mm)
     {
         const QRectF rect{
-            origin.x,
-            origin.y,
+            0.0f,
+            0.0f,
             pixel_size.x,
             pixel_size.y,
         };
@@ -65,13 +65,15 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
         const QRectF rect{
-            origin.x + top_left_corner.x,
-            origin.y + top_left_corner.y,
+            top_left_corner.x,
+            top_left_corner.y,
             card_size.x,
             card_size.y,
         };
         card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
     }
+
+    card_border.translate(origin.x, origin.y);
 
     return card_border;
 }
@@ -88,13 +90,25 @@ void GenerateCardsSvg(const Project& project)
 {
     const auto svg_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
 
+    const auto svg_dpi{ 600 };
+    const auto mm_to_in{ 1_in / 1_mm };
+    const auto unit_conv{ svg_dpi / mm_to_in };
+    const auto cards_size{ project.ComputeCardsSize() / 1_mm * unit_conv };
+    const auto page_size{ project.ComputePageSize() / 1_mm * unit_conv };
+    const auto margins{ project.ComputeMargins() / 1_mm * unit_conv };
+
     LogInfo("Generating card path...");
-    const QPainterPath path{ GenerateCardsPath(project) };
+    const QPainterPath path{ GenerateCardsPath(dla::vec2{ margins.m_Left, margins.m_Top }, cards_size, project) };
+    const QSize svg_size{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) };
+    const QSizeF viewbox_size{ page_size.x, page_size.y };
 
     QSvgGenerator generator{};
     generator.setFileName(ToQString(svg_path));
     generator.setTitle("Card cutting guides.");
     generator.setDescription("An SVG containing exact cutting guides for the accompanying sheet.");
+    generator.setSize(QSize{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) });
+    generator.setViewBox(QRectF{ QPointF{ 0, 0 }, viewbox_size });
+    generator.setResolution(svg_dpi);
 
     LogInfo("Drawing card path...");
     QPainter painter;
