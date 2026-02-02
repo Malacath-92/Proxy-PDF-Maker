@@ -919,16 +919,21 @@ void Project::RestoreCardsOrder()
 
 bool Project::ReorderCards(size_t from, size_t to)
 {
-    if (from >= m_Data.m_Cards.size() ||
-        to >= m_Data.m_Cards.size())
-    {
-        return false;
-    }
-
     const bool generate_new{ m_Data.m_CardsList.empty() };
     if (generate_new)
     {
         m_Data.m_CardsList = GenerateDefaultCardsSorting();
+    }
+
+    if (from >= m_Data.m_CardsList.size() ||
+        to >= m_Data.m_CardsList.size())
+    {
+        if (generate_new)
+        {
+            m_Data.m_CardsList.clear();
+        }
+
+        return false;
     }
 
     const auto from_it{ m_Data.m_CardsList.begin() + from };
