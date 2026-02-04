@@ -620,14 +620,20 @@ fs::path GenerateTestPdf(const Project& project)
             back_page->RotateFutureContent(project.m_Data.m_BacksideRotation);
         }
 
-        const auto backside_left_line_x{ page_width - page_fourth.x + project.m_Data.m_BacksideOffset.x };
+        const bool flip_left{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
+
+        const auto backside_left_line_x{
+            (flip_left ? page_width - page_fourth.x : page_fourth.x) + project.m_Data.m_BacksideOffset.x
+        };
         const PdfPage::LineData line{
             .m_From{ backside_left_line_x, 0_mm },
             .m_To{ backside_left_line_x, page_height },
         };
         back_page->DrawSolidLine(line, line_style);
 
-        const auto backside_top_line_y{ top_alignment_line_y + project.m_Data.m_BacksideOffset.y };
+        const auto backside_top_line_y{
+            (flip_left ? top_alignment_line_y : page_height - top_alignment_line_y) + project.m_Data.m_BacksideOffset.y
+        };
         const PdfPage::LineData top_line{
             .m_From{ 0_mm, backside_top_line_y },
             .m_To{ page_width, backside_top_line_y },
