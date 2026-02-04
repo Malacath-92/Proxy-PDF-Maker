@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-02
+
+### Added
+- The geometry of the paper/card size popup are now saved between sessions.
+
+### Changed
+- The alignment pdf now also contains an alignment line for vertical alignment.
+- The alignment pdf respects the users "Flip On" setting.
+- The paper/card size popup now behaves more reasonable when resizing it and columns in the table.
+
+### Fixed
+- The MPCFill downloader will no longer crash when the xml contains a bad filename.
+- In the MtG Downloader plugin, the backsides and settings checkboxes are now disabled once the download starts.
+- Reordering cards now works as expected when multiple copies of the same card are present in the pdf.
+- `.svg` files are now saved with accurate headers containing the size of cards and the page they are on.
+
 ## [1.4.1] - 2026-20-01
 
 ### Fixed
