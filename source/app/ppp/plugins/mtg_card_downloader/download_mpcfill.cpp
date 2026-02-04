@@ -339,6 +339,7 @@ QString MPCFillDownloader::MPCFillIdFromUrl(const QString& url)
 MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDomElement& element)
 {
     auto name{ element.firstChildElement("name").text() };
+    name.replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_");
     auto id{ element.firstChildElement("id").text() };
     auto slots_str{ element.firstChildElement("slots").text().split(",") };
     auto amount{ slots_str.size() };
