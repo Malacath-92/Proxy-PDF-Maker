@@ -106,7 +106,7 @@ struct Config
         float m_CardSizeScale;
 
         // Cards defined as a rounded rect
-        std::optional<CardSizeRoundedRectInfo> m_RoundedRect;
+        std::optional<CardSizeRoundedRectInfo> m_RoundedRect{ std::nullopt };
 
         // Cards defined as an arbitrary shape
         std::optional<CardSizeSvgInfo> m_SvgInfo{ std::nullopt };
@@ -129,7 +129,7 @@ struct Config
     inline static const std::map<std::string, CardSizeInfo> g_DefaultCardSizes{
         {
             "Standard",
-            {
+            CardSizeInfo{
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
                 .m_Hint{ ".e.g. Magic the Gathering, Pokemon, and other TCGs" },
                 .m_CardSizeScale = 1.0f,
@@ -142,7 +142,7 @@ struct Config
         },
         {
             "Oversized",
-            {
+            CardSizeInfo{
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
                 .m_Hint{ ".e.g. oversized Magic the Gathering" },
                 .m_CardSizeScale = 1.0f,
@@ -155,7 +155,7 @@ struct Config
         },
         {
             "Novelty",
-            {
+            CardSizeInfo{
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
                 .m_Hint{ ".e.g. novelty-sized Magic the Gathering" },
                 .m_CardSizeScale = 0.5f,
@@ -168,7 +168,7 @@ struct Config
         },
         {
             "Japanese",
-            {
+            CardSizeInfo{
                 .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
                 .m_Hint{ ".e.g. Yu-Gi-Oh!" },
                 .m_CardSizeScale = 1.0f,
@@ -181,7 +181,7 @@ struct Config
         },
         {
             "Poker",
-            {
+            CardSizeInfo{
                 .m_InputBleed{ 3_mm, Unit::Millimeter, 0u },
                 .m_Hint{},
                 .m_CardSizeScale = 1.0f,
