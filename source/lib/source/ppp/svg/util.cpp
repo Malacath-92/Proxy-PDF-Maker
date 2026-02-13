@@ -1,7 +1,5 @@
 #include <ppp/svg/util.hpp>
 
-#include <ranges>
-
 #include <QPainterPath>
 
 #include <nanosvg.h>
@@ -37,22 +35,22 @@ Svg LoadSvg(const fs::path& svg_path)
                 .m_NextHandle{ points[1] * 1_mm },
             };
 
-            for (auto control_point : points | std::views::drop(2) | std::views::chunk(3))
+            for (size_t i{ 2 }; i < points.size(); i += 3)
             {
-                if (control_point.size() == 3)
+                if (i + 2 < points.size())
                 {
                     curve.m_ControlPoints.push_back(
                         {
-                            .m_PrevHandle{ control_point[0] * 1_mm },
-                            .m_Position{ control_point[1] * 1_mm },
-                            .m_NextHandle{ control_point[2] * 1_mm },
+                            .m_PrevHandle{ points[i] * 1_mm },
+                            .m_Position{ points[i + 1] * 1_mm },
+                            .m_NextHandle{ points[i + 2] * 1_mm },
                         });
                 }
-                else if (control_point.size() == 2)
+                else if (i + 1 < points.size())
                 {
                     curve.m_EndPoint = {
-                        .m_PrevHandle{ control_point[0] * 1_mm },
-                        .m_Position{ control_point[1] * 1_mm },
+                        .m_PrevHandle{ points[i] * 1_mm },
+                        .m_Position{ points[i + 1] * 1_mm },
                     };
                 }
                 else
