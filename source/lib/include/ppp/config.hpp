@@ -213,7 +213,7 @@ struct Config
     std::string_view GetFirstValidCardSize() const;
     const CardSizeInfo& GetFirstValidCardSizeInfo() const;
 
-    bool SvgCardSizeAdded(const fs::path& svg_path, Length input_bleed = 0.12_in);
+    bool SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed = { 0.12_in, Unit::Inches, 2u });
 };
 
 Config LoadConfig();

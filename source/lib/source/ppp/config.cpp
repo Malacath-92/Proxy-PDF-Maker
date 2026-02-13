@@ -84,7 +84,7 @@ std::string_view Config::GetFirstValidCardSize() const
     return GetFirstValidCardSizeIter(*this)->first;
 }
 
-bool Config::SvgCardSizeAdded(const fs::path& svg_path, Length input_bleed)
+bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
 {
     if (!fs::exists(svg_path))
     {
