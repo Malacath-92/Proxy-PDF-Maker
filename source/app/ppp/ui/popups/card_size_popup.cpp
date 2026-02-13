@@ -440,7 +440,9 @@ void CardSizePopup::Apply()
                     .m_BaseUnit = corner_unit,
                     .m_Decimals = corner_decimals,
                 },
-            } }
+            } },
+
+            .m_SvgInfo{ std::nullopt },
         };
     }
 
