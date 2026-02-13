@@ -96,6 +96,8 @@ bool Config::SvgCardSizeAdded(const fs::path& svg_path, Length input_bleed)
         .m_Hint{},
         .m_CardSizeScale = 1.0f,
 
+        .m_RoundedRect{ std::nullopt },
+
         .m_SvgInfo{ {
             .m_SvgName{ svg_path.filename().string() },
             .m_Svg{ LoadSvg(svg_path) },
