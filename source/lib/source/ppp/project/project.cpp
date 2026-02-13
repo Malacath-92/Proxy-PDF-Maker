@@ -1514,9 +1514,24 @@ Length Project::CardFullBleed() const
     return m_Data.CardFullBleed(g_Cfg);
 }
 
+bool Project::IsCardRoundedRect() const
+{
+    return m_Data.IsCardRoundedRect(g_Cfg);
+}
+
 Length Project::CardCornerRadius() const
 {
     return m_Data.CardCornerRadius(g_Cfg);
+}
+
+bool Project::IsCardSvg() const
+{
+    return m_Data.IsCardSvg(g_Cfg);
+}
+
+const Svg& Project::CardSvgData() const
+{
+    return m_Data.CardSvgData(g_Cfg);
 }
 
 void Project::EnsureOutputFolder() const
@@ -1846,22 +1861,39 @@ float ProjectData::CardRatio(const Config& config) const
     return card_size.x / card_size.y;
 }
 
+inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
+{
+    if (card_size_info.m_RoundedRect.has_value())
+    {
+        return card_size_info.m_RoundedRect.value().m_CardSize.m_Dimensions;
+    }
+    else if (card_size_info.m_SvgInfo.has_value())
+    {
+        return card_size_info.m_SvgInfo.value().m_Svg.m_Size;
+    }
+    else
+    {
+        LogError("Invalid card size, defaulting to 2.48in x 3.46in");
+        return { 2.48_mm, 3.46_mm };
+    }
+}
+
 Size ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
+    return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale;
 }
 
 Size ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
+    return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
 Size ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
+    return (GetCardSize(card_size_info) + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
 Length ProjectData::CardFullBleed(const Config& config) const
@@ -1870,10 +1902,37 @@ Length ProjectData::CardFullBleed(const Config& config) const
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
+bool ProjectData::IsCardRoundedRect(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    return card_size_info.m_RoundedRect.has_value();
+}
+
 Length ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
+    if (!card_size_info.m_RoundedRect.has_value())
+    {
+        return 0_mm;
+    }
+    return card_size_info.m_RoundedRect.value().m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
+}
+
+bool ProjectData::IsCardSvg(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    return card_size_info.m_SvgInfo.has_value();
+}
+
+const Svg& ProjectData::CardSvgData(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    if (!card_size_info.m_SvgInfo.has_value())
+    {
+        static Svg fallback{};
+        return fallback;
+    }
+    return card_size_info.m_SvgInfo.value().m_Svg;
 }
 
 void Project::SetPreview(const fs::path& card_name,

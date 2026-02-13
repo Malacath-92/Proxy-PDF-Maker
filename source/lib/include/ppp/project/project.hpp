@@ -189,7 +189,12 @@ struct ProjectData
     Size CardSizeWithBleed(const Config& config) const;
     Size CardSizeWithFullBleed(const Config& config) const;
     Length CardFullBleed(const Config& config) const;
+
+    bool IsCardRoundedRect(const Config& config) const;
     Length CardCornerRadius(const Config& config) const;
+
+    bool IsCardSvg(const Config& config) const;
+    const Svg& CardSvgData(const Config& config) const;
 };
 
 class JsonProvider;
@@ -295,7 +300,12 @@ class Project : public QObject
     Size CardSizeWithBleed() const;
     Size CardSizeWithFullBleed() const;
     Length CardFullBleed() const;
+
+    bool IsCardRoundedRect() const;
     Length CardCornerRadius() const;
+
+    bool IsCardSvg() const;
+    const Svg& CardSvgData() const;
 
     void EnsureOutputFolder() const;
 

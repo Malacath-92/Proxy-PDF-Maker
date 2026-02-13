@@ -4,6 +4,7 @@
 #include <QCloseEvent>
 #include <QDragEnterEvent>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QStyleHints>
 
@@ -22,6 +23,7 @@ std::array g_ValidDropExtensions{
             ".pdf"_p,
             ".CUBE"_p,
             ".qss"_p,
+            ".svg"_p,
         };
 
         constexpr auto total_drop_extensions{
@@ -173,6 +175,19 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
             else if (std::ranges::contains(g_ValidImageExtensions, ext))
             {
                 ImageDropped(path);
+            }
+            else if (ext == ".svg")
+            {
+                QMessageBox::StandardButton reply{
+                    QMessageBox::question(this,
+                                          "SVG Import",
+                                          "Do you want to import this .svg file as a custom card size?",
+                                          QMessageBox::Yes | QMessageBox::No)
+                };
+                if (reply == QMessageBox::Yes)
+                {
+                    SvgDropped(path);
+                }
             }
         }
     }

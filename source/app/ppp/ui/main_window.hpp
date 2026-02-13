@@ -40,4 +40,5 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void ColorCubeDropped(const fs::path& absolute_cube_path) const;
     void StyleDropped(const fs::path& absolute_qss_path) const;
     void ImageDropped(const fs::path& absolute_image_path) const;
+    void SvgDropped(const fs::path& absolute_svg_path) const;
 };

@@ -85,15 +85,33 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
 
     for (const auto& transform : m_Transforms)
     {
-        const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio };
-        const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
+        if (m_Project.IsCardSvg())
+        {
+            DrawSvgToPainterPath(m_CardBorder,
+                                 m_Project.CardSvgData(),
+                                 transform.m_Card.m_Position,
+                                 transform.m_Card.m_Size,
+                                 1.0f / pixel_ratio);
+        }
+        else
+        {
+            const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio };
+            const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
-        const QRectF rect{
-            top_left_corner.x,
-            top_left_corner.y,
-            card_size.x,
-            card_size.y,
-        };
-        m_CardBorder.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            const QRectF rect{
+                top_left_corner.x,
+                top_left_corner.y,
+                card_size.x,
+                card_size.y,
+            };
+            if (m_Project.IsCardRoundedRect())
+            {
+                m_CardBorder.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            }
+            else
+            {
+                m_CardBorder.addRect(rect);
+            }
+        }
     }
 }

@@ -61,16 +61,34 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 
     for (const auto& transform : transforms)
     {
-        const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio - cards_offset };
-        const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
+        if (project.IsCardSvg())
+        {
+            DrawSvgToPainterPath(card_border,
+                                 project.CardSvgData(),
+                                 transform.m_Card.m_Position,
+                                 transform.m_Card.m_Size,
+                                 1.0f / pixel_ratio);
+        }
+        else
+        {
+            const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio - cards_offset };
+            const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
-        const QRectF rect{
-            top_left_corner.x,
-            top_left_corner.y,
-            card_size.x,
-            card_size.y,
-        };
-        card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            const QRectF rect{
+                top_left_corner.x,
+                top_left_corner.y,
+                card_size.x,
+                card_size.y,
+            };
+            if (project.IsCardRoundedRect())
+            {
+                card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            }
+            else
+            {
+                card_border.addRect(rect);
+            }
+        }
     }
 
     card_border.translate(origin.x, origin.y);
