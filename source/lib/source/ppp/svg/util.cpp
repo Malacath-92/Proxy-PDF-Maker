@@ -17,6 +17,7 @@ Svg LoadSvg(const fs::path& svg_path)
 
     Svg output_svg{
         .m_Size{ width, height },
+        .m_Curves{},
     };
     for (NSVGshape* shape{ image->shapes }; shape != nullptr; shape = shape->next)
     {
