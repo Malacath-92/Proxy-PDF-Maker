@@ -239,6 +239,9 @@ ENTITIES
         margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
     };
 
+    using Curve = std::vector<dla::vec2>;
+    std::optional<std::vector<Curve>> card_curves;
+
     for (const auto& transform : transforms)
     {
         const auto top_left_corner{ transform.m_Card.m_Position / 1_mm };
@@ -249,41 +252,145 @@ ENTITIES
         const auto top{ cards_size.y - (top_left_corner.y - cards_offset.y) };
         const auto bottom{ top - card_size.y };
 
-        auto poly_line{ start_poly_line() };
+        if (project.IsCardRoundedRect())
+        {
+            auto poly_line{ start_poly_line() };
 
-        const auto draw_quarter_circle{
-            [&](const dla::vec2 center,
-                const float radius,
-                const float start_angle)
-            {
-                static constexpr auto c_Resolution{ 32 };
-                for (size_t i = 1; i < c_Resolution; i++)
+            const auto draw_quarter_circle{
+                [&](const dla::vec2 center,
+                    const float radius,
+                    const float start_angle)
                 {
-                    static constexpr float c_PiOver2{ std::numbers::pi_v<float> / 2 };
-                    static constexpr float c_DegToRad{ std::numbers::pi_v<float> / 180 };
-                    const float alpha{ start_angle * c_DegToRad + i * c_PiOver2 / c_Resolution };
-                    const float sin_i{ std::sin(alpha) };
-                    const float cos_i{ std::cos(alpha) };
-                    draw_vertex({
-                        center.x + sin_i * radius,
-                        center.y + cos_i * radius,
-                    });
-                }
-            },
-        };
+                    static constexpr auto c_Resolution{ 32 };
+                    for (size_t i = 1; i < c_Resolution; i++)
+                    {
+                        static constexpr float c_PiOver2{ std::numbers::pi_v<float> / 2 };
+                        static constexpr float c_DegToRad{ std::numbers::pi_v<float> / 180 };
+                        const float alpha{ start_angle * c_DegToRad + i * c_PiOver2 / c_Resolution };
+                        const float sin_i{ std::sin(alpha) };
+                        const float cos_i{ std::cos(alpha) };
+                        draw_vertex({
+                            center.x + sin_i * radius,
+                            center.y + cos_i * radius,
+                        });
+                    }
+                },
+            };
 
-        draw_vertex({ right, top - radius });
-        draw_vertex({ right, bottom + radius });
-        draw_quarter_circle({ right - radius, bottom + radius }, radius, 90);
-        draw_vertex({ right - radius, bottom });
-        draw_vertex({ left + radius, bottom });
-        draw_quarter_circle({ left + radius, bottom + radius }, radius, 180);
-        draw_vertex({ left, bottom + radius });
-        draw_vertex({ left, top - radius });
-        draw_quarter_circle({ left + radius, top - radius }, radius, 270);
-        draw_vertex({ left + radius, top });
-        draw_vertex({ right - radius, top });
-        draw_quarter_circle({ right - radius, top - radius }, radius, 0);
+            draw_vertex({ right, top - radius });
+            draw_vertex({ right, bottom + radius });
+            draw_quarter_circle({ right - radius, bottom + radius }, radius, 90);
+            draw_vertex({ right - radius, bottom });
+            draw_vertex({ left + radius, bottom });
+            draw_quarter_circle({ left + radius, bottom + radius }, radius, 180);
+            draw_vertex({ left, bottom + radius });
+            draw_vertex({ left, top - radius });
+            draw_quarter_circle({ left + radius, top - radius }, radius, 270);
+            draw_vertex({ left + radius, top });
+            draw_vertex({ right - radius, top });
+            draw_quarter_circle({ right - radius, top - radius }, radius, 0);
+        }
+        else
+        {
+            if (!card_curves.has_value())
+            {
+                card_curves.emplace();
+                const auto card_path{ ConvertSvgToPainterPath(project.CardSvgData()) };
+
+                Curve current_curve;
+
+                auto set_pos{
+                    [&](const auto& el)
+                    {
+                        current_curve.push_back(
+                            dla::vec2{ static_cast<float>(el.x), static_cast<float>(el.y) });
+                    }
+                };
+                auto draw_bezier{
+                    [&](auto p1, auto p2, auto p3, auto p4)
+                    {
+                        auto interpolate{
+                            [](auto from, auto to, float percent)
+                            {
+                                const auto difference{ to - from };
+                                return from + difference * percent;
+                            }
+                        };
+
+                        static constexpr auto c_Resolution{ 32 };
+                        for (size_t i = 1; i < c_Resolution; i++)
+                        {
+                            const float alpha{ static_cast<float>(i) / c_Resolution };
+
+                            const auto p12{ interpolate(p1, p2, alpha) };
+                            const auto p23{ interpolate(p2, p3, alpha) };
+                            const auto p34{ interpolate(p3, p4, alpha) };
+
+                            const auto pa{ interpolate(p12, p23, alpha) };
+                            const auto pb{ interpolate(p23, p34, alpha) };
+
+                            const auto p{ interpolate(pa, pb, alpha) };
+
+                            set_pos(p);
+                        }
+                    }
+                };
+                auto push_current_curve{
+                    [&]()
+                    {
+                        if (!current_curve.empty())
+                        {
+                            set_pos(current_curve.front());
+                            card_curves->push_back(std::move(current_curve));
+                            current_curve.clear();
+                        }
+                    }
+                };
+
+                for (int i{ 0 }; i < card_path.elementCount(); ++i)
+                {
+                    const auto el{ card_path.elementAt(i) };
+                    using enum QPainterPath::ElementType;
+                    switch (el.type)
+                    {
+                    case MoveToElement:
+                        push_current_curve();
+                        set_pos(el);
+                        break;
+                    case LineToElement:
+                        set_pos(el);
+                        break;
+                    case CurveToElement:
+                    {
+                        const auto k1{ card_path.elementAt(i + 1) };
+                        const auto k2{ card_path.elementAt(i + 2) };
+                        i += 2;
+
+                        draw_bezier(current_curve.back(),
+                                    dla::vec2{ static_cast<float>(el.x), static_cast<float>(el.y) },
+                                    dla::vec2{ static_cast<float>(k1.x), static_cast<float>(k1.y) },
+                                    dla::vec2{ static_cast<float>(k2.x), static_cast<float>(k2.y) });
+                        set_pos(k2);
+                        break;
+                    }
+                    case CurveToDataElement:
+                        LogError("Unsupported QPainterPath...");
+                        return;
+                    }
+                }
+
+                push_current_curve();
+            }
+
+            for (const auto& curve : card_curves.value())
+            {
+                auto poly_line{ start_poly_line() };
+                for (const auto& pt : curve)
+                {
+                    draw_vertex({ left + pt.x, top - pt.y });
+                }
+            }
+        }
     }
 
     output << R"(  0
