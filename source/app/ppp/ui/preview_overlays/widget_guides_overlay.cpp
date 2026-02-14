@@ -9,8 +9,13 @@ GuidesOverlay::GuidesOverlay(const Project& project, const PageImageTransforms& 
     : m_Project{ project }
     , m_Transforms{ transforms }
 {
-    m_PenOne.setColor(QColor{ project.m_Data.m_GuidesColorB.r, project.m_Data.m_GuidesColorB.g, project.m_Data.m_GuidesColorB.b });
-    m_PenTwo.setColor(QColor{ project.m_Data.m_GuidesColorA.r, project.m_Data.m_GuidesColorA.g, project.m_Data.m_GuidesColorA.b });
+    const auto& [darker_color, lighter_color]{
+        CategorizeColors(project.m_Data.m_GuidesColorA,
+                         project.m_Data.m_GuidesColorB)
+    };
+
+    m_PenOne.setColor(QColor{ darker_color.r, darker_color.g, darker_color.b });
+    m_PenTwo.setColor(QColor{ lighter_color.r, lighter_color.g, lighter_color.b });
     m_PenTwo.setDashPattern({ 2.0f, 4.0f });
 
     setAttribute(Qt::WA_NoSystemBackground);
@@ -24,9 +29,10 @@ void GuidesOverlay::paintEvent(QPaintEvent* /*event*/)
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
     painter.setPen(m_PenOne);
-    painter.drawLines(m_Lines);
+    painter.drawLines(m_SolidLines);
+    painter.drawLines(m_DashedLines);
     painter.setPen(m_PenTwo);
-    painter.drawLines(m_Lines);
+    painter.drawLines(m_DashedLines);
 
     painter.end();
 }
@@ -47,7 +53,9 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
     const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
     const auto offset{ m_Project.m_Data.m_GuidesOffset * pixel_ratio };
 
-    m_Lines.clear();
+    m_SolidLines.clear();
+    m_DashedLines.clear();
+
     if (m_Transforms.empty())
     {
         return;
@@ -69,7 +77,7 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
                         const auto delta{ line.p2() - from };
                         line.setP1(from - delta);
                     }
-                    m_Lines.push_back(line);
+                    m_DashedLines.push_back(line);
                 }
             };
 
@@ -167,15 +175,15 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
         for (const auto& x : unique_x)
         {
             const auto real_x{ x * c_Precision * pixel_ratio.x };
-            m_Lines.push_back(QLineF{ real_x, y_min, real_x, 0.0f });
-            m_Lines.push_back(QLineF{ real_x, y_max, real_x, static_cast<float>(size.y) });
+            m_SolidLines.push_back(QLineF{ real_x, y_min, real_x, 0.0f });
+            m_SolidLines.push_back(QLineF{ real_x, y_max, real_x, static_cast<float>(size.y) });
         }
 
         for (const auto& y : unique_y)
         {
             const auto real_y{ y * c_Precision * pixel_ratio.y };
-            m_Lines.push_back(QLineF{ x_min, real_y, 0.0f, real_y });
-            m_Lines.push_back(QLineF{ x_max, real_y, static_cast<float>(size.x), real_y });
+            m_SolidLines.push_back(QLineF{ x_min, real_y, 0.0f, real_y });
+            m_SolidLines.push_back(QLineF{ x_max, real_y, static_cast<float>(size.x), real_y });
         }
     }
 }
