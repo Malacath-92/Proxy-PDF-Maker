@@ -48,6 +48,7 @@ class PrintOptionsWidget : public QWidget
     void BasePdfAdded();
 
     void ExternalCardSizeChanged();
+    void ExternalCardSizesChanged();
 
   private:
     void SetDefaults();

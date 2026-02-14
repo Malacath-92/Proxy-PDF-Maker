@@ -369,6 +369,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, print_options, &PrintOptionsWidget::BasePdfAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, global_options, &GlobalOptionsWidget::ColorCubeAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, global_options, &GlobalOptionsWidget::StyleAdded);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::SvgDropped, print_options, &PrintOptionsWidget::ExternalCardSizesChanged);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::SvgDropped, print_options, &PrintOptionsWidget::CardSizesChanged);
     }
 

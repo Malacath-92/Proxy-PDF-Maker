@@ -81,23 +81,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                          }
 
                                          g_Cfg.m_CardSizes = card_sizes;
-                                         if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
-                                         {
-                                             m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
-                                             CardSizeChanged();
-                                         }
-
-                                         UpdateComboBox(
-                                             m_CardSize,
-                                             std::span<const std::string>{
-                                                 std::views::keys(g_Cfg.m_CardSizes) |
-                                                 std::ranges::to<std::vector>() },
-                                             std::span<const std::string>{
-                                                 g_Cfg.m_CardSizes |
-                                                 std::views::values |
-                                                 std::views::transform(&Config::CardSizeInfo::m_Hint) |
-                                                 std::ranges::to<std::vector>() },
-                                             m_Project.m_Data.m_CardSizeChoice);
+                                         ExternalCardSizesChanged();
                                          CardSizesChanged();
                                      });
 
@@ -820,6 +804,27 @@ void PrintOptionsWidget::ExternalCardSizeChanged()
     RefreshSizes();
     RefreshMargins(false);
     CardSizeChanged();
+}
+
+void PrintOptionsWidget::ExternalCardSizesChanged()
+{
+    if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+    {
+        m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
+        CardSizeChanged();
+    }
+
+    UpdateComboBox(
+        m_CardSize,
+        std::span<const std::string>{
+            std::views::keys(g_Cfg.m_CardSizes) |
+            std::ranges::to<std::vector>() },
+        std::span<const std::string>{
+            g_Cfg.m_CardSizes |
+            std::views::values |
+            std::views::transform(&Config::CardSizeInfo::m_Hint) |
+            std::ranges::to<std::vector>() },
+        m_Project.m_Data.m_CardSizeChoice);
 }
 
 void PrintOptionsWidget::SetDefaults()
