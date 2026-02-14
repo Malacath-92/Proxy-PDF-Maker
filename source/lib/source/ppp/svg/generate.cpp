@@ -57,7 +57,6 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
         margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
     };
-    const auto cards_offset{ cards_origin * pixel_ratio };
 
     for (const auto& transform : transforms)
     {
@@ -65,13 +64,13 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         {
             DrawSvgToPainterPath(card_border,
                                  project.CardSvgData(),
-                                 transform.m_Card.m_Position - cards_offset / pixel_ratio,
+                                 transform.m_Card.m_Position - cards_origin,
                                  transform.m_Card.m_Size,
                                  1.0f / pixel_ratio);
         }
         else
         {
-            const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio - cards_offset };
+            const auto top_left_corner{ (transform.m_Card.m_Position - cards_origin) * pixel_ratio };
             const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
             const QRectF rect{
