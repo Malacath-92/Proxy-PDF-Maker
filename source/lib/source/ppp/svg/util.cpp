@@ -82,6 +82,27 @@ void DrawSvgToPainterPath(QPainterPath& path,
             return QPointF{ px.x, px.y };
         }
     };
+    auto cubic_to{
+        [to_qpoint](QPainterPath& path,
+                    const auto& from,
+                    const auto& to)
+        {
+            const bool is_linear{
+                (from.m_NextHandle.x == to.m_PrevHandle.x && from.m_NextHandle.x == to.m_Position.x) ||
+                (from.m_NextHandle.y == to.m_PrevHandle.y && from.m_NextHandle.y == to.m_Position.y)
+            };
+            if (is_linear)
+            {
+                path.lineTo(to_qpoint(to.m_Position));
+            }
+            else
+            {
+                path.cubicTo(to_qpoint(from.m_NextHandle),
+                             to_qpoint(to.m_PrevHandle),
+                             to_qpoint(to.m_Position));
+            }
+        }
+    };
 
     for (const auto& curve : svg.m_Curves)
     {
@@ -91,35 +112,22 @@ void DrawSvgToPainterPath(QPainterPath& path,
         if (curve.m_ControlPoints.empty())
         {
             // ... draw bezier to end point if the curve has only two nodes ...
-            path.cubicTo(to_qpoint(curve.m_StartPoint.m_NextHandle),
-                         to_qpoint(curve.m_EndPoint.m_PrevHandle),
-                         to_qpoint(curve.m_EndPoint.m_Position));
+            cubic_to(path, curve.m_StartPoint, curve.m_EndPoint);
         }
         else
         {
             // ... or draw bezier to first point ...
-            path.cubicTo(to_qpoint(curve.m_StartPoint.m_NextHandle),
-                         to_qpoint(curve.m_ControlPoints[0].m_PrevHandle),
-                         to_qpoint(curve.m_ControlPoints[0].m_Position));
+            cubic_to(path, curve.m_StartPoint, curve.m_ControlPoints.front());
 
-            for (size_t i{ 0 }; i < curve.m_ControlPoints.size(); i++)
+            for (size_t i{ 0 }; i < curve.m_ControlPoints.size() - 1; i++)
             {
-                size_t j{ i + 1 };
-                if (j < curve.m_ControlPoints.size())
-                {
-                    // ... continue drawing beziers to next point ...
-                    path.cubicTo(to_qpoint(curve.m_ControlPoints[i].m_NextHandle),
-                                 to_qpoint(curve.m_ControlPoints[j].m_PrevHandle),
-                                 to_qpoint(curve.m_ControlPoints[j].m_Position));
-                }
-                else
-                {
-                    // ... until we draw bezier to the last point
-                    path.cubicTo(to_qpoint(curve.m_ControlPoints[i].m_NextHandle),
-                                 to_qpoint(curve.m_EndPoint.m_PrevHandle),
-                                 to_qpoint(curve.m_EndPoint.m_Position));
-                }
+                const size_t j{ i + 1 };
+                // ... continue drawing beziers to next point ...
+                cubic_to(path, curve.m_ControlPoints[i], curve.m_ControlPoints[j]);
             }
+
+            // ... until we draw bezier to the last point
+            cubic_to(path, curve.m_ControlPoints.back(), curve.m_EndPoint);
         }
     }
 }
