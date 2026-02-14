@@ -288,6 +288,11 @@ PdfResults GeneratePdf(const Project& project)
     const auto draw_corner_guides{
         [&](PdfPage* page, const PageImageTransform& transform)
         {
+            if (project.m_Data.m_GuidesLength <= 0_mm)
+            {
+                return;
+            }
+
             const auto draw_cross_at_grid{
                 [&](PdfPage* page, Position pos, CrossSegment s)
                 {
@@ -452,6 +457,7 @@ PdfResults GeneratePdf(const Project& project)
                 back_page->DrawText({
                     .m_Text{ page_name },
                     .m_BoundingBox{ text_top_left, text_bottom_right },
+                    .m_Backdrop{ { 1.0f, 1.0f, 1.0f } },
                 });
             }
 
