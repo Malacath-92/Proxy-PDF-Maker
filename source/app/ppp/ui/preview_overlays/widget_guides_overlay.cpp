@@ -166,7 +166,9 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
             }
         }
 
-        const auto extended_off{ offset + 1_mm * pixel_ratio };
+        const auto bleed{ m_Project.m_Data.m_BleedEdge };
+        const auto envelope_bleed{ m_Project.m_Data.m_EnvelopeBleedEdge };
+        const auto extended_off{ offset + (bleed + envelope_bleed + 1_mm) * pixel_ratio };
         const auto x_min{ std::ranges::min(unique_x) * c_Precision * pixel_ratio.x - extended_off.x };
         const auto x_max{ std::ranges::max(unique_x) * c_Precision * pixel_ratio.x + extended_off.y };
         const auto y_min{ std::ranges::min(unique_y) * c_Precision * pixel_ratio.y - extended_off.x };
