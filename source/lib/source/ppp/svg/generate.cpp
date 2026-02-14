@@ -65,7 +65,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         {
             DrawSvgToPainterPath(card_border,
                                  project.CardSvgData(),
-                                 transform.m_Card.m_Position,
+                                 transform.m_Card.m_Position - cards_offset / pixel_ratio,
                                  transform.m_Card.m_Size,
                                  1.0f / pixel_ratio);
         }
