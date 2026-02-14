@@ -24,5 +24,7 @@ class GuidesOverlay : public QWidget
 
     QPen m_PenOne;
     QPen m_PenTwo;
-    QList<QLineF> m_Lines;
+
+    QList<QLineF> m_SolidLines;
+    QList<QLineF> m_DashedLines;
 };

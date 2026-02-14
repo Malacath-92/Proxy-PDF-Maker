@@ -34,22 +34,10 @@ PdfResults GeneratePdf(const Project& project)
 
     const auto output_dir{ project.GetOutputFolder() };
 
-    const auto get_luminosity{
-        [](const ColorRGB8& col)
-        {
-            const auto& min{ dla::min_element(col) };
-            const auto& max{ dla::max_element(col) };
-            return (min + max) / 2;
-        }
+    const auto& [darker_color, lighter_color]{
+        CategorizeColors(project.m_Data.m_GuidesColorA,
+                         project.m_Data.m_GuidesColorB)
     };
-    const auto color_a_luminosity{ get_luminosity(project.m_Data.m_GuidesColorA) };
-    const auto color_b_luminosity{ get_luminosity(project.m_Data.m_GuidesColorB) };
-    const bool color_a_darker{ color_a_luminosity < color_b_luminosity };
-
-    const auto& darker_color{ color_a_darker ? project.m_Data.m_GuidesColorA
-                                             : project.m_Data.m_GuidesColorB };
-    const auto& lighter_color{ color_a_darker ? project.m_Data.m_GuidesColorB
-                                              : project.m_Data.m_GuidesColorA };
 
     ColorRGB32f guides_color_a{
         static_cast<float>(darker_color.r) / 255.0f,
