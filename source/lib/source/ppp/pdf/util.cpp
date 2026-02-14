@@ -293,13 +293,14 @@ PageImageTransforms ComputeBacksideTransforms(
             }(),
         };
 
+        const auto frontside_card_size{ transform.m_Card.m_Size };
         backside_transforms.push_back(PageImageTransform{
             .m_Position{ backside_position },
             .m_Size{ frontside_size },
             .m_Rotation = get_backside_rotation(transform.m_Rotation),
             .m_Card{
                 .m_Position{ backside_position + project.m_Data.m_BleedEdge },
-                .m_Size{ frontside_size },
+                .m_Size{ frontside_card_size },
             },
             .m_ClipRect{ std::nullopt },
         });
