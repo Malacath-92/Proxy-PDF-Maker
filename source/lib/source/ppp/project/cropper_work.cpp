@@ -4,6 +4,8 @@
 #include <QThreadPool>
 #include <QTimer>
 
+#include <ppp/profile/profile.hpp>
+
 #include <ppp/project/image_database.hpp>
 #include <ppp/project/image_ops.hpp>
 
@@ -34,6 +36,8 @@ static Image FixImageAspectRatio(Image source_image,
                                  BadAspectRatioHandling ratio_handling,
                                  float target_aspect_ratio)
 {
+    TRACY_AUTO_SCOPE();
+
     static constexpr float c_IgnoreThreshold{ 0.01f };
     const float aspect_ratio{ source_image.AspectRatio() };
     if (ratio_handling == BadAspectRatioHandling::Ignore ||
@@ -209,6 +213,8 @@ void CropperCropWork::run()
 
     try
     {
+        TRACY_AUTO_SCOPE();
+
         const Length bleed_edge{ m_Data.m_BleedEdge };
         const PixelDensity max_density{ m_Cfg.m_MaxDPI };
 
@@ -367,6 +373,8 @@ void CropperCropWork::run()
     }
     catch (...)
     {
+        TRACY_AUTO_SCOPE();
+
         if (m_Retries.load(std::memory_order_relaxed) < c_MaxRetries)
         {
             // If user updated the file we may be reading it's still being written to,
@@ -413,6 +421,8 @@ void CropperPreviewWork::run()
 
     try
     {
+        TRACY_AUTO_SCOPE();
+
         const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
         const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
         const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
@@ -578,6 +588,8 @@ void CropperPreviewWork::run()
     }
     catch (...)
     {
+        TRACY_AUTO_SCOPE();
+
         if (m_Retries.load(std::memory_order_relaxed) < c_MaxRetries)
         {
             // If user updated the file we may be reading it's still being written to,

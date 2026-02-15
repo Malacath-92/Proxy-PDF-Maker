@@ -42,6 +42,8 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 
 #include <ppp/plugins/plugin_interface.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class PluginRouter : public PluginInterface
 {
     virtual QWidget* Widget() override
@@ -52,6 +54,10 @@ class PluginRouter : public PluginInterface
 
 int main(int argc, char** argv)
 {
+    TRACY_WAIT_CONNECT();
+    
+    TRACY_AUTO_SCOPE();
+
 #ifdef WIN32
     {
         static constexpr char c_LocaleName[]{ ".utf-8" };
@@ -492,6 +498,8 @@ int main(int argc, char** argv)
                     .arg(new_version.value().c_str()));
         }
     }
+
+    TRACY_NAMED_SCOPE(main_run);
 
     const int return_code{ QApplication::exec() };
     project.Dump(app.GetProjectPath());

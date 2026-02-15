@@ -23,6 +23,8 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class SpinnerWidget : public QSvgWidget
 {
   public:
@@ -44,6 +46,8 @@ class SpinnerWidget : public QSvgWidget
 
 QPixmap StoreIntoQtPixmap(const Image& img)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& img_impl{ img.GetUnderlying() };
     switch (img_impl.channels())
     {
@@ -65,6 +69,8 @@ QPixmap StoreIntoQtPixmap(const Image& img)
 CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     {
         auto* layout{ new QBoxLayout(QBoxLayout::TopToBottom) };
         layout->addStretch();
@@ -78,6 +84,8 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, Params p
 
 void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
 {
+    TRACY_AUTO_SCOPE();
+
     ClearChildren();
 
     setToolTip(ToQString(card_name));
@@ -153,6 +161,8 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
 {
     if (enable && contextMenuPolicy() != Qt::ContextMenuPolicy::CustomContextMenu)
     {
+        TRACY_AUTO_SCOPE();
+
         setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
         QObject::connect(this,
                          &QWidget::customContextMenuRequested,

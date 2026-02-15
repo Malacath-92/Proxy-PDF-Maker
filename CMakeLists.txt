@@ -17,6 +17,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------------------------------------
 # Define options
 option(PPP_BUILD_TESTS "Build test suite" OFF)
+option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 
 # --------------------------------------------------
@@ -76,6 +77,9 @@ find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
+if (PPP_PROFILE)
+	find_package(tracy REQUIRED)
+endif()
 
 # --------------------------------------------------
 # Create nanosvg library
@@ -202,6 +206,12 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Widgets
 	Qt6::SvgWidgets
 	Qt6::Xml)
+if (PPP_PROFILE)
+	target_link_libraries(proxy_pdf_dependencies INTERFACE
+		Tracy::TracyClient)
+	target_compile_definitions(proxy_pdf_dependencies INTERFACE
+		PPP_TRACY_PROFILING)
+endif()
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
