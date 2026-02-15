@@ -169,30 +169,40 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
                          this,
                          &CardImage::ContextMenuRequested);
 
+        static QIcon clear_icon{ QPixmap{ ":/res/clear.png" } };
+        static QIcon bulb_icon{ QPixmap{ ":/res/bulb.png" } };
+        static QIcon full_bleed_icon{ QPixmap{ ":/res/full_bleed.png" } };
+        static QIcon no_bleed_icon{ QPixmap{ ":/res/no_bleed.png" } };
+        static QIcon reset_icon{ QPixmap{ ":/res/reset.png" } };
+        static QIcon expand_icon{ QPixmap{ ":/res/expand.png" } };
+        static QIcon stretch_icon{ QPixmap{ ":/res/stretch.png" } };
+        static QIcon untap_icon{ QPixmap{ ":/res/untap.png" } };
+        static QIcon tap_icon{ QPixmap{ ":/res/tap.png" } };
+
         m_RemoveExternalCardAction = new QAction{ "Remove External Card", this };
-        m_RemoveExternalCardAction->setIcon(QIcon{ QPixmap{ ":/res/clear.png" } });
+        m_RemoveExternalCardAction->setIcon(clear_icon);
 
         m_ResetBacksideAction = new QAction{ "Reset Backside", this };
-        m_ResetBacksideAction->setIcon(QIcon{ QPixmap{ ":/res/clear.png" } });
+        m_ResetBacksideAction->setIcon(clear_icon);
 
         m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
-        m_InferBleedAction->setIcon(QIcon{ QPixmap{ ":/res/bulb.png" } });
+        m_InferBleedAction->setIcon(bulb_icon);
         m_ForceFullBleedAction = new QAction{ "Assume Full Bleed", this };
-        m_ForceFullBleedAction->setIcon(QIcon{ QPixmap{ ":/res/full_bleed.png" } });
+        m_ForceFullBleedAction->setIcon(full_bleed_icon);
         m_ForceNoBleedAction = new QAction{ "Assume No Bleed", this };
-        m_ForceNoBleedAction->setIcon(QIcon{ QPixmap{ ":/res/no_bleed.png" } });
+        m_ForceNoBleedAction->setIcon(no_bleed_icon);
 
         m_FixRatioIgnoreAction = new QAction{ "Reset Aspect Ratio", this };
-        m_FixRatioIgnoreAction->setIcon(QIcon{ QPixmap{ ":/res/reset.png" } });
+        m_FixRatioIgnoreAction->setIcon(reset_icon);
         m_FixRatioExpandAction = new QAction{ "Fix Aspect Ratio: Expand", this };
-        m_FixRatioExpandAction->setIcon(QIcon{ QPixmap{ ":/res/expand.png" } });
+        m_FixRatioExpandAction->setIcon(expand_icon);
         m_FixRatioStretchAction = new QAction{ "Fix Aspect Ratio: Stretch", this };
-        m_FixRatioStretchAction->setIcon(QIcon{ QPixmap{ ":/res/stretch.png" } });
+        m_FixRatioStretchAction->setIcon(stretch_icon);
 
         m_RotateLeftAction = new QAction{ "Rotate Left", this };
-        m_RotateLeftAction->setIcon(QIcon{ QPixmap{ ":/res/untap.png" } });
+        m_RotateLeftAction->setIcon(untap_icon);
         m_RotateRightAction = new QAction{ "Rotate Right", this };
-        m_RotateRightAction->setIcon(QIcon{ QPixmap{ ":/res/tap.png" } });
+        m_RotateRightAction->setIcon(tap_icon);
 
         QObject::connect(m_RemoveExternalCardAction,
                          &QAction::triggered,
