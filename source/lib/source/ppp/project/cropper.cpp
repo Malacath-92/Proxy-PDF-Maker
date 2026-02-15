@@ -13,6 +13,8 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 #include <ppp/project/cropper_work.hpp>
 
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
@@ -21,6 +23,8 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
     , m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ ImageDataBase::FromFile(project.m_Data.m_CropDir / ".image.db") }
 {
+    TRACY_AUTO_SCOPE();
+
     m_CropFinishedTimer.setSingleShot(true);
     m_CropFinishedTimer.setInterval(c_IdleTimeBeforeDoneTrigger);
 
@@ -48,6 +52,8 @@ Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
 }
 Cropper::~Cropper()
 {
+    TRACY_AUTO_SCOPE();
+
     for (auto& [_, work] : m_CropWork)
     {
         work->Cancel();
@@ -128,6 +134,8 @@ void Cropper::CardAdded(const fs::path& card_name, bool needs_crop, bool needs_p
 
 void Cropper::CardRemoved(const fs::path& card_name)
 {
+    TRACY_AUTO_SCOPE();
+
     RemoveWork(card_name);
 
     if (m_State == State::Paused)

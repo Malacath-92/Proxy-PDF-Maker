@@ -27,6 +27,9 @@ class ProxyPDF(ConanFile):
         # Enum Reflection
         self.requires("magic_enum/0.9.7")
 
+        # Profiling
+        self.requires("tracy/0.13.1")
+
         # Unit Testing
         self.requires("catch2/3.7.1")
 
