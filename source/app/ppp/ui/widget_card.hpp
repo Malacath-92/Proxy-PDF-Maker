@@ -70,6 +70,8 @@ class CardImage : public QLabel
     void ClearChildren();
 
   private:
+    const Project& m_Project;
+
     fs::path m_CardName;
     Params m_OriginalParams;
 

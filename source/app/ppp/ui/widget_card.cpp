@@ -63,6 +63,7 @@ QPixmap StoreIntoQtPixmap(const Image& img)
 }
 
 CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
+    : m_Project{ project }
 {
     {
         auto* layout{ new QBoxLayout(QBoxLayout::TopToBottom) };
@@ -331,21 +332,37 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
 
     if (m_OriginalParams.m_RoundedCorners)
     {
-        const Pixel card_corner_radius_pixels{ m_CornerRadius * pixmap.width() / m_CardSize.x };
 
         QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
 
-        QPainterPath path{};
-        path.addRoundedRect(
-            QRectF(pixmap.rect()),
-            card_corner_radius_pixels.value,
-            card_corner_radius_pixels.value);
-
         QPainter painter{ &clipped_pixmap };
         painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
         painter.setRenderHint(QPainter::RenderHint::SmoothPixmapTransform, true);
-        painter.setClipPath(path);
+
+        if (m_Project.IsCardRoundedRect())
+        {
+            const Pixel card_corner_radius_pixels{ m_CornerRadius * pixmap.width() / m_CardSize.x };
+
+            QPainterPath path{};
+            path.addRoundedRect(
+                QRectF(pixmap.rect()),
+                card_corner_radius_pixels.value,
+                card_corner_radius_pixels.value);
+
+            painter.setClipPath(path);
+        }
+        else if (m_Project.IsCardSvg())
+        {
+            QPainterPath path;
+            DrawSvgToPainterPath(path,
+                                 m_Project.CardSvgData(),
+                                 { 0_mm, 0_mm },
+                                 { pixmap.rect().width() * 1_mm, pixmap.rect().height() * 1_mm },
+                                 { 1_mm, 1_mm });
+            painter.setClipPath(path);
+        }
+
         painter.drawPixmap(0, 0, pixmap);
 
         finalized_pixmap = clipped_pixmap;
