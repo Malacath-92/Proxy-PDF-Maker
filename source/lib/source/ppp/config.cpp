@@ -12,8 +12,11 @@
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
-#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
+
+#include <ppp/util/log.hpp>
+
+#include <ppp/profile/profile.hpp>
 
 Config g_Cfg{ LoadConfig() };
 
@@ -86,6 +89,8 @@ std::string_view Config::GetFirstValidCardSize() const
 
 bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
 {
+    TRACY_AUTO_SCOPE();
+
     if (!fs::exists(svg_path))
     {
         return false;
@@ -109,6 +114,8 @@ bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
 
 Config LoadConfig()
 {
+    TRACY_AUTO_SCOPE();
+
     Config config{};
     if (!QFile::exists("config.ini"))
     {
@@ -458,6 +465,8 @@ Config LoadConfig()
 
 void SaveConfig(Config config)
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings("config.ini", QSettings::IniFormat);
     settings.clear();
 

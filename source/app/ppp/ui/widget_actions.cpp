@@ -20,8 +20,12 @@
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 ActionsWidget::ActionsWidget(Project& project)
 {
+    TRACY_AUTO_SCOPE();
+
     setObjectName("Actions");
 
     auto* cropper_progress_bar{ new QProgressBar };

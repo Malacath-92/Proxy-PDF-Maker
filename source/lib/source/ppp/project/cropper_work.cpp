@@ -11,6 +11,7 @@
 
 static ProjectData CopyRelevant(const ProjectData& data)
 {
+    TRACY_AUTO_SCOPE();
     return ProjectData{
         .m_ImageDir{ data.m_ImageDir },
         .m_CropDir{ data.m_CropDir },
@@ -23,6 +24,7 @@ static ProjectData CopyRelevant(const ProjectData& data)
 
 static Config CopyRelevant(const Config& config)
 {
+    TRACY_AUTO_SCOPE();
     return Config{
         .m_BasePreviewWidth{ config.m_BasePreviewWidth },
         .m_MaxDPI{ config.m_MaxDPI },

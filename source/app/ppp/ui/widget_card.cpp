@@ -109,20 +109,25 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
 
     const bool has_image{ project.HasPreview(card_name) };
 
-    QPixmap pixmap{
-        [&]()
-        {
-            if (has_image)
+    {
+        TRACY_NAMED_SCOPE(set_pixmap);
+        TRACY_NAMED_SCOPE_INFO(set_pixmap, "Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
+
+        QPixmap pixmap{
+            [&]()
             {
-                return GetPixmap(project.GetPreview(card_name));
-            }
-            else
-            {
-                return GetEmptyPixmap();
-            }
-        }()
-    };
-    setPixmap(FinalizePixmap(pixmap));
+                if (has_image)
+                {
+                    return GetPixmap(project.GetPreview(card_name));
+                }
+                else
+                {
+                    return GetEmptyPixmap();
+                }
+            }()
+        };
+        setPixmap(FinalizePixmap(pixmap));
+    }
 
     setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
@@ -276,6 +281,8 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
 {
     if (m_CardName == card_name)
     {
+        TRACY_AUTO_SCOPE();
+
         setPixmap(FinalizePixmap(GetEmptyPixmap()));
 
         m_BadAspectRatio = false;
@@ -295,6 +302,9 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
 {
     if (m_CardName == card_name)
     {
+        TRACY_AUTO_SCOPE();
+        TRACY_AUTO_SCOPE_INFO("Card: \"%s\"", card_name.string().c_str());
+
         m_BadAspectRatio = preview.m_BadAspectRatio;
 
         ClearChildren();
@@ -322,6 +332,8 @@ void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& b
 
 QPixmap CardImage::GetPixmap(const ImagePreview& preview) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_BleedEdge > 0_mm)
     {
         const Image& uncropped_image{ preview.m_UncroppedImage };
@@ -339,6 +351,8 @@ QPixmap CardImage::GetPixmap(const ImagePreview& preview) const
 
 QPixmap CardImage::GetEmptyPixmap() const
 {
+    TRACY_AUTO_SCOPE();
+
     const int width{ static_cast<int>(g_Cfg.m_BasePreviewWidth.value) };
     const int height{ static_cast<int>(width / m_CardRatio) };
     QPixmap raw_pixmap{ width, height };
@@ -348,10 +362,13 @@ QPixmap CardImage::GetEmptyPixmap() const
 
 QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
 {
+    TRACY_AUTO_SCOPE();
+
     QPixmap finalized_pixmap{ pixmap };
 
     if (m_OriginalParams.m_RoundedCorners)
     {
+        TRACY_NAMED_SCOPE(clipping_image);
 
         QPixmap clipped_pixmap{ pixmap.size() };
         clipped_pixmap.fill(Qt::GlobalColor::transparent);
@@ -362,6 +379,8 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
 
         if (m_Project.IsCardRoundedRect())
         {
+            TRACY_NAMED_SCOPE(rounding_corners);
+
             const Pixel card_corner_radius_pixels{ m_CornerRadius * pixmap.width() / m_CardSize.x };
 
             QPainterPath path{};
@@ -374,6 +393,8 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
         }
         else if (m_Project.IsCardSvg())
         {
+            TRACY_NAMED_SCOPE(clipping_with_svg);
+
             QPainterPath path;
             DrawSvgToPainterPath(path,
                                  m_Project.CardSvgData(),
@@ -383,13 +404,16 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
             painter.setClipPath(path);
         }
 
+        TRACY_NAMED_SCOPE(drawing_clipped_pixmap);
         painter.drawPixmap(0, 0, pixmap);
 
-        finalized_pixmap = clipped_pixmap;
+        finalized_pixmap = std::move(clipped_pixmap);
     }
 
     if (m_OriginalParams.m_Rotation != Image::Rotation::None)
     {
+        TRACY_NAMED_SCOPE(rotating);
+
         QTransform transform{};
 
         switch (m_OriginalParams.m_Rotation)
@@ -414,6 +438,8 @@ QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
 
 void CardImage::AddBadFormatWarning(const ImagePreview& preview)
 {
+    TRACY_AUTO_SCOPE();
+
     static constexpr int c_WarningSize{ 24 };
     const static QPixmap s_WarningPixmap{
         []()
@@ -561,6 +587,7 @@ void CardImage::ClearChildren()
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
     : BacksideImage{ backside_name, CardImage::Params{}.m_MinimumWidth, project }
 {
+    TRACY_AUTO_SCOPE();
 }
 BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project)
     : CardImage{
@@ -569,6 +596,7 @@ BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width,
         CardImage::Params{ .m_MinimumWidth{ minimum_width } }
     }
 {
+    TRACY_AUTO_SCOPE();
 }
 
 void BacksideImage::Refresh(const fs::path& backside_name, const Project& project)
@@ -577,6 +605,7 @@ void BacksideImage::Refresh(const fs::path& backside_name, const Project& projec
 }
 void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
 {
+    TRACY_AUTO_SCOPE();
     CardImage::Refresh(
         backside_name,
         project,
@@ -585,6 +614,8 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
 
 StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)
 {
+    TRACY_AUTO_SCOPE();
+
     backside->setToolTip("Choose individual Backside");
 
     auto* backside_layout{ new QHBoxLayout };
@@ -615,6 +646,8 @@ StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* back
 
 void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
 {
+    TRACY_AUTO_SCOPE();
+
     new_backside->setMouseTracking(true);
 
     auto* backside_layout{ static_cast<QHBoxLayout*>(m_BacksideContainer->layout()) };

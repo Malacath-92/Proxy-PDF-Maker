@@ -9,6 +9,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 namespace pngcrc
 {
 static uint32_t CRC(const uchar* buf, int len)
@@ -54,10 +56,12 @@ static uint32_t CRC(const uchar* buf, int len)
 Image::Image(cv::Mat impl)
     : m_Impl{ std::move(impl) }
 {
+    TRACY_AUTO_SCOPE();
 }
 
 Image::~Image()
 {
+    TRACY_AUTO_SCOPE();
     Release();
 }
 
@@ -72,17 +76,21 @@ Image::Image(const Image& rhs)
 
 Image& Image::operator=(Image&& rhs)
 {
+    TRACY_AUTO_SCOPE();
     m_Impl = std::move(rhs.m_Impl);
     return *this;
 }
 Image& Image::operator=(const Image& rhs)
 {
+    TRACY_AUTO_SCOPE();
     m_Impl = rhs.m_Impl.clone();
     return *this;
 }
 
 Image Image::Read(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     img.m_Impl = cv::imread(path.string().c_str(), cv::IMREAD_UNCHANGED);
     return img;
@@ -90,6 +98,8 @@ Image Image::Read(const fs::path& path)
 
 bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality) const
 {
+    TRACY_AUTO_SCOPE();
+
     const fs::path ext{ path.extension() };
     if (ext == ".png")
     {
@@ -127,6 +137,8 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
 
 bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality, ::Size dimensions) const
 {
+    TRACY_AUTO_SCOPE();
+
     const fs::path ext{ path.extension() };
     if (ext == ".png")
     {
@@ -264,6 +276,8 @@ Image Image::Decode(const EncodedImage& buffer)
 
 Image Image::Decode(EncodedImageView buffer)
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()),
                               static_cast<int>(buffer.size()) };
@@ -273,6 +287,8 @@ Image Image::Decode(EncodedImageView buffer)
 
 EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 {
+    TRACY_AUTO_SCOPE();
+
     // Safety check: if image is empty, return empty buffer
     if (m_Impl.empty())
     {
@@ -302,6 +318,8 @@ EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 
 EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
 {
+    TRACY_AUTO_SCOPE();
+
     // Safety check: if image is empty, return empty buffer
     if (m_Impl.empty())
     {
@@ -339,6 +357,8 @@ bool Image::Valid() const
 
 Image Image::Rotate(Rotation rotation) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     switch (rotation)
     {
@@ -359,6 +379,8 @@ Image Image::Rotate(Rotation rotation) const
 
 Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     const auto [w, h] = Size().pod();
     Image img{};
     img.m_Impl = m_Impl(
@@ -369,6 +391,8 @@ Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 
 Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -383,6 +407,8 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
 
 Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -397,6 +423,7 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
 
 Image Image::EnsureAlpha() const
 {
+    TRACY_AUTO_SCOPE();
 
     if (m_Impl.channels() == 4)
     {
@@ -410,6 +437,8 @@ Image Image::EnsureAlpha() const
 
 Image Image::ApplyAlpha(const ColorRGB8& color) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Impl.channels() != 4)
     {
         return Image{ m_Impl };
@@ -449,6 +478,8 @@ Image Image::ApplyAlpha(const ColorRGB8& color) const
 
 Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 {
+    TRACY_AUTO_SCOPE();
+
     const auto corner_radius_pixels{ static_cast<int>(dla::math::floor(Density(real_size) * corner_radius) / 1_pix) };
     if (corner_radius_pixels == 0)
     {
@@ -504,6 +535,8 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 
 Image Image::FillCorners(::Size real_size, ::Length corner_radius) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image rounded{ RoundCorners(real_size, corner_radius) };
     cv::Mat img{ rounded.m_Impl };
 
@@ -669,6 +702,8 @@ struct CubeFilter
 
 Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Impl.channels() == 1)
     {
         return *this;
@@ -692,6 +727,8 @@ Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 
 Image Image::Resize(PixelSize size) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::resize(m_Impl, img.m_Impl, cv::Size(static_cast<int>(size.x.value), static_cast<int>(size.y.value)), cv::INTER_AREA);
     return img;
@@ -736,6 +773,8 @@ PixelDensity Image::Density(::Size real_size) const
 
 uint64_t Image::Hash() const
 {
+    TRACY_AUTO_SCOPE();
+
     cv::Mat hash;
     cv::img_hash::pHash(m_Impl, hash);
     return *reinterpret_cast<uint64_t*>(hash.data);

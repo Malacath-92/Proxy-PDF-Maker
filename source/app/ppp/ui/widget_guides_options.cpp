@@ -18,9 +18,13 @@
 #include <ppp/ui/default_project_value_actions.hpp>
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     setObjectName("Guides Options");
 
     m_ExportExactGuidesCheckbox = new QCheckBox{ "Export Exact Guides" };
@@ -346,6 +350,8 @@ void GuidesOptionsWidget::AdvancedModeChanged()
 
 void GuidesOptionsWidget::SetDefaults()
 {
+    TRACY_AUTO_SCOPE();
+
     m_ExportExactGuidesCheckbox->setChecked(m_Project.m_Data.m_ExportExactGuides);
 
     m_EnableGuidesCheckbox->setChecked(m_Project.m_Data.m_EnableGuides);
