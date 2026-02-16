@@ -14,6 +14,8 @@
 
 #include <ppp/ui/collapse_button.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 OptionsAreaWidget::OptionsAreaWidget(Project& project,
                                      PluginInterface& plugin_router,
                                      QWidget* actions,
@@ -24,6 +26,8 @@ OptionsAreaWidget::OptionsAreaWidget(Project& project,
     : m_Project{ project }
     , m_PluginRouter{ plugin_router }
 {
+    TRACY_AUTO_SCOPE();
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions);
     layout->addStretch();
@@ -55,6 +59,8 @@ OptionsAreaWidget::OptionsAreaWidget(Project& project,
 
 void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 {
+    TRACY_AUTO_SCOPE();
+
     if (!m_Plugins.contains(plugin_name))
     {
         auto* plugin{ InitPlugin(plugin_name, m_Project) };
@@ -69,6 +75,8 @@ void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 
 void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Plugins.contains(plugin_name))
     {
         auto* plugin{ m_Plugins[plugin_name] };
@@ -93,6 +101,8 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 
 void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
 {
+    TRACY_AUTO_SCOPE();
+
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     auto* collapse_button{ new CollapseButton{
         widget,

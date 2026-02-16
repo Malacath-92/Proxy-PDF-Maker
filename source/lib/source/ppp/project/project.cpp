@@ -17,6 +17,8 @@
 
 #include <ppp/project/image_ops.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
 {
     switch (g_Cfg.m_CardOrder)
@@ -84,6 +86,8 @@ fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
 
 Project::~Project()
 {
+    TRACY_AUTO_SCOPE();
+
     // Save preview cache, in case we didn't finish generating previews we want some partial work saved
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
@@ -95,6 +99,8 @@ bool Project::Load(const fs::path& json_path)
 bool Project::Load(const fs::path& json_path,
                    const JsonProvider* overrides)
 {
+    TRACY_AUTO_SCOPE();
+
     std::ifstream file_stream{ json_path };
     std::string json{ std::istreambuf_iterator<char>{ file_stream },
                       std::istreambuf_iterator<char>{} };
@@ -500,6 +506,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
 void Project::Dump(const fs::path& json_path) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (std::ofstream file{ json_path })
     {
         LogInfo("Generating project json...");
@@ -516,6 +524,8 @@ void Project::Dump(const fs::path& json_path) const
 
 std::string Project::DumpToJson() const
 {
+    TRACY_AUTO_SCOPE();
+
     nlohmann::json json{};
     json["version"] = JsonFormatVersion();
 
@@ -646,6 +656,8 @@ std::string Project::DumpToJson() const
 
 void Project::Init()
 {
+    TRACY_AUTO_SCOPE();
+
     LogInfo("Loading preview cache...");
     m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache);
 
@@ -655,6 +667,8 @@ void Project::Init()
 
 void Project::InitProperties()
 {
+    TRACY_AUTO_SCOPE();
+
     LogInfo("Collecting images...");
 
     // Get all image files in the images directory

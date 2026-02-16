@@ -567,6 +567,8 @@ void CardImage::RotateImageRight(Project& project)
 
 void CardImage::ClearChildren()
 {
+    TRACY_AUTO_SCOPE();
+
     auto* layout{ static_cast<QBoxLayout*>(this->layout()) };
 
     if (m_Warning != nullptr)

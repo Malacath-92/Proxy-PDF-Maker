@@ -16,6 +16,8 @@
 #include <ppp/app.hpp>
 #include <ppp/ui/popups.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 std::array g_ValidDropExtensions{
     []()
     {
@@ -42,6 +44,8 @@ std::array g_ValidDropExtensions{
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
 {
+    TRACY_AUTO_SCOPE();
+
     ProjectPathChanged();
 
     auto* window_layout{ new QHBoxLayout };
@@ -79,6 +83,8 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString title,
                                      QString message)
 {
+    TRACY_AUTO_SCOPE();
+
     Q_INIT_RESOURCE(toast_resources);
 
     auto* toast{ new ::Toast };
@@ -130,6 +136,8 @@ void PrintProxyPrepMainWindow::closeEvent(QCloseEvent* event)
 
 void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
 {
+    TRACY_AUTO_SCOPE();
+
     if (event->mimeData()->hasFormat("text/uri-list"))
     {
         const auto uri_list{ event->mimeData()->text().split('\n') };
@@ -152,6 +160,8 @@ void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
 
 void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto uri_list{ event->mimeData()->text().split('\n') };
     for (const auto& uri : uri_list)
     {
