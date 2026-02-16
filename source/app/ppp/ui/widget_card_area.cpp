@@ -472,12 +472,12 @@ class CardGrid : public QWidget
                 for (auto& [card_name, card] : m_Cards)
                 {
                     old_layout->removeWidget(card);
-                    card->setParent(nullptr);
+                    card->hide();
                 }
                 for (auto* dummy : m_Dummies)
                 {
                     old_layout->removeWidget(dummy);
-                    dummy->setParent(nullptr);
+                    dummy->hide();
                 }
                 delete old_layout;
             }
@@ -516,6 +516,7 @@ class CardGrid : public QWidget
                 const auto x{ static_cast<int>(i / cols) };
                 const auto y{ static_cast<int>(i % cols) };
                 this_layout->addWidget(card_widget, x, y);
+                card_widget->show();
                 ++i;
             }
         }
@@ -532,6 +533,7 @@ class CardGrid : public QWidget
                 }
 
                 this_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
+                dummy_widget->show();
                 ++i;
             }
         }
