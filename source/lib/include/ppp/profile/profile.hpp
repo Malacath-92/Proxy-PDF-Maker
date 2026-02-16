@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tracy/Tracy.hpp>
-
 #ifdef PPP_TRACY_PROFILING
 
 #define TRACY_WAIT_CONNECT() \
