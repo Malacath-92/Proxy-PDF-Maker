@@ -9,6 +9,8 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <ppp/svg/util.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 namespace pngcrc
@@ -285,6 +287,39 @@ Image Image::Decode(EncodedImageView buffer)
     return img;
 }
 
+Image Image::PlainColor(PixelSize size, ColorRGB8 color)
+{
+    TRACY_AUTO_SCOPE();
+
+    const int rows{ static_cast<int>(size.x / 1_pix) };
+    const int cols{ static_cast<int>(size.y / 1_pix) };
+
+    Image img{};
+    img.m_Impl = cv::Mat{ rows, cols, CV_8UC4, cv::Scalar{
+                                                   static_cast<float>(color.b),
+                                                   static_cast<float>(color.g),
+                                                   static_cast<float>(color.r),
+                                               } };
+    return img;
+}
+
+Image Image::PlainColor(PixelSize size, ColorRGBA8 color)
+{
+    TRACY_AUTO_SCOPE();
+
+    const int rows{ static_cast<int>(size.x / 1_pix) };
+    const int cols{ static_cast<int>(size.y / 1_pix) };
+
+    Image img{};
+    img.m_Impl = cv::Mat{ rows, cols, CV_8UC4, cv::Scalar{
+                                                   static_cast<float>(color.b),
+                                                   static_cast<float>(color.g),
+                                                   static_cast<float>(color.r),
+                                                   static_cast<float>(color.a),
+                                               } };
+    return img;
+}
+
 EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 {
     TRACY_AUTO_SCOPE();
@@ -516,6 +551,38 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
         draw_arc(bottom_right);
         draw_arc(top_right);
     }
+
+    std::vector<cv::Mat> out_channels;
+    cv::split(m_Impl, out_channels);
+    if (out_channels.size() != 4)
+    {
+        out_channels.push_back(std::move(mask));
+    }
+    else
+    {
+        cv::multiply(mask, out_channels[3], out_channels[3]);
+    }
+
+    cv::Mat out_impl;
+    cv::merge(out_channels, out_impl);
+    return Image{ out_impl };
+}
+
+Image Image::ClipSvg(const Svg& svg) const
+{
+    static_assert(sizeof(dla::ivec2) == sizeof(cv::Point));
+
+    const auto polys{ ConvertSvgToPixelAlignedPolygons(svg, Size()) };
+    std::vector<std::vector<cv::Point>> cv_polys;
+    for (const auto poly : polys.m_Polygons)
+    {
+        cv_polys.emplace_back(
+            reinterpret_cast<const cv::Point*>(&*poly.begin()),
+            reinterpret_cast<const cv::Point*>(&*poly.end()));
+    }
+    
+    cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
+    cv::fillPoly(mask, cv_polys, cv::Scalar{ 255 }, cv::LINE_AA);
 
     std::vector<cv::Mat> out_channels;
     cv::split(m_Impl, out_channels);

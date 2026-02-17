@@ -113,20 +113,20 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
         TRACY_NAMED_SCOPE(set_pixmap);
         TRACY_NAMED_SCOPE_INFO(set_pixmap, "Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
 
-        QPixmap pixmap{
+        Image image{
             [&]()
             {
                 if (has_image)
                 {
-                    return GetPixmap(project.GetPreview(card_name));
+                    return GetImage(project.GetPreview(card_name));
                 }
                 else
                 {
-                    return GetEmptyPixmap();
+                    return GetEmptyImage();
                 }
             }()
         };
-        setPixmap(FinalizePixmap(pixmap));
+        setPixmap(FinalizePixmap(std::move(image)));
     }
 
     setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
@@ -283,7 +283,7 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
     {
         TRACY_AUTO_SCOPE();
 
-        setPixmap(FinalizePixmap(GetEmptyPixmap()));
+        setPixmap(FinalizePixmap(GetEmptyImage()));
 
         m_BadAspectRatio = false;
 
@@ -309,8 +309,7 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
 
         ClearChildren();
 
-        QPixmap pixmap{ GetPixmap(preview) };
-        setPixmap(FinalizePixmap(pixmap));
+        setPixmap(FinalizePixmap(GetImage(preview)));
 
         const bool bad_aspect_ration{ preview.m_BadAspectRatio };
         const bool bad_rotation{ preview.m_BadRotation };
@@ -330,110 +329,56 @@ void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& b
     }
 }
 
-QPixmap CardImage::GetPixmap(const ImagePreview& preview) const
+Image CardImage::GetImage(const ImagePreview& preview) const
 {
     TRACY_AUTO_SCOPE();
 
     if (m_BleedEdge > 0_mm)
     {
         const Image& uncropped_image{ preview.m_UncroppedImage };
-        Image image{ CropImage(uncropped_image, m_CardName, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
-        QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-        return raw_pixmap;
+        const Image image{ CropImage(uncropped_image, m_CardName, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
+        return image;
     }
     else
     {
-        const Image& image{ preview.m_CroppedImage };
-        QPixmap raw_pixmap{ StoreIntoQtPixmap(image) };
-        return raw_pixmap;
+        if (m_OriginalParams.m_RoundedCorners)
+        {
+            if (m_Project.IsCardRoundedRect())
+            {
+                return preview
+                    .m_CroppedImage
+                    .RoundCorners(m_CardSize, m_CornerRadius)
+                    .Rotate(m_OriginalParams.m_Rotation);
+            }
+            else if (m_Project.IsCardSvg())
+            {
+                return preview
+                    .m_CroppedImage
+                    .ClipSvg(m_Project.CardSvgData())
+                    .Rotate(m_OriginalParams.m_Rotation);
+            }
+        }
+
+        return preview
+            .m_CroppedImage
+            .Rotate(m_OriginalParams.m_Rotation);
     }
 }
 
-QPixmap CardImage::GetEmptyPixmap() const
+Image CardImage::GetEmptyImage() const
 {
     TRACY_AUTO_SCOPE();
 
-    const int width{ static_cast<int>(g_Cfg.m_BasePreviewWidth.value) };
-    const int height{ static_cast<int>(width / m_CardRatio) };
-    QPixmap raw_pixmap{ width, height };
-    raw_pixmap.fill(QColor::fromRgb(0x808080));
-    return raw_pixmap;
+    const auto width{ g_Cfg.m_BasePreviewWidth };
+    const auto height{ width / m_CardRatio };
+    return Image::PlainColor({ width, height }, ColorRGBA8{ 0x80, 0x80, 0x80, 0xff });
 }
 
-QPixmap CardImage::FinalizePixmap(const QPixmap& pixmap) const
+QPixmap CardImage::FinalizePixmap(Image image) const
 {
     TRACY_AUTO_SCOPE();
 
-    QPixmap finalized_pixmap{ pixmap };
-
-    if (m_OriginalParams.m_RoundedCorners)
-    {
-        TRACY_NAMED_SCOPE(clipping_image);
-
-        QPixmap clipped_pixmap{ pixmap.size() };
-        clipped_pixmap.fill(Qt::GlobalColor::transparent);
-
-        QPainter painter{ &clipped_pixmap };
-        painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
-        painter.setRenderHint(QPainter::RenderHint::SmoothPixmapTransform, true);
-
-        if (m_Project.IsCardRoundedRect())
-        {
-            TRACY_NAMED_SCOPE(rounding_corners);
-
-            const Pixel card_corner_radius_pixels{ m_CornerRadius * pixmap.width() / m_CardSize.x };
-
-            QPainterPath path{};
-            path.addRoundedRect(
-                QRectF(pixmap.rect()),
-                card_corner_radius_pixels.value,
-                card_corner_radius_pixels.value);
-
-            painter.setClipPath(path);
-        }
-        else if (m_Project.IsCardSvg())
-        {
-            TRACY_NAMED_SCOPE(clipping_with_svg);
-
-            QPainterPath path;
-            DrawSvgToPainterPath(path,
-                                 m_Project.CardSvgData(),
-                                 { 0_mm, 0_mm },
-                                 { pixmap.rect().width() * 1_mm, pixmap.rect().height() * 1_mm },
-                                 { 1_mm, 1_mm });
-            painter.setClipPath(path);
-        }
-
-        TRACY_NAMED_SCOPE(drawing_clipped_pixmap);
-        painter.drawPixmap(0, 0, pixmap);
-
-        finalized_pixmap = std::move(clipped_pixmap);
-    }
-
-    if (m_OriginalParams.m_Rotation != Image::Rotation::None)
-    {
-        TRACY_NAMED_SCOPE(rotating);
-
-        QTransform transform{};
-
-        switch (m_OriginalParams.m_Rotation)
-        {
-        case Image::Rotation::Degree90:
-            transform.rotate(90);
-            break;
-        case Image::Rotation::Degree270:
-            transform.rotate(-90);
-            break;
-        case Image::Rotation::Degree180:
-            transform.rotate(180);
-            break;
-        default:
-            break;
-        }
-        finalized_pixmap = pixmap.transformed(transform);
-    }
-
-    return finalized_pixmap;
+    return StoreIntoQtPixmap(image);
 }
 
 void CardImage::AddBadFormatWarning(const ImagePreview& preview)
