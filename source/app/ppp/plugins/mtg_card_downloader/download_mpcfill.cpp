@@ -311,9 +311,9 @@ std::optional<QString> MPCFillDownloader::GetBackside(const QString& file_name) 
     auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
     if (card != m_Set.m_Frontsides.end() && card->m_Backside.has_value())
     {
-        return std::nullopt;
+        return card->m_Backside->m_Name;
     }
-    return "__back.png";
+    return std::nullopt;
 }
 
 std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) const

@@ -270,6 +270,7 @@ class Project : public QObject
     bool HasNonDefaultBacksideImage(const fs::path& card_name) const;
     const fs::path& GetBacksideImage(const fs::path& card_name) const;
     bool SetBacksideImage(const fs::path& card_name, fs::path backside_image);
+    bool SetBacksideImageDefault(const fs::path& card_name);
 
     bool HasCardBacksideShortEdge(const fs::path& card_name) const;
     void SetCardBacksideShortEdge(const fs::path& card_name, bool has_backside_short_edge);
