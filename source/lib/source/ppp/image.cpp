@@ -580,7 +580,7 @@ Image Image::ClipSvg(const Svg& svg) const
             reinterpret_cast<const cv::Point*>(&*poly.begin()),
             reinterpret_cast<const cv::Point*>(&*poly.end()));
     }
-    
+
     cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
     cv::fillPoly(mask, cv_polys, cv::Scalar{ 255 }, cv::LINE_AA);
 

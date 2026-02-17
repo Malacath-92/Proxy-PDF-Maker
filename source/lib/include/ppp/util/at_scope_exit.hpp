@@ -13,7 +13,8 @@ struct AtScopeExit
 
     AtScopeExit(FunT fun)
         : m_Dtor{ std::move(fun) }
-    {}
+    {
+    }
 
     ~AtScopeExit()
     {

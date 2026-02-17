@@ -28,5 +28,4 @@ MainTabs::MainTabs(CardArea* card_area, PrintPreview* print_preview)
                      &QTabWidget::currentChanged,
                      this,
                      current_changed);
-
 }
