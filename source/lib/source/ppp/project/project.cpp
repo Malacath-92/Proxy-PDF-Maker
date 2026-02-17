@@ -1257,6 +1257,10 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 
     return false;
 }
+bool Project::SetBacksideImageDefault(const fs::path& card_name)
+{
+    return SetBacksideImage(card_name, "");
+}
 
 bool Project::HasCardBacksideShortEdge(const fs::path& card_name) const
 {
@@ -2110,7 +2114,7 @@ bool Project::AutoMatchBackside(const fs::path& card_name)
             }
             else if (!card->m_Backside.empty())
             {
-                SetBacksideImage(card_name, "");
+                SetBacksideImageDefault(card_name);
                 card->m_BacksideAutoAssigned = false;
                 return true;
             }

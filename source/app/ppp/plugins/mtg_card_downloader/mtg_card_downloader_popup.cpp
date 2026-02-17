@@ -372,6 +372,10 @@ void MtgDownloaderPopup::FinalizeDownload()
         {
             m_Project.SetBacksideImage(path, backside.value().toStdString());
         }
+        else
+        {
+            m_Project.SetBacksideImageDefault(path);
+        }
     }
     m_Project.m_Data.m_BacksideDefault = "__back.png";
 
