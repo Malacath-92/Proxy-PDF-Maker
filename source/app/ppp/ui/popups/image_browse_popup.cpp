@@ -178,7 +178,10 @@ class SelectableCardGrid : public QWidget
                     const auto x{ static_cast<int>(i / c_Columns) };
                     const auto y{ static_cast<int>(i % c_Columns) };
                     grid_layout->addWidget(card, x, y);
-                    card->show();
+                    if (isVisible())
+                    {
+                        card->show();
+                    }
 
                     ++i;
                 }
@@ -189,7 +192,10 @@ class SelectableCardGrid : public QWidget
             {
                 auto* dummy_widget{ m_Dummies[j] };
                 grid_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
-                dummy_widget->show();
+                if (isVisible())
+                {
+                    dummy_widget->show();
+                }
             }
 
             for (int c = 0; c < grid_layout->columnCount(); c++)
