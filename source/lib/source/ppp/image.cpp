@@ -570,6 +570,11 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 
 Image Image::ClipSvg(const Svg& svg) const
 {
+    // For sub-pixel accuracy we can pass a shift parameter "s"
+    // A coordinate is then treated as x * 2^-s
+    static constexpr auto c_FractionalBits{ 16 };
+    static constexpr float c_OneOverAlpha{ 1 << c_FractionalBits }; // 2^s
+
     using PixelAlignedPolygon = std::vector<cv::Point>;
     const auto polys{
         [](const Svg& svg,
@@ -606,8 +611,8 @@ Image Image::ClipSvg(const Svg& svg) const
                         const auto p{ interpolate(pa, pb, alpha) / svg.m_Size * size / 1_pix };
 
                         points.push_back(cv::Point{
-                            static_cast<int>(p.x),
-                            static_cast<int>(p.y),
+                            static_cast<int>(p.x * c_OneOverAlpha),
+                            static_cast<int>(p.y * c_OneOverAlpha),
                         });
                     }
                 }
@@ -644,7 +649,7 @@ Image Image::ClipSvg(const Svg& svg) const
     };
 
     cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
-    cv::fillPoly(mask, polys, cv::Scalar{ 255 }, cv::LINE_AA);
+    cv::fillPoly(mask, polys, cv::Scalar{ 255 }, cv::LINE_AA, c_FractionalBits);
 
     std::vector<cv::Mat> out_channels;
     cv::split(m_Impl, out_channels);
