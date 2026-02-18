@@ -570,16 +570,17 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 
 Image Image::ClipSvg(const Svg& svg) const
 {
-    static_assert(sizeof(dla::ivec2) == sizeof(cv::Point));
-
     const auto polys{ ConvertSvgToPixelAlignedPolygons(svg, Size()) };
-    std::vector<std::vector<cv::Point>> cv_polys;
-    for (const auto poly : polys.m_Polygons)
-    {
-        cv_polys.emplace_back(
-            reinterpret_cast<const cv::Point*>(&*poly.begin()),
-            reinterpret_cast<const cv::Point*>(&*poly.end()));
-    }
+
+    // We really don't wanna double-allocate here, so we are doing the unthinkable and we reinterpret_cast
+    // to a different type of vector, but we do our best to verify this will not break horribly at least
+    static_assert(sizeof(dla::ivec2) == sizeof(cv::Point));
+    static_assert(sizeof(std::vector<dla::ivec2>) == sizeof(std::vector<cv::Point>));
+    static_assert(sizeof(std::vector<std::vector<dla::ivec2>>) == sizeof(std::vector<std::vector<cv::Point>>));
+    static_assert(alignof(dla::ivec2) == alignof(cv::Point));
+    static_assert(alignof(std::vector<dla::ivec2>) == alignof(std::vector<cv::Point>));
+    static_assert(alignof(std::vector<std::vector<dla::ivec2>>) == alignof(std::vector<std::vector<cv::Point>>));
+    const auto& cv_polys{ reinterpret_cast<const std::vector<std::vector<cv::Point>>&>(polys.m_Polygons)};
 
     cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
     cv::fillPoly(mask, cv_polys, cv::Scalar{ 255 }, cv::LINE_AA);
