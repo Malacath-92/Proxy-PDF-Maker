@@ -159,7 +159,7 @@ PixelAlignedPolygons ConvertSvgToPixelAlignedPolygons(const Svg& svg,
                 }
             };
 
-            for (size_t i = 1; i < segment_resolution; i++)
+            for (size_t i = 1; i <= segment_resolution; i++)
             {
                 const float alpha{ static_cast<float>(i) / segment_resolution };
 
