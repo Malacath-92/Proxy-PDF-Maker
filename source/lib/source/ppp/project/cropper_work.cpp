@@ -70,20 +70,20 @@ static Image FixImageAspectRatio(Image source_image,
             const auto width_diff{ target_width - width };
             const auto width_diff_half{ dla::math::round(width_diff / 2) };
             return source_image.AddReflectBorder(
+                dla::math::floor(width_diff_half),
                 0_pix,
-                width_diff_half,
-                0_pix,
-                width_diff_half);
+                dla::math::floor(width_diff_half),
+                0_pix);
         }
         else
         {
             const auto height_diff{ target_height - height };
             const auto height_diff_half{ height_diff / 2 };
             return source_image.AddReflectBorder(
+                0_pix,
                 dla::math::floor(height_diff_half),
                 0_pix,
-                dla::math::ceil(height_diff_half),
-                0_pix);
+                dla::math::ceil(height_diff_half));
         }
     case BadAspectRatioHandling::Stretch:
         return source_image.Resize({
@@ -569,7 +569,7 @@ void CropperPreviewWork::run()
                         without_bleed_diff > c_BadAspectRatioTolerance
                     };
                     const bool bad_aspect_ratio_ignored{
-                        m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore
+                        m_BadAspectRatioHandling == BadAspectRatioHandling::Ignore
                     };
 
                     image_preview.m_CroppedImage = image;
