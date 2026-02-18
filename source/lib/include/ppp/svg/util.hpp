@@ -34,14 +34,6 @@ struct Svg
     std::vector<CubicBezier> m_Curves;
 };
 
-using PixelAlignedPolygon = std::vector<dla::ivec2>;
-
-struct PixelAlignedPolygons
-{
-    PixelSize m_Size;
-    std::vector<PixelAlignedPolygon> m_Polygons;
-};
-
 Svg LoadSvg(const fs::path& svg_path);
 
 class QPainterPath;
@@ -51,7 +43,3 @@ void DrawSvgToPainterPath(QPainterPath& path,
                           Size size,
                           Size pixel_scaling);
 QPainterPath ConvertSvgToPainterPath(const Svg& svg);
-
-PixelAlignedPolygons ConvertSvgToPixelAlignedPolygons(const Svg& svg,
-                                                      PixelSize size,
-                                                      uint32_t segment_resolution = 32);

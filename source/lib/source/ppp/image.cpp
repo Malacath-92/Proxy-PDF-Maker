@@ -570,20 +570,81 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 
 Image Image::ClipSvg(const Svg& svg) const
 {
-    const auto polys{ ConvertSvgToPixelAlignedPolygons(svg, Size()) };
+    using PixelAlignedPolygon = std::vector<cv::Point>;
+    const auto polys{
+        [](const Svg& svg,
+           PixelSize size,
+           uint32_t segment_resolution)
+        {
+            auto draw_bezier{
+                [&](auto& points, const auto& from, const auto& to)
+                {
+                    const auto& p1{ from.m_Position };
+                    const auto& p2{ from.m_NextHandle };
+                    const auto& p3{ to.m_PrevHandle };
+                    const auto& p4{ to.m_Position };
 
-    // We really don't wanna double-allocate here, so we are doing the unthinkable and we reinterpret_cast
-    // to a different type of vector, but we do our best to verify this will not break horribly at least
-    static_assert(sizeof(dla::ivec2) == sizeof(cv::Point));
-    static_assert(sizeof(std::vector<dla::ivec2>) == sizeof(std::vector<cv::Point>));
-    static_assert(sizeof(std::vector<std::vector<dla::ivec2>>) == sizeof(std::vector<std::vector<cv::Point>>));
-    static_assert(alignof(dla::ivec2) == alignof(cv::Point));
-    static_assert(alignof(std::vector<dla::ivec2>) == alignof(std::vector<cv::Point>));
-    static_assert(alignof(std::vector<std::vector<dla::ivec2>>) == alignof(std::vector<std::vector<cv::Point>>));
-    const auto& cv_polys{ reinterpret_cast<const std::vector<std::vector<cv::Point>>&>(polys.m_Polygons)};
+                    auto interpolate{
+                        [](const auto& from, const auto& to, float percent)
+                        {
+                            const auto difference{ to - from };
+                            return from + difference * percent;
+                        }
+                    };
+
+                    for (size_t i = 1; i <= segment_resolution; i++)
+                    {
+                        const float alpha{ static_cast<float>(i) / segment_resolution };
+
+                        const auto p12{ interpolate(p1, p2, alpha) };
+                        const auto p23{ interpolate(p2, p3, alpha) };
+                        const auto p34{ interpolate(p3, p4, alpha) };
+
+                        const auto pa{ interpolate(p12, p23, alpha) };
+                        const auto pb{ interpolate(p23, p34, alpha) };
+
+                        const auto p{ interpolate(pa, pb, alpha) / svg.m_Size * size / 1_pix };
+
+                        points.push_back(cv::Point{
+                            static_cast<int>(p.x),
+                            static_cast<int>(p.y),
+                        });
+                    }
+                }
+            };
+
+            std::vector<PixelAlignedPolygon> polys{};
+            for (const auto& bezier_curve : svg.m_Curves)
+            {
+                auto& poly{ polys.emplace_back() };
+                if (bezier_curve.m_ControlPoints.empty())
+                {
+                    draw_bezier(poly,
+                                bezier_curve.m_StartPoint,
+                                bezier_curve.m_EndPoint);
+                }
+                else
+                {
+                    draw_bezier(poly,
+                                bezier_curve.m_StartPoint,
+                                bezier_curve.m_ControlPoints.front());
+                    for (size_t i{ 0 }; i < bezier_curve.m_ControlPoints.size() - 1; i++)
+                    {
+                        draw_bezier(poly,
+                                    bezier_curve.m_ControlPoints[i],
+                                    bezier_curve.m_ControlPoints[i + 1]);
+                    }
+                    draw_bezier(poly,
+                                bezier_curve.m_ControlPoints.back(),
+                                bezier_curve.m_EndPoint);
+                }
+            }
+            return polys;
+        }(svg, Size(), 32)
+    };
 
     cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
-    cv::fillPoly(mask, cv_polys, cv::Scalar{ 255 }, cv::LINE_AA);
+    cv::fillPoly(mask, polys, cv::Scalar{ 255 }, cv::LINE_AA);
 
     std::vector<cv::Mat> out_channels;
     cv::split(m_Impl, out_channels);
