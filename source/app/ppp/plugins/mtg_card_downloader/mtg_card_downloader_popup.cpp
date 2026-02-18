@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QTextEdit>
+#include <QThreadPool>
 #include <QVBoxLayout>
 
 #include <ppp/project/image_ops.hpp>
@@ -53,6 +54,44 @@ class DownloaderTextEdit : public QTextEdit
         QTextEdit::insertFromMimeData(source);
     }
 };
+
+MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
+                                                   const QByteArray& image_data,
+                                                   bool fill_corners,
+                                                   std::vector<QString> out_files)
+    : m_Project{ project }
+    , m_ImageData{ image_data }
+    , m_FillCorners{ fill_corners }
+    , m_OutFiles{ std::move(out_files) }
+{
+}
+
+void MtgDownloaderImageWorker::run()
+{
+    if (m_FillCorners)
+    {
+        auto image{
+            Image::Decode(EncodedImageView{
+                reinterpret_cast<const std::byte*>(m_ImageData.constData()),
+                static_cast<size_t>(m_ImageData.size()),
+            }),
+        };
+        const auto image_with_corners{
+            image.FillCorners(m_Project.CardSize(), m_Project.CardCornerRadius() * 1.65f)
+        };
+        const auto encoded_image{ image_with_corners.EncodePng() };
+        m_ImageData.assign((const char*)encoded_image.data(), (const char*)encoded_image.data() + encoded_image.size());
+    }
+
+    for (const auto& out_file : m_OutFiles)
+    {
+        QFile file(out_file);
+        file.open(QIODevice::WriteOnly);
+        file.write(m_ImageData);
+    }
+
+    Done();
+}
 
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
@@ -170,7 +209,7 @@ void MtgDownloaderPopup::DownloadProgress(int progress, int target)
 
     if (progress == target)
     {
-        FinalizeDownload();
+        m_DownloaderDone = true;
     }
 }
 
@@ -178,32 +217,30 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
 {
     LogInfo("Received data for card {}", file_name.toStdString());
 
-    if (m_FillCornersCheckbox->isChecked() && !m_Downloader->ProvidesBleedEdge())
+    const bool fill_corners{ m_FillCornersCheckbox->isChecked() && !m_Downloader->ProvidesBleedEdge() };
+
+    std::vector<QString> out_files{ m_Downloader->GetDuplicates(file_name) };
+    out_files.insert(out_files.begin(), file_name);
+    for (auto& out_file : out_files)
     {
-        auto image{
-            Image::Decode(EncodedImageView{
-                reinterpret_cast<const std::byte*>(image_data.constData()),
-                static_cast<size_t>(image_data.size()),
-            }),
-        };
-        const auto image_with_corners{
-            image.FillCorners(m_Project.CardSize(), m_Project.CardCornerRadius() * 1.65f)
-        };
-        image_with_corners.Write(m_OutputDir.filePath(file_name).toStdString());
-    }
-    else
-    {
-        QFile file(m_OutputDir.filePath(file_name));
-        file.open(QIODevice::WriteOnly);
-        file.write(image_data);
+        out_file = m_OutputDir.filePath(out_file);
     }
 
-    for (const QString& dupe_file_name : m_Downloader->GetDuplicates(file_name))
-    {
-        QFile file(m_OutputDir.filePath(dupe_file_name));
-        file.open(QIODevice::WriteOnly);
-        file.write(image_data);
-    }
+    auto* worker{ new MtgDownloaderImageWorker{ m_Project, image_data, fill_corners, std::move(out_files) } };
+    QObject::connect(worker,
+                     &MtgDownloaderImageWorker::Done,
+                     this,
+                     [this]()
+                     {
+                         m_WaitingForImages--;
+                         if (m_WaitingForImages == 0 && m_DownloaderDone)
+                         {
+                             FinalizeDownload();
+                         }
+                     });
+
+    m_WaitingForImages++;
+    QThreadPool::globalInstance()->start(worker);
 }
 
 void MtgDownloaderPopup::DoDownload()

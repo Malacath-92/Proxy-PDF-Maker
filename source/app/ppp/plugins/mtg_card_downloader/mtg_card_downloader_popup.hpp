@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 
+#include <QRunnable>
 #include <QTemporaryDir>
 
 #include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
@@ -27,8 +28,32 @@ enum class InputType
     None,
 };
 
+class MtgDownloaderImageWorker : public QObject, public QRunnable
+{
+    Q_OBJECT
+
+  public:
+    MtgDownloaderImageWorker(const Project& project,
+                             const QByteArray& image_data,
+                             bool fill_corners,
+                             std::vector<QString> out_files);
+
+    virtual void run() override;
+
+  signals:
+    void Done();
+
+  private:
+    const Project& m_Project;
+    QByteArray m_ImageData;
+    bool m_FillCorners;
+    std::vector<QString> m_OutFiles;
+};
+
 class MtgDownloaderPopup : public PopupBase
 {
+    Q_OBJECT
+
   public:
     MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
     ~MtgDownloaderPopup();
@@ -65,6 +90,9 @@ class MtgDownloaderPopup : public PopupBase
     QPushButton* m_CancelButton{ nullptr };
 
     QTemporaryDir m_OutputDir{};
+
+    uint32_t m_WaitingForImages{ 0 };
+    bool m_DownloaderDone{ false };
 
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
 
