@@ -375,12 +375,6 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
         m_Project.m_Data.m_BleedEdge == 0_mm
     };
-    const auto card_size{ m_Project.CardSize() };
-    const auto corner_radius{
-        rounded_corners
-            ? m_Project.CardCornerRadius()
-            : 0_mm,
-    };
 
     const auto use_jpg{
         g_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
@@ -400,8 +394,30 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     // clang-format on
 
     const Image loaded_image{
-        Image::Read(image_path)
-            .RoundCorners(card_size, corner_radius)
+        [&]()
+        {
+            if (rounded_corners)
+            {
+                if (m_Project.IsCardRoundedRect())
+                {
+                    const auto card_size{ m_Project.CardSize() };
+                    const auto corner_radius{
+                        rounded_corners
+                            ? m_Project.CardCornerRadius()
+                            : 0_mm,
+                    };
+
+                    return Image::Read(image_path)
+                        .RoundCorners(card_size, corner_radius);
+                }
+                else if (m_Project.IsCardSvg())
+                {
+                    return Image::Read(image_path)
+                        .ClipSvg(m_Project.CardSvgData());
+                }
+            }
+            return Image::Read(image_path);
+        }()
             .Rotate(rotation)
     };
 
