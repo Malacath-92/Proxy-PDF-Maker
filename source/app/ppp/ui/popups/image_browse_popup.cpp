@@ -192,10 +192,6 @@ class SelectableCardGrid : public QWidget
             {
                 auto* dummy_widget{ m_Dummies[j] };
                 grid_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
-                if (isVisible())
-                {
-                    dummy_widget->show();
-                }
             }
 
             for (int c = 0; c < grid_layout->columnCount(); c++)

@@ -533,7 +533,6 @@ class CardGrid : public QWidget
                 }
 
                 this_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
-                dummy_widget->show();
                 ++i;
             }
         }
