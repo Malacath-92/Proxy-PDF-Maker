@@ -11,6 +11,9 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 
+#include <ppp/qt_util.hpp>
+#include <ppp/version.hpp>
+
 #include <ppp/util/log.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
@@ -300,6 +303,11 @@ QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
     }
 
     QNetworkRequest get_request{ std::move(request_uri) };
+    get_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                          ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    get_request.setRawHeader("Accept",
+                             "*/*");
+
     QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
 
     QObject::connect(reply,
@@ -307,8 +315,9 @@ QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
                      reply,
                      [reply](QNetworkReply::NetworkError error)
                      {
-                         LogError("Error during request {}: {}",
-                                  reply->request().url().toString().toStdString(),
+                         LogError("Error during request {} {}: {}",
+                                  reply->request().url().toEncoded().toStdString(),
+                                  reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
                                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
                      });
 
