@@ -8,6 +8,9 @@
 #include <QNetworkReply>
 #include <QRegularExpression>
 
+#include <ppp/qt_util.hpp>
+#include <ppp/version.hpp>
+
 #include <ppp/util/log.hpp>
 
 MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files,
@@ -375,6 +378,11 @@ bool MPCFillDownloader::PushSingleRequest()
     LogInfo("Requesting card {}", name.toStdString());
 
     QNetworkRequest get_request{ std::move(request_uri) };
+    get_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                          ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    get_request.setRawHeader("Accept",
+                             "*/*");
+
     QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
 
     QObject::connect(reply,
@@ -382,8 +390,9 @@ bool MPCFillDownloader::PushSingleRequest()
                      reply,
                      [reply](QNetworkReply::NetworkError error)
                      {
-                         LogError("Error during request {}: {}",
-                                  reply->request().url().toString().toStdString(),
+                         LogError("Error during request {} {}: {}",
+                                  reply->request().url().toEncoded().toStdString(),
+                                  reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
                                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
                      });
 
