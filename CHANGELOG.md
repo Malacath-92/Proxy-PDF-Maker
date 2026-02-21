@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-21-02
+
+### Changed
+- The MtG Card Downloader has been sped up slightly.
+
+### Fixed
+- Having guides with zero thickness no longer results in broken pdf output, but it still doesn't make sense 🤷‍♀️.
+- Some guides incosistencies in the preview are now fixed.
+- Exact broders of card backsides in the preview are no longer too big.
+- Startup times have been slightly improved with big projects.
+- Image backsides are now set correctly after downloading from MPCFill, now respecting the default backside option.
+- Some corner cases of handling bad aspect ratios of cards have been addressed.
+- The MtG Card Downloader now works again when downloading cards from Scryfall.
+
 ## [1.5.0] - 2026-04-02
 
 ### Added
