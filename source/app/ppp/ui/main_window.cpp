@@ -4,6 +4,7 @@
 #include <QCloseEvent>
 #include <QDragEnterEvent>
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QStyleHints>
 
@@ -15,6 +16,8 @@
 #include <ppp/app.hpp>
 #include <ppp/ui/popups.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 std::array g_ValidDropExtensions{
     []()
     {
@@ -22,6 +25,7 @@ std::array g_ValidDropExtensions{
             ".pdf"_p,
             ".CUBE"_p,
             ".qss"_p,
+            ".svg"_p,
         };
 
         constexpr auto total_drop_extensions{
@@ -40,6 +44,8 @@ std::array g_ValidDropExtensions{
 
 PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
 {
+    TRACY_AUTO_SCOPE();
+
     ProjectPathChanged();
 
     auto* window_layout{ new QHBoxLayout };
@@ -77,6 +83,8 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString title,
                                      QString message)
 {
+    TRACY_AUTO_SCOPE();
+
     Q_INIT_RESOURCE(toast_resources);
 
     auto* toast{ new ::Toast };
@@ -128,6 +136,8 @@ void PrintProxyPrepMainWindow::closeEvent(QCloseEvent* event)
 
 void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
 {
+    TRACY_AUTO_SCOPE();
+
     if (event->mimeData()->hasFormat("text/uri-list"))
     {
         const auto uri_list{ event->mimeData()->text().split('\n') };
@@ -150,6 +160,8 @@ void PrintProxyPrepMainWindow::dragEnterEvent(QDragEnterEvent* event)
 
 void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto uri_list{ event->mimeData()->text().split('\n') };
     for (const auto& uri : uri_list)
     {
@@ -173,6 +185,19 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
             else if (std::ranges::contains(g_ValidImageExtensions, ext))
             {
                 ImageDropped(path);
+            }
+            else if (ext == ".svg")
+            {
+                QMessageBox::StandardButton reply{
+                    QMessageBox::question(this,
+                                          "SVG Import",
+                                          "Do you want to import this .svg file as a custom card size?",
+                                          QMessageBox::Yes | QMessageBox::No)
+                };
+                if (reply == QMessageBox::Yes)
+                {
+                    SvgDropped(path);
+                }
             }
         }
     }

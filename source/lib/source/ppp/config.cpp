@@ -12,8 +12,11 @@
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
-#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
+
+#include <ppp/util/log.hpp>
+
+#include <ppp/profile/profile.hpp>
 
 Config g_Cfg{ LoadConfig() };
 
@@ -84,8 +87,35 @@ std::string_view Config::GetFirstValidCardSize() const
     return GetFirstValidCardSizeIter(*this)->first;
 }
 
+bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
+{
+    TRACY_AUTO_SCOPE();
+
+    if (!fs::exists(svg_path))
+    {
+        return false;
+    }
+
+    m_CardSizes[svg_path.stem().string()] = CardSizeInfo{
+        .m_InputBleed{ input_bleed },
+        .m_Hint{},
+        .m_CardSizeScale = 1.0f,
+
+        .m_RoundedRect{ std::nullopt },
+
+        .m_SvgInfo{ {
+            .m_SvgName{ svg_path.filename().string() },
+            .m_Svg{ LoadSvg(svg_path) },
+        } }
+    };
+
+    return true;
+}
+
 Config LoadConfig()
 {
+    TRACY_AUTO_SCOPE();
+
     Config config{};
     if (!QFile::exists("config.ini"))
     {
@@ -347,28 +377,59 @@ Config LoadConfig()
             [](const QSettings& settings)
             {
                 std::optional<Config::CardSizeInfo> full_card_size_info{};
-                auto card_size{ settings.value("Card.Size") };
                 auto bleed_edge{ settings.value("Input.Bleed") };
+                auto card_size{ settings.value("Card.Size") };
                 auto corner_radius{ settings.value("Corner.Radius") };
-                if (card_size.isValid() && bleed_edge.isValid() && corner_radius.isValid())
+                auto svg_name{ settings.value("Svg.Name") };
+                if (bleed_edge.isValid())
                 {
-                    auto card_size_info{ c_ParseSize(card_size.toString().toStdString()) };
                     auto bleed_edge_info{ c_ParseLength(bleed_edge.toString().toStdString()) };
-                    auto corner_radius_info{ c_ParseLength(corner_radius.toString().toStdString()) };
-                    if (card_size_info && bleed_edge_info && corner_radius_info)
+                    if (card_size.isValid() && corner_radius.isValid())
                     {
-                        full_card_size_info.emplace();
-                        full_card_size_info->m_CardSize = std::move(card_size_info).value();
-                        full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
-                        full_card_size_info->m_CornerRadius = std::move(corner_radius_info).value();
-                        full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
-
-                        auto hint{ settings.value("Usage.Hint") };
-                        if (hint.isValid())
+                        auto card_size_info{ c_ParseSize(card_size.toString().toStdString()) };
+                        auto corner_radius_info{ c_ParseLength(corner_radius.toString().toStdString()) };
+                        if (bleed_edge_info && card_size_info && corner_radius_info)
                         {
-                            full_card_size_info->m_Hint = hint.toString().toStdString();
+                            full_card_size_info.emplace();
+                            full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
+
+                            full_card_size_info->m_RoundedRect = {
+                                .m_CardSize{ std::move(card_size_info).value() },
+                                .m_CornerRadius{ std::move(corner_radius_info).value() },
+                            };
+
+                            auto hint{ settings.value("Usage.Hint") };
+                            if (hint.isValid())
+                            {
+                                full_card_size_info->m_Hint = hint.toString().toStdString();
+                            }
                         }
-                    };
+                    }
+                    else if (svg_name.isValid())
+                    {
+                        auto svg_path{ fs::path{ "res/card_svgs" } / svg_name.toString().toStdString() };
+                        if (bleed_edge_info && fs::exists(svg_path))
+                        {
+                            full_card_size_info.emplace();
+                            full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
+
+                            full_card_size_info->m_SvgInfo = {
+                                .m_SvgName{ svg_name.toString().toStdString() },
+                                .m_Svg{ LoadSvg(svg_path) },
+                            };
+                        }
+                    }
+                }
+
+                if (full_card_size_info.has_value())
+                {
+                    full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
+
+                    auto hint{ settings.value("Usage.Hint") };
+                    if (hint.isValid())
+                    {
+                        full_card_size_info->m_Hint = hint.toString().toStdString();
+                    }
                 }
 
                 return full_card_size_info;
@@ -404,6 +465,8 @@ Config LoadConfig()
 
 void SaveConfig(Config config)
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings("config.ini", QSettings::IniFormat);
     settings.clear();
 
@@ -505,9 +568,7 @@ void SaveConfig(Config config)
         static constexpr auto c_WriteCardSizeInfo{
             [](QSettings& settings, const Config::CardSizeInfo& card_size_info)
             {
-                c_SetSize(settings, "Card.Size", card_size_info.m_CardSize);
                 c_SetLength(settings, "Input.Bleed", card_size_info.m_InputBleed);
-                c_SetLength(settings, "Corner.Radius", card_size_info.m_CornerRadius);
                 if (static_cast<int32_t>(card_size_info.m_CardSizeScale * 10000) != 10000)
                 {
                     settings.setValue("Card.Scale", card_size_info.m_CardSizeScale);
@@ -515,6 +576,16 @@ void SaveConfig(Config config)
                 if (!card_size_info.m_Hint.empty())
                 {
                     settings.setValue("Usage.Hint", ToQString(card_size_info.m_Hint));
+                }
+
+                if (card_size_info.m_RoundedRect.has_value())
+                {
+                    c_SetSize(settings, "Card.Size", card_size_info.m_RoundedRect->m_CardSize);
+                    c_SetLength(settings, "Corner.Radius", card_size_info.m_RoundedRect->m_CornerRadius);
+                }
+                else if (card_size_info.m_SvgInfo.has_value())
+                {
+                    settings.setValue("Svg.Name", ToQString(card_size_info.m_SvgInfo->m_SvgName));
                 }
             }
         };

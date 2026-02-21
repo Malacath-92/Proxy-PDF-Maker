@@ -8,6 +8,8 @@
 #include <dla/literals.h>
 #include <dla/vector.h>
 
+#include <ppp/util/at_scope_exit.hpp>
+
 namespace fs = std::filesystem;
 
 using Length = dla::length_unit;
@@ -125,16 +127,6 @@ std::vector<fs::path> ListFolders(const fs::path& path);
 bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
-
-template<class FunT>
-struct AtScopeExit
-{
-    ~AtScopeExit()
-    {
-        m_Dtor();
-    }
-    FunT m_Dtor;
-};
 
 template<class T>
 concept Enum = std::is_enum_v<T>;

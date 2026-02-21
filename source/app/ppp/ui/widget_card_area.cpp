@@ -23,6 +23,8 @@
 
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class CardWidget : public QFrame
 {
     Q_OBJECT
@@ -33,6 +35,8 @@ class CardWidget : public QFrame
         , m_BacksideEnabled{ project.m_Data.m_BacksideEnabled }
         , m_Backside{ project.GetBacksideImage(card_name) }
     {
+        TRACY_AUTO_SCOPE();
+
         const uint32_t initial_number{ card_name.empty() ? 1 : project.GetCardCount(card_name) };
 
         auto* number_edit{ new QLineEdit };
@@ -128,6 +132,8 @@ class CardWidget : public QFrame
 
     virtual void Refresh(Project& project)
     {
+        TRACY_AUTO_SCOPE();
+
         const bool backside_enabled_changed{ m_BacksideEnabled != project.m_Data.m_BacksideEnabled };
         const bool backside_changed{ m_Backside != project.GetBacksideImage(m_CardName) };
 
@@ -178,6 +184,8 @@ class CardWidget : public QFrame
   private:
     QWidget* MakeCardWidget(Project& project)
     {
+        TRACY_AUTO_SCOPE();
+
         auto* card_image{ new CardImage{ m_CardName, project, CardImage::Params{} } };
         card_image->EnableContextMenu(true, project);
 
@@ -239,6 +247,8 @@ class CardWidget : public QFrame
         {
             return nullptr;
         }
+
+        TRACY_AUTO_SCOPE();
 
         std::vector<QWidget*> extra_options{};
 
@@ -319,6 +329,8 @@ class DummyCardWidget : public CardWidget
     DummyCardWidget(const fs::path& card_name, Project& project)
         : CardWidget{ "", project }
     {
+        TRACY_AUTO_SCOPE();
+
         m_CardName = card_name;
 
         auto sp_retain{ sizePolicy() };
@@ -391,6 +403,8 @@ class CardGrid : public QWidget
 
     void FullRefresh()
     {
+        TRACY_AUTO_SCOPE();
+
         const auto cols{ g_Cfg.m_DisplayColumns };
         for (size_t j = m_Dummies.size(); j < cols; j++)
         {
@@ -445,22 +459,28 @@ class CardGrid : public QWidget
 
     void ApplyFilter(const QString& filter)
     {
+        TRACY_AUTO_SCOPE();
+        TRACY_AUTO_SCOPE_INFO("Filter: \"%s\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
+
         m_CurrentFilter = filter;
         m_FirstItem = nullptr;
 
-        if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
         {
-            for (auto& [card_name, card] : m_Cards)
+            TRACY_NAMED_SCOPE(destroy_old_layout);
+            if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
             {
-                old_layout->removeWidget(card);
-                card->setParent(nullptr);
+                for (auto& [card_name, card] : m_Cards)
+                {
+                    old_layout->removeWidget(card);
+                    card->hide();
+                }
+                for (auto* dummy : m_Dummies)
+                {
+                    old_layout->removeWidget(dummy);
+                    dummy->hide();
+                }
+                delete old_layout;
             }
-            for (auto* dummy : m_Dummies)
-            {
-                old_layout->removeWidget(dummy);
-                dummy->setParent(nullptr);
-            }
-            delete old_layout;
         }
 
         auto* this_layout{ new QGridLayout };
@@ -472,51 +492,63 @@ class CardGrid : public QWidget
         const QString filter_lower{ filter.toLower() };
         size_t i{ 0 };
 
-        for (const auto& card_info : m_Project.GetCards())
         {
-            const auto& card_name{ card_info.m_Name };
-            if (!m_Cards.contains(card_name))
+            TRACY_NAMED_SCOPE(filter_cards);
+            for (const auto& card_info : m_Project.GetCards())
             {
-                continue;
-            }
+                const auto& card_name{ card_info.m_Name };
+                if (!m_Cards.contains(card_name))
+                {
+                    continue;
+                }
 
-            if (!filter.isEmpty() && !ToQString(card_name).toLower().contains(filter_lower))
-            {
-                continue;
-            }
+                if (!filter.isEmpty() && !ToQString(card_name).toLower().contains(filter_lower))
+                {
+                    continue;
+                }
 
-            auto* card_widget{ m_Cards.at(card_name) };
-            if (m_FirstItem == nullptr)
-            {
-                m_FirstItem = card_widget;
-            }
+                auto* card_widget{ m_Cards.at(card_name) };
+                if (m_FirstItem == nullptr)
+                {
+                    m_FirstItem = card_widget;
+                }
 
-            const auto x{ static_cast<int>(i / cols) };
-            const auto y{ static_cast<int>(i % cols) };
-            this_layout->addWidget(card_widget, x, y);
-            ++i;
+                const auto x{ static_cast<int>(i / cols) };
+                const auto y{ static_cast<int>(i % cols) };
+                this_layout->addWidget(card_widget, x, y);
+                card_widget->show();
+                ++i;
+            }
         }
 
-        for (size_t j = i; j < cols; j++)
+        if (i < cols)
         {
-            auto* dummy_widget{ m_Dummies[j] };
-            if (m_FirstItem == nullptr)
+            TRACY_NAMED_SCOPE(fill_up_with_dummies);
+            for (size_t j = i; j < cols; j++)
             {
-                m_FirstItem = dummy_widget;
-            }
+                auto* dummy_widget{ m_Dummies[j] };
+                if (m_FirstItem == nullptr)
+                {
+                    m_FirstItem = dummy_widget;
+                }
 
-            this_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
-            ++i;
+                this_layout->addWidget(dummy_widget, 0, static_cast<int>(j));
+                ++i;
+            }
         }
 
-        for (int c = 0; c < this_layout->columnCount(); c++)
         {
-            this_layout->setColumnStretch(c, 1);
+            TRACY_NAMED_SCOPE(set_column_stretch);
+            for (int c = 0; c < this_layout->columnCount(); c++)
+            {
+                this_layout->setColumnStretch(c, 1);
+            }
         }
 
         m_Columns = cols;
         m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / m_Columns));
 
+        TRACY_NAMED_SCOPE(compute_height);
         setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
         setMinimumHeight(heightForWidth(minimumWidth()));
         setFixedHeight(heightForWidth(size().width()));
@@ -576,6 +608,8 @@ class CardScrollArea : public QScrollArea
 
 CardScrollArea::CardScrollArea(Project& project)
 {
+    TRACY_AUTO_SCOPE();
+
     m_Grid = new CardGrid{ project };
 
     setWidgetResizable(true);
@@ -594,6 +628,8 @@ void CardScrollArea::FullRefresh()
 
 void CardScrollArea::RefreshGridSize()
 {
+    TRACY_AUTO_SCOPE();
+
     const auto width{ size().width() };
     const auto height{ m_Grid->heightForWidth(width) };
     m_Grid->setFixedHeight(height);
@@ -627,7 +663,11 @@ void CardScrollArea::resizeEvent(QResizeEvent* event)
 CardArea::CardArea(Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     {
+        TRACY_NAMED_SCOPE(init_onboarding);
+
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
             QString(
@@ -672,6 +712,8 @@ CardArea::CardArea(Project& project)
     }
 
     {
+        TRACY_NAMED_SCOPE(init_header);
+
         auto* global_label{ new QLabel{ "Global Controls:" } };
         auto* global_decrement_button{ new QPushButton{ "-" } };
         auto* global_increment_button{ new QPushButton{ "+" } };

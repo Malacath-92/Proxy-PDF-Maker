@@ -55,7 +55,6 @@ class PluginRouter : public PluginInterface
 int main(int argc, char** argv)
 {
     TRACY_WAIT_CONNECT();
-    
     TRACY_AUTO_SCOPE();
 
 #ifdef WIN32
@@ -202,8 +201,6 @@ int main(int argc, char** argv)
         },
     };
 
-    QObject::connect(options_area, &OptionsAreaWidget::SetObjectVisibility, &app, &PrintProxyPrepApplication::SetObjectVisibility);
-
     auto* main_window{
         new PrintProxyPrepMainWindow{
             tabs,
@@ -212,6 +209,8 @@ int main(int argc, char** argv)
     };
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_external_cards);
+
         // Creates the card-info correctly
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDropped, &project, &Project::AddExternalCard);
 
@@ -224,10 +223,18 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_app);
+        QObject::connect(options_area, &OptionsAreaWidget::SetObjectVisibility, &app, &PrintProxyPrepApplication::SetObjectVisibility);
+    }
+
+    {
+        TRACY_NAMED_SCOPE(connect_signals_main_window);
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_project);
+
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
@@ -239,11 +246,15 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_cropper);
+
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_card_provider);
+
         // Sequence refreshing of cards after cleanup of cropper
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
@@ -256,6 +267,8 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_card_area);
+
         QObject::connect(&card_provider, &CardProvider::CardAdded, card_area, &CardArea::CardAdded);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area, &CardArea::CardRemoved);
         QObject::connect(&card_provider, &CardProvider::CardRenamed, card_area, &CardArea::CardRenamed);
@@ -273,6 +286,8 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_preview);
+
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
@@ -313,10 +328,14 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_actions);
+
         QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, actions, &ActionsWidget::RenderBackendChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_print_options);
+
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
@@ -326,6 +345,8 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_guides_options);
+
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
@@ -335,43 +356,63 @@ int main(int argc, char** argv)
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_card_options);
+
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_global_options);
+
         QObject::connect(print_options, &PrintOptionsWidget::PageSizesChanged, global_options, &GlobalOptionsWidget::PageSizesChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizesChanged, global_options, &GlobalOptionsWidget::CardSizesChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_options_area);
+
         QObject::connect(global_options, &GlobalOptionsWidget::PluginEnabled, options_area, &OptionsAreaWidget::PluginEnabled);
         QObject::connect(global_options, &GlobalOptionsWidget::PluginDisabled, options_area, &OptionsAreaWidget::PluginDisabled);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_advanced_mode);
+
         QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, print_options, &PrintOptionsWidget::AdvancedModeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, guides_options, &GuidesOptionsWidget::AdvancedModeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, card_options, &CardOptionsWidget::AdvancedModeChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_resource_drag_and_drop);
+
         // Move user resources into the right folders
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/base_pdfs"); });
+                         { fs::copy(path, "res/base_pdfs", fs::copy_options::overwrite_existing); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/cubes"); });
+                         { fs::copy(path, "res/cubes", fs::copy_options::overwrite_existing); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/styles"); });
+                         { fs::copy(path, "res/styles", fs::copy_options::overwrite_existing); });
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::SvgDropped, &project, [](const auto& path)
+                         {
+                             fs::copy(path, "res/card_svgs", fs::copy_options::overwrite_existing);
+                             
+                             // Add a new card size
+                             g_Cfg.SvgCardSizeAdded("res/card_svgs" / path.filename()); });
 
         // Refresh corresponding widgets
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, print_options, &PrintOptionsWidget::BasePdfAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, global_options, &GlobalOptionsWidget::ColorCubeAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, global_options, &GlobalOptionsWidget::StyleAdded);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::SvgDropped, print_options, &PrintOptionsWidget::ExternalCardSizesChanged);
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::SvgDropped, print_options, &PrintOptionsWidget::CardSizesChanged);
     }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_card_order);
+
         QObject::connect(
             print_preview,
             &PrintPreview::RestoreCardsOrder,
@@ -412,57 +453,67 @@ int main(int argc, char** argv)
             Qt::ConnectionType::QueuedConnection);
     }
 
-    app.SetMainWindow(main_window);
-    main_window->show();
+    {
+        TRACY_NAMED_SCOPE(show_main_window);
 
-    // Write preview to project and forward to widgets
-    QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
-
-    // Enable and disable Render button
-    QObject::connect(&cropper, &Cropper::CropWorkStart, actions, &ActionsWidget::CropperWorking);
-    QObject::connect(&cropper, &Cropper::CropWorkDone, actions, &ActionsWidget::CropperDone);
-    QObject::connect(&cropper, &Cropper::CropProgress, actions, &ActionsWidget::CropperProgress);
-
-    // Write preview cache to file
-    QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
-
-    // Toast to user when crop work is done
-    QObject::connect(&cropper,
-                     &Cropper::CropWorkDone,
-                     main_window,
-                     [main_window](std::chrono::seconds time,
-                                   uint32_t work_done,
-                                   uint32_t work_skipped)
-                     {
-                         if (work_done == 0)
-                         {
-                             return;
-                         }
-
-                         // clang-formt off
-                         QString message{
-                             QString{
-                                 "Took %1 seconds to "
-                                 "crop %2 images.",
-                             }
-                                 .arg(fmt::format("{}", time).c_str())
-                                 .arg(work_done)
-                         };
-                         if (work_skipped > 0)
-                         {
-                             message += QString{
-                                 " An addtional %1 images were verified.",
-                             }
-                                            .arg(work_skipped);
-                         }
-                         // clang-formt on
-                         main_window->Toast(
-                             ToastType::Info,
-                             "Cropper finished",
-                             std::move(message));
-                     });
+        app.SetMainWindow(main_window);
+        main_window->show();
+    }
 
     {
+        TRACY_NAMED_SCOPE(connect_signals_crop_work);
+
+        // Write preview to project and forward to widgets
+        QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
+
+        // Enable and disable Render button
+        QObject::connect(&cropper, &Cropper::CropWorkStart, actions, &ActionsWidget::CropperWorking);
+        QObject::connect(&cropper, &Cropper::CropWorkDone, actions, &ActionsWidget::CropperDone);
+        QObject::connect(&cropper, &Cropper::CropProgress, actions, &ActionsWidget::CropperProgress);
+
+        // Write preview cache to file
+        QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
+
+        // Toast to user when crop work is done
+        QObject::connect(&cropper,
+                         &Cropper::CropWorkDone,
+                         main_window,
+                         [main_window](std::chrono::seconds time,
+                                       uint32_t work_done,
+                                       uint32_t work_skipped)
+                         {
+                             if (work_done == 0)
+                             {
+                                 return;
+                             }
+
+                             // clang-formt off
+                             QString message{
+                                 QString{
+                                     "Took %1 seconds to "
+                                     "crop %2 images.",
+                                 }
+                                     .arg(fmt::format("{}", time).c_str())
+                                     .arg(work_done)
+                             };
+                             if (work_skipped > 0)
+                             {
+                                 message += QString{
+                                     " An addtional %1 images were verified.",
+                                 }
+                                                .arg(work_skipped);
+                             }
+                             // clang-formt on
+                             main_window->Toast(
+                                 ToastType::Info,
+                                 "Cropper finished",
+                                 std::move(message));
+                         });
+    }
+
+    {
+        TRACY_NAMED_SCOPE(set_max_worker_threads);
+
         auto apply_max_worker_threads{
             []()
             {
@@ -473,11 +524,17 @@ int main(int argc, char** argv)
         QObject::connect(global_options, &GlobalOptionsWidget::MaxWorkerThreadsChanged, main_window, apply_max_worker_threads);
     }
 
-    cropper.Start();
-    card_provider.Start();
+    {
+        TRACY_NAMED_SCOPE(start_cropper_and_card_provider);
+
+        cropper.Start();
+        card_provider.Start();
+    }
 
     if (g_Cfg.m_CheckVersionOnStartup)
     {
+        TRACY_NAMED_SCOPE(check_version);
+
         if (auto new_version{ NewAvailableVersion() })
         {
             main_window->Toast(
@@ -491,9 +548,14 @@ int main(int argc, char** argv)
         }
     }
 
-    TRACY_NAMED_SCOPE(main_run);
+    const int return_code{
+        []()
+        {
+            TRACY_NAMED_SCOPE(main_exec);
+            return QApplication::exec();
+        }()
+    };
 
-    const int return_code{ QApplication::exec() };
     project.Dump(app.GetProjectPath());
     return return_code;
 }

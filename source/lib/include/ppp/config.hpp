@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 
+#include <ppp/svg/util.hpp>
 #include <ppp/units.hpp>
 #include <ppp/util.hpp>
 
@@ -86,13 +87,29 @@ struct Config
         uint32_t m_Decimals;
     };
 
-    struct CardSizeInfo
+    struct CardSizeRoundedRectInfo
     {
         SizeInfo m_CardSize;
-        LengthInfo m_InputBleed;
         LengthInfo m_CornerRadius;
+    };
+
+    struct CardSizeSvgInfo
+    {
+        std::string m_SvgName;
+        Svg m_Svg;
+    };
+
+    struct CardSizeInfo
+    {
+        LengthInfo m_InputBleed;
         std::string m_Hint;
         float m_CardSizeScale;
+
+        // Cards defined as a rounded rect
+        std::optional<CardSizeRoundedRectInfo> m_RoundedRect;
+
+        // Cards defined as an arbitrary shape
+        std::optional<CardSizeSvgInfo> m_SvgInfo;
     };
 
     inline static const std::map<std::string, SizeInfo> g_DefaultPageSizes{
@@ -113,51 +130,76 @@ struct Config
         {
             "Standard",
             {
-                .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
-                .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. Magic the Gathering, Pokemon, and other TCGs" },
                 .m_CardSizeScale = 1.0f,
+
+                .m_RoundedRect{ {
+                    .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
+                    .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
+                } },
+
+                .m_SvgInfo{ std::nullopt },
             },
         },
         {
             "Oversized",
             {
-                .m_CardSize{ { 3.46_in, 4.96_in }, Unit::Inches, 2u },
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
-                .m_CornerRadius{ 5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. oversized Magic the Gathering" },
                 .m_CardSizeScale = 1.0f,
+
+                .m_RoundedRect{ {
+                    .m_CardSize{ { 3.46_in, 4.96_in }, Unit::Inches, 2u },
+                    .m_CornerRadius{ 5_mm, Unit::Millimeter, 1u },
+                } },
+
+                .m_SvgInfo{ std::nullopt },
             },
         },
         {
             "Novelty",
             {
-                .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
                 .m_InputBleed{ 0.12_in, Unit::Inches, 2u },
-                .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
                 .m_Hint{ ".e.g. novelty-sized Magic the Gathering" },
                 .m_CardSizeScale = 0.5f,
+
+                .m_RoundedRect{ {
+                    .m_CardSize{ { 2.48_in, 3.46_in }, Unit::Inches, 2u },
+                    .m_CornerRadius{ 2.5_mm, Unit::Millimeter, 1u },
+                } },
+
+                .m_SvgInfo{ std::nullopt },
             },
         },
         {
             "Japanese",
             {
-                .m_CardSize{ { 59_mm, 86_mm }, Unit::Millimeter, 0u },
                 .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
-                .m_CornerRadius{ 1_mm, Unit::Millimeter, 0u },
                 .m_Hint{ ".e.g. Yu-Gi-Oh!" },
                 .m_CardSizeScale = 1.0f,
+
+                .m_RoundedRect{ {
+                    .m_CardSize{ { 59_mm, 86_mm }, Unit::Millimeter, 0u },
+                    .m_CornerRadius{ 1_mm, Unit::Millimeter, 0u },
+                } },
+
+                .m_SvgInfo{ std::nullopt },
             },
         },
         {
             "Poker",
             {
-                .m_CardSize{ { 2.5_in, 3.5_in }, Unit::Inches, 1u },
                 .m_InputBleed{ 3_mm, Unit::Millimeter, 0u },
-                .m_CornerRadius{ 3_mm, Unit::Millimeter, 0u },
                 .m_Hint{},
                 .m_CardSizeScale = 1.0f,
+
+                .m_RoundedRect{ {
+                    .m_CardSize{ { 2.5_in, 3.5_in }, Unit::Inches, 1u },
+                    .m_CornerRadius{ 3_mm, Unit::Millimeter, 0u },
+                } },
+
+                .m_SvgInfo{ std::nullopt },
             },
         },
     };
@@ -170,6 +212,8 @@ struct Config
 
     std::string_view GetFirstValidCardSize() const;
     const CardSizeInfo& GetFirstValidCardSizeInfo() const;
+
+    bool SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed = { 0.12_in, Unit::Inches, 2u });
 };
 
 Config LoadConfig();

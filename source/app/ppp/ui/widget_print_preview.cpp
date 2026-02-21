@@ -20,6 +20,8 @@
 #include <ppp/ui/widget_print_preview_card.hpp>
 #include <ppp/ui/widget_print_preview_page.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class PreviewScrollBar : public QScrollBar
 {
   public:
@@ -59,16 +61,6 @@ class PreviewScrollBar : public QScrollBar
         };
 
         const auto pos{ event->position().toPoint() };
-        // const auto m{ style()->pixelMetric(QStyle::PM_MaximumDragDistance, &opt, this) };
-        // if (m >= 0)
-        //{
-        //     QRect r{ rect() };
-        //     r.adjust(-m, -m, m, m);
-        //     if (!r.contains(pos))
-        //     {
-        //         newPosition = d->snapBackPosition;
-        //     }
-        // }
         setSliderPosition(pixel_pos_to_range_value(pos.y() - slider_length / 2));
     }
 };
@@ -76,6 +68,8 @@ class PreviewScrollBar : public QScrollBar
 PrintPreview::PrintPreview(Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     m_RefreshTimer.setSingleShot(true);
     m_RefreshTimer.setInterval(50);
     QObject::connect(&m_RefreshTimer,
@@ -128,6 +122,8 @@ void PrintPreview::Refresh()
     {
         return;
     }
+
+    TRACY_AUTO_SCOPE();
 
     const auto current_scroll{ verticalScrollBar()->value() };
     if (auto* current_widget{ widget() })
@@ -420,6 +416,8 @@ void PrintPreview::dragMoveEvent(QDragMoveEvent* event)
 
 void PrintPreview::GoToPage(uint32_t page)
 {
+    TRACY_AUTO_SCOPE();
+
     if (const auto* nth_page{ GetNthPage(page) })
     {
         const auto page_pos{ nth_page->pos().y() - widget()->layout()->spacing() };

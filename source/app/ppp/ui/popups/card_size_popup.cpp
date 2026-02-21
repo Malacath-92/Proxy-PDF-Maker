@@ -51,7 +51,12 @@ CardSizePopup::CardSizePopup(QWidget* parent,
             QLocale locale{};
             for (const auto& [card_name, card_size_info] : card_sizes)
             {
-                const auto& [card_size, card_base, card_decimals]{ card_size_info.m_CardSize };
+                if (!card_size_info.m_RoundedRect.has_value())
+                {
+                    continue;
+                }
+
+                const auto& [card_size, card_base, card_decimals]{ card_size_info.m_RoundedRect->m_CardSize };
                 const auto card_unit_value{ UnitValue(card_base) };
                 const auto [card_width, card_height]{ (card_size / card_unit_value).pod() };
                 const auto card_width_string{ locale.toString(card_width, 'f', card_decimals) };
@@ -61,7 +66,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                 const auto bleed_unit_value{ UnitValue(bleed_base) };
                 const auto bleed_size_string{ locale.toString(bleed_size / bleed_unit_value, 'f', bleed_decimals) };
 
-                const auto& [corner_size, corner_base, corner_decimals]{ card_size_info.m_CornerRadius };
+                const auto& [corner_size, corner_base, corner_decimals]{ card_size_info.m_RoundedRect->m_CornerRadius };
                 const auto corner_unit_value{ UnitValue(corner_base) };
                 const auto corner_size_string{ locale.toString(corner_size / corner_unit_value, 'f', corner_decimals) };
 
@@ -413,26 +418,31 @@ void CardSizePopup::Apply()
         };
 
         card_sizes[std::move(name)] = {
-            .m_CardSize{
-                .m_Dimensions{
-                    card_unit_value * card_width,
-                    card_unit_value * card_height,
-                },
-                .m_BaseUnit = card_unit,
-                .m_Decimals = card_decimals,
-            },
             .m_InputBleed{
                 .m_Dimension{ bleed_unit_value * bleed_size },
                 .m_BaseUnit = bleed_unit,
                 .m_Decimals = bleed_decimals,
             },
-            .m_CornerRadius{
-                .m_Dimension{ corner_unit_value * corner_size },
-                .m_BaseUnit = corner_unit,
-                .m_Decimals = corner_decimals,
-            },
             .m_Hint{ std::move(hint) },
             .m_CardSizeScale = static_cast<float>(scale),
+
+            .m_RoundedRect{ {
+                .m_CardSize{
+                    .m_Dimensions{
+                        card_unit_value * card_width,
+                        card_unit_value * card_height,
+                    },
+                    .m_BaseUnit = card_unit,
+                    .m_Decimals = card_decimals,
+                },
+                .m_CornerRadius{
+                    .m_Dimension{ corner_unit_value * corner_size },
+                    .m_BaseUnit = corner_unit,
+                    .m_Decimals = corner_decimals,
+                },
+            } },
+
+            .m_SvgInfo{ std::nullopt },
         };
     }
 

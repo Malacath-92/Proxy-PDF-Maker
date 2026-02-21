@@ -25,9 +25,13 @@
 #include <ppp/ui/popups/card_size_popup.hpp>
 #include <ppp/ui/popups/paper_size_popup.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 PrintOptionsWidget::PrintOptionsWidget(Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     setObjectName("Print Options");
 
     const auto initial_page_size{ project.ComputePageSize() };
@@ -81,23 +85,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                          }
 
                                          g_Cfg.m_CardSizes = card_sizes;
-                                         if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
-                                         {
-                                             m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
-                                             CardSizeChanged();
-                                         }
-
-                                         UpdateComboBox(
-                                             m_CardSize,
-                                             std::span<const std::string>{
-                                                 std::views::keys(g_Cfg.m_CardSizes) |
-                                                 std::ranges::to<std::vector>() },
-                                             std::span<const std::string>{
-                                                 g_Cfg.m_CardSizes |
-                                                 std::views::values |
-                                                 std::views::transform(&Config::CardSizeInfo::m_Hint) |
-                                                 std::ranges::to<std::vector>() },
-                                             m_Project.m_Data.m_CardSizeChoice);
+                                         ExternalCardSizesChanged();
                                          CardSizesChanged();
                                      });
 
@@ -748,6 +736,8 @@ void PrintOptionsWidget::AdvancedModeChanged()
 
 void PrintOptionsWidget::RenderBackendChanged()
 {
+    TRACY_AUTO_SCOPE();
+
     const int base_pdf_size_idx{
         [&]()
         {
@@ -790,6 +780,8 @@ void PrintOptionsWidget::RenderBackendChanged()
 
 void PrintOptionsWidget::BasePdfAdded()
 {
+    TRACY_AUTO_SCOPE();
+
     auto* base_pdf_combo_box = m_BasePdf->GetWidget();
     const auto has_base_pdf{
         [=](const auto& base_pdf_name)
@@ -816,14 +808,41 @@ void PrintOptionsWidget::BasePdfAdded()
 
 void PrintOptionsWidget::ExternalCardSizeChanged()
 {
+    TRACY_AUTO_SCOPE();
+
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
     RefreshSizes();
     RefreshMargins(false);
     CardSizeChanged();
 }
 
+void PrintOptionsWidget::ExternalCardSizesChanged()
+{
+    TRACY_AUTO_SCOPE();
+
+    if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+    {
+        m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
+        CardSizeChanged();
+    }
+
+    UpdateComboBox(
+        m_CardSize,
+        std::span<const std::string>{
+            std::views::keys(g_Cfg.m_CardSizes) |
+            std::ranges::to<std::vector>() },
+        std::span<const std::string>{
+            g_Cfg.m_CardSizes |
+            std::views::values |
+            std::views::transform(&Config::CardSizeInfo::m_Hint) |
+            std::ranges::to<std::vector>() },
+        m_Project.m_Data.m_CardSizeChoice);
+}
+
 void PrintOptionsWidget::SetDefaults()
 {
+    TRACY_AUTO_SCOPE();
+
     m_PrintOutput->setText(ToQString(m_Project.m_Data.m_FileName));
     m_RenderHeader->setChecked(m_Project.m_Data.m_RenderPageHeader);
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
@@ -909,6 +928,8 @@ void PrintOptionsWidget::SetAdvancedWidgetsVisibility()
 
 void PrintOptionsWidget::RefreshSizes()
 {
+    TRACY_AUTO_SCOPE();
+
     RefreshCardLayout();
 
     m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
@@ -917,6 +938,8 @@ void PrintOptionsWidget::RefreshSizes()
 
 void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
     const auto max_margins{ m_Project.ComputeMaxMargins() };
 
@@ -994,6 +1017,8 @@ void PrintOptionsWidget::RefreshMargins(bool reset_margins)
 
 void PrintOptionsWidget::RefreshCardLayout()
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Project.CacheCardLayout())
     {
         m_CardsWidthVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.x);
@@ -1029,6 +1054,8 @@ void PrintOptionsWidget::RefreshCardLayout()
 
 std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()
 {
+    TRACY_AUTO_SCOPE();
+
     std::vector<std::string> base_pdf_names{ "Empty A4" };
 
     QDirIterator it("./res/base_pdfs");

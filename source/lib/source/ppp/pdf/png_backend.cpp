@@ -231,17 +231,33 @@ cv::Mat PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
         m_Project.m_Data.m_BleedEdge == 0_mm
     };
-    const auto card_size{ m_Project.CardSize() };
-    const auto corner_radius{
-        rounded_corners
-            ? m_Project.CardCornerRadius()
-            : 0_mm,
-    };
+
     const Image loaded_image{
-        Image::Read(image_path)
-            .RoundCorners(card_size, corner_radius)
-            .Rotate(rotation)
-            .Resize({ w * 1_pix, h * 1_pix }),
+        [&]()
+        {
+            if (rounded_corners)
+            {
+                if (m_Project.IsCardRoundedRect())
+                {
+                    const auto card_size{ m_Project.CardSize() };
+                    const auto corner_radius{
+                        rounded_corners
+                            ? m_Project.CardCornerRadius()
+                            : 0_mm,
+                    };
+
+                    return Image::Read(image_path)
+                        .RoundCorners(card_size, corner_radius);
+                }
+                else if (m_Project.IsCardSvg())
+                {
+                    return Image::Read(image_path)
+                        .ClipSvg(m_Project.CardSvgData());
+                }
+            }
+            return Image::Read(image_path);
+        }()
+            .Resize({ w * 1_pix, h * 1_pix })
     };
 
     const cv::Mat& three_channel_image{ loaded_image.GetUnderlying() };

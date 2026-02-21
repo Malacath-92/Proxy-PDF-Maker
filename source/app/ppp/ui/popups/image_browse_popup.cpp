@@ -154,12 +154,12 @@ class SelectableCardGrid : public QWidget
             for (auto& [card, card_name] : m_Cards)
             {
                 old_layout->removeWidget(card);
-                card->setParent(nullptr);
+                card->hide();
             }
             for (auto* dummy : m_Dummies)
             {
                 old_layout->removeWidget(dummy);
-                dummy->setParent(nullptr);
+                dummy->hide();
             }
             delete old_layout;
         }
@@ -178,6 +178,10 @@ class SelectableCardGrid : public QWidget
                     const auto x{ static_cast<int>(i / c_Columns) };
                     const auto y{ static_cast<int>(i % c_Columns) };
                     grid_layout->addWidget(card, x, y);
+                    if (isVisible())
+                    {
+                        card->show();
+                    }
 
                     ++i;
                 }

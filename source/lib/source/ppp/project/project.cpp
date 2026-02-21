@@ -17,6 +17,8 @@
 
 #include <ppp/project/image_ops.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
 {
     switch (g_Cfg.m_CardOrder)
@@ -84,6 +86,8 @@ fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
 
 Project::~Project()
 {
+    TRACY_AUTO_SCOPE();
+
     // Save preview cache, in case we didn't finish generating previews we want some partial work saved
     WritePreviews(m_Data.m_ImageCache, m_Data.m_Previews);
 }
@@ -95,6 +99,8 @@ bool Project::Load(const fs::path& json_path)
 bool Project::Load(const fs::path& json_path,
                    const JsonProvider* overrides)
 {
+    TRACY_AUTO_SCOPE();
+
     std::ifstream file_stream{ json_path };
     std::string json{ std::istreambuf_iterator<char>{ file_stream },
                       std::istreambuf_iterator<char>{} };
@@ -500,6 +506,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
 void Project::Dump(const fs::path& json_path) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (std::ofstream file{ json_path })
     {
         LogInfo("Generating project json...");
@@ -516,6 +524,8 @@ void Project::Dump(const fs::path& json_path) const
 
 std::string Project::DumpToJson() const
 {
+    TRACY_AUTO_SCOPE();
+
     nlohmann::json json{};
     json["version"] = JsonFormatVersion();
 
@@ -646,6 +656,8 @@ std::string Project::DumpToJson() const
 
 void Project::Init()
 {
+    TRACY_AUTO_SCOPE();
+
     LogInfo("Loading preview cache...");
     m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache);
 
@@ -655,6 +667,8 @@ void Project::Init()
 
 void Project::InitProperties()
 {
+    TRACY_AUTO_SCOPE();
+
     LogInfo("Collecting images...");
 
     // Get all image files in the images directory
@@ -1518,9 +1532,24 @@ Length Project::CardFullBleed() const
     return m_Data.CardFullBleed(g_Cfg);
 }
 
+bool Project::IsCardRoundedRect() const
+{
+    return m_Data.IsCardRoundedRect(g_Cfg);
+}
+
 Length Project::CardCornerRadius() const
 {
     return m_Data.CardCornerRadius(g_Cfg);
+}
+
+bool Project::IsCardSvg() const
+{
+    return m_Data.IsCardSvg(g_Cfg);
+}
+
+const Svg& Project::CardSvgData() const
+{
+    return m_Data.CardSvgData(g_Cfg);
 }
 
 void Project::EnsureOutputFolder() const
@@ -1850,22 +1879,39 @@ float ProjectData::CardRatio(const Config& config) const
     return card_size.x / card_size.y;
 }
 
+inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
+{
+    if (card_size_info.m_RoundedRect.has_value())
+    {
+        return card_size_info.m_RoundedRect.value().m_CardSize.m_Dimensions;
+    }
+    else if (card_size_info.m_SvgInfo.has_value())
+    {
+        return card_size_info.m_SvgInfo.value().m_Svg.m_Size;
+    }
+    else
+    {
+        LogError("Invalid card size, defaulting to 2.48in x 3.46in");
+        return { 2.48_mm, 3.46_mm };
+    }
+}
+
 Size ProjectData::CardSize(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale;
+    return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale;
 }
 
 Size ProjectData::CardSizeWithBleed(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CardSize.m_Dimensions * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
+    return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
 Size ProjectData::CardSizeWithFullBleed(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return (card_size_info.m_CardSize.m_Dimensions + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
+    return (GetCardSize(card_size_info) + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
 Length ProjectData::CardFullBleed(const Config& config) const
@@ -1874,10 +1920,37 @@ Length ProjectData::CardFullBleed(const Config& config) const
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
+bool ProjectData::IsCardRoundedRect(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    return card_size_info.m_RoundedRect.has_value();
+}
+
 Length ProjectData::CardCornerRadius(const Config& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
-    return card_size_info.m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
+    if (!card_size_info.m_RoundedRect.has_value())
+    {
+        return 0_mm;
+    }
+    return card_size_info.m_RoundedRect.value().m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
+}
+
+bool ProjectData::IsCardSvg(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    return card_size_info.m_SvgInfo.has_value();
+}
+
+const Svg& ProjectData::CardSvgData(const Config& config) const
+{
+    const auto& card_size_info{ CardSizeInfo(config) };
+    if (!card_size_info.m_SvgInfo.has_value())
+    {
+        static Svg fallback{};
+        return fallback;
+    }
+    return card_size_info.m_SvgInfo.value().m_Svg;
 }
 
 void Project::SetPreview(const fs::path& card_name,

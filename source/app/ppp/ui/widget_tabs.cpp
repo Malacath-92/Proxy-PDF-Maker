@@ -5,8 +5,12 @@
 #include <ppp/ui/widget_card_area.hpp>
 #include <ppp/ui/widget_print_preview.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 MainTabs::MainTabs(CardArea* card_area, PrintPreview* print_preview)
 {
+    TRACY_AUTO_SCOPE();
+
     addTab(card_area, "Cards");
     addTab(print_preview, "Preview");
 

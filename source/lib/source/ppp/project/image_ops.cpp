@@ -20,13 +20,18 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
     return ListFiles(path, g_ValidImageExtensions);
 }
 
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two)
 {
+    TRACY_AUTO_SCOPE();
+
     std::vector<fs::path> images{ ListImageFiles(path_one) };
     ForEachFile(
         path_two,
@@ -128,6 +133,8 @@ fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::st
 
 ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
+    TRACY_AUTO_SCOPE();
+
     try
     {
         if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
@@ -206,6 +213,8 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
 
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
 {
+    TRACY_AUTO_SCOPE();
+
     if (std::ofstream out_file{ img_cache_file, std::ios_base::binary | std::ios_base::trunc })
     {
         const auto write = [&out_file](const auto& val)

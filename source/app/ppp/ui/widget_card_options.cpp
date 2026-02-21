@@ -25,12 +25,16 @@
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class DefaultBacksidePreview : public QWidget
 {
   public:
     DefaultBacksidePreview(const Project& project)
         : m_Project{ project }
     {
+        TRACY_AUTO_SCOPE();
+
         const fs::path& backside_name{ project.m_Data.m_BacksideDefault };
 
         auto* backside_default_image{ new BacksideImage{ backside_name, c_MinimumWidth, project } };
@@ -58,6 +62,8 @@ class DefaultBacksidePreview : public QWidget
 
     void Refresh()
     {
+        TRACY_AUTO_SCOPE();
+
         const fs::path& backside_name{ m_Project.m_Data.m_BacksideDefault };
         m_DefaultImage->Refresh(backside_name, c_MinimumWidth, m_Project);
         m_DefaultLabel->setText(ClampName(ToQString(backside_name.c_str())));
@@ -84,6 +90,8 @@ class DefaultBacksidePreview : public QWidget
 CardOptionsWidget::CardOptionsWidget(Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     setObjectName("Card Options");
 
     auto* bleed_edge{ new LengthSpinBoxWithLabel{ "&Bleed Edge" } };
@@ -480,6 +488,8 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
 
 void CardOptionsWidget::NewProjectOpened()
 {
+    TRACY_AUTO_SCOPE();
+
     SetDefaults();
     ImageDirChanged();
 }
@@ -496,6 +506,8 @@ void CardOptionsWidget::AdvancedModeChanged()
 
 void CardOptionsWidget::BacksideEnabledChangedExternal()
 {
+    TRACY_AUTO_SCOPE();
+
     m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
 
     m_SeparateBacksidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
@@ -523,12 +535,16 @@ void CardOptionsWidget::BacksideEnabledChangedExternal()
 
 void CardOptionsWidget::BacksideAutoPatternChangedExternal(const std::string& pattern)
 {
+    TRACY_AUTO_SCOPE();
+
     m_BacksideAutoPattern->setText(ToQString(pattern));
     SetBacksideAutoPatternTooltip();
 }
 
 void CardOptionsWidget::SetDefaults()
 {
+    TRACY_AUTO_SCOPE();
+
     const auto full_bleed{ m_Project.CardFullBleed() };
 
     m_BleedEdgeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_EnvelopeBleedEdge);

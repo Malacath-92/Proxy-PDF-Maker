@@ -82,6 +82,14 @@ if (PPP_PROFILE)
 endif()
 
 # --------------------------------------------------
+# Create nanosvg library
+configure_file(submodules/nanosvg/src/nanosvg.h "${CMAKE_BINARY_DIR}/nanosvgh/nanosvg.h")
+configure_file(submodules/nanosvg/src/nanosvg.h "${CMAKE_BINARY_DIR}/nanosvg.c")
+add_library(nanosvg "${CMAKE_BINARY_DIR}/nanosvg.c")
+target_compile_definitions(nanosvg PRIVATE NANOSVG_IMPLEMENTATION)
+target_include_directories(nanosvg PUBLIC "${CMAKE_BINARY_DIR}/nanosvgh")
+
+# --------------------------------------------------
 # Workaround for conan not exposing this plugin
 if (NOT TARGET Qt6::TlsBackendOpenSSLPlugin)
 	if (WIN32)
@@ -181,6 +189,7 @@ target_compile_definitions(proxy_pdf_version PRIVATE
 add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
 	dla
+	nanosvg
 	fmt::fmt
 	opencv::opencv
 	podofo::podofo
@@ -276,9 +285,9 @@ set_target_properties(proxy_pdf_lib PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf_lib PUBLIC "source/lib/include")
 target_include_directories(proxy_pdf_lib PRIVATE "source/lib/source")
 set_target_properties(proxy_pdf_lib PROPERTIES
-    VS_GLOBAL_RunCodeAnalysis false
-    VS_GLOBAL_EnableMicrosoftCodeAnalysis false
-    VS_GLOBAL_EnableClangTidyCodeAnalysis true)
+	VS_GLOBAL_RunCodeAnalysis false
+	VS_GLOBAL_EnableMicrosoftCodeAnalysis false
+	VS_GLOBAL_EnableClangTidyCodeAnalysis true)
 
 # --------------------------------------------------
 # Create toast library
@@ -341,6 +350,17 @@ set_target_properties(proxy_pdf PROPERTIES
 set_target_properties(proxy_pdf_cli PROPERTIES
 	VS_DEBUGGER_COMMAND_ARGUMENTS ""
 	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# --------------------------------------------------
+# Organize projects into folders
+set_target_properties(proxy_pdf_lib PROPERTIES
+	FOLDER proxy_pdf_libs)
+set_target_properties(proxy_pdf_version PROPERTIES
+	FOLDER proxy_pdf_libs)
+set_target_properties(qt_toast_lib PROPERTIES
+	FOLDER 3rdparty)
+set_target_properties(nanosvg PROPERTIES
+	FOLDER 3rdparty)
 
 # --------------------------------------------------
 # Create tests

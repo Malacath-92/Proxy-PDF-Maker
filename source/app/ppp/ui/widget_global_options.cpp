@@ -23,6 +23,8 @@
 #include <ppp/ui/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class PluginsPopup : public PopupBase
 {
     Q_OBJECT
@@ -31,6 +33,8 @@ class PluginsPopup : public PopupBase
     PluginsPopup(QWidget* parent)
         : PopupBase{ parent }
     {
+        TRACY_AUTO_SCOPE();
+
         m_AutoCenter = false;
         setWindowFlags(Qt::WindowType::Dialog);
 
@@ -96,6 +100,8 @@ class PluginsPopup : public PopupBase
 
 GlobalOptionsWidget::GlobalOptionsWidget()
 {
+    TRACY_AUTO_SCOPE();
+
     setObjectName("Global Config");
 
     auto* advanced_checkbox{ new QCheckBox{ "Advanced Mode" } };
@@ -424,6 +430,8 @@ void GlobalOptionsWidget::CardSizesChanged()
 
 void GlobalOptionsWidget::ColorCubeAdded()
 {
+    TRACY_AUTO_SCOPE();
+
     auto* color_cube_combo_box = m_ColorCube->GetWidget();
     const auto has_color_cube{
         [=](const auto& color_cube_name)
@@ -450,6 +458,8 @@ void GlobalOptionsWidget::ColorCubeAdded()
 
 void GlobalOptionsWidget::StyleAdded()
 {
+    TRACY_AUTO_SCOPE();
+
     auto* style_combo_box = m_Style->GetWidget();
     const auto has_style{
         [=](const auto& style_name)
