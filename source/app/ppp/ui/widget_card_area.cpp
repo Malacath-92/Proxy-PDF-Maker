@@ -466,7 +466,9 @@ class CardGrid : public QWidget
         m_FirstItem = nullptr;
 
         {
-            TRACY_NAMED_SCOPE(destroy_old_layout);
+            TRACY_AUTO_SCOPE();
+            TRACY_AUTO_SCOPE_NAME(destroy_old_layout);
+
             if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
             {
                 for (auto& [card_name, card] : m_Cards)
@@ -493,7 +495,9 @@ class CardGrid : public QWidget
         size_t i{ 0 };
 
         {
-            TRACY_NAMED_SCOPE(filter_cards);
+            TRACY_AUTO_SCOPE();
+            TRACY_AUTO_SCOPE_NAME(filter_cards);
+
             for (const auto& card_info : m_Project.GetCards())
             {
                 const auto& card_name{ card_info.m_Name };
@@ -523,7 +527,9 @@ class CardGrid : public QWidget
 
         if (i < cols)
         {
-            TRACY_NAMED_SCOPE(fill_up_with_dummies);
+            TRACY_AUTO_SCOPE();
+            TRACY_AUTO_SCOPE_NAME(fill_up_with_dummies);
+
             for (size_t j = i; j < cols; j++)
             {
                 auto* dummy_widget{ m_Dummies[j] };
@@ -538,7 +544,9 @@ class CardGrid : public QWidget
         }
 
         {
-            TRACY_NAMED_SCOPE(set_column_stretch);
+            TRACY_AUTO_SCOPE();
+            TRACY_AUTO_SCOPE_NAME(set_column_stretch);
+
             for (int c = 0; c < this_layout->columnCount(); c++)
             {
                 this_layout->setColumnStretch(c, 1);
@@ -548,10 +556,14 @@ class CardGrid : public QWidget
         m_Columns = cols;
         m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / m_Columns));
 
-        TRACY_NAMED_SCOPE(compute_height);
-        setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
-        setMinimumHeight(heightForWidth(minimumWidth()));
-        setFixedHeight(heightForWidth(size().width()));
+        {
+            TRACY_AUTO_SCOPE();
+            TRACY_AUTO_SCOPE_NAME(compute_height);
+
+            setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
+            setMinimumHeight(heightForWidth(minimumWidth()));
+            setFixedHeight(heightForWidth(size().width()));
+        }
     }
 
     bool HasCard(const fs::path& card_name) const
@@ -666,7 +678,8 @@ CardArea::CardArea(Project& project)
     TRACY_AUTO_SCOPE();
 
     {
-        TRACY_NAMED_SCOPE(init_onboarding);
+        TRACY_AUTO_SCOPE();
+        TRACY_AUTO_SCOPE_NAME(init_onboarding);
 
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
@@ -712,7 +725,8 @@ CardArea::CardArea(Project& project)
     }
 
     {
-        TRACY_NAMED_SCOPE(init_header);
+        TRACY_AUTO_SCOPE();
+        TRACY_AUTO_SCOPE_NAME(init_header);
 
         auto* global_label{ new QLabel{ "Global Controls:" } };
         auto* global_decrement_button{ new QPushButton{ "-" } };

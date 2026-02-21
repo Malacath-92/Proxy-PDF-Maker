@@ -110,8 +110,9 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
     const bool has_image{ project.HasPreview(card_name) };
 
     {
-        TRACY_NAMED_SCOPE(set_pixmap);
-        TRACY_NAMED_SCOPE_INFO(set_pixmap, "Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
+        TRACY_AUTO_SCOPE();
+        TRACY_AUTO_SCOPE_NAME(set_pixmap);
+        TRACY_AUTO_SCOPE_INFO("Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
 
         Image image{
             [&]()
