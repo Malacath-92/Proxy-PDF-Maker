@@ -216,6 +216,7 @@ void CropperCropWork::run()
     try
     {
         TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_COLOR(0x880088);
 
         const Length bleed_edge{ m_Data.m_BleedEdge };
         const PixelDensity max_density{ m_Cfg.m_MaxDPI };
@@ -424,6 +425,7 @@ void CropperPreviewWork::run()
     try
     {
         TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_COLOR(0x008888);
 
         const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
         const PixelSize uncropped_size{ preview_width, dla::math::round(preview_width / m_Data.CardRatio(m_Cfg)) };
