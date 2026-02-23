@@ -7,6 +7,8 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 #ifdef _WIN32
 #include "Windows.h"
 #endif
@@ -21,11 +23,14 @@ CardProvider::CardProvider(const Project& project)
 #endif
     }
 {
+    TRACY_AUTO_SCOPE();
     RegisterInitialWatches(project.m_Data);
 }
 
 void CardProvider::Start()
 {
+    TRACY_AUTO_SCOPE();
+
     for (const fs::path& image : ListFiles())
     {
         CardAdded(image, true, true);
@@ -40,6 +45,8 @@ void CardProvider::Start()
 
 void CardProvider::NewProjectOpened(const ProjectData& /*old_project*/, const ProjectData& new_project)
 {
+    TRACY_AUTO_SCOPE();
+
     // Remove all old files ...
     for (const fs::path& image : ListFiles())
     {
@@ -64,6 +71,8 @@ void CardProvider::NewProjectOpened(const ProjectData& /*old_project*/, const Pr
 }
 void CardProvider::ImageDirChanged(const fs::path& old_path, const fs::path& new_path)
 {
+    TRACY_AUTO_SCOPE();
+
     SWatch* old_watch{ FindWatch(old_path) };
     if (old_watch == nullptr)
     {
@@ -167,6 +176,8 @@ void CardProvider::MaxDPIChanged()
 
 void CardProvider::ExternalCardAdded(const fs::path& absolute_image_path)
 {
+    TRACY_AUTO_SCOPE();
+
     RegisterExternalCard(absolute_image_path);
 
     if (m_Started)
@@ -176,6 +187,8 @@ void CardProvider::ExternalCardAdded(const fs::path& absolute_image_path)
 }
 void CardProvider::ExternalCardRemoved(const fs::path& absolute_image_path)
 {
+    TRACY_AUTO_SCOPE();
+
     UnregisterExternalCard(absolute_image_path);
 
     if (m_Started)
@@ -190,6 +203,9 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
                                     efsw::Action action,
                                     std::string old_filename)
 {
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("File: \"\"", filename);
+
     const fs::path filepath{ filename };
 
     // A sub-folder has changed, ignore this
@@ -246,6 +262,8 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
 
 void CardProvider::RegisterInitialWatches(const ProjectData& project)
 {
+    TRACY_AUTO_SCOPE();
+
     m_Watches.push_back(SWatch{ project.m_ImageDir,
                                 { "*" } });
     m_Watcher.addWatch(project.m_ImageDir.string(),
@@ -268,6 +286,9 @@ void CardProvider::RegisterInitialWatches(const ProjectData& project)
 
 void CardProvider::RegisterExternalCard(const fs::path& absolute_image_path)
 {
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("Card: \"%s\"", absolute_image_path.string());
+
     const auto parent_path{ absolute_image_path.parent_path() };
     auto* watch{ FindWatch(parent_path) };
     if (watch == nullptr)
@@ -284,6 +305,9 @@ void CardProvider::RegisterExternalCard(const fs::path& absolute_image_path)
 }
 void CardProvider::UnregisterExternalCard(const fs::path& absolute_image_path)
 {
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("Card: \"%s\"", absolute_image_path.string());
+
     const auto parent_path{ absolute_image_path.parent_path() };
     auto* watch{ FindWatch(parent_path) };
     if (watch == nullptr)
@@ -327,6 +351,8 @@ void CardProvider::EraseWatch(const fs::path& directory)
 
 std::vector<fs::path> CardProvider::ListFiles() const
 {
+    TRACY_AUTO_SCOPE();
+
     std::vector<fs::path> files{};
     auto push_file{
         [&files](const auto& file)
@@ -347,6 +373,8 @@ std::vector<fs::path> CardProvider::ListFiles() const
 }
 std::vector<fs::path> CardProvider::ListFiles(const SWatch& watch) const
 {
+    TRACY_AUTO_SCOPE();
+
     std::vector<fs::path> files{};
     auto push_file{
         [&files](const auto& file)
@@ -365,6 +393,8 @@ std::vector<fs::path> CardProvider::ListFiles(const SWatch& watch) const
 template<class FunT>
 void CardProvider::ListFiles(const SWatch& watch, FunT&& fun)
 {
+    TRACY_AUTO_SCOPE();
+
     const bool all_files{ std::ranges::contains(watch.m_Files, "*") };
     ForEachFile(
         watch.m_Directory, [&, fun = std::forward<FunT>(fun)](const auto& file)
