@@ -460,14 +460,14 @@ class CardGrid : public QWidget
     void ApplyFilter(const QString& filter)
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_INFO("Filter: \"%s\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
+        TRACY_SCOPE_INFO_FMT("Filter: \"%s\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
 
         m_CurrentFilter = filter;
         m_FirstItem = nullptr;
 
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(destroy_old_layout);
+            TRACY_SCOPE_NAME(destroy_old_layout);
 
             if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
             {
@@ -496,7 +496,7 @@ class CardGrid : public QWidget
 
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(filter_cards);
+            TRACY_SCOPE_NAME(filter_cards);
 
             for (const auto& card_info : m_Project.GetCards())
             {
@@ -528,7 +528,7 @@ class CardGrid : public QWidget
         if (i < cols)
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(fill_up_with_dummies);
+            TRACY_SCOPE_NAME(fill_up_with_dummies);
 
             for (size_t j = i; j < cols; j++)
             {
@@ -545,7 +545,7 @@ class CardGrid : public QWidget
 
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(set_column_stretch);
+            TRACY_SCOPE_NAME(set_column_stretch);
 
             for (int c = 0; c < this_layout->columnCount(); c++)
             {
@@ -558,7 +558,7 @@ class CardGrid : public QWidget
 
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(compute_height);
+            TRACY_SCOPE_NAME(compute_height);
 
             setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
             setMinimumHeight(heightForWidth(minimumWidth()));
@@ -679,7 +679,7 @@ CardArea::CardArea(Project& project)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(init_onboarding);
+        TRACY_SCOPE_NAME(init_onboarding);
 
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
@@ -726,7 +726,7 @@ CardArea::CardArea(Project& project)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(init_header);
+        TRACY_SCOPE_NAME(init_header);
 
         auto* global_label{ new QLabel{ "Global Controls:" } };
         auto* global_decrement_button{ new QPushButton{ "-" } };

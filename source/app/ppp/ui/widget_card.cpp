@@ -111,8 +111,8 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(set_pixmap);
-        TRACY_AUTO_SCOPE_INFO("Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
+        TRACY_SCOPE_NAME(set_pixmap);
+        TRACY_SCOPE_INFO_FMT("Card: \"%s\"", has_image ? card_name.string().c_str() : "<none>");
 
         Image image{
             [&]()
@@ -304,7 +304,7 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
     if (m_CardName == card_name)
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_INFO("Card: \"%s\"", card_name.string().c_str());
+        TRACY_SCOPE_INFO_FMT("Card: \"%s\"", card_name.string().c_str());
 
         m_BadAspectRatio = preview.m_BadAspectRatio;
 

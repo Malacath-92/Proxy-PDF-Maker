@@ -206,12 +206,6 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Widgets
 	Qt6::SvgWidgets
 	Qt6::Xml)
-if (PPP_PROFILE)
-	target_link_libraries(proxy_pdf_dependencies INTERFACE
-		Tracy::TracyClient)
-	target_compile_definitions(proxy_pdf_dependencies INTERFACE
-		PPP_TRACY_PROFILING)
-endif()
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
@@ -281,6 +275,12 @@ target_link_libraries(proxy_pdf_lib PUBLIC
 	proxy_pdf_definitions
 	proxy_pdf_dependencies
 	proxy_pdf_pch)
+if (PPP_PROFILE)
+	target_link_libraries(proxy_pdf_lib PRIVATE
+		Tracy::TracyClient)
+	target_compile_definitions(proxy_pdf_lib PUBLIC
+		PPP_TRACY_PROFILING)
+endif()
 set_target_properties(proxy_pdf_lib PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf_lib PUBLIC "source/lib/include")
 target_include_directories(proxy_pdf_lib PRIVATE "source/lib/source")

@@ -210,7 +210,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_external_cards);
+        TRACY_SCOPE_NAME(connect_signals_external_cards);
 
         // Creates the card-info correctly
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ImageDropped, &project, &Project::AddExternalCard);
@@ -225,19 +225,19 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_app);
+        TRACY_SCOPE_NAME(connect_signals_app);
         QObject::connect(options_area, &OptionsAreaWidget::SetObjectVisibility, &app, &PrintProxyPrepApplication::SetObjectVisibility);
     }
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_main_window);
+        TRACY_SCOPE_NAME(connect_signals_main_window);
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
     }
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_project);
+        TRACY_SCOPE_NAME(connect_signals_project);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
@@ -251,7 +251,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_cropper);
+        TRACY_SCOPE_NAME(connect_signals_cropper);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
@@ -259,7 +259,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_card_provider);
+        TRACY_SCOPE_NAME(connect_signals_card_provider);
 
         // Sequence refreshing of cards after cleanup of cropper
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
@@ -274,7 +274,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_card_area);
+        TRACY_SCOPE_NAME(connect_signals_card_area);
 
         QObject::connect(&card_provider, &CardProvider::CardAdded, card_area, &CardArea::CardAdded);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area, &CardArea::CardRemoved);
@@ -294,7 +294,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_preview);
+        TRACY_SCOPE_NAME(connect_signals_preview);
 
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
@@ -337,14 +337,14 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_actions);
+        TRACY_SCOPE_NAME(connect_signals_actions);
 
         QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, actions, &ActionsWidget::RenderBackendChanged);
     }
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_print_options);
+        TRACY_SCOPE_NAME(connect_signals_print_options);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
@@ -356,7 +356,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_guides_options);
+        TRACY_SCOPE_NAME(connect_signals_guides_options);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
@@ -368,7 +368,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_card_options);
+        TRACY_SCOPE_NAME(connect_signals_card_options);
 
         QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
@@ -377,7 +377,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_global_options);
+        TRACY_SCOPE_NAME(connect_signals_global_options);
 
         QObject::connect(print_options, &PrintOptionsWidget::PageSizesChanged, global_options, &GlobalOptionsWidget::PageSizesChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizesChanged, global_options, &GlobalOptionsWidget::CardSizesChanged);
@@ -385,7 +385,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_options_area);
+        TRACY_SCOPE_NAME(connect_signals_options_area);
 
         QObject::connect(global_options, &GlobalOptionsWidget::PluginEnabled, options_area, &OptionsAreaWidget::PluginEnabled);
         QObject::connect(global_options, &GlobalOptionsWidget::PluginDisabled, options_area, &OptionsAreaWidget::PluginDisabled);
@@ -393,7 +393,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_advanced_mode);
+        TRACY_SCOPE_NAME(connect_signals_advanced_mode);
 
         QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, print_options, &PrintOptionsWidget::AdvancedModeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::AdvancedModeChanged, guides_options, &GuidesOptionsWidget::AdvancedModeChanged);
@@ -402,7 +402,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_resource_drag_and_drop);
+        TRACY_SCOPE_NAME(connect_signals_resource_drag_and_drop);
 
         // Move user resources into the right folders
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [](const auto& path)
@@ -428,7 +428,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_card_order);
+        TRACY_SCOPE_NAME(connect_signals_card_order);
 
         QObject::connect(
             print_preview,
@@ -472,7 +472,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(show_main_window);
+        TRACY_SCOPE_NAME(show_main_window);
 
         app.SetMainWindow(main_window);
         main_window->show();
@@ -480,7 +480,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(connect_signals_crop_work);
+        TRACY_SCOPE_NAME(connect_signals_crop_work);
 
         // Write preview to project and forward to widgets
         QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
@@ -532,7 +532,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(set_max_worker_threads);
+        TRACY_SCOPE_NAME(set_max_worker_threads);
 
         auto apply_max_worker_threads{
             []()
@@ -546,7 +546,7 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(start_cropper_and_card_provider);
+        TRACY_SCOPE_NAME(start_cropper_and_card_provider);
 
         cropper.Start();
         card_provider.Start();
@@ -555,7 +555,7 @@ int main(int argc, char** argv)
     if (g_Cfg.m_CheckVersionOnStartup)
     {
         TRACY_AUTO_SCOPE();
-        TRACY_AUTO_SCOPE_NAME(check_version);
+        TRACY_SCOPE_NAME(check_version);
 
         if (auto new_version{ NewAvailableVersion() })
         {
@@ -574,7 +574,7 @@ int main(int argc, char** argv)
         []()
         {
             TRACY_AUTO_SCOPE();
-            TRACY_AUTO_SCOPE_NAME(main_exec);
+            TRACY_SCOPE_NAME(main_exec);
             return QApplication::exec();
         }()
     };
