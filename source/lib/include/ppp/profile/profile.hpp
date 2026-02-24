@@ -69,6 +69,6 @@ void TracyScopeColor(ColorRGB8 color);
 #define TRACY_SCOPE_NAME_FMT(fmt, ...) NOP
 #define TRACY_SCOPE_INFO(info) NOP
 #define TRACY_SCOPE_INFO_FMT(fmt, ...) NOP
-#define TRACY_AUTO_SCOPE_COLOR(color) NOP
+#define TRACY_SCOPE_COLOR(color) NOP
 
 #endif
