@@ -1,6 +1,9 @@
 #include <ppp/profile/profile.hpp>
 
-#include <cstdarg>
+#ifdef PPP_TRACY_PROFILING
+
+#include <string>
+#include <vector>
 
 #include <Tracy/TracyC.h>
 
@@ -99,3 +102,5 @@ void TracyScopeColor(ColorRGB8 color)
 {
     TracyScopeColor(ColorToInt(color));
 }
+
+#endif
