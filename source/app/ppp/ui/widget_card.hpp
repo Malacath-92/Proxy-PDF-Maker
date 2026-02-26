@@ -6,12 +6,26 @@
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/util/bit_field.hpp>
+
 #include <ppp/project/card_info.hpp>
 
 class QAction;
 
 class Project;
 struct ImagePreview;
+
+enum class CardContextMenuFeatures
+{
+    RemoveExternal = Bit(0),
+    Backside = Bit(1),
+    BleedControls = Bit(2),
+    RatioControls = Bit(3),
+    Rotation = Bit(4),
+
+    Default = RemoveExternal | Backside | BleedControls | RatioControls | Rotation,
+};
+ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
 
 class CardImage : public QLabel
 {
@@ -30,7 +44,9 @@ class CardImage : public QLabel
 
     void Refresh(const fs::path& card_name, const Project& project, Params params);
 
-    void EnableContextMenu(bool enable, Project& project);
+    void EnableContextMenu(bool enable,
+                           Project& project,
+                           CardContextMenuFeatures features = CardContextMenuFeatures::Default);
 
     const fs::path& GetCardName() const
     {

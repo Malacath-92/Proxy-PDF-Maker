@@ -163,7 +163,9 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
                      { m_BacksideEnabled = enabled; });
 }
 
-void CardImage::EnableContextMenu(bool enable, Project& project)
+void CardImage::EnableContextMenu(bool enable,
+                                  Project& project,
+                                  CardContextMenuFeatures features)
 {
     if (enable && contextMenuPolicy() != Qt::ContextMenuPolicy::CustomContextMenu)
     {
@@ -175,83 +177,100 @@ void CardImage::EnableContextMenu(bool enable, Project& project)
                          this,
                          &CardImage::ContextMenuRequested);
 
-        static QIcon clear_icon{ QPixmap{ ":/res/clear.png" } };
-        static QIcon bulb_icon{ QPixmap{ ":/res/bulb.png" } };
-        static QIcon full_bleed_icon{ QPixmap{ ":/res/full_bleed.png" } };
-        static QIcon no_bleed_icon{ QPixmap{ ":/res/no_bleed.png" } };
-        static QIcon reset_icon{ QPixmap{ ":/res/reset.png" } };
-        static QIcon expand_icon{ QPixmap{ ":/res/expand.png" } };
-        static QIcon stretch_icon{ QPixmap{ ":/res/stretch.png" } };
-        static QIcon untap_icon{ QPixmap{ ":/res/untap.png" } };
-        static QIcon tap_icon{ QPixmap{ ":/res/tap.png" } };
+        static const QIcon s_ClearIcon{ QPixmap{ ":/res/clear.png" } };
+        static const QIcon s_BulbIcon{ QPixmap{ ":/res/bulb.png" } };
+        static const QIcon s_FullBleedIcon{ QPixmap{ ":/res/full_bleed.png" } };
+        static const QIcon s_NoBleedIcon{ QPixmap{ ":/res/no_bleed.png" } };
+        static const QIcon s_ResetIcon{ QPixmap{ ":/res/reset.png" } };
+        static const QIcon s_ExpandIcon{ QPixmap{ ":/res/expand.png" } };
+        static const QIcon s_StretchIcon{ QPixmap{ ":/res/stretch.png" } };
+        static const QIcon s_UntapIcon{ QPixmap{ ":/res/untap.png" } };
+        static const QIcon s_TapIcon{ QPixmap{ ":/res/tap.png" } };
 
-        m_RemoveExternalCardAction = new QAction{ "Remove External Card", this };
-        m_RemoveExternalCardAction->setIcon(clear_icon);
+        if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
+        {
+            m_RemoveExternalCardAction = new QAction{ "Remove External Card", this };
+            m_RemoveExternalCardAction->setIcon(s_ClearIcon);
 
-        m_ResetBacksideAction = new QAction{ "Reset Backside", this };
-        m_ResetBacksideAction->setIcon(clear_icon);
+            QObject::connect(m_RemoveExternalCardAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::RemoveExternalCard, this, std::ref(project)));
+        }
 
-        m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
-        m_InferBleedAction->setIcon(bulb_icon);
-        m_ForceFullBleedAction = new QAction{ "Assume Full Bleed", this };
-        m_ForceFullBleedAction->setIcon(full_bleed_icon);
-        m_ForceNoBleedAction = new QAction{ "Assume No Bleed", this };
-        m_ForceNoBleedAction->setIcon(no_bleed_icon);
+        if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
+        {
+            m_ResetBacksideAction = new QAction{ "Reset Backside", this };
+            m_ResetBacksideAction->setIcon(s_ClearIcon);
 
-        m_FixRatioIgnoreAction = new QAction{ "Reset Aspect Ratio", this };
-        m_FixRatioIgnoreAction->setIcon(reset_icon);
-        m_FixRatioExpandAction = new QAction{ "Fix Aspect Ratio: Expand", this };
-        m_FixRatioExpandAction->setIcon(expand_icon);
-        m_FixRatioStretchAction = new QAction{ "Fix Aspect Ratio: Stretch", this };
-        m_FixRatioStretchAction->setIcon(stretch_icon);
+            QObject::connect(m_ResetBacksideAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ResetBackside, this, std::ref(project)));
+        }
 
-        m_RotateLeftAction = new QAction{ "Rotate Left", this };
-        m_RotateLeftAction->setIcon(untap_icon);
-        m_RotateRightAction = new QAction{ "Rotate Right", this };
-        m_RotateRightAction->setIcon(tap_icon);
+        if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
+        {
+            m_InferBleedAction = new QAction{ "Infer Input Bleed", this };
+            m_InferBleedAction->setIcon(s_BulbIcon);
+            m_ForceFullBleedAction = new QAction{ "Assume Full Bleed", this };
+            m_ForceFullBleedAction->setIcon(s_FullBleedIcon);
+            m_ForceNoBleedAction = new QAction{ "Assume No Bleed", this };
+            m_ForceNoBleedAction->setIcon(s_NoBleedIcon);
 
-        QObject::connect(m_RemoveExternalCardAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::RemoveExternalCard, this, std::ref(project)));
-        QObject::connect(m_ResetBacksideAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ResetBackside, this, std::ref(project)));
-        QObject::connect(m_InferBleedAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::Infer));
-        QObject::connect(m_ForceFullBleedAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::FullBleed));
-        QObject::connect(m_ForceNoBleedAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::NoBleed));
+            QObject::connect(m_InferBleedAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::Infer));
+            QObject::connect(m_ForceFullBleedAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::FullBleed));
+            QObject::connect(m_ForceNoBleedAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::NoBleed));
+        }
 
-        QObject::connect(m_FixRatioIgnoreAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Ignore));
-        QObject::connect(m_FixRatioExpandAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Expand));
-        QObject::connect(m_FixRatioStretchAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Stretch));
+        if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
+        {
+            m_FixRatioIgnoreAction = new QAction{ "Reset Aspect Ratio", this };
+            m_FixRatioIgnoreAction->setIcon(s_ResetIcon);
+            m_FixRatioExpandAction = new QAction{ "Fix Aspect Ratio: Expand", this };
+            m_FixRatioExpandAction->setIcon(s_ExpandIcon);
+            m_FixRatioStretchAction = new QAction{ "Fix Aspect Ratio: Stretch", this };
+            m_FixRatioStretchAction->setIcon(s_StretchIcon);
 
-        QObject::connect(m_RotateLeftAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::RotateImageLeft, this, std::ref(project)));
-        QObject::connect(m_RotateRightAction,
-                         &QAction::triggered,
-                         this,
-                         std::bind_front(&CardImage::RotateImageRight, this, std::ref(project)));
+            QObject::connect(m_FixRatioIgnoreAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Ignore));
+            QObject::connect(m_FixRatioExpandAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Expand));
+            QObject::connect(m_FixRatioStretchAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Stretch));
+        }
+
+        if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
+        {
+            m_RotateLeftAction = new QAction{ "Rotate Left", this };
+            m_RotateLeftAction->setIcon(s_UntapIcon);
+            m_RotateRightAction = new QAction{ "Rotate Right", this };
+            m_RotateRightAction->setIcon(s_TapIcon);
+
+            QObject::connect(m_RotateLeftAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::RotateImageLeft, this, std::ref(project)));
+            QObject::connect(m_RotateRightAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::RotateImageRight, this, std::ref(project)));
+        }
     }
     else if (!enable)
     {
@@ -420,43 +439,52 @@ void CardImage::ContextMenuRequested(QPoint pos)
 {
     auto* menu{ new QMenu{ this } };
 
-    if (m_IsExternalCard)
+    if (m_IsExternalCard && m_RemoveExternalCardAction != nullptr)
     {
         menu->addAction(m_RemoveExternalCardAction);
         menu->addSeparator();
     }
 
-    if (m_BacksideEnabled && m_HasNonDefaultBackside)
+    if (m_BacksideEnabled && m_HasNonDefaultBackside && m_ResetBacksideAction != nullptr)
     {
         menu->addAction(m_ResetBacksideAction);
         menu->addSeparator();
     }
 
-    menu->addAction(m_InferBleedAction);
-    menu->addAction(m_ForceFullBleedAction);
-    menu->addAction(m_ForceNoBleedAction);
-
-    m_InferBleedAction->setEnabled(m_BleedType != BleedType::Infer);
-    m_ForceFullBleedAction->setEnabled(m_BleedType != BleedType::FullBleed);
-    m_ForceNoBleedAction->setEnabled(m_BleedType != BleedType::NoBleed);
-
-    menu->addSeparator();
-
-    if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
+    if (m_InferBleedAction != nullptr)
     {
-        menu->addAction(m_FixRatioIgnoreAction);
-        menu->addAction(m_FixRatioExpandAction);
-        menu->addAction(m_FixRatioStretchAction);
+        menu->addAction(m_InferBleedAction);
+        menu->addAction(m_ForceFullBleedAction);
+        menu->addAction(m_ForceNoBleedAction);
 
-        m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
-        m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
-        m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
+        m_InferBleedAction->setEnabled(m_BleedType != BleedType::Infer);
+        m_ForceFullBleedAction->setEnabled(m_BleedType != BleedType::FullBleed);
+        m_ForceNoBleedAction->setEnabled(m_BleedType != BleedType::NoBleed);
 
         menu->addSeparator();
     }
 
-    menu->addAction(m_RotateLeftAction);
-    menu->addAction(m_RotateRightAction);
+    if (m_FixRatioIgnoreAction != nullptr)
+    {
+        if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
+        {
+            menu->addAction(m_FixRatioIgnoreAction);
+            menu->addAction(m_FixRatioExpandAction);
+            menu->addAction(m_FixRatioStretchAction);
+
+            m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
+            m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
+            m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
+
+            menu->addSeparator();
+        }
+    }
+
+    if (m_RotateLeftAction != nullptr)
+    {
+        menu->addAction(m_RotateLeftAction);
+        menu->addAction(m_RotateRightAction);
+    }
 
     menu->popup(mapToGlobal(pos));
 }
