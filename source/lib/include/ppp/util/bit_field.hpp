@@ -112,7 +112,12 @@ IsAnySet(const BitFieldTy& lhs, const BitFieldTy& rhs)
 template<class T>
 consteval T Bit(T ith)
 {
-    return static_cast<T>(1 << (ith + 1));
+    return static_cast<T>(1 << ith);
+}
+template<class T, std::same_as<T>... OtherTs>
+consteval T Bits(OtherTs... is)
+{
+    return (static_cast<T>(1 << is) | ...);
 }
 
 // NOLINTEND
