@@ -265,16 +265,33 @@ void PrintPreview::Refresh()
         restore_order_button->setSizePolicy(size_policy);
     }
 
+    auto* restore_all_slots{ new QPushButton{ "Restore All Slots" } };
+    QObject::connect(restore_all_slots,
+                     &QPushButton::clicked,
+                     this,
+                     [this]()
+                     {
+                         m_Project.m_Data.m_SkippedLayoutSlots.clear();
+                         RequestRefresh();
+                     });
+    {
+        QSizePolicy size_policy{ restore_all_slots->sizePolicy() };
+        size_policy.setRetainSizeWhenHidden(true);
+        restore_all_slots->setSizePolicy(size_policy);
+    }
+
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
     header_layout->addWidget(restore_order_button);
+    header_layout->addWidget(restore_all_slots);
     header_layout->addStretch();
 
     auto* header{ new QWidget };
     header->setLayout(header_layout);
 
     restore_order_button->setVisible(m_Project.IsManuallySorted());
+    restore_all_slots->setVisible(!m_Project.m_Data.m_SkippedLayoutSlots.empty());
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(header);
