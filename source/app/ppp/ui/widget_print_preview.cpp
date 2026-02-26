@@ -248,6 +248,10 @@ void PrintPreview::Refresh()
                          &PagePreview::ReorderCards,
                          this,
                          &PrintPreview::ReorderCards);
+        QObject::connect(page,
+                         &PagePreview::RequestRefresh,
+                         this,
+                         &PrintPreview::RequestRefresh);
     }
 
     auto* restore_order_button{ new QPushButton{ "Restore Original Order" } };

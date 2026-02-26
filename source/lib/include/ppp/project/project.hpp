@@ -143,6 +143,7 @@ struct ProjectData
     CardOrientation m_CardOrientation{ CardOrientation::Vertical };
     dla::uvec2 m_CardLayoutVertical{ 3, 3 };
     dla::uvec2 m_CardLayoutHorizontal{};
+    std::vector<size_t> m_SkippedLayoutSlots{};
 
     PageOrientation m_Orientation{ PageOrientation::Portrait };
     FlipPageOn m_FlipOn{ FlipPageOn::LeftEdge };

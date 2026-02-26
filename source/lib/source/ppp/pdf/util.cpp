@@ -166,6 +166,11 @@ PageImageTransforms ComputeTransforms(const Project& project)
 
     for (auto i = 0u; i < vertical_images_per_page; ++i)
     {
+        if (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, i))
+        {
+            continue;
+        }
+
         const auto origin{ origin_vertical };
         const auto columns{ layout_vertical.x };
         const dla::uvec2 grid_pos{ i % columns, i / columns };
@@ -184,6 +189,11 @@ PageImageTransforms ComputeTransforms(const Project& project)
 
     for (auto i = 0u; i < horizontal_images_per_page; ++i)
     {
+        if (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, vertical_images_per_page + i))
+        {
+            continue;
+        }
+
         const auto origin{ origin_horizontal };
         const auto columns{ layout_horizontal.x };
         const dla::uvec2 grid_pos{ i % columns, i / columns };
@@ -337,16 +347,16 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
     const auto layout_horizontal{ project.m_Data.m_CardLayoutHorizontal };
 
+    const auto vertical_images_per_page{ layout_vertical.x * layout_vertical.y };
+    const auto horizontal_images_per_page{ layout_horizontal.x * layout_horizontal.y };
+    const auto images_per_page_no_skip{ vertical_images_per_page + horizontal_images_per_page };
+    const auto images_per_page{ images_per_page_no_skip - project.m_Data.m_SkippedLayoutSlots.size() };
+
     // Return empty result when no cards can fit on a page (invalid layout)
-    if ((layout_vertical.x == 0 || layout_vertical.y == 0) &&
-        (layout_horizontal.x == 0 || layout_horizontal.y == 0))
+    if (images_per_page == 0)
     {
         return {};
     }
-
-    const auto vertical_images_per_page{ layout_vertical.x * layout_vertical.y };
-    const auto horizontal_images_per_page{ layout_horizontal.x * layout_horizontal.y };
-    const auto images_per_page{ vertical_images_per_page + horizontal_images_per_page };
 
     std::vector<Page> pages;
     pages.emplace_back();
@@ -354,6 +364,14 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     auto push_card{
         [&, index = size_t{ 0 }](const auto& info) mutable
         {
+            while (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, index % images_per_page_no_skip))
+            {
+                ++index;
+            }
+
+            const auto card_index{ index++ };
+            const auto card_slot{ card_index % images_per_page_no_skip };
+
             // make new page if last page is full
             if (pages.back().m_Images.size() == images_per_page)
             {
@@ -367,7 +385,8 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
             page.m_Images.push_back({
                 img,
                 info.m_BacksideShortEdge,
-                index++,
+                card_index,
+                card_slot,
             });
         }
     };
@@ -416,6 +435,7 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
                 project.GetBacksideImage(image.m_Image),
                 image.m_BacksideShortEdge,
                 image.m_Index,
+                image.m_Slot,
             };
         }
     };

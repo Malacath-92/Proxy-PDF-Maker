@@ -271,6 +271,17 @@ void CardImage::EnableContextMenu(bool enable,
                              this,
                              std::bind_front(&CardImage::RotateImageRight, this, std::ref(project)));
         }
+
+        if (IsSet(features, CardContextMenuFeatures::SkipSlot))
+        {
+            m_SkipSlotAction = new QAction{ "Skip Slot", this };
+            // m_SkipSlotAction->setIcon(s_UntapIcon);
+
+            QObject::connect(m_SkipSlotAction,
+                             &QAction::triggered,
+                             this,
+                             &CardImage::SkipThisSlot);
+        }
     }
     else if (!enable)
     {
@@ -438,21 +449,33 @@ void CardImage::AddBadFormatWarning(const ImagePreview& preview)
 void CardImage::ContextMenuRequested(QPoint pos)
 {
     auto* menu{ new QMenu{ this } };
+    auto begin_section{
+        [menu, place_separator = false]() mutable
+        {
+            if (place_separator)
+            {
+                menu->addSeparator();
+            }
+            place_separator = true;
+        }
+    };
 
     if (m_IsExternalCard && m_RemoveExternalCardAction != nullptr)
     {
+        begin_section();
         menu->addAction(m_RemoveExternalCardAction);
-        menu->addSeparator();
     }
 
     if (m_BacksideEnabled && m_HasNonDefaultBackside && m_ResetBacksideAction != nullptr)
     {
+        begin_section();
         menu->addAction(m_ResetBacksideAction);
-        menu->addSeparator();
     }
 
     if (m_InferBleedAction != nullptr)
     {
+        begin_section();
+
         menu->addAction(m_InferBleedAction);
         menu->addAction(m_ForceFullBleedAction);
         menu->addAction(m_ForceNoBleedAction);
@@ -460,14 +483,14 @@ void CardImage::ContextMenuRequested(QPoint pos)
         m_InferBleedAction->setEnabled(m_BleedType != BleedType::Infer);
         m_ForceFullBleedAction->setEnabled(m_BleedType != BleedType::FullBleed);
         m_ForceNoBleedAction->setEnabled(m_BleedType != BleedType::NoBleed);
-
-        menu->addSeparator();
     }
 
     if (m_FixRatioIgnoreAction != nullptr)
     {
         if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
         {
+            begin_section();
+
             menu->addAction(m_FixRatioIgnoreAction);
             menu->addAction(m_FixRatioExpandAction);
             menu->addAction(m_FixRatioStretchAction);
@@ -475,15 +498,22 @@ void CardImage::ContextMenuRequested(QPoint pos)
             m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
             m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
             m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
-
-            menu->addSeparator();
         }
     }
 
     if (m_RotateLeftAction != nullptr)
     {
+        begin_section();
+
         menu->addAction(m_RotateLeftAction);
         menu->addAction(m_RotateRightAction);
+    }
+
+    if (m_SkipSlotAction != nullptr)
+    {
+        begin_section();
+
+        menu->addAction(m_SkipSlotAction);
     }
 
     menu->popup(mapToGlobal(pos));

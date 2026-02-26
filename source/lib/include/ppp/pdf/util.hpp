@@ -36,6 +36,7 @@ struct PageImage
     std::reference_wrapper<const fs::path> m_Image;
     bool m_BacksideShortEdge;
     size_t m_Index;
+    size_t m_Slot;
 };
 struct Page
 {

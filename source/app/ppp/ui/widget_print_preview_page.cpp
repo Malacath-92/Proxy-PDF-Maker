@@ -29,7 +29,7 @@ PagePreview::PagePreview(Project& project,
 
     for (size_t i = 0; i < page.m_Images.size(); ++i)
     {
-        const auto& [card_name, backside_short_edge, index]{
+        const auto& [card_name, backside_short_edge, index, slot]{
             page.m_Images[i]
         };
         const auto& [position, size, base_rotation, card, clip_rect]{
@@ -91,7 +91,9 @@ PagePreview::PagePreview(Project& project,
                 size,
             },
         };
-        image_widget->EnableContextMenu(true, project);
+        image_widget->EnableContextMenu(true,
+                                        project,
+                                        CardContextMenuFeatures::Default | CardContextMenuFeatures::SkipSlot);
         image_widget->setParent(m_ImageContainer);
         image_widget->installEventFilter(event_filter);
 
@@ -107,6 +109,14 @@ PagePreview::PagePreview(Project& project,
                          &PrintPreviewCardImage::ReorderCards,
                          this,
                          &PagePreview::ReorderCards);
+        QObject::connect(image_widget,
+                         &PrintPreviewCardImage::SkipThisSlot,
+                         this,
+                         [&project, this, slot]()
+                         {
+                             project.m_Data.m_SkippedLayoutSlots.push_back(slot);
+                             RequestRefresh();
+                         });
 
         m_Images.push_back(image_widget);
     }

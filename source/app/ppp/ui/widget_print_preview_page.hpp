@@ -36,6 +36,7 @@ class PagePreview : public QWidget
     void DragStarted();
     void DragFinished();
     void ReorderCards(size_t form, size_t to);
+    void RequestRefresh();
 
   private:
     const PageImageTransforms& m_Transforms;

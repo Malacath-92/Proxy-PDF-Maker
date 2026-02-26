@@ -376,6 +376,18 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
 
+        {
+            const auto skipped_layout_slots{ get_value("skipped_layout_slots") };
+            if (!skipped_layout_slots.is_null())
+            {
+                m_Data.m_SkippedLayoutSlots = skipped_layout_slots.get<std::vector<size_t>>();
+            }
+            else
+            {
+                m_Data.m_SkippedLayoutSlots.clear();
+            }
+        }
+
         CacheCardLayout();
 
         {
@@ -634,6 +646,7 @@ std::string Project::DumpToJson() const
         { "width", m_Data.m_CardLayoutHorizontal.x },
         { "height", m_Data.m_CardLayoutHorizontal.y },
     };
+    json["skipped_layout_slots"] = m_Data.m_SkippedLayoutSlots;
     json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
     json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
     json["file_name"] = m_Data.m_FileName.string();
@@ -1332,7 +1345,16 @@ bool Project::CacheCardLayout()
     m_Data.m_CardLayoutVertical = auto_layout.m_CardLayoutVertical;
     m_Data.m_CardLayoutHorizontal = auto_layout.m_CardLayoutHorizontal;
 
-    return previous_layout_vertical != m_Data.m_CardLayoutVertical || previous_layout_horizontal != m_Data.m_CardLayoutHorizontal;
+    const bool card_layout_changed{
+        previous_layout_vertical != m_Data.m_CardLayoutVertical ||
+        previous_layout_horizontal != m_Data.m_CardLayoutHorizontal
+    };
+    if (card_layout_changed)
+    {
+        m_Data.m_SkippedLayoutSlots.clear();
+    }
+
+    return card_layout_changed;
 }
 
 Size Project::ComputePageSize() const

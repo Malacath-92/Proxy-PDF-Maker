@@ -23,6 +23,8 @@ enum class CardContextMenuFeatures
     RatioControls = Bit(3),
     Rotation = Bit(4),
 
+    SkipSlot = Bit(5),
+
     Default = RemoveExternal | Backside | BleedControls | RatioControls | Rotation,
 };
 ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
@@ -85,6 +87,9 @@ class CardImage : public QLabel
 
     void ClearChildren();
 
+  signals:
+    void SkipThisSlot();
+
   private:
     const Project& m_Project;
 
@@ -122,6 +127,8 @@ class CardImage : public QLabel
 
     QAction* m_RotateLeftAction{ nullptr };
     QAction* m_RotateRightAction{ nullptr };
+
+    QAction* m_SkipSlotAction{ nullptr };
 };
 
 class BacksideImage : public CardImage
