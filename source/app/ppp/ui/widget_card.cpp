@@ -66,8 +66,79 @@ QPixmap StoreIntoQtPixmap(const Image& img)
     }
 }
 
+CardSizedLabel::CardSizedLabel(const Project& project, Params params)
+    : m_Rotated{ params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270 }
+    , m_CardSize{ project.CardSize() }
+    , m_CardRatio{ m_CardSize.x / m_CardSize.y }
+    , m_BleedEdge{ params.m_BleedEdge }
+{
+}
+
+bool CardSizedLabel::hasHeightForWidth() const
+{
+    return true;
+}
+int CardSizedLabel::heightForWidth(int width) const
+{
+    float card_ratio{ m_CardRatio };
+    if (m_BleedEdge > 0_mm)
+    {
+        const auto card_size{ m_CardSize + 2.0f * m_BleedEdge };
+        card_ratio = card_size.x / card_size.y;
+    }
+
+    if (m_Rotated)
+    {
+        return int(std::round(width * card_ratio));
+    }
+    else
+    {
+        return int(std::round(width / card_ratio));
+    }
+}
+
+BlankCardImage::BlankCardImage(const Project& project, Params params)
+    : CardSizedLabel{ project, CardSizedLabel::Params{ params.m_Rotation, params.m_BleedEdge } }
+{
+    TRACY_AUTO_SCOPE();
+
+    setStyleSheet("QLabel{ background-color: transparent; }");
+
+    const auto width{ g_Cfg.m_BasePreviewWidth };
+    const auto height{ width / m_CardRatio };
+    const auto img{
+        [&](const Image& img)
+        {
+            if (params.m_RoundedCorners && m_BleedEdge == 0_mm)
+            {
+                if (project.IsCardRoundedRect())
+                {
+                    return img
+                        .RoundCorners(m_CardSize, project.CardCornerRadius())
+                        .Rotate(params.m_Rotation);
+                }
+                else if (project.IsCardSvg())
+                {
+                    return img
+                        .ClipSvg(project.CardSvgData())
+                        .Rotate(params.m_Rotation);
+                }
+            }
+            return img
+                .Rotate(params.m_Rotation);
+        }(Image::PlainColor({ width, height }, ColorRGBA8{ 0xff, 0xff, 0xff, 0xff }))
+    };
+    setPixmap(StoreIntoQtPixmap(img));
+
+    setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
+    setScaledContents(true);
+
+    setMinimumWidth(params.m_MinimumWidth.value);
+}
+
 CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
-    : m_Project{ project }
+    : CardSizedLabel{ project, CardSizedLabel::Params{ params.m_Rotation, params.m_BleedEdge } }
+    , m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
 
@@ -90,18 +161,21 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, Param
 
     setToolTip(ToQString(card_name));
 
+    // CardSizedLabel values
+    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
+    m_CardSize = project.CardSize();
+    m_CardRatio = m_CardSize.x / m_CardSize.y;
+    m_BleedEdge = params.m_BleedEdge;
+
     m_CardName = card_name;
     m_OriginalParams = params;
 
-    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
-    m_CardSize = project.CardSize();
     m_FullBleed = project.CardFullBleed();
-    m_CardRatio = m_CardSize.x / m_CardSize.y;
-    m_BleedEdge = params.m_BleedEdge;
     m_CornerRadius = project.CardCornerRadius();
 
     m_IsExternalCard = project.IsCardExternal(card_name);
     m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
+    m_HasClearBackside = project.HasClearBacksideImage(card_name);
     m_HasNonDefaultBackside = project.HasNonDefaultBacksideImage(card_name);
     m_BadAspectRatio = project.HasBadAspectRatio(card_name);
     m_BleedType = project.GetCardBleedType(card_name);
@@ -200,9 +274,15 @@ void CardImage::EnableContextMenu(bool enable,
 
         if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
         {
+            m_ClearBacksideAction = new QAction{ "Clear Backside", this };
+            // m_ClearBacksideAction->setIcon(s_ClearIcon);
             m_ResetBacksideAction = new QAction{ "Reset Backside", this };
             m_ResetBacksideAction->setIcon(s_ClearIcon);
 
+            QObject::connect(m_ClearBacksideAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ClearBackside, this, std::ref(project)));
             QObject::connect(m_ResetBacksideAction,
                              &QAction::triggered,
                              this,
@@ -289,25 +369,6 @@ void CardImage::EnableContextMenu(bool enable,
     }
 }
 
-int CardImage::heightForWidth(int width) const
-{
-    float card_ratio{ m_CardRatio };
-    if (m_BleedEdge > 0_mm)
-    {
-        const auto card_size{ m_CardSize + 2.0f * m_BleedEdge };
-        card_ratio = card_size.x / card_size.y;
-    }
-
-    if (m_Rotated)
-    {
-        return int(std::round(width * card_ratio));
-    }
-    else
-    {
-        return int(std::round(width / card_ratio));
-    }
-}
-
 void CardImage::PreviewRemoved(const fs::path& card_name)
 {
     if (m_CardName == card_name)
@@ -352,11 +413,12 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
     }
 }
 
-void CardImage::CardBacksideChanged(const fs::path& card_name, const fs::path& backside)
+void CardImage::CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside)
 {
     if (m_CardName == card_name)
     {
-        m_HasNonDefaultBackside = !backside.empty();
+        m_HasClearBackside = !backside.has_value();
+        m_HasNonDefaultBackside = m_HasClearBackside || !backside.value().get().empty();
     }
 }
 
@@ -466,10 +528,17 @@ void CardImage::ContextMenuRequested(QPoint pos)
         menu->addAction(m_RemoveExternalCardAction);
     }
 
-    if (m_BacksideEnabled && m_HasNonDefaultBackside && m_ResetBacksideAction != nullptr)
+    if (m_BacksideEnabled && (!m_HasClearBackside || m_HasNonDefaultBackside) && m_ClearBacksideAction != nullptr)
     {
         begin_section();
-        menu->addAction(m_ResetBacksideAction);
+        if (!m_HasClearBackside)
+        {
+            menu->addAction(m_ClearBacksideAction);
+        }
+        if (m_HasNonDefaultBackside)
+        {
+            menu->addAction(m_ResetBacksideAction);
+        }
     }
 
     if (m_InferBleedAction != nullptr)
@@ -522,6 +591,11 @@ void CardImage::ContextMenuRequested(QPoint pos)
 void CardImage::RemoveExternalCard(Project& project)
 {
     project.RemoveExternalCard(m_CardName);
+}
+
+void CardImage::ClearBackside(Project& project)
+{
+    project.ClearBacksideImage(m_CardName);
 }
 
 void CardImage::ResetBackside(Project& project)

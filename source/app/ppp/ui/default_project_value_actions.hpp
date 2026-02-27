@@ -12,3 +12,5 @@ void EnableOptionWidgetForDefaults(
     std::string_view path,
     std::function<void(nlohmann::json)> set_value = nullptr,
     std::function<nlohmann::json()> get_value = nullptr);
+void ResetToDefault(
+    QWidget* widget);

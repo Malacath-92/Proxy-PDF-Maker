@@ -179,7 +179,14 @@ bool Project::LoadFromJson(const std::string& json_blob,
             CardInfo& card{ PutCard(card_json["name"]) };
             card.m_Num = card_json["num"];
             card.m_Hidden = card_json["hidden"];
-            card.m_Backside = card_json["backside"].get<std::string>();
+            if (card_json.contains("backside"))
+            {
+                card.m_Backside = card_json["backside"].get<std::string>();
+            }
+            else
+            {
+                card.m_Backside.reset();
+            }
             card.m_BacksideShortEdge = card_json["backside_short_edge"];
             if (card_json.contains("backside_auto_assigned"))
             {
@@ -295,7 +302,17 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 m_Data.m_SeparateBacksides = separate_backsides;
             }
         }
-        m_Data.m_BacksideDefault = get_value("backside_default").get<std::string>();
+        {
+            auto backside_default{ get_value("backside_default") };
+            if (!backside_default.is_null())
+            {
+                m_Data.m_BacksideDefault = backside_default.get<std::string>();
+            }
+            else
+            {
+                m_Data.m_BacksideDefault.reset();
+            }
+        }
         {
             auto backside_offset{ get_value("backside_offset") };
             if (backside_offset.is_number())
@@ -553,7 +570,10 @@ std::string Project::DumpToJson() const
             card_json["name"] = card.m_Name.string();
             card_json["num"] = card.m_Num;
             card_json["hidden"] = card.m_Hidden;
-            card_json["backside"] = card.m_Backside.string();
+            if (card.m_Backside.has_value())
+            {
+                card_json["backside"] = card.m_Backside.value().string();
+            }
             card_json["backside_short_edge"] = card.m_BacksideShortEdge;
             card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
             card_json["rotation"] = magic_enum::enum_name(card.m_Rotation);
@@ -602,7 +622,10 @@ std::string Project::DumpToJson() const
     json["backside_enabled"] = m_Data.m_BacksideEnabled;
     json["separate_backsides"] = m_Data.m_SeparateBacksides;
 
-    json["backside_default"] = m_Data.m_BacksideDefault.string();
+    if (m_Data.m_BacksideDefault.has_value())
+    {
+        json["backside_default"] = m_Data.m_BacksideDefault.value().string();
+    }
     json["backside_offset"] = nlohmann::json{
         { "horizontal", m_Data.m_BacksideOffset.x / 1_cm },
         { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
@@ -673,6 +696,7 @@ void Project::Init()
 
     LogInfo("Loading preview cache...");
     m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache);
+    m_Data.m_FallbackPreview = m_Data.m_Previews.at(g_Cfg.m_FallbackName);
 
     InitProperties();
     EnsureOutputFolder();
@@ -993,9 +1017,9 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
         card->m_Transient = false;
         card->m_ExternalPath = std::nullopt;
 
-        if (m_Data.m_BacksideEnabled && !card->m_Backside.empty())
+        if (m_Data.m_BacksideEnabled && HasNonClearNonDefaultBackside(*card))
         {
-            HideCard(card->m_Backside);
+            HideCard(card->m_Backside.value());
         }
     }
 
@@ -1013,9 +1037,9 @@ void Project::CardRemoved(const fs::path& card_name)
         ++card->m_Hidden;
         card->m_Transient = true;
 
-        if (m_Data.m_BacksideEnabled && !card->m_Backside.empty())
+        if (m_Data.m_BacksideEnabled && HasNonClearNonDefaultBackside(*card))
         {
-            UnhideCard(card->m_Backside);
+            UnhideCard(card->m_Backside.value());
         }
 
         if (const auto& frontside{ MatchAsAutoBackside(card_name) })
@@ -1217,32 +1241,58 @@ const Image& Project::GetUncroppedPreview(const fs::path& card_name) const
 
 const Image& Project::GetCroppedBacksidePreview(const fs::path& card_name) const
 {
-    return GetCroppedPreview(GetBacksideImage(card_name));
+    if (const auto backside_image{ GetBacksideImage(card_name) })
+    {
+        return GetCroppedPreview(backside_image.value().get());
+    }
+    return m_Data.m_FallbackPreview.m_CroppedImage;
 }
 const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) const
 {
-    return GetUncroppedPreview(GetBacksideImage(card_name));
+    if (const auto backside_image{ GetBacksideImage(card_name) })
+    {
+        return GetUncroppedPreview(backside_image.value().get());
+    }
+    return m_Data.m_FallbackPreview.m_UncroppedImage;
+}
+
+bool Project::HasClearBacksideImage(const fs::path& card_name) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        return !card->m_Backside.has_value();
+    }
+    return false;
 }
 
 bool Project::HasNonDefaultBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
     {
-        return !card->m_Backside.empty();
+        return !HasDefaultBackside(*card);
     }
     return false;
 }
 
-const fs::path& Project::GetBacksideImage(const fs::path& card_name) const
+OptionalImageRef Project::GetBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
     {
-        if (!card->m_Backside.empty())
+        if (!card->m_Backside.has_value())
         {
-            return card->m_Backside;
+            return std::nullopt;
+        }
+        else if (!card->m_Backside.value().empty())
+        {
+            return card->m_Backside.value();
         }
     }
-    return m_Data.m_BacksideDefault;
+
+    if (m_Data.m_BacksideDefault.has_value())
+    {
+        return m_Data.m_BacksideDefault.value();
+    }
+    return std::nullopt;
 }
 bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_image)
 {
@@ -1261,10 +1311,10 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         auto old_backside{ std::move(card->m_Backside) };
         card->m_Backside = std::move(backside_image);
 
-        CardBacksideChanged(card_name, card->m_Backside);
+        CardBacksideChanged(card_name, card->m_Backside.value());
 
-        const bool old_backside_shown{ UnhideCard(old_backside) };
-        const bool new_backside_hidden{ HideCard(card->m_Backside) };
+        const bool old_backside_shown{ old_backside.has_value() ? UnhideCard(old_backside.value()) : false };
+        const bool new_backside_hidden{ HideCard(card->m_Backside.value()) };
         return old_backside_shown || new_backside_hidden;
     }
 
@@ -1273,6 +1323,21 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 bool Project::SetBacksideImageDefault(const fs::path& card_name)
 {
     return SetBacksideImage(card_name, "");
+}
+bool Project::ClearBacksideImage(const fs::path& card_name)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        if (card->m_Backside.has_value())
+        {
+            const bool old_backside_shown{ UnhideCard(card->m_Backside.value()) };
+            card->m_Backside = std::nullopt;
+            CardBacksideChanged(card_name, std::nullopt);
+            return old_backside_shown;
+        }
+    }
+
+    return false;
 }
 
 bool Project::HasCardBacksideShortEdge(const fs::path& card_name) const
@@ -1510,15 +1575,15 @@ bool Project::SetBacksideEnabled(bool backside_enabled)
 
         for (const auto& card : m_Data.m_Cards)
         {
-            if (!card.m_Backside.empty())
+            if (HasNonClearNonDefaultBackside(card))
             {
                 if (backside_enabled)
                 {
-                    HideCard(card.m_Backside);
+                    HideCard(card.m_Backside.value());
                 }
                 else
                 {
-                    UnhideCard(card.m_Backside);
+                    UnhideCard(card.m_Backside.value());
                 }
             }
         }
@@ -2116,7 +2181,7 @@ bool Project::AutoMatchBackside(const fs::path& card_name)
     {
         if (auto* card{ FindCard(frontside.value()) })
         {
-            if (card->m_Backside.empty() || card->m_BacksideAutoAssigned)
+            if (HasDefaultBackside(*card) || card->m_BacksideAutoAssigned)
             {
                 SetBacksideImage(frontside.value(), card_name);
                 card->m_BacksideAutoAssigned = true;
@@ -2126,7 +2191,7 @@ bool Project::AutoMatchBackside(const fs::path& card_name)
     }
     else if (auto* card{ FindCard(card_name) })
     {
-        if (card->m_Backside.empty() || card->m_BacksideAutoAssigned)
+        if (HasDefaultBackside(*card) || card->m_BacksideAutoAssigned)
         {
             if (auto backside{ FindCardAutoBackside(card_name) })
             {
@@ -2134,7 +2199,7 @@ bool Project::AutoMatchBackside(const fs::path& card_name)
                 card->m_BacksideAutoAssigned = true;
                 return true;
             }
-            else if (!card->m_Backside.empty())
+            else if (card->m_BacksideAutoAssigned)
             {
                 SetBacksideImageDefault(card_name);
                 card->m_BacksideAutoAssigned = false;
@@ -2188,7 +2253,7 @@ std::optional<fs::path> Project::MatchAsAutoBackside(const fs::path& card_name) 
         };
         for (auto& card : m_Data.m_Cards)
         {
-            if (card.m_Backside.empty() || card.m_BacksideAutoAssigned)
+            if (HasDefaultBackside(card) || card.m_BacksideAutoAssigned)
             {
                 if (card.m_Name.stem() == front_name)
                 {

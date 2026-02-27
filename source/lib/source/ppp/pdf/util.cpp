@@ -432,7 +432,9 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
         [&](const PageImage& image)
         {
             return PageImage{
-                project.GetBacksideImage(image.m_Image),
+                image.m_Image.has_value()
+                    ? project.GetBacksideImage(image.m_Image.value().get())
+                    : std::nullopt,
                 image.m_BacksideShortEdge,
                 image.m_Index,
                 image.m_Slot,

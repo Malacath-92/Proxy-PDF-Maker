@@ -18,7 +18,20 @@ class ImageBrowsePopup : public PopupBase
 
     std::optional<fs::path> Show();
 
+    enum class Choice
+    {
+        Ok,
+        Clear,
+        Reset,
+        Cancel,
+    };
+    Choice GetChoice() const;
+
   private:
+    void CloseWithChoice(Choice choice);
+
     QLineEdit* m_Filter{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };
+
+    Choice m_Choice{ Choice::Ok };
 };

@@ -121,7 +121,7 @@ struct ProjectData
     // Backside options
     bool m_BacksideEnabled{ false };
     bool m_SeparateBacksides{ false };
-    fs::path m_BacksideDefault{ "__back.png" };
+    std::optional<fs::path> m_BacksideDefault{ "__back.png" };
     Offset m_BacksideOffset{ 0_mm, 0_mm };
     Angle m_BacksideRotation{ 0_deg };
     std::string m_BacksideAutoPattern{ "__back_$" };
@@ -273,10 +273,12 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
+    bool HasClearBacksideImage(const fs::path& card_name) const;
     bool HasNonDefaultBacksideImage(const fs::path& card_name) const;
-    const fs::path& GetBacksideImage(const fs::path& card_name) const;
+    OptionalImageRef GetBacksideImage(const fs::path& card_name) const;
     bool SetBacksideImage(const fs::path& card_name, fs::path backside_image);
     bool SetBacksideImageDefault(const fs::path& card_name);
+    bool ClearBacksideImage(const fs::path& card_name);
 
     bool HasCardBacksideShortEdge(const fs::path& card_name) const;
     void SetCardBacksideShortEdge(const fs::path& card_name, bool has_backside_short_edge);
@@ -346,7 +348,7 @@ class Project : public QObject
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
-    void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
+    void CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside);
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
     void CardBleedTypeChanged(const fs::path& card_name, BleedType bleed_type);
     void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);

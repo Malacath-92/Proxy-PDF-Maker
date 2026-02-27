@@ -28,6 +28,7 @@ enum class BleedType
 
 using CardInfoClock = std::chrono::high_resolution_clock;
 using CardInfoTimePoint = CardInfoClock::time_point;
+using OptionalImageRef = std::optional<std::reference_wrapper<const fs::path>>;
 
 struct CardInfo
 {
@@ -37,7 +38,7 @@ struct CardInfo
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
 
-    fs::path m_Backside{};
+    std::optional<fs::path> m_Backside{ ""_p };
     bool m_BacksideShortEdge{ false };
     bool m_BacksideAutoAssigned{ false };
 
@@ -53,3 +54,12 @@ struct CardInfo
     fs::path GetSourcePath(const ProjectData& data) const;
     fs::path GetSourceFolder(const ProjectData& data) const;
 };
+
+inline bool HasDefaultBackside(const CardInfo& card)
+{
+    return card.m_Backside.has_value() && card.m_Backside.value().empty();
+}
+inline bool HasNonClearNonDefaultBackside(const CardInfo& card)
+{
+    return card.m_Backside.has_value() && !card.m_Backside.value().empty();
+}

@@ -35,15 +35,13 @@ class DefaultBacksidePreview : public QWidget
     {
         TRACY_AUTO_SCOPE();
 
-        const fs::path& backside_name{ project.m_Data.m_BacksideDefault };
+        const auto& backside_name{ project.m_Data.m_BacksideDefault };
 
-        auto* backside_default_image{ new BacksideImage{ backside_name, c_MinimumWidth, project } };
+        auto* backside_default_image{ MakeBacksideImage() };
 
-        const auto backside_height{ backside_default_image->heightForWidth(c_MinimumWidth.value) };
-        backside_default_image->setFixedWidth(c_MinimumWidth.value);
-        backside_default_image->setFixedHeight(backside_height);
-
-        auto* backside_default_label{ new QLabel{ ClampName(ToQString(backside_name.c_str())) } };
+        auto* backside_default_label{ new QLabel{ ClampName(backside_name.has_value()
+                                                                ? ToQString(backside_name.value())
+                                                                : "<clear>") } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
@@ -64,9 +62,27 @@ class DefaultBacksidePreview : public QWidget
     {
         TRACY_AUTO_SCOPE();
 
-        const fs::path& backside_name{ m_Project.m_Data.m_BacksideDefault };
-        m_DefaultImage->Refresh(backside_name, c_MinimumWidth, m_Project);
-        m_DefaultLabel->setText(ClampName(ToQString(backside_name.c_str())));
+        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
+
+        auto* backside_image{ dynamic_cast<BacksideImage*>(m_DefaultImage) };
+        const bool had_backside{ backside_image != nullptr };
+        const bool has_backside{ backside_name.has_value() };
+
+        if (had_backside != has_backside)
+        {
+            auto* backside_default_image{ MakeBacksideImage() };
+            layout()->replaceWidget(m_DefaultImage, backside_default_image);
+            delete m_DefaultImage;
+            m_DefaultImage = backside_default_image;
+        }
+        else if (had_backside)
+        {
+            backside_image->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
+        }
+
+        m_DefaultLabel->setText(ClampName(backside_name.has_value()
+                                              ? ToQString(backside_name.value())
+                                              : "<clear>"));
     }
 
   private:
@@ -79,11 +95,28 @@ class DefaultBacksidePreview : public QWidget
                    : name;
     }
 
+    QWidget* MakeBacksideImage()
+    {
+        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
+
+        QWidget* backside_default_image{
+            backside_name.has_value()
+                ? static_cast<QWidget*>(new BacksideImage{ backside_name.value(), c_MinimumWidth, m_Project })
+                : new BlankCardImage{ m_Project, BlankCardImage::Params{ .m_MinimumWidth{ c_MinimumWidth } } }
+        };
+
+        const auto backside_height{ backside_default_image->heightForWidth(c_MinimumWidth.value) };
+        backside_default_image->setFixedWidth(c_MinimumWidth.value);
+        backside_default_image->setFixedHeight(backside_height);
+
+        return backside_default_image;
+    }
+
     inline static constexpr auto c_MinimumWidth{ 60_pix };
 
     const Project& m_Project;
 
-    BacksideImage* m_DefaultImage{ nullptr };
+    QWidget* m_DefaultImage{ nullptr };
     QLabel* m_DefaultLabel{ nullptr };
 };
 
@@ -361,9 +394,23 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         {
             ImageBrowsePopup image_browser{ window(), project };
             image_browser.setWindowTitle("Choose default backside");
+
+            auto prev_backside{ project.m_Data.m_BacksideDefault };
             if (const auto default_backside_choice{ image_browser.Show() })
             {
                 project.m_Data.m_BacksideDefault = default_backside_choice.value();
+            }
+            else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
+            {
+                project.m_Data.m_BacksideDefault.reset();
+            }
+            else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
+            {
+                ResetToDefault(m_BacksideDefaultPreview);
+            }
+
+            if (prev_backside != project.m_Data.m_BacksideDefault)
+            {
                 m_BacksideDefaultPreview->Refresh();
                 BacksideDefaultChanged();
             }

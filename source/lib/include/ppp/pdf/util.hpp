@@ -6,6 +6,7 @@
 #include <dla/vector.h>
 
 #include <ppp/image.hpp>
+#include <ppp/project/card_info.hpp>
 
 class Project;
 
@@ -33,7 +34,7 @@ using PageImageTransforms = std::vector<PageImageTransform>;
 
 struct PageImage
 {
-    std::reference_wrapper<const fs::path> m_Image;
+    OptionalImageRef m_Image;
     bool m_BacksideShortEdge;
     size_t m_Index;
     size_t m_Slot;

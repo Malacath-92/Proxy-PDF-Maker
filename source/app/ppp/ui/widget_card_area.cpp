@@ -135,10 +135,11 @@ class CardWidget : public QFrame
         TRACY_AUTO_SCOPE();
 
         const bool backside_enabled_changed{ m_BacksideEnabled != project.m_Data.m_BacksideEnabled };
-        const bool backside_changed{ m_Backside != project.GetBacksideImage(m_CardName) };
+        const auto new_backside{ project.GetBacksideImage(m_CardName) };
+        const bool backside_changed{ m_Backside != new_backside };
 
         m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
-        m_Backside = project.GetBacksideImage(m_CardName);
+        m_Backside = new_backside;
 
         if (backside_enabled_changed)
         {
@@ -170,8 +171,7 @@ class CardWidget : public QFrame
         {
             if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
             {
-                BacksideImage* backside_image{ new BacksideImage{ m_Backside, project } };
-                stacked_widget->RefreshBackside(backside_image);
+                stacked_widget->RefreshBackside(MakeBacksideImage(project));
             }
         }
 
@@ -182,6 +182,16 @@ class CardWidget : public QFrame
     }
 
   private:
+    QWidget* MakeBacksideImage(Project& project)
+    {
+        if (m_Backside.has_value())
+        {
+            BacksideImage* backside_image{ new BacksideImage{ m_Backside.value(), project } };
+            backside_image->EnableContextMenu(true, project);
+            return backside_image;
+        }
+        return new BlankCardImage{ project };
+    }
     QWidget* MakeCardWidget(Project& project)
     {
         TRACY_AUTO_SCOPE();
@@ -191,9 +201,7 @@ class CardWidget : public QFrame
 
         if (m_BacksideEnabled)
         {
-            BacksideImage* backside_image{ new BacksideImage{ project.GetBacksideImage(m_CardName), project } };
-            backside_image->EnableContextMenu(true, project);
-
+            auto* backside_image{ MakeBacksideImage(project) };
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
             auto backside_choose{
@@ -206,6 +214,14 @@ class CardWidget : public QFrame
                         const auto& backside{ backside_choice.value() };
                         project.SetBacksideImage(m_CardName, backside);
                     }
+                    else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
+                    {
+                        project.ClearBacksideImage(m_CardName);
+                    }
+                    else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
+                    {
+                        project.SetBacksideImageDefault(m_CardName);
+                    }
                 }
             };
 
@@ -214,16 +230,31 @@ class CardWidget : public QFrame
                 QObject::connect(&project,
                                  &Project::CardBacksideChanged,
                                  stacked_widget,
-                                 [this, stacked_widget, &project](const fs::path& card_name, const fs::path& backside)
+                                 [this, stacked_widget, &project](const fs::path& card_name, OptionalImageRef backside)
                                  {
                                      if (m_CardName == card_name)
                                      {
-                                         auto* new_backside_image{
-                                             backside.empty()
-                                                 ? new BacksideImage{ project.m_Data.m_BacksideDefault, project }
-                                                 : new BacksideImage{ backside, project },
-                                         };
-                                         new_backside_image->EnableContextMenu(true, project);
+                                         QWidget* new_backside_image{};
+                                         if (backside.has_value())
+                                         {
+                                             const bool default_backside_image{ backside.value().get().empty() };
+                                             if (default_backside_image && !project.m_Data.m_BacksideDefault.has_value())
+                                             {
+                                                 new_backside_image = new BlankCardImage{ project };
+                                             }
+                                             else
+                                             {
+                                                 new_backside_image =
+                                                     !backside.has_value() || backside.value().get().empty()
+                                                         ? new BacksideImage{ project.m_Data.m_BacksideDefault.value(), project }
+                                                         : new BacksideImage{ backside.value().get(), project };
+                                                 static_cast<BacksideImage*>(new_backside_image)->EnableContextMenu(true, project);
+                                             }
+                                         }
+                                         else
+                                         {
+                                             new_backside_image = new BlankCardImage{ project };
+                                         }
                                          stacked_widget->RefreshBackside(new_backside_image);
                                      }
                                  });
@@ -313,7 +344,7 @@ class CardWidget : public QFrame
 
   private:
     bool m_BacksideEnabled{ false };
-    fs::path m_Backside{};
+    std::optional<fs::path> m_Backside{};
 
     QWidget* m_ImageWidget{ nullptr };
     QLineEdit* m_NumberEdit{ nullptr };

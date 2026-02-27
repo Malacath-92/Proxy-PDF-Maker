@@ -355,12 +355,16 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
         }());
 
     auto* ok_button{ new QPushButton{ "OK" } };
+    auto* clear_button{ new QPushButton{ "Clear" } };
+    auto* reset_button{ new QPushButton{ "Reset" } };
     auto* cancel_button{ new QPushButton{ "Cancel" } };
 
     auto* buttons_layout{ new QHBoxLayout };
     buttons_layout->setContentsMargins(0, 0, 0, 0);
     buttons_layout->addStretch();
     buttons_layout->addWidget(ok_button);
+    buttons_layout->addWidget(clear_button);
+    buttons_layout->addWidget(reset_button);
     buttons_layout->addWidget(cancel_button);
     buttons_layout->addStretch();
 
@@ -387,14 +391,19 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     QObject::connect(ok_button,
                      &QPushButton::clicked,
                      this,
-                     &QDialog::close);
+                     std::bind_front(&ImageBrowsePopup::CloseWithChoice, this, Choice::Ok));
+    QObject::connect(clear_button,
+                     &QPushButton::clicked,
+                     this,
+                     std::bind_front(&ImageBrowsePopup::CloseWithChoice, this, Choice::Clear));
+    QObject::connect(reset_button,
+                     &QPushButton::clicked,
+                     this,
+                     std::bind_front(&ImageBrowsePopup::CloseWithChoice, this, Choice::Reset));
     QObject::connect(cancel_button,
                      &QPushButton::clicked,
-                     [this]()
-                     {
-                         m_Grid = nullptr;
-                         close();
-                     });
+                     this,
+                     std::bind_front(&ImageBrowsePopup::CloseWithChoice, this, Choice::Cancel));
 
     const auto parent_rect{ parent != nullptr
                                 ? parent->rect()
@@ -405,7 +414,18 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
 std::optional<fs::path> ImageBrowsePopup::Show()
 {
     PopupBase::Show();
-    return m_Grid != nullptr ? m_Grid->GetSelectedCardName() : std::nullopt;
+    return m_Choice == Choice::Ok ? m_Grid->GetSelectedCardName() : std::nullopt;
+}
+
+ImageBrowsePopup::Choice ImageBrowsePopup::GetChoice() const
+{
+    return m_Choice;
+}
+
+void ImageBrowsePopup::CloseWithChoice(Choice choice)
+{
+    m_Choice = choice;
+    close();
 }
 
 #include "image_browse_popup.moc"

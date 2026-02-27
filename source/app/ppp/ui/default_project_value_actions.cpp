@@ -165,3 +165,15 @@ void EnableOptionWidgetForDefaults(
                          SetAsDefault(path, get_value());
                      });
 }
+void ResetToDefault(
+    QWidget* widget)
+{
+    for (QAction* action : widget->actions())
+    {
+        if (action->text() == "Reset to Default")
+        {
+            action->activate(QAction::Trigger);
+            return;
+        }
+    }
+}

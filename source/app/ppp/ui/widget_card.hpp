@@ -29,7 +29,42 @@ enum class CardContextMenuFeatures
 };
 ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
 
-class CardImage : public QLabel
+class CardSizedLabel : public QLabel
+{
+  public:
+    struct Params
+    {
+        Image::Rotation m_Rotation{ Image::Rotation::None };
+        Length m_BleedEdge{ 0_mm };
+    };
+
+    CardSizedLabel(const Project& project, Params params = {});
+
+    virtual bool hasHeightForWidth() const override;
+    virtual int heightForWidth(int width) const override;
+
+  protected:
+    bool m_Rotated;
+    Size m_CardSize;
+    float m_CardRatio;
+    Length m_BleedEdge;
+};
+
+class BlankCardImage : public CardSizedLabel
+{
+  public:
+    struct Params
+    {
+        bool m_RoundedCorners{ true };
+        Image::Rotation m_Rotation{ Image::Rotation::None };
+        Length m_BleedEdge{ 0_mm };
+        Pixel m_MinimumWidth{ 0_pix };
+    };
+
+    BlankCardImage(const Project& project, Params params = {});
+};
+
+class CardImage : public CardSizedLabel
 {
     Q_OBJECT
 
@@ -55,16 +90,10 @@ class CardImage : public QLabel
         return m_CardName;
     }
 
-    virtual bool hasHeightForWidth() const override
-    {
-        return true;
-    }
-    virtual int heightForWidth(int width) const override;
-
   private slots:
     void PreviewRemoved(const fs::path& card_name);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
-    void CardBacksideChanged(const fs::path& card_name, const fs::path& backside);
+    void CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside);
 
   private:
     Image GetImage(const ImagePreview& preview) const;
@@ -76,6 +105,7 @@ class CardImage : public QLabel
 
     void RemoveExternalCard(Project& project);
 
+    void ClearBackside(Project& project);
     void ResetBackside(Project& project);
 
     void ChangeBleedType(Project& project, BleedType bleed_type);
@@ -96,15 +126,12 @@ class CardImage : public QLabel
     fs::path m_CardName;
     Params m_OriginalParams;
 
-    bool m_Rotated;
-    Size m_CardSize;
     Length m_FullBleed;
-    float m_CardRatio;
-    Length m_BleedEdge;
     Length m_CornerRadius;
 
     bool m_IsExternalCard{ false };
     bool m_BacksideEnabled{ false };
+    bool m_HasClearBackside{ false };
     bool m_HasNonDefaultBackside{ false };
     bool m_BadAspectRatio{ false };
     BleedType m_BleedType{ BleedType::Default };
@@ -115,6 +142,7 @@ class CardImage : public QLabel
 
     QAction* m_RemoveExternalCardAction{ nullptr };
 
+    QAction* m_ClearBacksideAction{ nullptr };
     QAction* m_ResetBacksideAction{ nullptr };
 
     QAction* m_InferBleedAction{ nullptr };

@@ -239,36 +239,39 @@ PdfResults GeneratePdf(const Project& project)
             const PageImage& image,
             const PageImageTransform& transform)
         {
-            const auto img_path{ output_dir / image.m_Image };
-            if (fs::exists(img_path))
+            if (image.m_Image.has_value())
             {
-                PdfPage::ImageData image_data{
-                    .m_Path{ img_path },
-                    .m_Pos{
-                        transform.m_Position.x,
-                        page_height - transform.m_Position.y - transform.m_Size.y, // NOLINT
-                    },
-                    .m_Size{ transform.m_Size },
-                    .m_Rotation = transform.m_Rotation,
-                    .m_ClipRect{
-                        transform.m_ClipRect.and_then(
-                            [&](const auto& clip_rect)
-                            {
-                                return std::optional{
-                                    ClipRect{
-                                        .m_Position{
-                                            clip_rect.m_Position.x,
-                                            page_height -
-                                                clip_rect.m_Position.y -
-                                                clip_rect.m_Size.y, // NOLINT
+                const auto img_path{ output_dir / image.m_Image.value() };
+                if (fs::exists(img_path))
+                {
+                    PdfPage::ImageData image_data{
+                        .m_Path{ img_path },
+                        .m_Pos{
+                            transform.m_Position.x,
+                            page_height - transform.m_Position.y - transform.m_Size.y, // NOLINT
+                        },
+                        .m_Size{ transform.m_Size },
+                        .m_Rotation = transform.m_Rotation,
+                        .m_ClipRect{
+                            transform.m_ClipRect.and_then(
+                                [&](const auto& clip_rect)
+                                {
+                                    return std::optional{
+                                        ClipRect{
+                                            .m_Position{
+                                                clip_rect.m_Position.x,
+                                                page_height -
+                                                    clip_rect.m_Position.y -
+                                                    clip_rect.m_Size.y, // NOLINT
+                                            },
+                                            .m_Size{ clip_rect.m_Size },
                                         },
-                                        .m_Size{ clip_rect.m_Size },
-                                    },
-                                };
-                            }),
-                    },
-                };
-                page->DrawImage(image_data);
+                                    };
+                                }),
+                        },
+                    };
+                    page->DrawImage(image_data);
+                }
             }
         }
     };
@@ -334,8 +337,11 @@ PdfResults GeneratePdf(const Project& project)
                 const auto& card{ page.m_Images[i] };
                 const auto& transform{ transforms[i] };
 
-                LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.get().string());
-                draw_image(front_page, card, transform);
+                if (card.m_Image.has_value())
+                {
+                    LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.value().get().string());
+                    draw_image(front_page, card, transform);
+                }
             }
 
             if (project.m_Data.m_EnableGuides)
@@ -362,7 +368,9 @@ PdfResults GeneratePdf(const Project& project)
                     ? fmt::format("{}/{} - {}",
                                   page_index + 1,
                                   num_pages,
-                                  page.m_Images.front().m_Image.get().string())
+                                  page.m_Images.front().m_Image.has_value()
+                                      ? page.m_Images.front().m_Image.value().get().string()
+                                      : "<empty>")
                     : fmt::format("{} - {}/{}",
                                   frontside_pdf_name,
                                   page_index + 1,
@@ -402,8 +410,11 @@ PdfResults GeneratePdf(const Project& project)
                 const auto& card{ backside_page.m_Images[i] };
                 const auto& transform{ backside_transforms[i] };
 
-                LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.get().string());
-                draw_image(back_page, card, transform);
+                if (card.m_Image.has_value())
+                {
+                    LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.value().get().string());
+                    draw_image(back_page, card, transform);
+                }
             }
 
             if (project.m_Data.m_EnableGuides && project.m_Data.m_BacksideEnableGuides)
@@ -430,7 +441,9 @@ PdfResults GeneratePdf(const Project& project)
                     ? fmt::format("{}/{} - {}",
                                   page_index + 1,
                                   num_pages,
-                                  backside_page.m_Images.front().m_Image.get().string())
+                                  backside_page.m_Images.front().m_Image.has_value()
+                                      ? backside_page.m_Images.front().m_Image.value().get().string()
+                                      : "<empty>")
                     : fmt::format("{} - {}/{}",
                                   backside_pdf_name,
                                   page_index + 1,

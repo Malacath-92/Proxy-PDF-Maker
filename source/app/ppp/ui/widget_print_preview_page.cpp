@@ -36,6 +36,11 @@ PagePreview::PagePreview(Project& project,
             transforms[i]
         };
 
+        if (!card_name.has_value())
+        {
+            continue;
+        }
+
         const auto widget_clip_rect{
             clip_rect.and_then([position](const auto& clip_rect)
                                { return std::optional{
@@ -75,7 +80,7 @@ PagePreview::PagePreview(Project& project,
 
         auto* image_widget{
             new PrintPreviewCardImage{
-                card_name,
+                card_name.value(),
                 project,
                 CardImage::Params{
                     .m_RoundedCorners = rounded_corners,
