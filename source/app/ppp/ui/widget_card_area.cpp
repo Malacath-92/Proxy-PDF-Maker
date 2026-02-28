@@ -196,7 +196,7 @@ class CardWidget : public QFrame
     {
         TRACY_AUTO_SCOPE();
 
-        auto* card_image{ new CardImage{ m_CardName, project, CardImage::Params{} } };
+        auto* card_image{ new CardImage{ m_CardName, project, CardImageWidgetParams{} } };
         card_image->EnableContextMenu(true, project);
 
         if (m_BacksideEnabled)

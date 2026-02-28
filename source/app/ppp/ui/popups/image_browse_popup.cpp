@@ -28,7 +28,7 @@ class SelectableCard : public QFrame
         m_CardImage = new CardImage{
             card_name,
             project,
-            CardImage::Params{
+            CardImageWidgetParams{
                 .m_MinimumWidth{ 80 },
             },
         };

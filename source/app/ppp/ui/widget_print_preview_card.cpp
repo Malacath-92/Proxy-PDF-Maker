@@ -7,7 +7,7 @@
 
 PrintPreviewCardImage::PrintPreviewCardImage(const fs::path& card_name,
                                              const Project& project,
-                                             CardImage::Params params,
+                                             CardImageWidgetParams params,
                                              size_t idx,
                                              QWidget* companion,
                                              std::optional<ClipRect> clip_rect,

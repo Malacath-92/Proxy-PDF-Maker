@@ -66,7 +66,7 @@ QPixmap StoreIntoQtPixmap(const Image& img)
     }
 }
 
-CardSizedLabel::CardSizedLabel(const Project& project, Params params)
+CardSizedLabel::CardSizedLabel(const Project& project, CardImageWidgetParams params)
     : m_Rotated{ params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270 }
     , m_CardSize{ project.CardSize() }
     , m_CardRatio{ m_CardSize.x / m_CardSize.y }
@@ -97,8 +97,8 @@ int CardSizedLabel::heightForWidth(int width) const
     }
 }
 
-BlankCardImage::BlankCardImage(const Project& project, Params params)
-    : CardSizedLabel{ project, CardSizedLabel::Params{ params.m_Rotation, params.m_BleedEdge } }
+BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams params)
+    : CardSizedLabel{ project, params }
 {
     TRACY_AUTO_SCOPE();
 
@@ -136,8 +136,8 @@ BlankCardImage::BlankCardImage(const Project& project, Params params)
     setMinimumWidth(params.m_MinimumWidth.value);
 }
 
-CardImage::CardImage(const fs::path& card_name, const Project& project, Params params)
-    : CardSizedLabel{ project, CardSizedLabel::Params{ params.m_Rotation, params.m_BleedEdge } }
+CardImage::CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
+    : CardSizedLabel{ project, params }
     , m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
@@ -153,7 +153,7 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, Params p
     Refresh(card_name, project, params);
 }
 
-void CardImage::Refresh(const fs::path& card_name, const Project& project, Params params)
+void CardImage::Refresh(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
 {
     TRACY_AUTO_SCOPE();
 
@@ -665,7 +665,7 @@ void CardImage::ClearChildren()
 }
 
 BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
-    : BacksideImage{ backside_name, CardImage::Params{}.m_MinimumWidth, project }
+    : BacksideImage{ backside_name, CardImageWidgetParams{}.m_MinimumWidth, project }
 {
     TRACY_AUTO_SCOPE();
 }
@@ -673,7 +673,7 @@ BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width,
     : CardImage{
         backside_name,
         project,
-        CardImage::Params{ .m_MinimumWidth{ minimum_width } }
+        CardImageWidgetParams{ .m_MinimumWidth{ minimum_width } }
     }
 {
     TRACY_AUTO_SCOPE();
@@ -681,7 +681,7 @@ BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width,
 
 void BacksideImage::Refresh(const fs::path& backside_name, const Project& project)
 {
-    Refresh(backside_name, CardImage::Params{}.m_MinimumWidth, project);
+    Refresh(backside_name, CardImageWidgetParams{}.m_MinimumWidth, project);
 }
 void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
 {
@@ -689,7 +689,7 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
     CardImage::Refresh(
         backside_name,
         project,
-        CardImage::Params{ .m_MinimumWidth{ minimum_width } });
+        CardImageWidgetParams{ .m_MinimumWidth{ minimum_width } });
 }
 
 StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)

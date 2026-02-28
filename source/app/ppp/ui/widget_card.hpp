@@ -29,6 +29,15 @@ enum class CardContextMenuFeatures
 };
 ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
 
+
+struct CardImageWidgetParams
+{
+    bool m_RoundedCorners{ true };
+    Image::Rotation m_Rotation{ Image::Rotation::None };
+    Length m_BleedEdge{ 0_mm };
+    Pixel m_MinimumWidth{ 0_pix };
+};
+
 class CardSizedLabel : public QLabel
 {
   public:
@@ -38,7 +47,7 @@ class CardSizedLabel : public QLabel
         Length m_BleedEdge{ 0_mm };
     };
 
-    CardSizedLabel(const Project& project, Params params = {});
+    CardSizedLabel(const Project& project, CardImageWidgetParams params = CardImageWidgetParams{});
 
     virtual bool hasHeightForWidth() const override;
     virtual int heightForWidth(int width) const override;
@@ -53,15 +62,7 @@ class CardSizedLabel : public QLabel
 class BlankCardImage : public CardSizedLabel
 {
   public:
-    struct Params
-    {
-        bool m_RoundedCorners{ true };
-        Image::Rotation m_Rotation{ Image::Rotation::None };
-        Length m_BleedEdge{ 0_mm };
-        Pixel m_MinimumWidth{ 0_pix };
-    };
-
-    BlankCardImage(const Project& project, Params params = Params{});
+    BlankCardImage(const Project& project, CardImageWidgetParams params = CardImageWidgetParams{});
 };
 
 class CardImage : public CardSizedLabel
@@ -69,17 +70,9 @@ class CardImage : public CardSizedLabel
     Q_OBJECT
 
   public:
-    struct Params
-    {
-        bool m_RoundedCorners{ true };
-        Image::Rotation m_Rotation{ Image::Rotation::None };
-        Length m_BleedEdge{ 0_mm };
-        Pixel m_MinimumWidth{ 0_pix };
-    };
+    CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
 
-    CardImage(const fs::path& card_name, const Project& project, Params params);
-
-    void Refresh(const fs::path& card_name, const Project& project, Params params);
+    void Refresh(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
 
     void EnableContextMenu(bool enable,
                            Project& project,
@@ -124,7 +117,7 @@ class CardImage : public CardSizedLabel
     const Project& m_Project;
 
     fs::path m_CardName;
-    Params m_OriginalParams;
+    CardImageWidgetParams m_OriginalParams;
 
     Length m_FullBleed;
     Length m_CornerRadius;

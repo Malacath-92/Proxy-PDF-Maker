@@ -102,7 +102,7 @@ class DefaultBacksidePreview : public QWidget
         QWidget* backside_default_image{
             backside_name.has_value()
                 ? static_cast<QWidget*>(new BacksideImage{ backside_name.value(), c_MinimumWidth, m_Project })
-                : new BlankCardImage{ m_Project, BlankCardImage::Params{ .m_MinimumWidth{ c_MinimumWidth } } }
+                : new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } }
         };
 
         const auto backside_height{ backside_default_image->heightForWidth(c_MinimumWidth.value) };

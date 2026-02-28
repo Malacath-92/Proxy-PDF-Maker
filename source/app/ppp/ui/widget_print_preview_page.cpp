@@ -82,7 +82,7 @@ PagePreview::PagePreview(Project& project,
             new PrintPreviewCardImage{
                 card_name.value(),
                 project,
-                CardImage::Params{
+                CardImageWidgetParams{
                     .m_RoundedCorners = rounded_corners,
                     .m_Rotation = rotation,
                     .m_BleedEdge{
