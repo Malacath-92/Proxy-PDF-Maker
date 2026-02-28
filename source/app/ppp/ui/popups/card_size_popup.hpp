@@ -27,11 +27,16 @@ class CardSizePopup : public PopupBase
   private:
     void Apply();
 
-    int ComputeColumnsWidth();
-    int ComputeTableWidth();
-    int ComputeWidthToCoverTable();
-    void AutoResizeToTable();
+    static int ComputeColumnsWidth(QTableWidget* table);
+    static int ComputeAuxWidth(QTableWidget* table);
+    static int ComputeTableWidth(QTableWidget* table);
+    int ComputeWidthToCoverTable(QTableWidget* table) const;
+    void AutoResizeToTable(QTableWidget* table);
+    void AutoResizeToTables();
 
-    QTableWidget* m_Table{ nullptr };
-    bool m_BlockResizeEvents{ false };
+    QTableWidget* m_RectTable{ nullptr };
+    bool m_BlockResizeEventsRectTable{ false };
+
+    QTableWidget* m_SvgTable{ nullptr };
+    bool m_BlockResizeEventsSvgTable{ false };
 };
