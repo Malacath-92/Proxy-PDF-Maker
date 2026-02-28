@@ -135,6 +135,8 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
     TRACY_AUTO_SCOPE();
 
+    ImgDict img_dict{};
+
     try
     {
         if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
@@ -165,7 +167,6 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
 
             const size_t num_images{ read(c_Tag<size_t>) };
 
-            ImgDict img_dict{};
             for (size_t i = 0; i < num_images; ++i)
             {
                 const std::vector img_name_buf{ read_arr(c_Tag<char>) };
@@ -188,16 +189,6 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
 
                 img_dict[img_name] = std::move(img);
             }
-
-            if (!img_dict.contains(g_Cfg.m_FallbackName))
-            {
-                ImagePreview img{};
-                img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
-                img.m_UncroppedImage = img.m_CroppedImage;
-                img_dict[g_Cfg.m_FallbackName] = std::move(img);
-            }
-
-            return img_dict;
         }
     }
     catch (std::exception& e)
@@ -207,8 +198,18 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
         {
             fs::remove(img_cache_file);
         }
+        img_dict.clear();
     }
-    return {};
+
+    if (!img_dict.contains(g_Cfg.m_FallbackName))
+    {
+        ImagePreview img{};
+        img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
+        img.m_UncroppedImage = img.m_CroppedImage;
+        img_dict[g_Cfg.m_FallbackName] = std::move(img);
+    }
+
+    return img_dict;
 }
 
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
