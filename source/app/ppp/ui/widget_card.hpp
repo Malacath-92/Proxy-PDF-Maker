@@ -61,7 +61,7 @@ class BlankCardImage : public CardSizedLabel
         Pixel m_MinimumWidth{ 0_pix };
     };
 
-    BlankCardImage(const Project& project, Params params = {});
+    BlankCardImage(const Project& project, Params params = Params{});
 };
 
 class CardImage : public CardSizedLabel
