@@ -84,9 +84,88 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                              return;
                                          }
 
+                                         static constexpr auto not_equal{
+                                             [](const Config::CardSizeInfo& lhs, const Config::CardSizeInfo& rhs)
+                                             {
+                                                 static constexpr auto len_not_equal{
+                                                     [](const Length& lhs, const Length& rhs, const Length& base_unit, uint32_t decimals)
+                                                     {
+                                                         const auto factor{ std::pow(10, decimals) / base_unit };
+                                                         return static_cast<int>(lhs * factor) != static_cast<int>(rhs * factor);
+                                                     }
+                                                 };
+                                                 static constexpr auto len_info_not_equal{
+                                                     [](const Config::LengthInfo& lhs, const Config::LengthInfo& rhs)
+                                                     {
+                                                         return lhs.m_BaseUnit != rhs.m_BaseUnit ||
+                                                                lhs.m_Decimals != rhs.m_Decimals ||
+                                                                len_not_equal(lhs.m_Dimension,
+                                                                              rhs.m_Dimension,
+                                                                              UnitValue(lhs.m_BaseUnit),
+                                                                              lhs.m_Decimals);
+                                                     }
+                                                 };
+
+                                                 static constexpr auto size_not_equal{
+                                                     [](const Size& lhs, const Size& rhs, const Length& base_unit, uint32_t decimals)
+                                                     {
+                                                         const auto factor{ std::pow(10, decimals) / base_unit };
+                                                         return static_cast<int>(lhs.x * factor) != static_cast<int>(rhs.x * factor) ||
+                                                                static_cast<int>(lhs.y * factor) != static_cast<int>(rhs.y * factor);
+                                                     }
+                                                 };
+                                                 static constexpr auto size_info_not_equal{
+                                                     [](const Config::SizeInfo& lhs, const Config::SizeInfo& rhs)
+                                                     {
+                                                         return lhs.m_BaseUnit != rhs.m_BaseUnit ||
+                                                                lhs.m_Decimals != rhs.m_Decimals ||
+                                                                size_not_equal(lhs.m_Dimensions,
+                                                                               rhs.m_Dimensions,
+                                                                               UnitValue(lhs.m_BaseUnit),
+                                                                               lhs.m_Decimals);
+                                                     }
+                                                 };
+
+                                                 if (static_cast<int>(lhs.m_CardSizeScale * 1000) != static_cast<int>(rhs.m_CardSizeScale * 1000) ||
+                                                     lhs.m_RoundedRect.has_value() != rhs.m_RoundedRect.has_value() ||
+                                                     lhs.m_SvgInfo.has_value() != rhs.m_SvgInfo.has_value() ||
+                                                     len_info_not_equal(lhs.m_InputBleed, rhs.m_InputBleed))
+                                                 {
+                                                     return true;
+                                                 }
+
+                                                 if (lhs.m_RoundedRect.has_value())
+                                                 {
+                                                     return len_info_not_equal(lhs.m_RoundedRect.value().m_CornerRadius,
+                                                                               rhs.m_RoundedRect.value().m_CornerRadius) ||
+                                                            size_info_not_equal(lhs.m_RoundedRect.value().m_CardSize,
+                                                                                rhs.m_RoundedRect.value().m_CardSize);
+                                                 }
+                                                 else
+                                                 {
+                                                     return lhs.m_SvgInfo.value().m_SvgName != rhs.m_SvgInfo.value().m_SvgName ||
+                                                            size_not_equal(lhs.m_SvgInfo.value().m_Svg.m_Size,
+                                                                           rhs.m_SvgInfo.value().m_Svg.m_Size,
+                                                                           1_m,
+                                                                           3);
+                                                 }
+                                             }
+                                         };
+
+                                         const bool need_card_size_update{
+                                             card_sizes.contains(m_Project.m_Data.m_CardSizeChoice) &&
+                                             not_equal(card_sizes.at(m_Project.m_Data.m_CardSizeChoice),
+                                                       g_Cfg.m_CardSizes.at(m_Project.m_Data.m_CardSizeChoice))
+                                         };
+
                                          g_Cfg.m_CardSizes = card_sizes;
                                          ExternalCardSizesChanged();
                                          CardSizesChanged();
+
+                                         if (need_card_size_update)
+                                         {
+                                             ExternalCardSizeChanged();
+                                         }
                                      });
 
                                  card_size_popup.Show();
@@ -820,12 +899,6 @@ void PrintOptionsWidget::ExternalCardSizesChanged()
 {
     TRACY_AUTO_SCOPE();
 
-    if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
-    {
-        m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
-        CardSizeChanged();
-    }
-
     UpdateComboBox(
         m_CardSize,
         std::span<const std::string>{
@@ -837,6 +910,12 @@ void PrintOptionsWidget::ExternalCardSizesChanged()
             std::views::transform(&Config::CardSizeInfo::m_Hint) |
             std::ranges::to<std::vector>() },
         m_Project.m_Data.m_CardSizeChoice);
+
+    if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+    {
+        m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
+        ExternalCardSizeChanged();
+    }
 }
 
 void PrintOptionsWidget::SetDefaults()
