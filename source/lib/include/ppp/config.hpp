@@ -46,6 +46,7 @@ struct Config
     bool m_AdvancedMode{ false };
 
     bool m_CheckVersionOnStartup{ true };
+    uint32_t m_ToastTimeoutMS{ 8000 };
 
     bool m_EnableFancyUncrop{ true };
     Pixel m_BasePreviewWidth{ 512_pix };

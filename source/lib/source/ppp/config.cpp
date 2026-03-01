@@ -248,6 +248,9 @@ Config LoadConfig()
         {
             settings.beginGroup("DEFAULT");
 
+            config.m_CheckVersionOnStartup = settings.value("Startup.Version.Check", true).toBool();
+            config.m_ToastTimeoutMS = settings.value("Toast.Duration", 8000).toUInt();
+
             config.m_AdvancedMode = settings.value("Advanced.Mode", false).toBool();
 
             config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
@@ -496,6 +499,9 @@ void SaveConfig(Config config)
             settings.beginGroup("DEFAULT");
 
             settings.setValue("Config.Version", ToQString(ConfigFormatVersion()));
+
+            settings.setValue("Startup.Version.Check", config.m_CheckVersionOnStartup);
+            settings.setValue("Toast.Duration", config.m_ToastTimeoutMS);
 
             settings.setValue("Advanced.Mode", config.m_AdvancedMode);
 

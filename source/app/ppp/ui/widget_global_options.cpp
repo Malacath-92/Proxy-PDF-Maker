@@ -188,6 +188,19 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         "&Theme", GetStyles(), application.GetTheme()
     };
 
+    auto* update_check_checkbox{ new QCheckBox{ "Check for Updates" } };
+    update_check_checkbox->setChecked(g_Cfg.m_CheckVersionOnStartup);
+    update_check_checkbox->setToolTip("Determine whether to check for updates at startup.");
+
+    auto* toast_timeout_spin_box{ MakeDoubleSpinBox() };
+    toast_timeout_spin_box->setDecimals(2);
+    toast_timeout_spin_box->setRange(0, 10);
+    toast_timeout_spin_box->setSingleStep(0.5);
+    toast_timeout_spin_box->setSuffix("s");
+    toast_timeout_spin_box->setValue(static_cast<float>(g_Cfg.m_ToastTimeoutMS) / 1000);
+    auto* toast_duration{ new WidgetWithLabel{ "Toast Duration", toast_timeout_spin_box } };
+    toast_duration->setToolTip("Determines the length of time a toast notification stays on screen, disables toast at 0s");
+
     auto* plugins{ new QPushButton{ "Plugins" } };
 
     auto* layout{ new QVBoxLayout };
@@ -204,6 +217,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(card_order_direction);
     layout->addWidget(max_worker_threads);
     layout->addWidget(m_Style);
+    layout->addWidget(update_check_checkbox);
+    layout->addWidget(toast_duration);
     layout->addWidget(plugins);
     setLayout(layout);
 
@@ -340,6 +355,22 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         }
     };
 
+    auto change_update_check{
+        [](Qt::CheckState s)
+        {
+            g_Cfg.m_CheckVersionOnStartup = s == Qt::CheckState::Checked;
+            SaveConfig(g_Cfg);
+        }
+    };
+
+    auto change_toast_timeout{
+        [this](double v)
+        {
+            g_Cfg.m_ToastTimeoutMS = static_cast<int>(v * 1000);
+            SaveConfig(g_Cfg);
+        }
+    };
+
     const auto open_plugins_popup{
         [this]()
         {
@@ -412,6 +443,14 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QComboBox::currentTextChanged,
                      this,
                      change_theme);
+    QObject::connect(update_check_checkbox,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_update_check);
+    QObject::connect(toast_timeout_spin_box,
+                     &QDoubleSpinBox::valueChanged,
+                     this,
+                     change_toast_timeout);
     QObject::connect(plugins,
                      &QPushButton::clicked,
                      this,

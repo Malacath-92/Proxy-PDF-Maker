@@ -83,12 +83,17 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString title,
                                      QString message)
 {
+    if (g_Cfg.m_ToastTimeoutMS == 0)
+    {
+        return;
+    }
+
     TRACY_AUTO_SCOPE();
 
     Q_INIT_RESOURCE(toast_resources);
 
     auto* toast{ new ::Toast };
-    toast->setDuration(8000);
+    toast->setDuration(g_Cfg.m_ToastTimeoutMS);
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
     toast->setPosition(ToastPosition::BOTTOM_LEFT);
@@ -116,6 +121,13 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
 }
 void PrintProxyPrepMainWindow::ImageDropRejected(const fs::path& absolute_image_path)
 {
+    if (g_Cfg.m_ToastTimeoutMS == 0)
+    {
+        return;
+    }
+
+    TRACY_AUTO_SCOPE();
+
     Toast(ToastType::Info,
           "Drag 'N Drop Failed",
           QString{ "An image with name %1 is already part of the project." }
