@@ -181,6 +181,25 @@ class CardWidget : public QFrame
         setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
     }
 
+    virtual void RefreshSize(Project& project)
+    {
+        TRACY_AUTO_SCOPE();
+
+        if (auto* image_widget{ dynamic_cast<CardImage*>(m_ImageWidget) })
+        {
+            image_widget->RefreshSize(project);
+        }
+        else if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
+        {
+            stacked_widget->RefreshSize(project);
+        }
+
+        const auto margins{ layout()->contentsMargins() };
+        const auto minimum_img_width{ m_ImageWidget->minimumWidth() };
+        const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
+        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
+    }
+
   private:
     QWidget* MakeBacksideImage(Project& project)
     {
@@ -371,7 +390,8 @@ class DummyCardWidget : public CardWidget
     }
 
     // clang-format off
-    virtual void Refresh(Project& /*project*/) override {}
+    virtual void Refresh(Project&) override {}
+    virtual void RefreshSize(Project&) override {}
     // clang-format on
 
   private slots:
@@ -430,6 +450,16 @@ class CardGrid : public QWidget
         {
             card_widget->Refresh(m_Project);
         }
+    }
+
+    void CardSizeChanged()
+    {
+        for (const auto& [card_name, card_widget] : m_Cards)
+        {
+            card_widget->RefreshSize(m_Project);
+        }
+
+        adjustSize();
     }
 
     void FullRefresh()
@@ -587,14 +617,16 @@ class CardGrid : public QWidget
         m_Columns = cols;
         m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / m_Columns));
 
-        {
-            TRACY_AUTO_SCOPE();
-            TRACY_SCOPE_NAME(compute_height);
+        RefreshSize();
+    }
 
-            setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
-            setMinimumHeight(heightForWidth(minimumWidth()));
-            setFixedHeight(heightForWidth(size().width()));
-        }
+    void RefreshSize()
+    {
+        TRACY_AUTO_SCOPE();
+
+        setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
+        setMinimumHeight(heightForWidth(minimumWidth()));
+        setFixedHeight(heightForWidth(size().width()));
     }
 
     bool HasCard(const fs::path& card_name) const
@@ -910,6 +942,12 @@ void CardArea::BacksideDefaultChanged()
 {
     auto& grid{ m_ScrollArea->GetGrid() };
     grid.BacksideDefaultChanged();
+}
+
+void CardArea::CardSizeChanged()
+{
+    auto& grid{ m_ScrollArea->GetGrid() };
+    grid.CardSizeChanged();
 }
 
 void CardArea::DisplayColumnsChanged()

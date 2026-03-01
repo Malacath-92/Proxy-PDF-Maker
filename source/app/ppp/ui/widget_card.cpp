@@ -74,6 +74,19 @@ CardSizedLabel::CardSizedLabel(const Project& project, CardImageWidgetParams par
 {
 }
 
+void CardSizedLabel::RefreshSize(const Project& project)
+{
+    m_CardSize = project.CardSize();
+    m_CardRatio = m_CardSize.x / m_CardSize.y;
+}
+
+void CardSizedLabel::RefreshSize(const Project& project, CardImageWidgetParams params)
+{
+    RefreshSize(project);
+    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
+    m_BleedEdge = params.m_BleedEdge;
+}
+
 bool CardSizedLabel::hasHeightForWidth() const
 {
     return true;
@@ -161,14 +174,10 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
 
     setToolTip(ToQString(card_name));
 
-    // CardSizedLabel values
-    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
-    m_CardSize = project.CardSize();
-    m_CardRatio = m_CardSize.x / m_CardSize.y;
-    m_BleedEdge = params.m_BleedEdge;
-
     m_CardName = card_name;
     m_OriginalParams = params;
+
+    RefreshSize(project);
 
     m_FullBleed = project.CardFullBleed();
     m_CornerRadius = project.CardCornerRadius();
@@ -235,6 +244,12 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
     QObject::connect(&project, &Project::CardBacksideChanged, this, &CardImage::CardBacksideChanged);
     QObject::connect(&project, &Project::BacksideEnabledChanged, this, [this](bool enabled)
                      { m_BacksideEnabled = enabled; });
+}
+
+void CardImage::RefreshSize(const Project& project)
+{
+    CardSizedLabel::RefreshSize(project, m_OriginalParams);
+    m_FullBleed = project.CardFullBleed();
 }
 
 void CardImage::EnableContextMenu(bool enable,
@@ -375,6 +390,8 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
     {
         TRACY_AUTO_SCOPE();
 
+        RefreshSize(m_Project);
+
         setPixmap(FinalizePixmap(GetEmptyImage()));
 
         m_BadAspectRatio = false;
@@ -396,6 +413,8 @@ void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& pr
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_INFO_FMT("Card: \"%s\"", card_name.string().c_str());
+
+        RefreshSize(m_Project);
 
         m_BadAspectRatio = preview.m_BadAspectRatio;
 
@@ -740,6 +759,20 @@ void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
     m_Backside = new_backside;
 
     RefreshSizes(rect().size());
+}
+
+void StackedCardBacksideView::RefreshSize(const Project& project)
+{
+    m_Image->RefreshSize(project);
+
+    if (auto* image_widget{ dynamic_cast<CardImage*>(m_Backside) })
+    {
+        image_widget->RefreshSize(project);
+    }
+    else if (auto* blank_widget{ dynamic_cast<BlankCardImage*>(m_Backside) })
+    {
+        blank_widget->RefreshSize(project);
+    }
 }
 
 int StackedCardBacksideView::heightForWidth(int width) const

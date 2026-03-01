@@ -49,6 +49,9 @@ class CardSizedLabel : public QLabel
 
     CardSizedLabel(const Project& project, CardImageWidgetParams params = CardImageWidgetParams{});
 
+    void RefreshSize(const Project& project);
+    void RefreshSize(const Project& project, CardImageWidgetParams params);
+
     virtual bool hasHeightForWidth() const override;
     virtual int heightForWidth(int width) const override;
 
@@ -73,6 +76,7 @@ class CardImage : public CardSizedLabel
     CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
 
     void Refresh(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
+    void RefreshSize(const Project& project);
 
     void EnableContextMenu(bool enable,
                            Project& project,
@@ -170,9 +174,7 @@ class StackedCardBacksideView : public QStackedWidget
     StackedCardBacksideView(CardImage* image, QWidget* backside);
 
     void RefreshBackside(QWidget* new_backside);
-
-    void RotateImageLeft();
-    void RotateImageRight();
+    void RefreshSize(const Project& project);
 
     virtual bool hasHeightForWidth() const override
     {

@@ -23,6 +23,7 @@ class CardArea : public QWidget
     void ImageDirChanged();
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
+    void CardSizeChanged();
     void DisplayColumnsChanged();
     void CardOrderChanged();
     void CardOrderDirectionChanged();
