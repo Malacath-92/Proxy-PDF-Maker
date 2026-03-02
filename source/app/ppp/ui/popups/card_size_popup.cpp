@@ -729,8 +729,11 @@ void CardSizePopup::Apply()
             static_cast<QLineEdit*>(m_SvgTable->cellWidget(i, 0))->text().toStdString()
         };
 
-        const auto svg{
-            "res/card_svgs/" + static_cast<QComboBox*>(m_SvgTable->cellWidget(i, 2))->currentText().toStdString() + ".svg"
+        const auto svg_file_name{
+            static_cast<QComboBox*>(m_SvgTable->cellWidget(i, 2))->currentText().toStdString() + ".svg"
+        };
+        const auto svg_file{
+            "res/card_svgs/" + svg_file_name
         };
 
         const auto bleed_size_str{
@@ -762,8 +765,8 @@ void CardSizePopup::Apply()
 
             .m_SvgInfo{
                 {
-                    .m_SvgName{ svg },
-                    .m_Svg{ LoadSvg(svg) },
+                    .m_SvgName{ svg_file_name },
+                    .m_Svg{ LoadSvg(svg_file) },
                 },
             }
         };
