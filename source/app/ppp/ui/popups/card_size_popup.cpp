@@ -253,7 +253,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 
     outer_layout->setAlignment(custom_card_shape_hint, Qt::AlignmentFlag::AlignCenter);
 
-    if (m_SvgTable->rowCount() == 0)
+    if (svg_files.empty())
     {
         m_SvgTable->setVisible(false);
         m_BlockResizeEventsSvgTable = true;
