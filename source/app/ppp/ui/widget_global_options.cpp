@@ -364,7 +364,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto change_toast_timeout{
-        [this](double v)
+        [](double v)
         {
             g_Cfg.m_ToastTimeoutMS = static_cast<int>(v * 1000);
             SaveConfig(g_Cfg);
