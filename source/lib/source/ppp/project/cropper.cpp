@@ -79,6 +79,8 @@ Cropper::~Cropper()
                          &Cropper::CropWorkDone,
                          &evt_loop,
                          &QEventLoop::quit);
+
+        dtor_timeout.start();
         evt_loop.exec();
     }
 
