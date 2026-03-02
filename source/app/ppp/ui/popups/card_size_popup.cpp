@@ -72,7 +72,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         }()
     };
 
-    static constexpr auto make_svg_card_size_refresh{
+    static constexpr auto c_MakeSvgCardSizeRefresh{
         [](QLabel* card_size_label)
         {
             return [card_size_label](const QString& svg)
@@ -170,7 +170,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                     QObject::connect(svg_combo,
                                      &QComboBox::currentTextChanged,
                                      this,
-                                     make_svg_card_size_refresh(card_size_label));
+                                     c_MakeSvgCardSizeRefresh(card_size_label));
 
                     // input bleed
                     m_SvgTable->setCellWidget(i, 3, c_MakeNumberEdit(bleed_size_string));
@@ -302,7 +302,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
     filter->setParent(this);
     qApp->installEventFilter(filter);
 
-    static constexpr auto is_ancestor_of{
+    static constexpr auto c_IsAncestorOf{
         [](const QObject* ancestor, const QObject* descendant)
         {
             if (ancestor == nullptr)
@@ -335,7 +335,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              }
                          };
 
-                         if (is_ancestor_of(m_SvgTable, filter->m_LastFocusObject))
+                         if (c_IsAncestorOf(m_SvgTable, filter->m_LastFocusObject))
                          {
                              const auto default_svg_name{ svg_files.front() };
                              const auto default_svg{ LoadSvg("res/card_svgs/" + default_svg_name + ".svg") };
@@ -364,7 +364,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              QObject::connect(svg_combo,
                                               &QComboBox::currentTextChanged,
                                               this,
-                                              make_svg_card_size_refresh(card_size_label));
+                                              c_MakeSvgCardSizeRefresh(card_size_label));
 
                              // input bleed
                              m_SvgTable->setCellWidget(i, 3, c_MakeNumberEditFromNumber(0.1));
@@ -414,7 +414,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                      &QPushButton::clicked,
                      [this, filter]()
                      {
-                         static constexpr auto delete_rows{
+                         static constexpr auto c_DeleteRows{
                              [](const QModelIndexList& rows, QTableWidget* table)
                              {
                                  for (const auto& i : rows | std::views::reverse)
@@ -439,7 +439,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                                  const auto selected_rows{ table->selectionModel()->selectedRows() };
                                  if (!selected_rows.isEmpty())
                                  {
-                                     delete_rows(selected_rows, table);
+                                     c_DeleteRows(selected_rows, table);
                                  }
                                  else
                                  {
@@ -448,7 +448,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              }
                          };
 
-                         if (is_ancestor_of(m_SvgTable, filter->m_LastFocusObject))
+                         if (c_IsAncestorOf(m_SvgTable, filter->m_LastFocusObject))
                          {
                              delete_selected_rows(m_SvgTable);
                          }
@@ -502,7 +502,7 @@ void CardSizePopup::resizeEvent(QResizeEvent* event)
             const auto window_margins{ layout()->contentsMargins() };
             const auto margins{ window_margins.left() + window_margins.right() };
             const auto fit_table{
-                [this, new_width, margins](QTableWidget* table)
+                [new_width, margins](QTableWidget* table)
                 {
                     const auto old_columns_width{ ComputeColumnsWidth(table) };
                     const auto table_aux_width{ ComputeAuxWidth(table) };
@@ -583,8 +583,8 @@ QByteArray CardSizePopup::GetGeometry()
 
 void CardSizePopup::RestoreGeometry(const QByteArray& geometry)
 {
-    const auto load_table{
-        [this](QTableWidget* table, const QByteArray& geometry)
+    static constexpr auto c_LoadTable{
+        [](QTableWidget* table, const QByteArray& geometry)
         {
             const auto num_columns{ table->columnCount() };
             auto* header{ table->horizontalHeader() };
@@ -605,12 +605,12 @@ void CardSizePopup::RestoreGeometry(const QByteArray& geometry)
         const auto rect_num_columns{ m_RectTable->columnCount() };
         const auto rect_columns_size{ rect_num_columns * sizeof(int) };
         const auto rect_columns_start{ geometry.size() - rect_columns_size };
-        load_table(m_RectTable, geometry.sliced(rect_columns_start, rect_columns_size));
+        c_LoadTable(m_RectTable, geometry.sliced(rect_columns_start, rect_columns_size));
 
         const auto svg_num_columns{ m_SvgTable->columnCount() };
         const auto svg_columns_size{ svg_num_columns * sizeof(int) };
         const auto svg_columns_start{ rect_columns_start - svg_columns_size };
-        load_table(m_SvgTable, geometry.sliced(svg_columns_start, svg_columns_size));
+        c_LoadTable(m_SvgTable, geometry.sliced(svg_columns_start, svg_columns_size));
 
         const auto geometry_size{ geometry.size() - rect_columns_size - svg_columns_size - 6 };
         PopupBase::RestoreGeometry(geometry.sliced(6, geometry_size));
@@ -619,7 +619,7 @@ void CardSizePopup::RestoreGeometry(const QByteArray& geometry)
     {
         const auto num_columns{ m_RectTable->columnCount() };
         const auto columns_start{ geometry.size() - num_columns * sizeof(int) };
-        load_table(m_RectTable, geometry.sliced(columns_start));
+        c_LoadTable(m_RectTable, geometry.sliced(columns_start));
 
         PopupBase::RestoreGeometry(geometry.sliced(0, columns_start));
     }
