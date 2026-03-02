@@ -122,7 +122,8 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
             auto card_file_name{ QString{ "%2 (%3) - %1.png" }
                                      .arg(card_name)
                                      .arg(card_set.toUpper())
-                                     .arg(card_collector_number.rightJustified(4, '0')) };
+                                     .arg(card_collector_number.rightJustified(4, '0'))
+                                     .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
             m_Cards.push_back(DecklistCard{
                 .m_Name{ std::move(card_name) },
                 .m_FileName{ std::move(card_file_name) },
