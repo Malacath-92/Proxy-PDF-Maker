@@ -98,7 +98,7 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
     if (!m_Queries.empty())
     {
         QJsonParseError reply_parse_error{};
-        auto reply_json{ QJsonDocument::fromJson(reply_data, &reply_parse_error) };
+        auto reply_json{ QJsonDocument::fromJson(reply->readAll(), &reply_parse_error) };
 
         if (reply_parse_error.error != QJsonParseError::NoError)
         {
