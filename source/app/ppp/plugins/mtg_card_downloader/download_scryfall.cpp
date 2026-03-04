@@ -97,9 +97,19 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
     if (!m_Queries.empty())
     {
-        auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
+        QJsonParseError reply_parse_error{};
+        auto reply_json{ QJsonDocument::fromJson(reply_data, &reply_parse_error) };
 
-        const auto data{ reply_json["data"].toArray() };
+        if (reply_parse_error.error != QJsonParseError::NoError)
+        {
+            LogError("Failed parsing returned json data: {}", 
+                      reply_parse_error.errorString().toStdString());
+            return;
+        }
+
+        // Using curly-braces for initializers here results makes gcc and clang
+        // create an array-of-array, hence we are forced to use parens
+        const auto data(reply_json["data"].toArray());
         LogInfo("Adding {} cards for query {}...",
                 data.size(),
                 m_Queries.back().toStdString());
@@ -159,8 +169,17 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
         const auto& meta_data{ m_ReplyMetaData[reply] };
         if (meta_data.m_Type == RequestType::CardInfo)
         {
+            QJsonParseError reply_parse_error{};
+            auto reply_json{ QJsonDocument::fromJson(reply->readAll(), &reply_parse_error) };
+
+            if (reply_parse_error.error != QJsonParseError::NoError)
+            {
+                LogError("Failed parsing returned json data: {}", 
+                         reply_parse_error.errorString().toStdString());
+                return;
+            }
+
             const auto& card{ m_Cards[meta_data.m_Index] };
-            auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
             if (!card.m_Set.has_value())
             {
                 m_CardInfos.push_back(std::move(reply_json));
@@ -302,6 +321,8 @@ QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
         LogError("Empty request... Download cancelled...");
         return nullptr;
     }
+
+    LogInfo("Doing request \"{}\"...", request_uri.toStdString());
 
     QNetworkRequest get_request{ std::move(request_uri) };
     get_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
