@@ -13,6 +13,8 @@
 #include <ppp/json_util.hpp>
 #include <ppp/util.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class QMainWindow;
 
 class PrintProxyPrepApplication
@@ -59,7 +61,7 @@ class PrintProxyPrepApplication
     fs::path m_ProjectPath{ cwd() / "proj.json" };
     std::string m_Theme{ "Default" };
 
-    mutable std::mutex m_CubesMutex;
+    mutable TRACY_DECLARE_MUTEX(std::mutex, m_CubesMutex);
     std::unordered_map<std::string, cv::Mat> m_Cubes;
 
     std::unordered_map<QString, bool> m_ObjectVisibilities;

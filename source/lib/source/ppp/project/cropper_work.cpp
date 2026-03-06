@@ -244,7 +244,7 @@ void CropperCropWork::run()
 
         const std::string color_cube_name{ m_Cfg.m_ColorCube };
         const bool do_color_correction{ color_cube_name != "None" };
-        const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
+        const cv::Mat* color_cube{ do_color_correction ? m_GetColorCube(color_cube_name) : nullptr };
 
         ImageParameters image_params{
             .m_DPI{ max_density },
@@ -444,7 +444,7 @@ void CropperPreviewWork::run()
 
         const std::string color_cube_name{ m_Cfg.m_ColorCube };
         const bool do_color_correction{ color_cube_name != "None" };
-        const cv::Mat* color_cube{ m_GetColorCube(color_cube_name) };
+        const cv::Mat* color_cube{ do_color_correction ? m_GetColorCube(color_cube_name) : nullptr };
 
         const fs::path output_file{ fs::path{ input_file }.replace_extension(".prev") };
 

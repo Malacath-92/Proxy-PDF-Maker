@@ -14,6 +14,8 @@ Log::LogImpl::LogImpl(LogFlags log_flags, std::string_view log_name)
     : m_LogName(log_name)
     , m_LogFlags(log_flags)
 {
+    TRACY_AUTO_SCOPE();
+
     {
         char message[128]{};
         fmt::format_to(message, "Constructing log sink '{}'!", m_LogName);
@@ -102,14 +104,18 @@ std::string_view Log::LogImpl::GetThreadName(const std::thread::id& thread_id)
 
 uint32_t Log::LogImpl::InstallHook(Log::LogHook hook)
 {
-    std::lock_guard lock{ m_Mutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_Mutex);
+
     m_LogHooks.push_back({ static_cast<uint32_t>(m_LogHooks.size() + 1), std::move(hook) });
     return m_LogHooks.back().m_HookId;
 }
 
 void Log::LogImpl::UninstallHook(uint32_t hook_id)
 {
-    std::lock_guard lock{ m_Mutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_Mutex);
+
     for (auto it = m_LogHooks.begin(); it != m_LogHooks.end(); ++it)
     {
         if (it->m_HookId == hook_id)
@@ -128,6 +134,8 @@ bool Log::LogImpl::GetStacktraceEnabled(LogLevel level) const
 
 void Log::LogImpl::Print(const Log::DetailInformation& detail_info, Log::LogLevel level, const char* message)
 {
+    TRACY_AUTO_SCOPE();
+
     Flush(detail_info, level, message);
 
     if (bool(m_LogFlags & LogFlags::FatalQuit) && level == LogLevel::Fatal)
@@ -138,6 +146,8 @@ void Log::LogImpl::Print(const Log::DetailInformation& detail_info, Log::LogLeve
 
 void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, const char* message)
 {
+    TRACY_AUTO_SCOPE();
+
     std::stringstream stream;
 
     if (message[0] == '\n')
@@ -250,7 +260,7 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
     }
 
     const std::string full_message_str{ stream.str() };
-    std::lock_guard lock{ m_Mutex };
+    TRACY_SCOPED_LOCK(m_Mutex);
 
     // Print the log
     if (bool(m_LogFlags & LogFlags::Console))
@@ -271,6 +281,8 @@ void Log::LogImpl::Flush(const DetailInformation& detail_info, LogLevel level, c
 
 void Log::LogImpl::CreateLogFile()
 {
+    TRACY_AUTO_SCOPE();
+
     namespace fs = std::filesystem;
 
     char file_name_buffer[256]{};
@@ -312,6 +324,6 @@ void Log::LogImpl::CreateLogFile()
         }
     }
 
-    std::lock_guard lock{ m_Mutex };
+    TRACY_SCOPED_LOCK(m_Mutex);
     m_FileStream.open(file_name_buffer);
 }

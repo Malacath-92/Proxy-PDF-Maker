@@ -18,6 +18,8 @@
 PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     : QApplication(argc, argv)
 {
+    TRACY_AUTO_SCOPE();
+
     // Create folders for user-content
     for (const auto& folder : { "res/base_pdfs", "res/cubes", "res/styles", "res/card_svgs" })
     {
@@ -32,11 +34,15 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
 
 PrintProxyPrepApplication::~PrintProxyPrepApplication()
 {
+    TRACY_AUTO_SCOPE();
+
     Save();
 }
 
 void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
 {
+    TRACY_AUTO_SCOPE();
+
     m_MainWindow = main_window;
 
     if (m_WindowGeometry.has_value())
@@ -58,6 +64,8 @@ QMainWindow* PrintProxyPrepApplication::GetMainWindow() const
 
 std::optional<QByteArray> PrintProxyPrepApplication::LoadWindowGeometry(const QString& object_name) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_WindowGeometries.contains(object_name))
     {
         return m_WindowGeometries.at(object_name);
@@ -66,6 +74,7 @@ std::optional<QByteArray> PrintProxyPrepApplication::LoadWindowGeometry(const QS
 }
 void PrintProxyPrepApplication::SaveWindowGeometry(const QString& object_name, QByteArray geometry)
 {
+    TRACY_AUTO_SCOPE();
     m_WindowGeometries[object_name] = std::move(geometry);
 }
 
@@ -89,7 +98,9 @@ const std::string& PrintProxyPrepApplication::GetTheme() const
 
 void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 {
-    std::lock_guard lock{ m_CubesMutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_CubesMutex);
+
     if (!m_Cubes.contains(cube_name))
     {
         m_Cubes[std::move(cube_name)] = std::move(cube);
@@ -97,7 +108,9 @@ void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 }
 const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
 {
-    std::lock_guard lock{ m_CubesMutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_CubesMutex);
+
     if (m_Cubes.contains(cube_name))
     {
         return &m_Cubes.at(cube_name);
@@ -120,10 +133,12 @@ void PrintProxyPrepApplication::SetObjectVisibility(const QString& object_name, 
 
 nlohmann::json PrintProxyPrepApplication::GetProjectDefault(std::string_view path) const
 {
+    TRACY_AUTO_SCOPE();
     return GetJsonValue(path);
 }
 void PrintProxyPrepApplication::SetProjectDefault(std::string_view path, nlohmann::json value)
 {
+    TRACY_AUTO_SCOPE();
     SetJsonValue(path, std::move(value));
 }
 
@@ -133,6 +148,8 @@ nlohmann::json PrintProxyPrepApplication::GetJsonValue(std::string_view path) co
     {
         return nlohmann::json{};
     }
+
+    TRACY_AUTO_SCOPE();
 
     try
     {
@@ -145,6 +162,8 @@ nlohmann::json PrintProxyPrepApplication::GetJsonValue(std::string_view path) co
 }
 void PrintProxyPrepApplication::SetJsonValue(std::string_view path, nlohmann::json value)
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_DefaultProjectData == nullptr)
     {
         m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::value_t::object);
@@ -180,6 +199,8 @@ bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 
 void PrintProxyPrepApplication::Load()
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     if (settings.contains("version"))
     {
@@ -234,6 +255,8 @@ void PrintProxyPrepApplication::Load()
 }
 void PrintProxyPrepApplication::Save() const
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", m_MainWindow->saveGeometry());

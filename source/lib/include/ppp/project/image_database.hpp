@@ -10,6 +10,8 @@
 
 #include <ppp/project/card_info.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 struct ImageParameters
 {
     PixelDensity m_DPI{ 0_dpi };
@@ -57,7 +59,7 @@ class ImageDataBase
     ImageDataBase(DataBaseMap database,
                   fs::path path);
 
-    mutable std::mutex m_Mutex;
+    mutable TRACY_DECLARE_MUTEX(std::mutex, m_Mutex);
     DataBaseMap m_DataBase;
 
     fs::path m_Path;

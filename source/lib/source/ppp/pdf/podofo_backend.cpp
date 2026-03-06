@@ -25,12 +25,18 @@ static Length FromPoDoFoPoints(double p)
     return p * 1_pts;
 }
 
-static auto Save(PoDoFo::PdfPainter& painter)
+static auto Save(PoDoFo::PdfPainter& painter, PoDoFoDocument& document)
 {
-    painter.Save();
+    TRACY_AUTO_SCOPE();
+
+    {
+        TRACY_SCOPED_LOCK(document.DocumentMutex());
+        painter.Save();
+    }
     return AtScopeExit{
-        [&painter]
+        [&painter, &document]
         {
+            TRACY_SCOPED_LOCK(document.DocumentMutex());
             painter.Restore();
         }
     };
@@ -38,6 +44,8 @@ static auto Save(PoDoFo::PdfPainter& painter)
 
 static PoDoFo::PdfString MakeTransformString(const dla::trans2<double>& trans)
 {
+    TRACY_AUTO_SCOPE();
+
     PoDoFo::PdfStringStream transform_stream;
     transform_stream << trans[0][0] << " " // scale-x
                      << trans[1][0] << " " // rot-1
@@ -53,6 +61,8 @@ static PoDoFo::PdfString MakeTransformString(const dla::trans2<double>& trans)
 static PoDoFo::PdfString MakeTransformString(Offset offset,
                                              Angle angle)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto dx{ -ToPoDoFoPoints(offset.x) };
     const auto dy{ ToPoDoFoPoints(offset.y) };
     const auto fa{ angle / 180_deg * std::numbers::pi };
@@ -68,6 +78,8 @@ static PoDoFo::PdfString MakeTransformString(Offset offset,
                                              Angle angle,
                                              Offset pivot)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto dx{ -ToPoDoFoPoints(offset.x) };
     const auto dy{ ToPoDoFoPoints(offset.y) };
     const auto px{ ToPoDoFoPoints(pivot.x) };
@@ -87,6 +99,8 @@ static void WrapPage(PoDoFo::PdfPage& page,
                      const PoDoFo::PdfString& prepend,
                      const PoDoFo::PdfString& append)
 {
+    TRACY_AUTO_SCOPE();
+
     auto& contents{ page.GetContents()->GetObject() };
     if (contents.IsArray())
     {
@@ -116,11 +130,6 @@ static void WrapPage(PoDoFo::PdfPage& page,
     }
 }
 
-auto PoDoFoDocument::AquireDocumentLock()
-{
-    return std::lock_guard{ m_Mutex };
-}
-
 PoDoFoPage::PoDoFoPage(PoDoFo::PdfPage* page,
                        PoDoFo::PdfPainter* painter,
                        PoDoFoDocument* document,
@@ -130,11 +139,15 @@ PoDoFoPage::PoDoFoPage(PoDoFo::PdfPage* page,
     , m_Document{ document }
     , m_ImageCache{ image_cache }
 {
+    TRACY_AUTO_SCOPE();
+
     m_Painter->SetCanvas(*m_Page, PoDoFo::PdfPainterFlags::NoSaveRestorePrior);
 }
 
 void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& fx{ data.m_From.x };
     const auto& fy{ data.m_From.y };
     const auto& tx{ data.m_To.x };
@@ -147,7 +160,7 @@ void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
     const auto line_width{ ToPoDoFoPoints(style.m_Thickness) };
     const PoDoFo::PdfColor col{ style.m_Color.r, style.m_Color.g, style.m_Color.b };
 
-    auto save{ Save(*m_Painter) };
+    auto save{ Save(*m_Painter, *m_Document) };
     m_Painter->GraphicsState.SetLineWidth(line_width);
     m_Painter->GraphicsState.SetStrokingColor(col);
     m_Painter->SetStrokeStyle(PoDoFo::PdfStrokeStyle::Solid);
@@ -156,6 +169,8 @@ void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
 
 void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
 {
+    TRACY_AUTO_SCOPE();
+
     if (style.m_Color == style.m_SecondColor)
     {
         DrawSolidLine(data, style);
@@ -175,7 +190,7 @@ void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const auto final_dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
     const auto dash_size{ ToPoDoFoPoints(final_dash_size) };
 
-    auto save{ Save(*m_Painter) };
+    auto save{ Save(*m_Painter, *m_Document) };
     m_Painter->GraphicsState.SetLineWidth(line_width);
 
     // First layer
@@ -203,6 +218,8 @@ void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
 
 void PoDoFoPage::DrawImage(ImageData data)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& image_path{ data.m_Path };
     const auto& rotation{ data.m_Rotation };
     const auto& x{ data.m_Pos.x };
@@ -219,7 +236,7 @@ void PoDoFoPage::DrawImage(ImageData data)
     const auto w_scale{ real_w / image->GetWidth() };
     const auto h_scale{ real_h / image->GetHeight() };
 
-    auto save{ Save(*m_Painter) };
+    auto save{ Save(*m_Painter, *m_Document) };
 
     if (data.m_ClipRect.has_value())
     {
@@ -244,13 +261,15 @@ void PoDoFoPage::DrawImage(ImageData data)
 
     // Does this API access the document or mutate the image (despite const-declaration)?
     // I honestly don't know, so better safe than sorry
-    auto lock{ m_Document->AquireDocumentLock() };
+    TRACY_SCOPED_LOCK(m_Document->DocumentMutex());
 
     m_Painter->DrawImage(*image, real_x, real_y, w_scale, h_scale);
 }
 
 PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& bb{ data.m_BoundingBox };
     const PoDoFo::Rect rect{
         ToPoDoFoPoints(bb.m_TopLeft.x),
@@ -261,7 +280,7 @@ PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
     const PoDoFo::PdfString str{ data.m_Text };
     auto& font{ m_Document->GetFont() };
 
-    auto save{ Save(*m_Painter) };
+    auto save{ Save(*m_Painter, *m_Document) };
     m_Painter->TextState.SetFont(font, 12);
 
     const auto out_bb{
@@ -310,7 +329,7 @@ PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
                 ToPoDoFoPoints(out_bb.m_BottomRight.y))
         };
 
-        auto save_backdrop{ Save(*m_Painter) };
+        auto save_backdrop{ Save(*m_Painter, *m_Document) };
         m_Painter->GraphicsState.SetNonStrokingColor(col);
         m_Painter->DrawRectangle(backdrop_rect, PoDoFo::PdfPathDrawMode::Fill);
     }
@@ -328,6 +347,8 @@ PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
 
 void PoDoFoPage::RotateFutureContent(Angle angle)
 {
+    TRACY_AUTO_SCOPE();
+
     const PoDoFo::Vector2 center{
         m_Page->GetRect().Width / 2,
         m_Page->GetRect().Height / 2,
@@ -338,6 +359,8 @@ void PoDoFoPage::RotateFutureContent(Angle angle)
 
 void PoDoFoPage::Finish()
 {
+    TRACY_AUTO_SCOPE();
+
     m_Painter->FinishDrawing();
 }
 
@@ -349,6 +372,8 @@ PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& proj
 
 PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
 {
+    TRACY_AUTO_SCOPE();
+
     auto find_existing_image{
         [&]() -> PoDoFo::PdfImage*
         {
@@ -364,7 +389,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
         }
     };
     {
-        std::lock_guard lock{ m_Mutex };
+        TRACY_SCOPED_LOCK(m_Mutex);
         if (auto* img{ find_existing_image() })
         {
             return img;
@@ -423,7 +448,7 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 
     const auto encoded_image{ encoder(loaded_image) };
 
-    std::lock_guard lock{ m_Mutex };
+    TRACY_SCOPED_LOCK(m_Mutex);
     if (auto* img{ find_existing_image() })
     {
         // If we end up here we discard all the work we did before
@@ -450,6 +475,8 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 PoDoFoDocument::PoDoFoDocument(const Project& project)
     : m_Project{ project }
 {
+    TRACY_AUTO_SCOPE();
+
     m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project);
 
     if (project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf"))
@@ -542,13 +569,16 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
 
 void PoDoFoDocument::ReservePages(size_t pages)
 {
-    auto lock{ AquireDocumentLock() };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(DocumentMutex());
+
     m_Pages.reserve(pages);
 }
 
 PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
 {
-    auto lock{ AquireDocumentLock() };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(DocumentMutex());
 
     const int new_page_idx{ static_cast<int>(m_Pages.size()) };
     PoDoFo::PdfPage* page{ nullptr };
@@ -587,13 +617,15 @@ PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
 
 fs::path PoDoFoDocument::Write(fs::path path)
 {
+    TRACY_AUTO_SCOPE();
+
     try
     {
         const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
 
-        auto lock{ AquireDocumentLock() };
+        TRACY_SCOPED_LOCK(DocumentMutex());
 
         if (g_Cfg.m_DeterminsticPdfOutput)
         {
@@ -620,7 +652,9 @@ fs::path PoDoFoDocument::Write(fs::path path)
 
 PoDoFo::PdfFont& PoDoFoDocument::GetFont()
 {
-    auto lock{ AquireDocumentLock() };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(DocumentMutex());
+
     return m_Document
         .GetFonts()
         .GetStandard14Font(PoDoFo::PdfStandard14FontType::Helvetica);
@@ -628,6 +662,8 @@ PoDoFo::PdfFont& PoDoFoDocument::GetFont()
 
 std::unique_ptr<PoDoFo::PdfImage> PoDoFoDocument::MakeImage()
 {
-    auto lock{ AquireDocumentLock() };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(DocumentMutex());
+
     return m_Document.CreateImage();
 }

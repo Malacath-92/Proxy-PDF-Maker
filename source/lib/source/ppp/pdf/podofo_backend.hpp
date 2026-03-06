@@ -9,6 +9,8 @@
 
 #include <ppp/pdf/backend.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class PoDoFoDocument;
 class PoDoFoImageCache;
 
@@ -53,7 +55,7 @@ class PoDoFoImageCache
     PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    mutable std::recursive_mutex m_Mutex;
+    mutable TRACY_DECLARE_MUTEX(std::recursive_mutex, m_Mutex);
 
     PoDoFoDocument& m_Document;
     const Project& m_Project;
@@ -81,10 +83,13 @@ class PoDoFoDocument final : public PdfDocument
     PoDoFo::PdfFont& GetFont();
     std::unique_ptr<PoDoFo::PdfImage> MakeImage();
 
-    auto AquireDocumentLock();
+    auto& DocumentMutex()
+    {
+        return m_Mutex;
+    }
 
   private:
-    mutable std::mutex m_Mutex;
+    mutable TRACY_DECLARE_MUTEX(std::mutex, m_Mutex);
 
     const Project& m_Project;
 

@@ -29,7 +29,6 @@ enum class CardContextMenuFeatures
 };
 ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
 
-
 struct CardImageWidgetParams
 {
     bool m_RoundedCorners{ true };

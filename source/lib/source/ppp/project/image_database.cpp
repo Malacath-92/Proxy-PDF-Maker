@@ -28,14 +28,16 @@ bool operator!=(const ImageParameters& lhs, const ImageParameters& rhs)
 // NOLINTNEXTLINE
 void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
 {
+    TRACY_AUTO_SCOPE();
+
     // Should look something like this, but the lib never sets the object as binary on load
     // const std::vector<uint8_t>& hash{ json["hash"].get_binary() };
-
     const auto& hash{ json["hash"]["bytes"].get<std::vector<uint8_t>>() };
     entry.m_SourceHash = QByteArray{
         reinterpret_cast<const char*>(hash.data()),
         static_cast<qsizetype>(hash.size()),
     };
+
     entry.m_Params.m_DPI.value = json["dpi"].get<int32_t>();
     entry.m_Params.m_Width = json["width"].get<int32_t>() * 1_pix;
     entry.m_Params.m_CardSize.x = json["card_size"]["width"].get<int32_t>() * 0.001_mm;
@@ -65,6 +67,8 @@ void from_json(const nlohmann::json& json, ImageDataBaseEntry& entry)
 // NOLINTNEXTLINE
 void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
 {
+    TRACY_AUTO_SCOPE();
+
     json["hash"] = nlohmann::json::binary_t{
         std::vector<uint8_t>{
             entry.m_SourceHash.begin(),
@@ -92,6 +96,8 @@ void to_json(nlohmann::json& json, const ImageDataBaseEntry& entry)
 
 ImageDataBase ImageDataBase::FromFile(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
+
     if (fs::exists(path))
     {
         try
@@ -114,6 +120,8 @@ ImageDataBase ImageDataBase::FromFile(const fs::path& path)
 
 ImageDataBase& ImageDataBase::Read(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
+
     try
     {
         const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
@@ -122,7 +130,7 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
             throw std::logic_error{ "Image databse version not compatible with App version..." };
         }
 
-        std::lock_guard lock{ m_Mutex };
+        TRACY_SCOPED_LOCK(m_Mutex);
         m_DataBase = json["db"].get<DataBaseMap>();
         m_Path = path;
     }
@@ -131,7 +139,7 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
         fmt::print("{}", e.what());
 
         // Failed loading image database, continuing with an empty image databse...
-        std::lock_guard lock{ m_Mutex };
+        TRACY_SCOPED_LOCK(m_Mutex);
         m_DataBase.clear();
         m_Path.clear();
     }
@@ -141,9 +149,11 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
 
 void ImageDataBase::Write()
 {
+    TRACY_AUTO_SCOPE();
+
     LogInfo("Writing image database to {}", m_Path.string());
 
-    std::lock_guard lock{ m_Mutex };
+    TRACY_SCOPED_LOCK(m_Mutex);
     if (std::ofstream file{ m_Path })
     {
         nlohmann::json json{};
@@ -157,12 +167,19 @@ void ImageDataBase::Write()
 
 bool ImageDataBase::FindEntry(const fs::path& destination) const
 {
-    std::lock_guard lock{ m_Mutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("Dest: {}", destination.string());
+
+    TRACY_SCOPED_LOCK(m_Mutex);
+
     return m_DataBase.contains(destination);
 }
 
 QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path& source, ImageParameters params) const
 {
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("Dest: {}\nSrc:  {}", destination.string(), source.string());
+
     if (!fs::exists(source))
     {
         return {};
@@ -183,7 +200,7 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
         return cur_hash;
     }
 
-    std::lock_guard lock{ m_Mutex };
+    TRACY_SCOPED_LOCK(m_Mutex);
     auto it{ m_DataBase.find(destination) };
     if (it != m_DataBase.end())
     {
@@ -205,7 +222,11 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
 
 void ImageDataBase::PutEntry(const fs::path& destination, QByteArray source_hash, ImageParameters params)
 {
-    std::lock_guard lock{ m_Mutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPE_INFO_FMT("Dest: {}", destination.string());
+
+    TRACY_SCOPED_LOCK(m_Mutex);
+
     m_DataBase[destination] = ImageDataBaseEntry{
         .m_SourceHash{ std::move(source_hash) },
         .m_Params{ params },

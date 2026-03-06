@@ -5,6 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 auto split_path(std::string_view path)
 {
     static constexpr auto c_ToStringViews{ std::views::transform(
@@ -16,6 +18,8 @@ auto split_path(std::string_view path)
 const nlohmann::json& GetJsonValue(const nlohmann::json& root,
                                    std::string_view path)
 {
+    TRACY_AUTO_SCOPE();
+
     std::reference_wrapper target_json{ root };
     for (const auto& path_part : split_path(path))
     {
@@ -33,6 +37,8 @@ const nlohmann::json& GetJsonValue(const nlohmann::json& root,
 nlohmann::json& GetJsonValue(nlohmann::json& root,
                              std::string_view path)
 {
+    TRACY_AUTO_SCOPE();
+
     std::reference_wrapper target_json{ root };
     for (const auto& path_part : split_path(path))
     {
@@ -52,6 +58,8 @@ nlohmann::json& SetJsonValue(nlohmann::json& root,
                              std::string_view path,
                              nlohmann::json value)
 {
+    TRACY_AUTO_SCOPE();
+
     std::reference_wrapper target_json{ root };
     for (const auto& path_part : split_path(path))
     {
