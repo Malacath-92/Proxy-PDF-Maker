@@ -18,8 +18,150 @@
 #include <ppp/pdf/backend.hpp>
 #include <ppp/pdf/util.hpp>
 
+#include <ppp/profile/profile.hpp>
+
+class PdfWorker : public QRunnable
+{
+  public:
+    PdfWorker(
+        std::atomic_uint32_t& work_done,
+        std::function<void()> work)
+        : m_WorkDone{ work_done }
+        , m_Work{ std::move(work) }
+    {
+    }
+
+    virtual void run() override
+    {
+        m_Work();
+        m_WorkDone.fetch_add(1, std::memory_order::release);
+    }
+
+  private:
+    std::atomic_uint32_t& m_WorkDone;
+    std::function<void()> m_Work;
+};
+
+using ImageRef = std::reference_wrapper<const fs::path>;
+struct ImageCacheData
+{
+    ImageRef m_Image;
+    Size m_Size;
+    Image::Rotation m_Rotation;
+};
+
+std::vector<ImageCacheData> CollectUniqueImages(const std::vector<Page>& pages,
+                                                const std::vector<PageImageTransform>& transforms)
+{
+    TRACY_AUTO_SCOPE();
+
+    std::vector<ImageCacheData> unique_images;
+
+#if __cpp_lib_ranges_enumerate
+    for (auto [p, page] : pages | std::views::enumerate)
+    {
+#else
+    for (size_t p = 0; p < pages.size(); p++)
+    {
+        const Page& page{ pages[p] };
+#endif
+        const auto num_images{ page.m_Images.size() };
+        for (size_t i = 0; i < num_images; ++i)
+        {
+            const auto& card{ page.m_Images[i] };
+            const auto& transform{ transforms[i] };
+
+            if (card.m_Image.has_value())
+            {
+                const auto proj{
+                    [&](const ImageCacheData& img)
+                    {
+                        return card.m_Image.value() == img.m_Image &&
+                               transform.m_Size == img.m_Size &&
+                               transform.m_Rotation == img.m_Rotation;
+                    }
+                };
+                if (!std::ranges::contains(unique_images, true, proj))
+                {
+                    unique_images.push_back(ImageCacheData{
+                        card.m_Image.value(),
+                        transform.m_Size,
+                        transform.m_Rotation,
+                    });
+                }
+            }
+        }
+    }
+
+    return unique_images;
+}
+
+uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
+                             const std::vector<ImageCacheData>& frontside_images,
+                             PdfDocument* backside_pdf,
+                             const std::vector<ImageCacheData>& backside_images,
+                             const fs::path& output_dir,
+                             std::atomic_uint32_t& work_signal)
+{
+    TRACY_AUTO_SCOPE();
+
+    std::vector<std::function<void()>> image_cache_work;
+    for (const auto [img, size, rot] : frontside_images)
+    {
+        const auto img_path{ output_dir / img };
+        image_cache_work.push_back(
+            [=]()
+            {
+                LogInfo("Caching frontside image {}...", img.get().string());
+                PdfDocument::ImageCacheData image_data{
+                    .m_Path{ img_path },
+                    .m_Size{ size },
+                    .m_Rotation = rot,
+                };
+                frontside_pdf->PreCacheImage(image_data);
+            });
+    };
+    for (const auto [img, size, rot] : backside_images)
+    {
+        const auto img_path{ output_dir / img };
+        image_cache_work.push_back(
+            [=]()
+            {
+                LogInfo("Caching backside image {}...", img.get().string());
+                PdfDocument::ImageCacheData image_data{
+                    .m_Path{ img_path },
+                    .m_Size{ size },
+                    .m_Rotation = rot,
+                };
+                backside_pdf->PreCacheImage(image_data);
+            });
+    };
+
+    const bool threaded_image_pre_cache{ IsImageCacheThreadSafe(g_Cfg.m_Backend) };
+    if (!threaded_image_pre_cache || g_Cfg.m_DeterminsticPdfOutput)
+    {
+        for (const auto& work : image_cache_work)
+        {
+            work();
+            work_signal++;
+        }
+    }
+    else
+    {
+        for (const auto& work : image_cache_work)
+        {
+            auto* worker{ new PdfWorker{ work_signal, work } };
+            QThreadPool::globalInstance()->start(worker);
+        }
+    }
+
+    return static_cast<uint32_t>(image_cache_work.size());
+}
+
 PdfResults GeneratePdf(const Project& project)
 {
+    TRACY_AUTO_SCOPE();
+
     AtScopeExit log_generate_time{
         [start_point = std::chrono::high_resolution_clock::now()]()
         {
@@ -218,6 +360,28 @@ PdfResults GeneratePdf(const Project& project)
             : frontside_pdf.get()
     };
 
+    const auto frontside_images{ CollectUniqueImages(pages, transforms) };
+    const auto backside_images{ CollectUniqueImages(backside_pages, backside_transforms) };
+
+    std::atomic_uint32_t cache_work_done{ 0 };
+    const auto amount_of_work{
+        QueueImageCacheWork(frontside_pdf.get(),
+                            frontside_images,
+                            backside_pdf,
+                            backside_images,
+                            output_dir,
+                            cache_work_done)
+    };
+    auto wait_for_cache_work{
+        [&]()
+        {
+            while (cache_work_done.load(std::memory_order_acquire) < amount_of_work)
+            {
+                QThread::yieldCurrentThread();
+            }
+        }
+    };
+
     if (backsides_on_same_pdf)
     {
         frontside_pdf->ReservePages(2 * pages.size());
@@ -327,10 +491,6 @@ PdfResults GeneratePdf(const Project& project)
     const auto draw_front_page{
         [&](PdfPage* front_page, const Page& page, size_t page_index)
         {
-            static constexpr const char c_RenderFmt[]{
-                "Rendering page {}...\nImage number {} - {}"
-            };
-
             const auto num_images{ page.m_Images.size() };
             for (size_t i = 0; i < num_images; ++i)
             {
@@ -339,7 +499,10 @@ PdfResults GeneratePdf(const Project& project)
 
                 if (card.m_Image.has_value())
                 {
-                    LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.value().get().string());
+                    LogInfo("Rendering page {}...\nImage number {} - {}",
+                            page_index + 1,
+                            i + 1,
+                            card.m_Image.value().get().string());
                     draw_image(front_page, card, transform);
                 }
             }
@@ -396,10 +559,6 @@ PdfResults GeneratePdf(const Project& project)
     const auto draw_back_page{
         [&](PdfPage* back_page, const Page& backside_page, size_t page_index)
         {
-            static constexpr const char c_RenderFmt[]{
-                "Rendering backside for page {}...\nImage number {} - {}"
-            };
-
             if (project.m_Data.m_BacksideRotation != 0_deg)
             {
                 back_page->RotateFutureContent(project.m_Data.m_BacksideRotation);
@@ -412,7 +571,10 @@ PdfResults GeneratePdf(const Project& project)
 
                 if (card.m_Image.has_value())
                 {
-                    LogInfo(c_RenderFmt, page_index + 1, i + 1, card.m_Image.value().get().string());
+                    LogInfo("Rendering backside for page {}...\nImage number {} - {}",
+                            page_index + 1,
+                            i + 1,
+                            card.m_Image.value().get().string());
                     draw_image(back_page, card, transform);
                 }
             }
@@ -490,7 +652,10 @@ PdfResults GeneratePdf(const Project& project)
         }
     }
 
-    if (g_Cfg.m_DeterminsticPdfOutput || generate_work.size() < 4)
+    wait_for_cache_work();
+
+    const bool threaded_page_write{ IsPageWriteThreadSafe(g_Cfg.m_Backend) };
+    if (!threaded_page_write || g_Cfg.m_DeterminsticPdfOutput || generate_work.size() < 4)
     {
         for (const auto& work : generate_work)
         {
@@ -499,32 +664,10 @@ PdfResults GeneratePdf(const Project& project)
     }
     else
     {
-        class Worker : public QRunnable
-        {
-          public:
-            Worker(
-                std::atomic_uint32_t& work_done,
-                std::function<void()> work)
-                : m_WorkDone{ work_done }
-                , m_Work{ std::move(work) }
-            {
-            }
-
-            virtual void run() override
-            {
-                m_Work();
-                m_WorkDone.fetch_add(1, std::memory_order::release);
-            }
-
-          private:
-            std::atomic_uint32_t& m_WorkDone;
-            std::function<void()> m_Work;
-        };
-
         std::atomic_uint32_t work_done{ 0 };
         for (const auto& work : generate_work)
         {
-            auto* worker{ new Worker{ work_done, work } };
+            auto* worker{ new PdfWorker{ work_done, work } };
             QThreadPool::globalInstance()->start(worker);
         }
 

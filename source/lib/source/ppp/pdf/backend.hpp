@@ -15,6 +15,8 @@ class Project;
 class PdfDocument;
 
 std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project);
+bool IsPageWriteThreadSafe(PdfBackend backend);
+bool IsImageCacheThreadSafe(PdfBackend backend);
 
 class PdfPage
 {
@@ -115,4 +117,14 @@ class PdfDocument
     virtual PdfPage* NextPage(bool is_backside) = 0;
 
     virtual fs::path Write(fs::path path) = 0;
+
+    virtual void PreallocateImageCache(size_t num_images) = 0;
+
+    struct ImageCacheData
+    {
+        const fs::path& m_Path;
+        Size m_Size;
+        Image::Rotation m_Rotation;
+    };
+    virtual void PreCacheImage(ImageCacheData data) = 0;
 };

@@ -29,14 +29,10 @@ static auto Save(PoDoFo::PdfPainter& painter, PoDoFoDocument& document)
 {
     TRACY_AUTO_SCOPE();
 
-    {
-        TRACY_SCOPED_LOCK(document.DocumentMutex());
-        painter.Save();
-    }
+    painter.Save();
     return AtScopeExit{
         [&painter, &document]
         {
-            TRACY_SCOPED_LOCK(document.DocumentMutex());
             painter.Restore();
         }
     };
@@ -259,10 +255,6 @@ void PoDoFoPage::DrawImage(ImageData data)
         m_Painter->SetClipRect(clip_rect);
     }
 
-    // Does this API access the document or mutate the image (despite const-declaration)?
-    // I honestly don't know, so better safe than sorry
-    TRACY_SCOPED_LOCK(m_Document->DocumentMutex());
-
     m_Painter->DrawImage(*image, real_x, real_y, w_scale, h_scale);
 }
 
@@ -370,31 +362,31 @@ PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& proj
 {
 }
 
-PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
+PoDoFo::PdfImage* PoDoFoImageCache::GetImage(const fs::path& image_path, Image::Rotation rotation) const
+{
+    TRACY_SCOPED_SHARED_LOCK(m_Mutex);
+    const auto it{
+        std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
+                             { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
+    };
+    if (it != m_Cache.end())
+    {
+        return it->m_PoDoFoImage.get();
+    }
+    return nullptr;
+}
+
+void PoDoFoImageCache::PreallocateImages(size_t num_images)
 {
     TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_Mutex);
 
-    auto find_existing_image{
-        [&]() -> PoDoFo::PdfImage*
-        {
-            const auto it{
-                std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
-                                     { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
-            };
-            if (it != m_Cache.end())
-            {
-                return it->m_PoDoFoImage.get();
-            }
-            return nullptr;
-        }
-    };
-    {
-        TRACY_SCOPED_LOCK(m_Mutex);
-        if (auto* img{ find_existing_image() })
-        {
-            return img;
-        }
-    }
+    m_Cache.reserve(num_images);
+}
+
+void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
+{
+    TRACY_AUTO_SCOPE();
 
     const bool rounded_corners{
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
@@ -448,28 +440,23 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
 
     const auto encoded_image{ encoder(loaded_image) };
 
-    TRACY_SCOPED_LOCK(m_Mutex);
-    if (auto* img{ find_existing_image() })
-    {
-        // If we end up here we discard all the work we did before
-        // but if we don't we will destroy an existing image and probably
-        // corrup the pdf
-        return img;
-    }
-
-    std::unique_ptr podofo_image{ m_Document.MakeImage() };
+    std::unique_ptr podofo_image{ [this]()
+                                  {
+                                      TRACY_SCOPED_LOCK(m_Mutex);
+                                      return m_Document.MakeImage();
+                                  }() };
     podofo_image.get()->LoadFromBuffer(
         PoDoFo::bufferview{
             reinterpret_cast<const char*>(encoded_image.data()),
             encoded_image.size(),
         });
 
+    TRACY_SCOPED_LOCK(m_Mutex);
     m_Cache.push_back({
         std::move(image_path),
         rotation,
         std::move(podofo_image),
     });
-    return m_Cache.back().m_PoDoFoImage.get();
 }
 
 PoDoFoDocument::PoDoFoDocument(const Project& project)
@@ -570,16 +557,12 @@ PoDoFoDocument::PoDoFoDocument(const Project& project)
 void PoDoFoDocument::ReservePages(size_t pages)
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPED_LOCK(DocumentMutex());
-
     m_Pages.reserve(pages);
 }
 
 PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPED_LOCK(DocumentMutex());
-
     const int new_page_idx{ static_cast<int>(m_Pages.size()) };
     PoDoFo::PdfPage* page{ nullptr };
     if (m_BaseDocument != nullptr)
@@ -625,8 +608,6 @@ fs::path PoDoFoDocument::Write(fs::path path)
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
 
-        TRACY_SCOPED_LOCK(DocumentMutex());
-
         if (g_Cfg.m_DeterminsticPdfOutput)
         {
             auto& trailer{ m_Document.GetTrailer() };
@@ -650,11 +631,21 @@ fs::path PoDoFoDocument::Write(fs::path path)
     }
 }
 
+void PoDoFoDocument::PreallocateImageCache(size_t num_images)
+{
+    m_ImageCache->PreallocateImages(num_images);
+}
+
+void PoDoFoDocument::PreCacheImage(ImageCacheData data)
+{
+    const auto& image_path{ data.m_Path };
+    const auto& rotation{ data.m_Rotation };
+    m_ImageCache->CacheImage(image_path, rotation);
+}
+
 PoDoFo::PdfFont& PoDoFoDocument::GetFont()
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPED_LOCK(DocumentMutex());
-
     return m_Document
         .GetFonts()
         .GetStandard14Font(PoDoFo::PdfStandard14FontType::Helvetica);
@@ -663,7 +654,5 @@ PoDoFo::PdfFont& PoDoFoDocument::GetFont()
 std::unique_ptr<PoDoFo::PdfImage> PoDoFoDocument::MakeImage()
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPED_LOCK(DocumentMutex());
-
     return m_Document.CreateImage();
 }

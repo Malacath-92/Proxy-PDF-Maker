@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mutex>
+#include <shared_mutex>
 
 #include <opencv2/opencv.hpp>
 
@@ -52,7 +52,7 @@ class PngPage final : public PdfPage
     PixelSize m_CardSize{};
     PixelSize m_PageSize{};
     int32_t m_PageHeight{};
-    PngImageCache* m_ImageCache;
+    const PngImageCache* m_ImageCache;
 };
 
 class PngImageCache
@@ -60,10 +60,13 @@ class PngImageCache
   public:
     PngImageCache(const Project& project);
 
-    cv::Mat GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
+    const cv::Mat* GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const;
+
+    void PreallocateImages(size_t num_images);
+    void CacheImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
 
   private:
-    mutable std::mutex m_Mutex;
+    mutable std::shared_mutex m_Mutex;
 
     const Project& m_Project;
 
@@ -88,6 +91,18 @@ class PngDocument final : public PdfDocument
     virtual PngPage* NextPage(bool is_backside) override;
 
     virtual fs::path Write(fs::path path) override;
+
+    virtual void PreallocateImageCache(size_t num_images) override;
+    virtual void PreCacheImage(ImageCacheData data) override;
+
+    static constexpr bool ThreadSafePageWrite()
+    {
+        return true;
+    }
+    static constexpr bool ThreadSafeImageCache()
+    {
+        return true;
+    }
 
   private:
     mutable std::mutex m_Mutex;

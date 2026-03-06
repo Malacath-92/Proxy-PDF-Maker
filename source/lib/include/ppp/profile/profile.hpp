@@ -69,6 +69,13 @@ class TracyMutexBase
 };
 
 template<class MutexT>
+concept IsSharedMutex = requires(MutexT& mutex) {
+    mutex.lock_shared();
+    mutex.try_lock_shared();
+    mutex.unlock_shared();
+};
+
+template<class MutexT>
 class TracyMutex : public TracyMutexBase
 {
   public:
@@ -108,6 +115,45 @@ class TracyMutex : public TracyMutexBase
         post_unlock();
     }
 
+    auto lock_shared() const
+    requires IsSharedMutex<MutexT>
+    {
+        pre_lock();
+        m_Mutex.lock_shared();
+        post_lock();
+    }
+    auto lock_shared(const TracySourceInfo& source_info) const
+    requires IsSharedMutex<MutexT>
+    {
+        pre_lock();
+        m_Mutex.lock_shared();
+        post_lock(source_info);
+    }
+
+    auto try_lock_shared() const
+    requires IsSharedMutex<MutexT>
+    {
+        pre_lock();
+        bool acquired{ m_Mutex.try_lock_shared() };
+        post_try_lock(acquired);
+        return acquired;
+    }
+    auto try_lock_shared(const TracySourceInfo& source_info) const
+    requires IsSharedMutex<MutexT>
+    {
+        pre_lock();
+        bool acquired{ m_Mutex.try_lock_shared() };
+        post_try_lock(acquired, source_info);
+        return acquired;
+    }
+
+    auto unlock_shared() const
+    requires IsSharedMutex<MutexT>
+    {
+        m_Mutex.unlock_shared();
+        post_unlock();
+    }
+
   private:
     mutable MutexT m_Mutex;
 };
@@ -117,12 +163,12 @@ class TracyMutex : public TracyMutexBase
 #define _TRACY__SOURCE_LOC_LABEL_(a) _TRACY_MERGE_(source_loc_, a)
 #define _TRACY_UNIQUE_SOURCE_LOC_NAME_ _TRACY__SOURCE_LOC_LABEL_(__LINE__)
 
-#define TRACY_SOURCE_INFO_INITIALIZER()              \
-    {                                                \
-        nullptr,                                     \
-        __func__,                                    \
-        std::source_location::current().file_name(), \
-        std::source_location::current().line(),      \
+#define TRACY_SOURCE_INFO_INITIALIZER()                  \
+    {                                                    \
+        nullptr,                                         \
+            __func__,                                    \
+            std::source_location::current().file_name(), \
+            std::source_location::current().line(),      \
     }
 #define TRACY_STATIC_SOURCE_INFO()                                  \
     static constexpr TracySourceInfo _TRACY_UNIQUE_SOURCE_LOC_NAME_ \
@@ -158,6 +204,15 @@ class TracyMutex : public TracyMutexBase
     AtScopeExit _TRACY_UNIQUE_NAME_                                  \
     {                                                                \
         [mut = (&mutex)]() { mut->unlock(); }                        \
+    }
+#define TRACY_SCOPED_SHARED_LOCK(mutex)                              \
+    static_assert(std::is_base_of_v<TracyMutexBase,                  \
+                                    std::decay_t<decltype(mutex)>>); \
+    TRACY_STATIC_SOURCE_INFO();                                      \
+    mutex.lock_shared(_TRACY_UNIQUE_SOURCE_LOC_NAME_);               \
+    AtScopeExit _TRACY_UNIQUE_NAME_                                  \
+    {                                                                \
+        [mut = (&mutex)]() { mut->unlock_shared(); }                 \
     }
 
 #else

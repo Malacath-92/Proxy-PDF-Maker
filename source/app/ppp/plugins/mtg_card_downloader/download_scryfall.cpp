@@ -102,8 +102,8 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
         if (reply_parse_error.error != QJsonParseError::NoError)
         {
-            LogError("Failed parsing returned json data: {}", 
-                      reply_parse_error.errorString().toStdString());
+            LogError("Failed parsing returned json data: {}",
+                     reply_parse_error.errorString().toStdString());
             return;
         }
 
@@ -174,7 +174,7 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
 
             if (reply_parse_error.error != QJsonParseError::NoError)
             {
-                LogError("Failed parsing returned json data: {}", 
+                LogError("Failed parsing returned json data: {}",
                          reply_parse_error.errorString().toStdString());
                 return;
             }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
+#include <shared_mutex>
 
 #include <podofo/main/PdfImage.h>
 #include <podofo/main/PdfMemDocument.h>
@@ -44,7 +44,7 @@ class PoDoFoPage final : public PdfPage
     PoDoFo::PdfPage* m_Page{ nullptr };
     PoDoFo::PdfPainter* m_Painter{ nullptr };
     PoDoFoDocument* m_Document{ nullptr };
-    PoDoFoImageCache* m_ImageCache;
+    const PoDoFoImageCache* m_ImageCache;
 };
 
 class PoDoFoImageCache
@@ -52,10 +52,13 @@ class PoDoFoImageCache
   public:
     PoDoFoImageCache(PoDoFoDocument& document, const Project& project);
 
-    PoDoFo::PdfImage* GetImage(fs::path image_path, Image::Rotation rotation);
+    PoDoFo::PdfImage* GetImage(const fs::path& image_path, Image::Rotation rotation) const;
+
+    void PreallocateImages(size_t num_images);
+    void CacheImage(fs::path image_path, Image::Rotation rotation);
 
   private:
-    mutable TRACY_DECLARE_MUTEX(std::recursive_mutex, m_Mutex);
+    mutable TRACY_DECLARE_MUTEX(std::shared_mutex, m_Mutex);
 
     PoDoFoDocument& m_Document;
     const Project& m_Project;
@@ -80,17 +83,22 @@ class PoDoFoDocument final : public PdfDocument
 
     virtual fs::path Write(fs::path path) override;
 
+    virtual void PreallocateImageCache(size_t num_images) override;
+    virtual void PreCacheImage(ImageCacheData data) override;
+
     PoDoFo::PdfFont& GetFont();
     std::unique_ptr<PoDoFo::PdfImage> MakeImage();
 
-    auto& DocumentMutex()
+    static constexpr bool ThreadSafePageWrite()
     {
-        return m_Mutex;
+        return false;
+    }
+    static constexpr bool ThreadSafeImageCache()
+    {
+        return true;
     }
 
   private:
-    mutable TRACY_DECLARE_MUTEX(std::mutex, m_Mutex);
-
     const Project& m_Project;
 
     std::unique_ptr<PoDoFo::PdfMemDocument> m_BaseDocument;

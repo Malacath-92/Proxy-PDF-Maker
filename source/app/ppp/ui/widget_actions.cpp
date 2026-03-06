@@ -72,6 +72,8 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto render{
         [=, this, &project]()
         {
+            TRACY_AUTO_SCOPE();
+
             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
             GenericPopup render_window{ main_window, "Rendering PDF..." };
 
@@ -79,6 +81,8 @@ ActionsWidget::ActionsWidget(Project& project)
             const auto render_work{
                 [=, &project, &render_window, &do_error_toast]()
                 {
+                    TRACY_AUTO_SCOPE();
+
                     const auto uninstall_log_hook{ render_window.InstallLogHook() };
 
                     try
@@ -124,12 +128,15 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto new_project{
         [=, this, &project]()
         {
+            TRACY_AUTO_SCOPE();
+
             GenericPopup reload_window{ window(), "Resetting project..." };
 
             const auto old_project_data{ std::move(project.m_Data) };
             const auto reset_project_work{
                 [&project]()
                 {
+                    TRACY_AUTO_SCOPE();
                     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
                     application.SetProjectPath("proj.json");
                     project.LoadFromJson(Project{}.DumpToJson(), &application);
@@ -147,6 +154,7 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto save_project{
         [=, &project]()
         {
+            TRACY_AUTO_SCOPE();
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Save) })
             {
                 auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
@@ -159,6 +167,7 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto load_project{
         [=, this, &project]()
         {
+            TRACY_AUTO_SCOPE();
             if (const auto new_project_json{ OpenProjectDialog(FileDialogType::Open) })
             {
                 auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
@@ -171,6 +180,7 @@ ActionsWidget::ActionsWidget(Project& project)
                     const auto load_project_work{
                         [=, &project]()
                         {
+                            TRACY_AUTO_SCOPE();
                             project.Load(new_project_json.value());
                         }
                     };
@@ -188,6 +198,7 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto set_images_folder{
         [=, this, &project]()
         {
+            TRACY_AUTO_SCOPE();
             if (const auto new_image_dir{ OpenFolderDialog(".") })
             {
                 if (new_image_dir != project.m_Data.m_ImageDir)
@@ -217,6 +228,7 @@ ActionsWidget::ActionsWidget(Project& project)
     const auto render_alignment{
         [this, &project]()
         {
+            TRACY_AUTO_SCOPE();
             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
             GenericPopup render_align_window{ main_window, "Rendering alignment PDF..." };
 
@@ -224,6 +236,7 @@ ActionsWidget::ActionsWidget(Project& project)
             const auto render_work{
                 [=, &project, &render_align_window, &do_error_toast]()
                 {
+                    TRACY_AUTO_SCOPE();
                     const auto uninstall_log_hook{ render_align_window.InstallLogHook() };
                     try
                     {

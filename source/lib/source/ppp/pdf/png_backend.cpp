@@ -105,7 +105,7 @@ void PngPage::DrawImage(ImageData data)
         const auto real_x{ card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix) };
         const auto real_y{ m_PageHeight - card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) + real_h };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            .copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
+            ->copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
     }
     else
     {
@@ -117,7 +117,7 @@ void PngPage::DrawImage(ImageData data)
         const auto real_w{ ToPixels(w) };
         const auto real_h{ ToPixels(h) };
         m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            .copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
+            ->copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
     }
 }
 
@@ -207,26 +207,33 @@ PngImageCache::PngImageCache(const Project& project)
 {
 }
 
-cv::Mat PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
+const cv::Mat* PngImageCache::GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const
 {
+    std::shared_lock lock{ m_Mutex };
+    // clang-format off
+    const auto it{
+        std::ranges::find_if(m_Cache,
+                                [&](const ImageCacheEntry& entry)
+                                { return entry.m_ImageRotation == rotation &&
+                                        entry.m_Width == w &&
+                                        entry.m_Height == h &&
+                                        entry.m_ImagePath == image_path; })
+    };
+    // clang-format on
+    if (it != m_Cache.end())
     {
-        std::lock_guard lock{ m_Mutex };
-        // clang-format off
-        const auto it{
-            std::ranges::find_if(m_Cache,
-                                 [&](const ImageCacheEntry& entry)
-                                 { return entry.m_ImageRotation == rotation &&
-                                          entry.m_Width == w &&
-                                          entry.m_Height == h &&
-                                          entry.m_ImagePath == image_path; })
-        };
-        // clang-format on
-        if (it != m_Cache.end())
-        {
-            return it->m_PngImage;
-        }
+        return &it->m_PngImage;
     }
+    return nullptr;
+}
 
+void PngImageCache::PreallocateImages(size_t num_images)
+{
+    m_Cache.reserve(num_images);
+}
+
+void PngImageCache::CacheImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
+{
     const bool rounded_corners{
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
         m_Project.m_Data.m_BleedEdge == 0_mm
@@ -265,7 +272,7 @@ cv::Mat PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image
     cv::cvtColor(three_channel_image, four_channel_image, cv::COLOR_RGB2RGBA);
     const auto encoded_image{ loaded_image.EncodePng() };
 
-    std::lock_guard lock{ m_Mutex };
+    std::unique_lock lock{ m_Mutex };
     m_Cache.push_back({
         std::move(image_path),
         w,
@@ -273,7 +280,6 @@ cv::Mat PngImageCache::GetImage(fs::path image_path, int32_t w, int32_t h, Image
         rotation,
         std::move(four_channel_image),
     });
-    return m_Cache.back().m_PngImage;
 }
 
 PngDocument::PngDocument(const Project& project)
@@ -380,4 +386,28 @@ fs::path PngDocument::Write(fs::path path)
     }
 
     return png_folder;
+}
+
+void PngDocument::PreallocateImageCache(size_t num_images)
+{
+    m_ImageCache->PreallocateImages(num_images);
+}
+
+void PngDocument::PreCacheImage(ImageCacheData data)
+{
+    const auto perfect_fit{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
+    const auto& image_path{ data.m_Path };
+    const auto& rotation{ data.m_Rotation };
+    if (perfect_fit)
+    {
+        const auto real_w{ static_cast<int32_t>(m_PrecomputedCardSize.x / 1_pix) };
+        const auto real_h{ static_cast<int32_t>(m_PrecomputedCardSize.y / 1_pix) };
+        m_ImageCache->CacheImage(image_path, real_w, real_h, rotation);
+    }
+    else
+    {
+        const auto real_w{ ToPixels(data.m_Size.x) };
+        const auto real_h{ ToPixels(data.m_Size.y) };
+        m_ImageCache->CacheImage(image_path, real_w, real_h, rotation);
+    }
 }

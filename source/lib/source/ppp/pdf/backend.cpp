@@ -16,6 +16,32 @@ std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project
     }
 }
 
+bool IsPageWriteThreadSafe(PdfBackend backend)
+{
+    switch (backend)
+    {
+    case PdfBackend::PoDoFo:
+        return PoDoFoDocument::ThreadSafePageWrite();
+    case PdfBackend::Png:
+        return PngDocument::ThreadSafePageWrite();
+    default:
+        return false;
+    }
+}
+
+bool IsImageCacheThreadSafe(PdfBackend backend)
+{
+    switch (backend)
+    {
+    case PdfBackend::PoDoFo:
+        return PoDoFoDocument::ThreadSafeImageCache();
+    case PdfBackend::Png:
+        return PngDocument::ThreadSafeImageCache();
+    default:
+        return false;
+    }
+}
+
 void PdfPage::DrawSolidCross(CrossData data, LineStyle style)
 {
     const auto& x{ data.m_Pos.x };
