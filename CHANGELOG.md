@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Individual cards can now have a clear backside selected, either via their context menu or via the `Clear` button in the image browser.
+- The default backside can be set to clear as well via the `Clear` button in the image browser.
+- In the print preview all cards have had a `Skip this Slot` option added to their context menu, which allows skipping the chosen slot in the layout. This setting also affects generated `.svg` and `.dxf` files.
+- By dropping `.svg` files onto the app you can add a custom card size that has exactly the shape defined by the `.svg` file. This shape also affects generated `.svg` and `.dxf` files.
+- A new option `Check for Updates` is available under `Global Config` that allows you to disable the update check.
+- A new option `Toast Duration` is available under `Global Config` lets you change how long the toast notifications are on-screen, or disable them completely by setting the duration to 0 seconds.
+
+### Changed
+- The image browser has had a `Reset` button added, which can be used as an alternative to the context menu for resetting individual card backs to the default.
+
 ## [1.5.1] - 2026-21-02
 
 ### Changed
