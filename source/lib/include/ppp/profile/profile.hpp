@@ -117,12 +117,12 @@ class TracyMutex : public TracyMutexBase
 #define _TRACY__SOURCE_LOC_LABEL_(a) _TRACY_MERGE_(source_loc_, a)
 #define _TRACY_UNIQUE_SOURCE_LOC_NAME_ _TRACY__SOURCE_LOC_LABEL_(__LINE__)
 
-#define TRACY_SOURCE_INFO_INITIALIZER()                  \
-    {                                                    \
-        nullptr,                                         \
-            __func__,                                    \
-            std::source_location::current().file_name(), \
-            std::source_location::current().line(),      \
+#define TRACY_SOURCE_INFO_INITIALIZER()              \
+    {                                                \
+        nullptr,                                     \
+        __func__,                                    \
+        std::source_location::current().file_name(), \
+        std::source_location::current().line(),      \
     }
 #define TRACY_STATIC_SOURCE_INFO()                                  \
     static constexpr TracySourceInfo _TRACY_UNIQUE_SOURCE_LOC_NAME_ \
@@ -181,7 +181,9 @@ using TracyMutex = MutexT;
 #define TRACY_SCOPE_COLOR(color) NOP
 
 #define TRACY_DECLARE_MUTEX(mutex_type, mutex_name) \
-    mutex_type mutex_name{};
+    mutex_type mutex_name                           \
+    {                                               \
+    }
 #define TRACY_SCOPED_LOCK(mutex)        \
     std::lock_guard _TRACY_UNIQUE_NAME_ \
     {                                   \
