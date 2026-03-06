@@ -25,13 +25,13 @@ static Length FromPoDoFoPoints(double p)
     return p * 1_pts;
 }
 
-static auto Save(PoDoFo::PdfPainter& painter, PoDoFoDocument& document)
+static auto Save(PoDoFo::PdfPainter& painter)
 {
     TRACY_AUTO_SCOPE();
 
     painter.Save();
     return AtScopeExit{
-        [&painter, &document]
+        [&painter]
         {
             painter.Restore();
         }
@@ -156,7 +156,7 @@ void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
     const auto line_width{ ToPoDoFoPoints(style.m_Thickness) };
     const PoDoFo::PdfColor col{ style.m_Color.r, style.m_Color.g, style.m_Color.b };
 
-    auto save{ Save(*m_Painter, *m_Document) };
+    auto save{ Save(*m_Painter) };
     m_Painter->GraphicsState.SetLineWidth(line_width);
     m_Painter->GraphicsState.SetStrokingColor(col);
     m_Painter->SetStrokeStyle(PoDoFo::PdfStrokeStyle::Solid);
@@ -186,7 +186,7 @@ void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const auto final_dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
     const auto dash_size{ ToPoDoFoPoints(final_dash_size) };
 
-    auto save{ Save(*m_Painter, *m_Document) };
+    auto save{ Save(*m_Painter) };
     m_Painter->GraphicsState.SetLineWidth(line_width);
 
     // First layer
@@ -232,7 +232,7 @@ void PoDoFoPage::DrawImage(ImageData data)
     const auto w_scale{ real_w / image->GetWidth() };
     const auto h_scale{ real_h / image->GetHeight() };
 
-    auto save{ Save(*m_Painter, *m_Document) };
+    auto save{ Save(*m_Painter) };
 
     if (data.m_ClipRect.has_value())
     {
@@ -272,7 +272,7 @@ PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
     const PoDoFo::PdfString str{ data.m_Text };
     auto& font{ m_Document->GetFont() };
 
-    auto save{ Save(*m_Painter, *m_Document) };
+    auto save{ Save(*m_Painter) };
     m_Painter->TextState.SetFont(font, 12);
 
     const auto out_bb{
@@ -321,7 +321,7 @@ PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
                 ToPoDoFoPoints(out_bb.m_BottomRight.y))
         };
 
-        auto save_backdrop{ Save(*m_Painter, *m_Document) };
+        auto save_backdrop{ Save(*m_Painter) };
         m_Painter->GraphicsState.SetNonStrokingColor(col);
         m_Painter->DrawRectangle(backdrop_rect, PoDoFo::PdfPathDrawMode::Fill);
     }
