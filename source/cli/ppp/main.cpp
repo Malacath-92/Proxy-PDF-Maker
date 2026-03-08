@@ -327,7 +327,13 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     // Write preview to project and forward to widgets
-    QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, &Project::SetPreview);
+    // clang-format off
+    QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, 
+                     [&project](const fs::path& card_name, ImagePreview* preview, Image::Rotation rotation) {
+                         project.SetPreview(card_name, std::move(*preview), rotation);
+                         delete preview;
+                     });
+    // clang-format on
 
     // Write preview cache to file
     QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);

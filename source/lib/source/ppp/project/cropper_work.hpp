@@ -116,7 +116,7 @@ class CropperPreviewWork : public CropperWork
 
   signals:
     void PreviewUpdated(const fs::path& card_name,
-                        const ImagePreview& preview,
+                        ImagePreview* preview,
                         Image::Rotation rotation);
 
   private:

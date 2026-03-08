@@ -204,7 +204,7 @@ void CardProvider::handleFileAction(efsw::WatchID /*watchid*/,
                                     std::string old_filename)
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPE_INFO_FMT("File: \"\"", filename);
+    TRACY_SCOPE_INFO_FMT("File: \"{}\"", filename);
 
     const fs::path filepath{ filename };
 
@@ -287,7 +287,7 @@ void CardProvider::RegisterInitialWatches(const ProjectData& project)
 void CardProvider::RegisterExternalCard(const fs::path& absolute_image_path)
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPE_INFO_FMT("Card: \"%s\"", absolute_image_path.string());
+    TRACY_SCOPE_INFO_FMT("Card: \"{}\"", absolute_image_path.string());
 
     const auto parent_path{ absolute_image_path.parent_path() };
     auto* watch{ FindWatch(parent_path) };
@@ -306,7 +306,7 @@ void CardProvider::RegisterExternalCard(const fs::path& absolute_image_path)
 void CardProvider::UnregisterExternalCard(const fs::path& absolute_image_path)
 {
     TRACY_AUTO_SCOPE();
-    TRACY_SCOPE_INFO_FMT("Card: \"%s\"", absolute_image_path.string());
+    TRACY_SCOPE_INFO_FMT("Card: \"{}\"", absolute_image_path.string());
 
     const auto parent_path{ absolute_image_path.parent_path() };
     auto* watch{ FindWatch(parent_path) };

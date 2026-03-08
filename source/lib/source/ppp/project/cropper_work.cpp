@@ -216,6 +216,7 @@ void CropperCropWork::run()
     try
     {
         TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(CropperCropWork::run);
         TRACY_SCOPE_COLOR(0x880088);
 
         const Length bleed_edge{ m_Data.m_BleedEdge };
@@ -425,6 +426,7 @@ void CropperPreviewWork::run()
     try
     {
         TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(CropperPreviewWork::run);
         TRACY_SCOPE_COLOR(0x008888);
 
         const Pixel preview_width{ m_Cfg.m_BasePreviewWidth };
@@ -527,7 +529,7 @@ void CropperPreviewWork::run()
                     std::abs(image_aspect_ratio - 1.0f / card_with_full_bleed_aspect_ratio) < c_BadRotationTolerance
                 };
 
-                ImagePreview image_preview{};
+                auto image_preview{ new ImagePreview };
                 if (image_has_bleed)
                 {
                     const Image image{
@@ -544,10 +546,10 @@ void CropperPreviewWork::run()
                         m_BadAspectRatioHandling == BadAspectRatioHandling::Ignore
                     };
 
-                    image_preview.m_UncroppedImage = image;
-                    image_preview.m_CroppedImage = CropImage(image, m_CardName, card_size, full_bleed_edge, 0_mm, 1200_dpi);
-                    image_preview.m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
-                    image_preview.m_BadRotation = bad_rotation;
+                    image_preview->m_UncroppedImage = image;
+                    image_preview->m_CroppedImage = CropImage(image, m_CardName, card_size, full_bleed_edge, 0_mm, 1200_dpi);
+                    image_preview->m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
+                    image_preview->m_BadRotation = bad_rotation;
                 }
                 else
                 {
@@ -576,10 +578,10 @@ void CropperPreviewWork::run()
                         m_BadAspectRatioHandling == BadAspectRatioHandling::Ignore
                     };
 
-                    image_preview.m_CroppedImage = image;
-                    image_preview.m_UncroppedImage = UncropImage(image, m_CardName, card_size, fancy_uncrop);
-                    image_preview.m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
-                    image_preview.m_BadRotation = bad_rotation;
+                    image_preview->m_CroppedImage = image;
+                    image_preview->m_UncroppedImage = UncropImage(image, m_CardName, card_size, fancy_uncrop);
+                    image_preview->m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
+                    image_preview->m_BadRotation = bad_rotation;
                 }
 
                 m_ImageDB.PutEntry(output_file, std::move(input_file_hash), image_params);

@@ -40,7 +40,7 @@ class Cropper : public QObject
 
     void CropProgress(float progress);
     void PreviewUpdated(const fs::path& card_name,
-                        const ImagePreview& preview,
+                        ImagePreview* preview,
                         Image::Rotation rotation);
 
     void OnStart();

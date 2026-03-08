@@ -521,7 +521,7 @@ class CardGrid : public QWidget
     void ApplyFilter(const QString& filter)
     {
         TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_INFO_FMT("Filter: \"%s\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
+        TRACY_SCOPE_INFO_FMT("Filter: \"{}\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
 
         m_CurrentFilter = filter;
         m_FirstItem = nullptr;
@@ -572,6 +572,9 @@ class CardGrid : public QWidget
                     continue;
                 }
 
+                TRACY_AUTO_SCOPE();
+                TRACY_SCOPE_NAME(accept_card);
+
                 auto* card_widget{ m_Cards.at(card_name) };
                 if (m_FirstItem == nullptr)
                 {
@@ -581,7 +584,6 @@ class CardGrid : public QWidget
                 const auto x{ static_cast<int>(i / cols) };
                 const auto y{ static_cast<int>(i % cols) };
                 this_layout->addWidget(card_widget, x, y);
-                card_widget->show();
                 ++i;
             }
         }
