@@ -124,6 +124,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
     {
         // Using curly-braces for initializers here makes gcc and clang
         // create an array-of-array, hence we are forced to use parens
+        // This is true in multiple places in this function, marked with no-{}
         const auto json(nlohmann::json::parse(json_blob));
 
         if (!json.is_object())
@@ -168,10 +169,12 @@ bool Project::LoadFromJson(const std::string& json_blob,
         auto get_value{
             [&json, &overrides](std::string_view path,
                                 nlohmann::json default_value = {})
+                -> nlohmann::json
             {
                 if (overrides != nullptr)
                 {
-                    auto value{ overrides->GetJsonValue(path) };
+                    // no-{}
+                    auto value(overrides->GetJsonValue(path));
                     if (!value.is_null())
                     {
                         return value;
@@ -180,7 +183,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
                 try
                 {
-                    auto value{ GetJsonValue(json, path) };
+                    const auto& value{ GetJsonValue(json, path) };
                     if (!value.is_null())
                     {
                         return value;
@@ -249,7 +252,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         {
-            const auto cards_order{ get_value("cards_order") };
+            // no-{}
+            const auto cards_order(get_value("cards_order"));
             if (!cards_order.is_null())
             {
                 for (const size_t idx : cards_order)
@@ -267,7 +271,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         {
-            const auto bleed_edge_length{ get_value("bleed_edge_cm") };
+            // no-{}
+            const auto bleed_edge_length(get_value("bleed_edge_cm"));
             if (!bleed_edge_length.is_null())
             {
                 m_Data.m_BleedEdge = bleed_edge_length.get<float>() * 1_cm;
@@ -278,14 +283,16 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
-            const auto envelope_bleed_edge{ get_value("envelope_bleed_edge_cm") };
+            // no-{}
+            const auto envelope_bleed_edge(get_value("envelope_bleed_edge_cm"));
             if (!envelope_bleed_edge.is_null())
             {
                 m_Data.m_EnvelopeBleedEdge = envelope_bleed_edge.get<float>() * 1_cm;
             }
         }
         {
-            const auto& spacing{ get_value("spacing") };
+            // no-{}
+            const auto& spacing(get_value("spacing"));
             if (spacing.is_number())
             {
                 m_Data.m_Spacing.x.value = spacing;
@@ -293,8 +300,9 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                auto spacing_width{ get_value("spacing.width") };
-                auto spacing_height{ get_value("spacing.height") };
+                // no-{}
+                auto spacing_width(get_value("spacing.width"));
+                auto spacing_height(get_value("spacing.height"));
                 if (!spacing_width.is_null() && !spacing_height.is_null())
                 {
                     m_Data.m_Spacing = Size{
@@ -313,7 +321,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
-            const auto corners{ get_value("corners") };
+            // no-{}
+            const auto corners(get_value("corners"));
             if (!corners.is_null())
             {
                 m_Data.m_Corners = magic_enum::enum_cast<CardCorners>(corners.get_ref<const std::string&>())
@@ -323,14 +332,16 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
         m_Data.m_BacksideEnabled = get_value("backside_enabled");
         {
-            const auto separate_backsides{ get_value("separate_backsides") };
+            // no-{}
+            const auto separate_backsides(get_value("separate_backsides"));
             if (!separate_backsides.is_null())
             {
                 m_Data.m_SeparateBacksides = separate_backsides;
             }
         }
         {
-            auto backside_default{ get_value("backside_default") };
+            // no-{}
+            auto backside_default(get_value("backside_default"));
             if (!backside_default.is_null())
             {
                 m_Data.m_BacksideDefault = backside_default.get<std::string>();
@@ -341,7 +352,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
-            auto backside_offset{ get_value("backside_offset") };
+            // no-{}
+            auto backside_offset(get_value("backside_offset"));
             if (backside_offset.is_number())
             {
                 m_Data.m_BacksideOffset.x.value = backside_offset;
@@ -349,8 +361,9 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                auto backside_offset_width{ get_value("backside_offset.width") };
-                auto backside_offset_height{ get_value("backside_offset.height") };
+                // no-{}
+                auto backside_offset_width(get_value("backside_offset.width"));
+                auto backside_offset_height(get_value("backside_offset.height"));
                 if (!backside_offset_width.is_null() && !backside_offset_height.is_null())
                 {
                     m_Data.m_BacksideOffset.x = backside_offset_width.get<float>() * 1_mm;
@@ -364,21 +377,24 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
-            auto backside_rotation{ get_value("backside_rotation") };
+            // no-{}
+            auto backside_rotation(get_value("backside_rotation"));
             if (backside_rotation.is_number())
             {
                 m_Data.m_BacksideRotation = backside_rotation.get<float>() * 1_deg;
             }
         }
         {
-            auto backside_bleed{ get_value("backside_bleed") };
+            // no-{}
+            auto backside_bleed(get_value("backside_bleed"));
             if (backside_bleed.is_number())
             {
                 m_Data.m_BacksideExtraBleedEdge = backside_bleed.get<float>() * 1_cm;
             }
         }
         {
-            const auto backside_auto_pattern{ get_value("backside_auto_pattern") };
+            // no-{}
+            const auto backside_auto_pattern(get_value("backside_auto_pattern"));
             if (!backside_auto_pattern.is_null())
             {
                 m_Data.m_BacksideAutoPattern = backside_auto_pattern;
@@ -401,7 +417,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(get_value("orientation").get_ref<const std::string&>())
                                    .value_or(PageOrientation::Portrait);
         {
-            const auto flip_page_on{ get_value("flip_page_on") };
+            // no-{}
+            const auto flip_page_on(get_value("flip_page_on"));
             if (!flip_page_on.is_null())
             {
                 m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(flip_page_on.get_ref<const std::string&>())
@@ -410,7 +427,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         {
-            const auto card_orientation{ get_value("card_orientation") };
+            // no-{}
+            const auto card_orientation(get_value("card_orientation"));
             if (!card_orientation.is_null())
             {
                 m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(card_orientation.get_ref<const std::string&>())
@@ -428,7 +446,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         {
-            const auto skipped_layout_slots{ get_value("skipped_layout_slots") };
+            // no-{}
+            const auto skipped_layout_slots(get_value("skipped_layout_slots"));
             if (!skipped_layout_slots.is_null())
             {
                 m_Data.m_SkippedLayoutSlots = skipped_layout_slots.get<std::vector<size_t>>();
@@ -442,8 +461,9 @@ bool Project::LoadFromJson(const std::string& json_blob,
         CacheCardLayout();
 
         {
-            const auto custom_margins_width{ get_value("custom_margins.width") };
-            const auto custom_margins_height{ get_value("custom_margins.height") };
+            // no-{}
+            const auto custom_margins_width(get_value("custom_margins.width"));
+            const auto custom_margins_height(get_value("custom_margins.height"));
             if (!custom_margins_width.is_null() && !custom_margins_height.is_null())
             {
                 m_Data.m_CustomMargins.emplace();
@@ -456,8 +476,9 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
             else
             {
-                const auto custom_margins_left{ get_value("custom_margins.left") };
-                const auto custom_margins_top{ get_value("custom_margins.top") };
+                // no-{}
+                const auto custom_margins_left(get_value("custom_margins.left"));
+                const auto custom_margins_top(get_value("custom_margins.top"));
                 if (!custom_margins_left.is_null() && !custom_margins_top.is_null())
                 {
                     m_Data.m_CustomMargins.emplace();
@@ -471,8 +492,9 @@ bool Project::LoadFromJson(const std::string& json_blob,
                     };
 
                     // ... last two being optional
-                    const auto custom_margins_right{ get_value("custom_margins.right") };
-                    const auto custom_margins_bottom{ get_value("custom_margins.bottom") };
+                    // no-{}
+                    const auto custom_margins_right(get_value("custom_margins.right"));
+                    const auto custom_margins_bottom(get_value("custom_margins.bottom"));
                     if (!custom_margins_right.is_null() && !custom_margins_bottom.is_null())
                     {
                         m_Data.m_CustomMargins.value().m_BottomRight = Size{
@@ -492,7 +514,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_FileName = get_value("file_name").get<std::string>();
 
         {
-            const auto render_header{ get_value("render_header") };
+            // no-{}
+            const auto render_header(get_value("render_header"));
             if (!render_header.is_null())
             {
                 m_Data.m_RenderPageHeader = render_header;
@@ -503,7 +526,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_EnableGuides = get_value("enable_guides");
         m_Data.m_BacksideEnableGuides = get_value("enable_backside_guides");
         {
-            const auto corner_guides{ get_value("corner_guides") };
+            // no-{}
+            const auto corner_guides(get_value("corner_guides"));
             if (!corner_guides.is_null())
             {
                 m_Data.m_CornerGuides = corner_guides;
@@ -516,19 +540,22 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_CrossGuides = get_value("cross_guides");
         m_Data.m_ExtendedGuides = get_value("extended_guides");
         {
-            const auto& guides_color_a{ get_value("guides_color_a") };
+            // no-{}
+            const auto& guides_color_a(get_value("guides_color_a"));
             m_Data.m_GuidesColorA.r = guides_color_a[0];
             m_Data.m_GuidesColorA.g = guides_color_a[1];
             m_Data.m_GuidesColorA.b = guides_color_a[2];
         }
         {
-            const auto& guides_color_b{ get_value("guides_color_b") };
+            // no-{}
+            const auto& guides_color_b(get_value("guides_color_b"));
             m_Data.m_GuidesColorB.r = guides_color_b[0];
             m_Data.m_GuidesColorB.g = guides_color_b[1];
             m_Data.m_GuidesColorB.b = guides_color_b[2];
         }
         {
-            const auto guides_offset_length{ get_value("guides_offset_cm") };
+            // no-{}
+            const auto guides_offset_length(get_value("guides_offset_cm"));
             if (!guides_offset_length.is_null())
             {
                 m_Data.m_GuidesOffset = guides_offset_length.get<float>() * 1_cm;
@@ -537,7 +564,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
             {
                 m_Data.m_GuidesOffset.value = get_value("guides_offset");
             }
-            const auto guides_tickness_length{ get_value("guides_thickness_cm") };
+            // no-{}
+            const auto guides_tickness_length(get_value("guides_thickness_cm"));
             if (!guides_tickness_length.is_null())
             {
                 m_Data.m_GuidesThickness = guides_tickness_length.get<float>() * 1_cm;
@@ -546,7 +574,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
             {
                 m_Data.m_GuidesThickness.value = get_value("guides_thickness");
             }
-            const auto guides_length_length{ get_value("guides_length_cm") };
+            // no-{}
+            const auto guides_length_length(get_value("guides_length_cm"));
             if (!guides_length_length.is_null())
             {
                 m_Data.m_GuidesLength = guides_length_length.get<float>() * 1_cm;
