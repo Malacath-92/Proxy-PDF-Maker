@@ -777,7 +777,7 @@ fs::path GenerateTestPdf(const Project& project)
         const bool flip_left{ project.m_Data.m_FlipOn == FlipPageOn::LeftEdge };
 
         const auto backside_left_line_x{
-            (flip_left ? page_width - page_fourth.x : page_fourth.x) + project.m_Data.m_BacksideOffset.x
+            (flip_left ? page_width - page_fourth.x : page_fourth.x) - project.m_Data.m_BacksideOffset.x
         };
         const PdfPage::LineData line{
             .m_From{ backside_left_line_x, 0_mm },
