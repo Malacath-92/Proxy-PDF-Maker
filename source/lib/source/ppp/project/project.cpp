@@ -135,7 +135,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 }
             }
 
-            LigError("Project version {} not compatible with App version {}...",
+            LogError("Project version {} not compatible with App version {}...",
                      json["version"].get_ref<const std::string&>(),
                      JsonFormatVersion());
             throw std::logic_error{ "Project version mismatch..." };
