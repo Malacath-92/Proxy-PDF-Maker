@@ -163,6 +163,7 @@ class TracyMutex : public TracyMutexBase
 #define _TRACY__SOURCE_LOC_LABEL_(a) _TRACY_MERGE_(source_loc_, a)
 #define _TRACY_UNIQUE_SOURCE_LOC_NAME_ _TRACY__SOURCE_LOC_LABEL_(__LINE__)
 
+// clang-format off
 #define TRACY_SOURCE_INFO_INITIALIZER()              \
     {                                                \
         nullptr,                                     \
@@ -170,6 +171,7 @@ class TracyMutex : public TracyMutexBase
         std::source_location::current().file_name(), \
         std::source_location::current().line(),      \
     }
+// clang-format on
 #define TRACY_STATIC_SOURCE_INFO()                                  \
     static constexpr TracySourceInfo _TRACY_UNIQUE_SOURCE_LOC_NAME_ \
     TRACY_SOURCE_INFO_INITIALIZER()
