@@ -135,7 +135,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 }
             }
 
-            if (!!json["version"].is_string())
+            if (!json["version"].is_string())
             {
                 LogError("Project version of type {} not compatible with App version {}...",
                          json["version"].type_name(),
@@ -538,7 +538,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
     catch (const std::exception& e)
     {
         error = true;
-        LogError("Failed loading project, continuing with an empty project: {}", e.what());
+        LogError("Failed loading project, continuing with an empty project: {}\n{}", e.what(), json_blob);
     }
 
     Init();
