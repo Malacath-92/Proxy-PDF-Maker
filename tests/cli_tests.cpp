@@ -5,10 +5,92 @@
 
 #include <fmt/format.h>
 
+#include <ppp/project/project.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
-QByteArray hash_pdf_file(const fs::path& file_path)
+auto SetupImages(
+    const fs::path& folder,
+    auto image_fill,
+    auto project_mod)
+{
+    fs::create_directories(folder);
+    image_fill(folder);
+
+    const fs::path proj_json{ folder.string() + ".json" };
+    {
+        Project some_images{};
+        some_images.m_Data.m_ImageDir = folder;
+        some_images.m_Data.m_CropDir = folder / "crop";
+        project_mod(some_images);
+        some_images.Dump(proj_json);
+    }
+
+    return AtScopeExit{
+        [=]()
+        {
+            fs::remove_all(folder);
+            fs::remove_all(proj_json);
+        }
+    };
+}
+
+auto SetupNoImages(const fs::path& folder)
+{
+    return SetupImages(
+        folder,
+        [](auto&) {},
+        [](auto&) {});
+}
+
+auto SetupOneImage(const fs::path& folder)
+{
+    return SetupImages(
+        folder,
+        [](const fs::path& folder)
+        {
+            fs::copy_file("fallback.png", folder / "image.png");
+        },
+        [](auto&) {});
+}
+
+auto SetupSomeImages(const fs::path& folder, auto project_mod)
+{
+    return SetupImages(
+        folder,
+        [](const fs::path& folder)
+        {
+            for (size_t i = 0; i < 18; i++)
+            {
+                fs::copy_file("fallback.png", fmt::format("{}/image_{}.png", folder.string(), i));
+            }
+        },
+        project_mod);
+}
+
+auto SetupSomeImages(const fs::path& folder)
+{
+    return SetupSomeImages(folder, [](auto&) {});
+}
+
+auto RunCLI(const char* command_line)
+{
+    const int ret{ system(command_line) };
+
+    REQUIRE(ret == 0);
+    REQUIRE(fs::exists("_printme.pdf"));
+    REQUIRE(!fs::exists("proj.json"));
+    REQUIRE(!fs::exists("config.ini"));
+
+    return AtScopeExit{
+        []()
+        {
+            fs::remove("_printme.pdf");
+        }
+    };
+}
+
+QByteArray HashPdfFile(const fs::path& file_path)
 {
     const auto source_data{
         [&]()
@@ -25,6 +107,13 @@ QByteArray hash_pdf_file(const fs::path& file_path)
     return QCryptographicHash::hash(id_less_data, QCryptographicHash::Md5);
 }
 
+template<size_t N>
+void TestPdfFile(const fs::path& pdf_path, const char (&expected)[N])
+{
+    const auto file_hash{ HashPdfFile(pdf_path) };
+    REQUIRE(file_hash == QByteArray{ expected, N - 1 });
+}
+
 std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 {
     for (auto b : value)
@@ -36,6 +125,8 @@ std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 
 TEST_CASE("Run CLI without any images", "[cli_empty_project]")
 {
+    const auto no_images{ SetupNoImages("no_images") };
+
     constexpr char command_line[]{
         PROXY_PDF_CLI_EXE
         " --render"
@@ -45,24 +136,76 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
         " --image_dir no_images"
     };
 
-    const int ret{ system(command_line) };
-
-    REQUIRE(ret == 0);
-    REQUIRE(fs::exists("_printme.pdf"));
-    REQUIRE(!fs::exists("proj.json"));
-    REQUIRE(!fs::exists("config.ini"));
+    const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
         "\xb8\x2c\xb6\x2c\xc1\x30\x30\x40\x7e\x24\xbd\xbf\x61\x03\x1b\xea"
     };
-    const auto file_hash{ hash_pdf_file("_printme.pdf") };
-    REQUIRE(file_hash == QByteArray{ c_ExpectedHash, sizeof(c_ExpectedHash) - 1 });
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
 
-    AtScopeExit delete_folders{
-        []()
-        {
-            fs::remove("_printme.pdf");
-            fs::remove_all("no_images");
-        }
+TEST_CASE("Run CLI with one image", "[cli_one_image]")
+{
+    const auto one_image{ SetupOneImage("one_image") };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project one_image.json"
     };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\xae\x1a\x0e\x4d\x90\x1a\x65\xd0\xf2\x5c\xf3\xf4\xa2\xf4\x1b\x5b"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
+
+TEST_CASE("Run CLI with some images", "[cli_some_images]")
+{
+    const auto some_images{ SetupSomeImages("some_images") };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project some_images.json"
+    };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\xd0\x61\x68\xda\x1c\x0e\xde\xee\x5d\x10\x59\xc5\xb2\xc2\xa2\x20"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
+
+TEST_CASE("Run CLI with some images with bleed", "[cli_some_images_with_bleed]")
+{
+    const auto some_images{
+        SetupSomeImages("some_images",
+                        [](Project& project)
+                        {
+                            project.m_Data.m_BleedEdge = 1.5_mm;
+                        }),
+    };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project some_images.json"
+    };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\x59\xa1\xbb\xf0\x3d\x41\xe2\xe0\xc6\xae\xf6\xe8\x3c\xed\x31\xf4"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
