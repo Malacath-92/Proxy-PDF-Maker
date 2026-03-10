@@ -135,7 +135,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 }
             }
 
-            if (!json["version"].is_string())
+            if (!json.contains("version"))
+            {
+                LogError("Project (type: {}) version missing, not compatible with App version {}...",
+                         json.type_name(),
+                         JsonFormatVersion());
+            }
+            else if (!json["version"].is_string())
             {
                 LogError("Project version of type {} not compatible with App version {}...",
                          json["version"].type_name(),
