@@ -122,7 +122,10 @@ bool Project::LoadFromJson(const std::string& json_blob,
     bool error{ false };
     try
     {
-        const auto json{ nlohmann::json::parse(json_blob) };
+        // Using curly-braces for initializers here makes gcc and clang
+        // create an array-of-array, hence we are forced to use parens
+        const auto json(nlohmann::json::parse(json_blob));
+
         if (!json.is_object())
         {
             LogError("Project json type is {}, expected object...\n{}",

@@ -107,7 +107,7 @@ void ScryfallDownloader::HandleReply(QNetworkReply* reply)
             return;
         }
 
-        // Using curly-braces for initializers here results makes gcc and clang
+        // Using curly-braces for initializers here makes gcc and clang
         // create an array-of-array, hence we are forced to use parens
         const auto data(reply_json["data"].toArray());
         LogInfo("Adding {} cards for query {}...",
