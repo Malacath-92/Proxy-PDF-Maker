@@ -221,6 +221,15 @@ void Cropper::RestartWork()
 
 void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview)
 {
+    PushWorkImpl(card_name, needs_crop, needs_preview, false);
+    if (m_Project.m_Data.m_BacksideExtraBleedEdge > 0_mm)
+    {
+        PushWorkImpl(card_name, needs_crop, needs_preview, true);
+    }
+}
+
+void Cropper::PushWorkImpl(const fs::path& card_name, bool needs_crop, bool needs_preview, bool backside_bleed)
+{
     if (needs_crop)
     {
         if (!m_CropWork.contains(card_name))
@@ -231,6 +240,7 @@ void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_pr
                     m_RunningCropperWork,
                     card_name,
                     m_Project.GetCardImagePath(card_name),
+                    backside_bleed,
                     m_GetColorCube,
                     m_ImageDB,
                     m_Project }

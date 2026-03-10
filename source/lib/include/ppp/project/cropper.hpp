@@ -61,6 +61,7 @@ class Cropper : public QObject
 
   private:
     void PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview);
+    void PushWorkImpl(const fs::path& card_name, bool needs_crop, bool needs_preview, bool backside_bleed);
     void RemoveWork(const fs::path& card_name);
 
     const Project& m_Project;

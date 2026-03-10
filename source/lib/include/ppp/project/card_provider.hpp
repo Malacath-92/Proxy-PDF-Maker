@@ -22,6 +22,7 @@ class CardProvider : public QObject, public efsw::FileWatchListener
     void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
     void CardSizeChanged();
     void BleedChanged();
+    void BacksideExtraBleedChanged();
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();

@@ -9,7 +9,7 @@
 #include <ppp/project/image_database.hpp>
 #include <ppp/project/image_ops.hpp>
 
-static ProjectData CopyRelevant(const ProjectData& data)
+static ProjectData CopyRelevant(const ProjectData& data, bool backside)
 {
     TRACY_AUTO_SCOPE();
     return ProjectData{
@@ -17,7 +17,11 @@ static ProjectData CopyRelevant(const ProjectData& data)
         .m_CropDir{ data.m_CropDir },
         .m_UncropDir{ data.m_UncropDir },
         .m_ImageCache{ data.m_ImageCache },
-        .m_BleedEdge{ data.m_BleedEdge + data.m_EnvelopeBleedEdge },
+        .m_BleedEdge{
+            backside
+                ? data.m_BleedEdge + data.m_EnvelopeBleedEdge + data.m_BacksideExtraBleedEdge
+                : data.m_BleedEdge + data.m_EnvelopeBleedEdge,
+        },
         .m_CardSizeChoice{ data.m_CardSizeChoice },
     };
 }
@@ -179,6 +183,7 @@ CropperCropWork::CropperCropWork(
     std::atomic_uint32_t& running_crop_work,
     fs::path card_name,
     fs::path image_path,
+    bool backside_bleed,
     std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
     const Project& project)
@@ -191,7 +196,7 @@ CropperCropWork::CropperCropWork(
     , m_BadAspectRatioHandling{ project.GetCardBadAspectRatioHandling(m_CardName) }
     , m_GetColorCube{ get_color_cube }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(project.m_Data) }
+    , m_Data{ CopyRelevant(project.m_Data, backside_bleed) }
     , m_Cfg{ CopyRelevant(g_Cfg) }
 {
 }
@@ -410,7 +415,7 @@ CropperPreviewWork::CropperPreviewWork(
     , m_Force{ force }
     , m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(project.m_Data) }
+    , m_Data{ CopyRelevant(project.m_Data, false) }
     , m_Cfg{ CopyRelevant(g_Cfg) }
 {
     m_Priorty = 1;

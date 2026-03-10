@@ -149,6 +149,10 @@ void CardProvider::BleedChanged()
         CardAdded(image, true, false);
     }
 }
+void CardProvider::BacksideExtraBleedChanged()
+{
+    BleedChanged();
+}
 void CardProvider::ColorCubeChanged()
 {
     // Generate new crops and previews ...

@@ -243,6 +243,7 @@ int main(int argc, char** argv)
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, &project, &Project::CardOrderChanged);
@@ -267,6 +268,7 @@ int main(int argc, char** argv)
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &card_provider, &CardProvider::BleedChanged);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &card_provider, &CardProvider::BacksideExtraBleedChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &card_provider, &CardProvider::MaxDPIChanged);
@@ -330,6 +332,7 @@ int main(int argc, char** argv)
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, print_preview, &PrintPreview::RequestRefresh);
 
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);

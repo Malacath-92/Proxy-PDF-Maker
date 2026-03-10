@@ -371,6 +371,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
         {
+            auto backside_bleed{ get_value("backside_bleed") };
+            if (backside_bleed.is_number())
+            {
+                m_Data.m_BacksideExtraBleedEdge = backside_bleed.get<float>() * 1_cm;
+            }
+        }
+        {
             const auto backside_auto_pattern{ get_value("backside_auto_pattern") };
             if (!backside_auto_pattern.is_null())
             {
@@ -658,6 +665,7 @@ std::string Project::DumpToJson() const
         { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
     };
     json["backside_rotation"] = m_Data.m_BacksideRotation / 1_deg;
+    json["nackside_bleed"] = m_Data.m_BacksideExtraBleedEdge / 1_cm;
     json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
     json["card_size"] = m_Data.m_CardSizeChoice;
@@ -772,6 +780,11 @@ void Project::InitProperties()
 fs::path Project::GetOutputFolder() const
 {
     return m_Data.GetOutputFolder(g_Cfg);
+}
+
+fs::path Project::GetBacksideOutputFolder() const
+{
+    return m_Data.GetBacksideOutputFolder(g_Cfg);
 }
 
 bool Project::HasExternalCards() const
@@ -1687,6 +1700,14 @@ void Project::EnsureOutputFolder() const
         }
     }
 
+    {
+        const auto output_dir{ GetBacksideOutputFolder() };
+        if (!fs::exists(output_dir))
+        {
+            c_CreateDirectories(output_dir);
+        }
+    }
+
     if (!fs::exists(m_Data.m_UncropDir))
     {
         c_CreateDirectories(m_Data.m_UncropDir);
@@ -1697,6 +1718,13 @@ fs::path ProjectData::GetOutputFolder(const Config& config) const
 {
     return GetOutputDir(m_CropDir,
                         m_BleedEdge + m_EnvelopeBleedEdge,
+                        config.m_ColorCube);
+}
+
+fs::path ProjectData::GetBacksideOutputFolder(const Config& config) const
+{
+    return GetOutputDir(m_CropDir,
+                        m_BleedEdge + m_EnvelopeBleedEdge + m_BacksideExtraBleedEdge,
                         config.m_ColorCube);
 }
 

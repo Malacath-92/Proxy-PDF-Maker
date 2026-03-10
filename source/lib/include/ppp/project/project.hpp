@@ -124,6 +124,7 @@ struct ProjectData
     std::optional<fs::path> m_BacksideDefault{ "__back.png" };
     Offset m_BacksideOffset{ 0_mm, 0_mm };
     Angle m_BacksideRotation{ 0_deg };
+    Length m_BacksideExtraBleedEdge{ 0_mm };
     std::string m_BacksideAutoPattern{ "__back_$" };
 
     // PDF generation options
@@ -165,6 +166,7 @@ struct ProjectData
 
     // Utility functions
     fs::path GetOutputFolder(const Config& config) const;
+    fs::path GetBacksideOutputFolder(const Config& config) const;
 
     struct CardLayout
     {
@@ -221,6 +223,7 @@ class Project : public QObject
     void InitProperties();
 
     fs::path GetOutputFolder() const;
+    fs::path GetBacksideOutputFolder() const;
 
     CardInfo& CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);

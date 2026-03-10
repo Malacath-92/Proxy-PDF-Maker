@@ -584,6 +584,7 @@ class CardGrid : public QWidget
                 const auto x{ static_cast<int>(i / cols) };
                 const auto y{ static_cast<int>(i % cols) };
                 this_layout->addWidget(card_widget, x, y);
+                card_widget->show();
                 ++i;
             }
         }

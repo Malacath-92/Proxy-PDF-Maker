@@ -75,6 +75,7 @@ class CropperCropWork : public CropperWork
         std::atomic_uint32_t& running_crop_work,
         fs::path card_name,
         fs::path image_path,
+        bool backside_bleed,
         std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
         const Project& project);

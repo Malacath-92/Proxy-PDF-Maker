@@ -86,8 +86,12 @@ PagePreview::PagePreview(Project& project,
                     .m_RoundedCorners = rounded_corners,
                     .m_Rotation = rotation,
                     .m_BleedEdge{
-                        project.m_Data.m_BleedEdge +
-                            project.m_Data.m_EnvelopeBleedEdge,
+                        params.m_IsBackside
+                            ? project.m_Data.m_BleedEdge +
+                                  project.m_Data.m_EnvelopeBleedEdge +
+                                  project.m_Data.m_BacksideExtraBleedEdge
+                            : project.m_Data.m_BleedEdge +
+                                  project.m_Data.m_EnvelopeBleedEdge,
                     },
                 },
                 index,

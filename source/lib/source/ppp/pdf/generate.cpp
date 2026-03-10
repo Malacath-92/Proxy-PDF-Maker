@@ -101,6 +101,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
                              PdfDocument* backside_pdf,
                              const std::vector<ImageCacheData>& backside_images,
                              const fs::path& output_dir,
+                             const fs::path& backside_output_dir,
                              std::atomic_uint32_t& work_signal)
 {
     TRACY_AUTO_SCOPE();
@@ -123,7 +124,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
     };
     for (const auto [img, size, rot] : backside_images)
     {
-        const auto img_path{ output_dir / img };
+        const auto img_path{ backside_output_dir / img };
         image_cache_work.push_back(
             [=]()
             {
@@ -175,6 +176,7 @@ PdfResults GeneratePdf(const Project& project)
     using CrossSegment = PdfPage::CrossSegment;
 
     const auto output_dir{ project.GetOutputFolder() };
+    const auto backside_output_dir{ project.GetBacksideOutputFolder() };
 
     const auto& [darker_color, lighter_color]{
         CategorizeColors(project.m_Data.m_GuidesColorA,
@@ -370,6 +372,7 @@ PdfResults GeneratePdf(const Project& project)
                             backside_pdf,
                             backside_images,
                             output_dir,
+                            backside_output_dir,
                             cache_work_done)
     };
     auto wait_for_cache_work{
@@ -401,7 +404,8 @@ PdfResults GeneratePdf(const Project& project)
     const auto draw_image{
         [&](PdfPage* page,
             const PageImage& image,
-            const PageImageTransform& transform)
+            const PageImageTransform& transform,
+            const fs::path output_dir)
         {
             if (image.m_Image.has_value())
             {
@@ -503,7 +507,7 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(front_page, card, transform);
+                    draw_image(front_page, card, transform, output_dir);
                 }
             }
 
@@ -575,7 +579,7 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(back_page, card, transform);
+                    draw_image(back_page, card, transform, backside_output_dir);
                 }
             }
 

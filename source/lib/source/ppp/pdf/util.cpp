@@ -30,24 +30,8 @@ std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
     return std::nullopt;
 }
 
-void GenerateEnvelope(std::span<PageImageTransform> transforms,
-                      Length envelope_size)
+void ClipClipRects(std::span<PageImageTransform> transforms)
 {
-    if (envelope_size <= 0_mm)
-    {
-        return;
-    }
-
-    for (PageImageTransform& transform : transforms)
-    {
-        transform.m_Position -= envelope_size;
-        transform.m_Size += envelope_size * 2;
-        transform.m_ClipRect = {
-            transform.m_Position,
-            transform.m_Size,
-        };
-    }
-
     // O(N^2) approach, should be decent for the amount of cards
     // typically on a single page
     for (size_t i{ 0 }; i < transforms.size(); ++i)
@@ -111,6 +95,27 @@ void GenerateEnvelope(std::span<PageImageTransform> transforms,
             }
         }
     }
+}
+
+void GenerateEnvelope(std::span<PageImageTransform> transforms,
+                      Length envelope_size)
+{
+    if (envelope_size <= 0_mm)
+    {
+        return;
+    }
+
+    for (PageImageTransform& transform : transforms)
+    {
+        transform.m_Position -= envelope_size;
+        transform.m_Size += envelope_size * 2;
+        transform.m_ClipRect = {
+            transform.m_Position,
+            transform.m_Size,
+        };
+    }
+
+    ClipClipRects(transforms);
 }
 
 PageImageTransforms ComputeTransforms(const Project& project)
@@ -316,7 +321,8 @@ PageImageTransforms ComputeBacksideTransforms(
         });
     }
 
-    if (envelope_size > 0_mm)
+    const auto full_envelope_size{ project.m_Data.m_EnvelopeBleedEdge + project.m_Data.m_BacksideExtraBleedEdge };
+    if (full_envelope_size > 0_mm)
     {
         const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
         const auto layout_horizontal{ project.m_Data.m_CardLayoutHorizontal };
@@ -329,14 +335,14 @@ PageImageTransforms ComputeBacksideTransforms(
                 backside_transforms.data(),
                 vertical_images_per_page,
             },
-            envelope_size);
+            full_envelope_size);
 
         GenerateEnvelope(
             std::span{
                 backside_transforms.data() + vertical_images_per_page,
                 horizontal_images_per_page,
             },
-            envelope_size);
+            full_envelope_size);
     }
 
     return backside_transforms;

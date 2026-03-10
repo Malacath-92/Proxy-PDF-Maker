@@ -29,6 +29,7 @@ class CardOptionsWidget : public QWidget
     void SeparateBacksidesEnabledChanged();
     void BacksideDefaultChanged();
     void BacksideOffsetChanged();
+    void BacksideExtraBleedChanged();
     void BacksideRotationChanged();
     void CardBacksideChanged();
 
@@ -62,6 +63,8 @@ class CardOptionsWidget : public QWidget
     LengthSpinBox* m_BacksideOffsetHorizontalSpin{ nullptr };
     LengthSpinBox* m_BacksideOffsetVerticalSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
+    LengthSpinBox* m_BacksideExtraBleedEdgeSpin{ nullptr };
+    QWidget* m_BacksideExtraBleedEdge{ nullptr };
     QDoubleSpinBox* m_BacksideRotationSpin{ nullptr };
     QWidget* m_BacksideRotation{ nullptr };
     QLineEdit* m_BacksideAutoPattern{ nullptr };
