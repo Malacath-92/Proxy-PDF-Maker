@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-03
+
 ### Added
 - Individual cards can now have a clear backside selected, either via their context menu or via the `Clear` button in the image browser.
 - The default backside can be set to clear as well via the `Clear` button in the image browser.
@@ -16,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - The image browser has had a `Reset` button added, which can be used as an alternative to the context menu for resetting individual card backs to the default.
+- The threading model of the pdf generation was changed, such that it now pre-caches all images in the pdf-document and then generates the pages. This reduced the occurence of some rare edge cases seen on slow machines that resulted in generation of corrupted pages.
 
 ## [1.5.1] - 2026-21-02
 
