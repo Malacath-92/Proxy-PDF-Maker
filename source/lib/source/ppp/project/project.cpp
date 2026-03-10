@@ -123,6 +123,13 @@ bool Project::LoadFromJson(const std::string& json_blob,
     try
     {
         const auto json{ nlohmann::json::parse(json_blob) };
+        if (!json.is_object())
+        {
+            LogError("Project json type is {}, expected object...\n{}",
+                     json.type_name(),
+                     json.dump());
+            throw std::logic_error{ "Unexpected project root..." };
+        }
 
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != JsonFormatVersion())
         {
@@ -137,8 +144,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
 
             if (!json.contains("version"))
             {
-                LogError("Project (type: {}) version missing, not compatible with App version {}...",
-                         json.type_name(),
+                LogError("Project version missing, not compatible with App version {}...",
                          JsonFormatVersion());
             }
             else if (!json["version"].is_string())
