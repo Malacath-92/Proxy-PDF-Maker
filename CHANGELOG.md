@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.6.0] - 2026-10-03
+## [1.6.0] - 2026-11-03
 
 ### Added
 - Individual cards can now have a clear backside selected, either via their context menu or via the `Clear` button in the image browser.
