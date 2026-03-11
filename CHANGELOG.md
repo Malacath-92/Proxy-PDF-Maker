@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - By dropping `.svg` files onto the app you can add a custom card size that has exactly the shape defined by the `.svg` file. This shape also affects generated `.svg` and `.dxf` files.
 - A new option `Check for Updates` is available under `Global Config` that allows you to disable the update check.
 - A new option `Toast Duration` is available under `Global Config` lets you change how long the toast notifications are on-screen, or disable them completely by setting the duration to 0 seconds.
+- Under `Card Options` there is a new option `Backside Extra Bleed` available that allows adding extra bleed to the backside only, useful when preparing prints for die cutting by combining it with spacing.
 
 ### Changed
 - The image browser has had a `Reset` button added, which can be used as an alternative to the context menu for resetting individual card backs to the default.
