@@ -221,6 +221,9 @@ To change the backside for an individual card, click on the backside for that ca
 #### Backside Offset
 In some cases one can't use Duplex Printing, either because the printer doesn't support it or the print medium is too thick. In those cases you'll have to manually turn the page between front- and backside prints. For many printers this will result in a slight offset between the two sides that is more or less consistent. Do a test print to measure this difference and insert it into the `Backside Offset` field.
 
+#### Backside Extra Bleed [Advanced Mode]
+Particularly useful when preparing sheets for die cutting, this setting adds bleed to cards on the backside without changing their positioning. Thus as an example, when combining 0mm bleed edge, 2mm of spacing, and 0.5mm backside extra bleed, you can get a sheet that can be precisely aligned with a die cutter in the front while also giving some lenience with respect to misaligned backsides.
+
 #### Backside Rotation [Advanced Mode]
 Some printers may even print at a slight angle. To compensate for this when printing double-sided you'll have to measure the angle with a test print and input it into this field. Each backside will be rotated counter-clockwise around its center-point by the chosen angle.
 
@@ -252,7 +255,6 @@ Determines the resolution of previews in the card grid and the page preview. Sma
 Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
 - Default (OS specific)
 - Fusion
-- Wstartpages
 - Material Dark
 - Darkeum
 - Combinear
