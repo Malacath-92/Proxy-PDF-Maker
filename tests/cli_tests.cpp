@@ -73,6 +73,21 @@ auto SetupSomeImages(const fs::path& folder)
     return SetupSomeImages(folder, [](auto&) {});
 }
 
+auto SetupSomeImagesWithBackside(const fs::path& folder, auto project_mod)
+{
+    return SetupImages(
+        folder,
+        [](const fs::path& folder)
+        {
+            fs::copy_file("fallback.png", fmt::format("{}/__back.png", folder.string()));
+            for (size_t i = 0; i < 18; i++)
+            {
+                fs::copy_file("fallback.png", fmt::format("{}/image_{}.png", folder.string(), i));
+            }
+        },
+        project_mod);
+}
+
 auto RunCLI(const char* command_line)
 {
     const int ret{ system(command_line) };
@@ -206,6 +221,92 @@ TEST_CASE("Run CLI with some images with bleed", "[cli_some_images_with_bleed]")
 
     constexpr const char c_ExpectedHash[]{
         "\x59\xa1\xbb\xf0\x3d\x41\xe2\xe0\xc6\xae\xf6\xe8\x3c\xed\x31\xf4"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
+
+TEST_CASE("Run CLI with some images with spacing", "[cli_some_images_with_spacing]")
+{
+    const auto some_images{
+        SetupSomeImages("some_images",
+                        [](Project& project)
+                        {
+                            project.m_Data.m_Spacing.x = 2_mm;
+                            project.m_Data.m_Spacing.y = 2_mm;
+                        }),
+    };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project some_images.json"
+    };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\xc1\x23\xc7\x41\x27\x0a\x07\x20\x84\x42\x3f\xb4\x13\x21\x50\x94"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
+
+TEST_CASE("Run CLI with some images with spacing and backside",
+          "[cli_some_images_with_spacing_backside]")
+{
+    const auto some_images{
+        SetupSomeImagesWithBackside("some_images",
+                                    [](Project& project)
+                                    {
+                                        project.m_Data.m_Spacing.x = 2_mm;
+                                        project.m_Data.m_Spacing.y = 2_mm;
+                                        project.m_Data.m_BacksideEnabled = true;
+                                    }),
+    };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project some_images.json"
+    };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\xbb\xa2\x96\xa1\x5e\xab\x80\x7e\xca\x77\xd1\x64\x19\x0c\xa4\x11"
+    };
+    TestPdfFile("_printme.pdf", c_ExpectedHash);
+}
+
+TEST_CASE("Run CLI with some images with spacing and backside bleed",
+          "[cli_some_images_with_spacing_backside_bleed]")
+{
+    const auto some_images{
+        SetupSomeImagesWithBackside("some_images",
+                                    [](Project& project)
+                                    {
+                                        project.m_Data.m_Spacing.x = 2_mm;
+                                        project.m_Data.m_Spacing.y = 2_mm;
+                                        project.m_Data.m_BacksideEnabled = true;
+                                        project.m_Data.m_BacksideExtraBleedEdge = 0.5_mm;
+                                    }),
+    };
+
+    constexpr char command_line[]{
+        PROXY_PDF_CLI_EXE
+        " --render"
+        " --deterministic"
+        " --ignore-user-defaults"
+        " --project some_images.json"
+    };
+
+    const auto cli_res{ RunCLI(command_line) };
+
+    constexpr const char c_ExpectedHash[]{
+        "\x78\xb1\x64\x3e\x1a\x9c\x1b\x51\xeb\xf0\x5b\x33\x5d\x39\xae\xe2"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
