@@ -384,9 +384,9 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
                 m_BacksideOffset->setEnabled(enabled);
                 m_BacksideOffset->setVisible(enabled);
                 m_BacksideExtraBleedEdge->setEnabled(enabled);
-                m_BacksideExtraBleedEdge->setVisible(enabled);
+                m_BacksideExtraBleedEdge->setVisible(enabled && g_Cfg.m_AdvancedMode);
                 m_BacksideRotation->setEnabled(enabled);
-                m_BacksideRotation->setVisible(enabled);
+                m_BacksideRotation->setVisible(enabled && g_Cfg.m_AdvancedMode);
                 m_BacksideAuto->setEnabled(enabled);
                 m_BacksideAuto->setVisible(enabled);
                 BacksideEnabledChanged();
@@ -662,12 +662,12 @@ void CardOptionsWidget::SetDefaults()
     m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_BleedEdge - m_Project.m_Data.m_EnvelopeBleedEdge);
     m_BacksideExtraBleedEdgeSpin->SetValue(m_Project.m_Data.m_BacksideExtraBleedEdge);
 
-    m_BacksideExtraBleedEdge->setEnabled(m_Project.m_Data.m_BacksideEnabled && g_Cfg.m_AdvancedMode);
+    m_BacksideExtraBleedEdge->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideExtraBleedEdge->setVisible(m_Project.m_Data.m_BacksideEnabled && g_Cfg.m_AdvancedMode);
 
     m_BacksideRotationSpin->setValue(m_Project.m_Data.m_BacksideRotation / 1_deg);
 
-    m_BacksideRotation->setEnabled(m_Project.m_Data.m_BacksideEnabled && g_Cfg.m_AdvancedMode);
+    m_BacksideRotation->setEnabled(m_Project.m_Data.m_BacksideEnabled);
     m_BacksideRotation->setVisible(m_Project.m_Data.m_BacksideEnabled && g_Cfg.m_AdvancedMode);
 
     m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
