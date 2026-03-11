@@ -226,18 +226,22 @@ void Cropper::RestartWork()
 
 void Cropper::PushWork(const fs::path& card_name, bool needs_crop, bool needs_preview)
 {
-    PushWorkImpl(card_name, needs_crop, needs_preview, false);
+    PushWorkImpl(card_name, card_name, needs_crop, needs_preview, false);
     if (m_Project.m_Data.m_BacksideExtraBleedEdge > 0_mm)
     {
-        PushWorkImpl(card_name, needs_crop, needs_preview, true);
+        PushWorkImpl(fs::path{ card_name }.replace_extension(".__back__"), card_name, needs_crop, needs_preview, true);
     }
 }
 
-void Cropper::PushWorkImpl(const fs::path& card_name, bool needs_crop, bool needs_preview, bool backside_bleed)
+void Cropper::PushWorkImpl(const fs::path& key,
+                           const fs::path& card_name,
+                           bool needs_crop,
+                           bool needs_preview,
+                           bool backside_bleed)
 {
     if (needs_crop)
     {
-        if (!m_CropWork.contains(card_name))
+        if (!m_CropWork.contains(key))
         {
             auto* crop_work{
                 new CropperCropWork{
@@ -326,7 +330,7 @@ void Cropper::PushWorkImpl(const fs::path& card_name, bool needs_crop, bool need
         }
     }
 
-    if (needs_preview && m_GeneratePreviews)
+    if (!backside_bleed && needs_preview && m_GeneratePreviews)
     {
         if (!m_PreviewWork.contains(card_name))
         {
