@@ -89,6 +89,11 @@ Cropper::~Cropper()
     m_ImageDB.Write();
 }
 
+void Cropper::SetGeneratePreviews(bool generate_previews)
+{
+    m_GeneratePreviews = generate_previews;
+}
+
 void Cropper::Start()
 {
     OnStart();
@@ -321,7 +326,7 @@ void Cropper::PushWorkImpl(const fs::path& card_name, bool needs_crop, bool need
         }
     }
 
-    if (needs_preview)
+    if (needs_preview && m_GeneratePreviews)
     {
         if (!m_PreviewWork.contains(card_name))
         {

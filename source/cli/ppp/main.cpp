@@ -310,6 +310,7 @@ int main(int argc, char** argv)
                          } };
 
     Cropper cropper{ get_color_cube, project };
+    cropper.SetGeneratePreviews(false);
     CardProvider card_provider{ project };
 
     QObject::connect(&card_provider, &CardProvider::CardAdded, &project, &Project::CardAdded);
