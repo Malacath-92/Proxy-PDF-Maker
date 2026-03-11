@@ -694,7 +694,7 @@ std::string Project::DumpToJson() const
         { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
     };
     json["backside_rotation"] = m_Data.m_BacksideRotation / 1_deg;
-    json["nackside_bleed"] = m_Data.m_BacksideExtraBleedEdge / 1_cm;
+    json["backside_bleed"] = m_Data.m_BacksideExtraBleedEdge / 1_cm;
     json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
 
     json["card_size"] = m_Data.m_CardSizeChoice;
