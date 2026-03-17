@@ -2,6 +2,7 @@
 
 #include <ppp/qt_util.hpp>
 
+#include <charconv>
 #include <ranges>
 
 #include <QDesktopServices>
