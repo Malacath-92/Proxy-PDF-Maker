@@ -260,7 +260,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto change_version_output{
-        [this](const Qt::CheckState& s)
+        [](const Qt::CheckState& s)
         {
             g_Cfg.m_VersionOutput = s == Qt::CheckState::Checked;
             SaveConfig(g_Cfg);
