@@ -681,10 +681,12 @@ PdfResults GeneratePdf(const Project& project)
         }
     }
 
-    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name) };
+    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name, g_Cfg.m_VersionOutput) };
+
+    const auto actual_backside_pdf_name{ frontside_pdf_path.stem().string() + "_backside" };
     auto backside_pdf_path{
         backside_pdf != frontside_pdf.get() && backside_pdf != nullptr
-            ? std::optional{ backside_pdf->Write(backside_pdf_name) }
+            ? std::optional{ backside_pdf->Write(actual_backside_pdf_name, false) }
             : std::nullopt
     };
 
@@ -795,5 +797,5 @@ fs::path GenerateTestPdf(const Project& project)
         back_page->DrawSolidLine(top_line, line_style);
     }
 
-    return pdf->Write("alignment.pdf");
+    return pdf->Write("alignment.pdf", false);
 }

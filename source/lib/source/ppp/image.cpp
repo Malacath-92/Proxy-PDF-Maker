@@ -754,15 +754,15 @@ struct CubeFilter
         // In Release we interpolate between the eight cube-elements
 
         const int r_lo{ static_cast<int>(std::floor(r)) };
-        const int r_hi{ static_cast<int>(std::ceil(r)) };
+        const int r_hi{ r_lo + 1 };
         const float r_frac{ r - static_cast<float>(r_lo) };
 
         const int g_lo{ static_cast<int>(std::floor(g)) };
-        const int g_hi{ static_cast<int>(std::ceil(g)) };
+        const int g_hi{ g_lo + 1 };
         const float g_frac{ g - static_cast<float>(g_lo) };
 
         const int b_lo{ static_cast<int>(std::floor(b)) };
-        const int b_hi{ static_cast<int>(std::ceil(b)) };
+        const int b_hi{ b_lo + 1 };
         const float b_frac{ b - static_cast<float>(b_lo) };
 
         static constexpr auto c_LinearInterpolate{

@@ -81,7 +81,7 @@ class PoDoFoDocument final : public PdfDocument
     virtual void ReservePages(size_t pages) override;
     virtual PoDoFoPage* NextPage(bool is_backside) override;
 
-    virtual fs::path Write(fs::path path) override;
+    virtual fs::path Write(fs::path path, bool version_output) override;
 
     virtual void PreallocateImageCache(size_t num_images) override;
     virtual void PreCacheImage(ImageCacheData data) override;

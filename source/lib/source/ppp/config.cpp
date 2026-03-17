@@ -278,6 +278,8 @@ Config LoadConfig()
             }
             config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
+            config.m_VersionOutput = settings.value("Version.Output", false).toBool();
+
             {
                 const auto pdf_backend{ settings.value("PDF.Backend", "PoDoFo").toString().toStdString() };
                 config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
@@ -516,6 +518,7 @@ void SaveConfig(Config config)
             settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
             settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
+            settings.setValue("Version.Output", config.m_VersionOutput);
 
             const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));

@@ -123,6 +123,10 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* display_columns{ new WidgetWithLabel{ "Display &Columns", display_columns_spin_box } };
     display_columns->setToolTip("Number columns in card view");
 
+    auto* version_output{ new QCheckBox{ "&Version Output" } };
+    version_output->setToolTip("If checked, output will not be overwritten, but instead versioned. I.e. _printme.pdf -> _printme_1.pdf -> ....");
+    version_output->setChecked(g_Cfg.m_VersionOutput);
+
     auto* backend{ new QCheckBox{ "&Render to Png" } };
     backend->setToolTip("If checked, will render final document to a set of .png files instead of a .pdf file.");
     backend->setChecked(g_Cfg.m_Backend == PdfBackend::Png);
@@ -207,6 +211,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(advanced_checkbox);
     layout->addWidget(base_unit);
     layout->addWidget(display_columns);
+    layout->addWidget(version_output);
     layout->addWidget(backend);
     layout->addWidget(image_format);
     layout->addWidget(jpg_quality);
@@ -251,6 +256,14 @@ GlobalOptionsWidget::GlobalOptionsWidget()
             g_Cfg.m_DisplayColumns = static_cast<int>(v);
             SaveConfig(g_Cfg);
             DisplayColumnsChanged();
+        }
+    };
+
+    auto change_version_output{
+        [this](const Qt::CheckState& s)
+        {
+            g_Cfg.m_VersionOutput = s == Qt::CheckState::Checked;
+            SaveConfig(g_Cfg);
         }
     };
 
@@ -403,6 +416,10 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_display_columns);
+    QObject::connect(version_output,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_version_output);
     QObject::connect(backend,
                      &QCheckBox::checkStateChanged,
                      this,

@@ -346,9 +346,19 @@ PngPage* PngDocument::NextPage(bool /*is_backside*/)
     return &new_page;
 }
 
-fs::path PngDocument::Write(fs::path path)
+fs::path PngDocument::Write(fs::path path, bool version_output)
 {
-    const fs::path png_folder{ fs::path{ path }.replace_extension("") };
+    const auto png_folder{
+        [&]() -> fs::path
+        {
+            const auto base_path{ fs::path{ path }.replace_extension("") };
+            if (version_output && fs::exists(base_path))
+            {
+                return GetNextVersionedPath(base_path);
+            }
+            return base_path;
+        }(),
+    };
     if (!fs::exists(png_folder))
     {
         fs::create_directories(png_folder);

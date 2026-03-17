@@ -116,7 +116,7 @@ class PdfDocument
     virtual void ReservePages(size_t pages) = 0;
     virtual PdfPage* NextPage(bool is_backside) = 0;
 
-    virtual fs::path Write(fs::path path) = 0;
+    virtual fs::path Write(fs::path path, bool version_output) = 0;
 
     virtual void PreallocateImageCache(size_t num_images) = 0;
 

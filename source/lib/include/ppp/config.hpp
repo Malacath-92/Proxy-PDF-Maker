@@ -59,6 +59,7 @@ struct Config
     std::optional<std::string> m_DefaultPageSize{};
     std::string m_ColorCube{ "None" };
     fs::path m_FallbackName{ "fallback.png"_p };
+    bool m_VersionOutput{ false };
     PdfBackend m_Backend{ PdfBackend::PoDoFo };
     ImageCompression m_PdfImageCompression{ ImageCompression::Lossy };
     std::optional<int> m_PngCompression{ std::nullopt };

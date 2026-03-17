@@ -1,5 +1,7 @@
 #include <ppp/pdf/podofo_backend.hpp>
 
+#include <charconv>
+#include <functional>
 #include <numbers>
 
 #include <dla/matrix_math.h>
@@ -598,13 +600,23 @@ PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
     return &m_Pages.back();
 }
 
-fs::path PoDoFoDocument::Write(fs::path path)
+fs::path PoDoFoDocument::Write(fs::path path, bool version_output)
 {
     TRACY_AUTO_SCOPE();
 
     try
     {
-        const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
+        const auto pdf_path{
+            [&]() -> fs::path
+            {
+                const auto base_path{ fs::path{ path }.replace_extension(".pdf") };
+                if (version_output && fs::exists(base_path))
+                {
+                    return GetNextVersionedPath(base_path);
+                }
+                return base_path;
+            }(),
+        };
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
 

@@ -124,6 +124,8 @@ void ForEachFolder(const fs::path& path, FunT&& fun)
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
 std::vector<fs::path> ListFolders(const fs::path& path);
 
+fs::path GetNextVersionedPath(const fs::path& base_path);
+
 bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
