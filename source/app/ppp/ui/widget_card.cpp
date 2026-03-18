@@ -447,9 +447,13 @@ Image CardImage::GetImage(const ImagePreview& preview) const
 
     if (m_BleedEdge > 0_mm)
     {
-        const Image& uncropped_image{ preview.m_UncroppedImage };
-        const Image image{ CropImage(uncropped_image, m_CardName, m_CardSize, m_FullBleed, m_BleedEdge, 6800_dpi) };
-        return image;
+        return CropImage(preview.m_UncroppedImage,
+                         m_CardName,
+                         m_CardSize,
+                         m_FullBleed,
+                         m_BleedEdge,
+                         6800_dpi)
+            .Rotate(m_OriginalParams.m_Rotation);
     }
     else
     {
