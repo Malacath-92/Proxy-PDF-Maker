@@ -1516,6 +1516,11 @@ Size Project::ComputePageSize() const
     }
 }
 
+Size Project::ComputeExactBordersSize() const
+{
+    return m_Data.ComputeExactBordersSize(g_Cfg);
+}
+
 Size Project::ComputeCardsSize() const
 {
     return m_Data.ComputeCardsSize(g_Cfg);
@@ -1841,6 +1846,11 @@ Size ProjectData::ComputePageSize(const Config& config) const
         }
         return page_size;
     }
+}
+
+Size ProjectData::ComputeExactBordersSize(const Config& config) const
+{
+    return ComputeCardsSize(config) - m_EnvelopeBleedEdge * 2 - m_BleedEdge * 2;
 }
 
 Size ProjectData::ComputeCardsSize(const Config& config) const

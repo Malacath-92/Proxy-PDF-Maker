@@ -179,6 +179,7 @@ struct ProjectData
                                  CardOrientation orientation) const;
 
     Size ComputePageSize(const Config& config) const;
+    Size ComputeExactBordersSize(const Config& config) const;
     Size ComputeCardsSize(const Config& config) const;
     Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
     Margins ComputeMargins(const Config& config) const;
@@ -291,6 +292,7 @@ class Project : public QObject
     bool CacheCardLayout();
 
     Size ComputePageSize() const;
+    Size ComputeExactBordersSize() const;
     Size ComputeCardsSize() const;
     Size ComputeCardsSizeVertical() const;
     Size ComputeCardsSizeHorizontal() const;

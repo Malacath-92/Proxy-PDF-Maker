@@ -29,19 +29,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::vec2 pixel_size,
                                const Project& project)
 {
-    QPainterPath card_border;
-    if (project.m_Data.m_BleedEdge > 0_mm || project.m_Data.m_EnvelopeBleedEdge > 0_mm)
-    {
-        const QRectF rect{
-            0.0f,
-            0.0f,
-            pixel_size.x,
-            pixel_size.y,
-        };
-        card_border.addRect(rect);
-    }
-
-    const auto cards_size{ project.ComputeCardsSize() };
+    const auto cards_size{ project.ComputeExactBordersSize() };
     const auto pixel_ratio{ pixel_size / cards_size };
 
     const auto transforms{ ComputeTransforms(project) };
@@ -58,6 +46,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
     };
 
+    QPainterPath card_border;
     for (const auto& transform : transforms)
     {
         if (project.IsCardSvg())
@@ -97,7 +86,7 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
 
 QPainterPath GenerateCardsPath(const Project& project)
 {
-    const auto svg_size{ project.ComputeCardsSize() / 1_mm };
+    const auto svg_size{ project.ComputeExactBordersSize() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
                              svg_size,
                              project);
@@ -110,12 +99,20 @@ void GenerateCardsSvg(const Project& project)
     const auto svg_dpi{ 600 };
     const auto mm_to_in{ 1_in / 1_mm };
     const auto unit_conv{ svg_dpi / mm_to_in };
-    const auto cards_size{ project.ComputeCardsSize() / 1_mm * unit_conv };
+    const auto cards_size{ project.ComputeExactBordersSize() / 1_mm * unit_conv };
     const auto page_size{ project.ComputePageSize() / 1_mm * unit_conv };
     const auto margins{ project.ComputeMargins() / 1_mm * unit_conv };
+    const dla::vec2 available_space{
+        page_size.x - margins.m_Left - margins.m_Right,
+        page_size.y - margins.m_Top - margins.m_Bottom,
+    };
+    const dla::vec2 offset{
+        margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
+        margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
+    };
 
     LogInfo("Generating card path...");
-    const QPainterPath path{ GenerateCardsPath(dla::vec2{ margins.m_Left, margins.m_Top }, cards_size, project) };
+    const QPainterPath path{ GenerateCardsPath(offset, cards_size, project) };
     const QSize svg_size{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) };
     const QSizeF viewbox_size{ page_size.x, page_size.y };
 
@@ -214,16 +211,7 @@ SECTION
 ENTITIES
 )";
 
-    const auto cards_size{ project.ComputeCardsSize() / 1_mm };
-    if (project.m_Data.m_BleedEdge > 0_mm || project.m_Data.m_EnvelopeBleedEdge > 0_mm)
-    {
-        auto poly_line{ start_poly_line() };
-
-        draw_vertex(dla::vec2{ 0, 0 });
-        draw_vertex(dla::vec2{ cards_size.x, 0 });
-        draw_vertex(dla::vec2{ cards_size.x, cards_size.y });
-        draw_vertex(dla::vec2{ 0, cards_size.y });
-    }
+    const auto cards_size{ project.ComputeExactBordersSize() / 1_mm };
 
     const auto transforms{ ComputeTransforms(project) };
     const auto radius{ project.CardCornerRadius() / 1_mm };
