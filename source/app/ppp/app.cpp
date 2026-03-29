@@ -9,7 +9,10 @@
 
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 
+#include <nlohmann/json.hpp>
+
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 #include <ppp/ui/main_window.hpp>
@@ -17,8 +20,10 @@
 PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     : QApplication(argc, argv)
 {
+    TRACY_AUTO_SCOPE();
+
     // Create folders for user-content
-    for (const auto& folder : { "res/cubes", "res/styles", "res/base_pdfs", "res/models" })
+    for (const auto& folder : { "res/cubes", "res/styles", "res/base_pdfs", "res/card_svgs", "res/models" })
     {
         if (!fs::exists(folder))
         {
@@ -31,11 +36,15 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
 
 PrintProxyPrepApplication::~PrintProxyPrepApplication()
 {
+    TRACY_AUTO_SCOPE();
+
     Save();
 }
 
 void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
 {
+    TRACY_AUTO_SCOPE();
+
     m_MainWindow = main_window;
 
     if (m_WindowGeometry.has_value())
@@ -53,6 +62,22 @@ void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
 QMainWindow* PrintProxyPrepApplication::GetMainWindow() const
 {
     return m_MainWindow;
+}
+
+std::optional<QByteArray> PrintProxyPrepApplication::LoadWindowGeometry(const QString& object_name) const
+{
+    TRACY_AUTO_SCOPE();
+
+    if (m_WindowGeometries.contains(object_name))
+    {
+        return m_WindowGeometries.at(object_name);
+    }
+    return std::nullopt;
+}
+void PrintProxyPrepApplication::SaveWindowGeometry(const QString& object_name, QByteArray geometry)
+{
+    TRACY_AUTO_SCOPE();
+    m_WindowGeometries[object_name] = std::move(geometry);
 }
 
 void PrintProxyPrepApplication::SetProjectPath(fs::path project_path)
@@ -75,7 +100,9 @@ const std::string& PrintProxyPrepApplication::GetTheme() const
 
 void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 {
-    std::lock_guard lock{ m_CubesMutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_CubesMutex);
+
     if (!m_Cubes.contains(cube_name))
     {
         m_Cubes[std::move(cube_name)] = std::move(cube);
@@ -83,7 +110,9 @@ void PrintProxyPrepApplication::SetCube(std::string cube_name, cv::Mat cube)
 }
 const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) const
 {
-    std::lock_guard lock{ m_CubesMutex };
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_CubesMutex);
+
     if (m_Cubes.contains(cube_name))
     {
         return &m_Cubes.at(cube_name);
@@ -133,6 +162,54 @@ void PrintProxyPrepApplication::SetObjectVisibility(const QString& object_name, 
     m_ObjectVisibilities[object_name] = visible;
 }
 
+nlohmann::json PrintProxyPrepApplication::GetProjectDefault(std::string_view path) const
+{
+    TRACY_AUTO_SCOPE();
+    return GetJsonValue(path);
+}
+void PrintProxyPrepApplication::SetProjectDefault(std::string_view path, nlohmann::json value)
+{
+    TRACY_AUTO_SCOPE();
+    SetJsonValue(path, std::move(value));
+}
+
+nlohmann::json PrintProxyPrepApplication::GetJsonValue(std::string_view path) const
+{
+    if (m_DefaultProjectData == nullptr)
+    {
+        return nlohmann::json{};
+    }
+
+    TRACY_AUTO_SCOPE();
+
+    try
+    {
+        return ::GetJsonValue(*m_DefaultProjectData, path);
+    }
+    catch (...)
+    {
+        return nlohmann::json{};
+    }
+}
+void PrintProxyPrepApplication::SetJsonValue(std::string_view path, nlohmann::json value)
+{
+    TRACY_AUTO_SCOPE();
+
+    if (m_DefaultProjectData == nullptr)
+    {
+        m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::value_t::object);
+    }
+
+    try
+    {
+        ::SetJsonValue(*m_DefaultProjectData, path, std::move(value));
+    }
+    catch (...)
+    {
+        LogError("Invalid path {} when setting default project value.", path);
+    }
+}
+
 bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 {
     if (auto* key_event{ dynamic_cast<QKeyEvent*>(event) })
@@ -153,6 +230,8 @@ bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
 
 void PrintProxyPrepApplication::Load()
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     if (settings.contains("version"))
     {
@@ -177,10 +256,38 @@ void PrintProxyPrepApplication::Load()
                 { "Global Config", false },
             };
         }
+
+        if (settings.childGroups().contains("Windows", Qt::CaseInsensitive))
+        {
+            settings.beginGroup("Windows");
+            for (const auto& key : settings.allKeys())
+            {
+                m_WindowGeometries[key] = settings.value(key).toByteArray();
+            }
+            settings.endGroup();
+        }
+
+        if (settings.contains("project_defaults"))
+        {
+            try
+            {
+                const auto json_blob{ settings.value("project_defaults").toString().toStdString() };
+                m_DefaultProjectData = std::make_unique<nlohmann::json>(nlohmann::json::parse(json_blob));
+            }
+            catch (const std::exception& e)
+            {
+                LogError("Failed loading project defaults, continuing with original defaults: {}", e.what());
+
+                // Shouldn't be set, but better safe than sorry'
+                m_DefaultProjectData.reset();
+            }
+        }
     }
 }
 void PrintProxyPrepApplication::Save() const
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings{ "Proxy", "Proxy PDF Maker" };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", m_MainWindow->saveGeometry());
@@ -195,5 +302,28 @@ void PrintProxyPrepApplication::Save() const
             settings.setValue(object_name, visible);
         }
         settings.endGroup();
+    }
+
+    if (!m_WindowGeometries.empty())
+    {
+        settings.beginGroup("Windows");
+        for (const auto& [window_name, geometry] : m_WindowGeometries)
+        {
+            settings.setValue(window_name, geometry);
+        }
+        settings.endGroup();
+    }
+
+    if (m_DefaultProjectData != nullptr)
+    {
+        try
+        {
+            const auto json_blob{ m_DefaultProjectData->dump() };
+            settings.setValue("project_defaults", ToQString(json_blob));
+        }
+        catch (const std::exception& e)
+        {
+            LogError("Failed wring project defaults, they will be rest on next load: {}", e.what());
+        }
     }
 }

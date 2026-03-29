@@ -20,19 +20,24 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
     return ListFiles(path, g_ValidImageExtensions);
 }
 
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two)
 {
+    TRACY_AUTO_SCOPE();
+
     std::vector<fs::path> images{ ListImageFiles(path_one) };
     ForEachFile(
         path_two,
         [&images](const fs::path& path)
         {
-            if (!std::ranges::contains(images, path))
+            if (!std::ranges::contains(images, path.filename()))
             {
                 images.push_back(path.filename());
             }
@@ -42,7 +47,7 @@ std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& p
 }
 
 Image CropImage(const Image& image,
-                const fs::path& image_name,
+                const fs::path& card_name,
                 Size card_size,
                 Length full_bleed,
                 Length bleed_edge,
@@ -54,7 +59,7 @@ Image CropImage(const Image& image,
     // Safety check: if density is zero or very small, return the original image
     if (density <= 0_dpi)
     {
-        LogInfo("Cropping images...\n{} - DPI calculated: 0, skipping cropping for image", image_name.string());
+        LogInfo("Cropping images...\n{} - DPI calculated: 0, skipping cropping for image", card_name.string());
         return image;
     }
 
@@ -65,16 +70,16 @@ Image CropImage(const Image& image,
         {
             const Pixel bleed_pixels = density * bleed_edge;
             c = dla::math::round(dla::math::max(0_pix, c - bleed_pixels));
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (adjusted for bleed edge {})",
-                    image_name.string(),
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame (keeping {:.1f}mm of bleed)",
+                    card_name.string(),
                     dpi.value,
                     c,
-                    bleed_edge);
+                    bleed_edge / 1_mm);
         }
         else
         {
             c = dla::math::round(c);
-            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", image_name.string(), dpi.value, c);
+            LogInfo("Cropping images...\n{} - DPI calculated: {}, cropping {} around frame", card_name.string(), dpi.value, c);
         }
     }
 
@@ -83,19 +88,19 @@ Image CropImage(const Image& image,
     {
         const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
         const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", image_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
+        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", card_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
         return cropped_image.Resize(new_size);
     }
     return cropped_image;
 }
 
-Image UncropImage(const Image& image, const fs::path& image_name, Size card_size, bool fancy_uncrop)
+Image UncropImage(const Image& image, const fs::path& card_name, Size card_size, bool fancy_uncrop)
 {
     const PixelDensity density{ image.Density(card_size) };
     Pixel c{ 0.12_in * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
-    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", image_name.string(), dpi.value, c);
+    LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", card_name.string(), dpi.value, c);
 
     if (fancy_uncrop)
     {
@@ -128,6 +133,10 @@ fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::st
 
 ImgDict ReadPreviews(const fs::path& img_cache_file)
 {
+    TRACY_AUTO_SCOPE();
+
+    ImgDict img_dict{};
+
     try
     {
         if (std::ifstream in_file{ img_cache_file, std::ios_base::binary })
@@ -158,7 +167,6 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
 
             const size_t num_images{ read(c_Tag<size_t>) };
 
-            ImgDict img_dict{};
             for (size_t i = 0; i < num_images; ++i)
             {
                 const std::vector img_name_buf{ read_arr(c_Tag<char>) };
@@ -177,19 +185,10 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
                 }
 
                 img.m_BadAspectRatio = read(c_Tag<bool>);
+                img.m_BadRotation = read(c_Tag<bool>);
 
                 img_dict[img_name] = std::move(img);
             }
-
-            if (!img_dict.contains(g_Cfg.m_FallbackName))
-            {
-                ImagePreview img{};
-                img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
-                img.m_UncroppedImage = img.m_CroppedImage;
-                img_dict[g_Cfg.m_FallbackName] = std::move(img);
-            }
-
-            return img_dict;
         }
     }
     catch (std::exception& e)
@@ -199,12 +198,24 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
         {
             fs::remove(img_cache_file);
         }
+        img_dict.clear();
     }
-    return {};
+
+    if (!img_dict.contains(g_Cfg.m_FallbackName))
+    {
+        ImagePreview img{};
+        img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
+        img.m_UncroppedImage = img.m_CroppedImage;
+        img_dict[g_Cfg.m_FallbackName] = std::move(img);
+    }
+
+    return img_dict;
 }
 
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
 {
+    TRACY_AUTO_SCOPE();
+
     if (std::ofstream out_file{ img_cache_file, std::ios_base::binary | std::ios_base::trunc })
     {
         const auto write = [&out_file](const auto& val)
@@ -235,6 +246,7 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
                 write_arr(buf.data(), buf.size());
             }
             write(image.m_BadAspectRatio);
+            write(image.m_BadRotation);
         }
     }
 }

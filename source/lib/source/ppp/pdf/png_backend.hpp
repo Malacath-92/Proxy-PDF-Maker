@@ -1,5 +1,7 @@
 #pragma once
 
+#include <shared_mutex>
+
 #include <opencv2/opencv.hpp>
 
 #include <ppp/image.hpp>
@@ -16,24 +18,41 @@ class PngPage final : public PdfPage
   public:
     virtual ~PngPage() override = default;
 
+    virtual void SetPageName(std::string_view page_name) override;
+
     virtual void DrawSolidLine(LineData data, LineStyle style) override;
 
     virtual void DrawDashedLine(LineData data, DashedLineStyle style) override;
 
     virtual void DrawImage(ImageData data) override;
 
-    virtual void DrawText(std::string_view text, TextBoundingBox bounding_box) override;
+    virtual TextBoundingBox DrawText(TextData data) override;
 
-    virtual void Finish() override{};
+    virtual void RotateFutureContent(Angle angle) override;
+
+    virtual void Finish() override;
 
   private:
+    cv::Mat& TargetImage();
+
     const Project* m_Project;
+
+    std::string m_PageName;
+
+    struct RotatedImage
+    {
+        cv::Mat m_Image;
+        Angle m_Angle;
+    };
+
     cv::Mat m_Page{};
-    PngDocument* m_Document{};
+    std::vector<RotatedImage> m_RotatedImages;
+
     bool m_PerfectFit{};
     PixelSize m_CardSize{};
     PixelSize m_PageSize{};
-    PngImageCache* m_ImageCache;
+    int32_t m_PageHeight{};
+    const PngImageCache* m_ImageCache;
 };
 
 class PngImageCache
@@ -41,9 +60,14 @@ class PngImageCache
   public:
     PngImageCache(const Project& project);
 
-    const cv::Mat& GetImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
+    const cv::Mat* GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const;
+
+    void PreallocateImages(size_t num_images);
+    void CacheImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
 
   private:
+    mutable std::shared_mutex m_Mutex;
+
     const Project& m_Project;
 
     struct ImageCacheEntry
@@ -63,11 +87,26 @@ class PngDocument final : public PdfDocument
     PngDocument(const Project& project);
     virtual ~PngDocument() override;
 
-    virtual PngPage* NextPage() override;
+    virtual void ReservePages(size_t pages) override;
+    virtual PngPage* NextPage(bool is_backside) override;
 
-    virtual fs::path Write(fs::path path) override;
+    virtual fs::path Write(fs::path path, bool version_output) override;
+
+    virtual void PreallocateImageCache(size_t num_images) override;
+    virtual void PreCacheImage(ImageCacheData data) override;
+
+    static constexpr bool ThreadSafePageWrite()
+    {
+        return true;
+    }
+    static constexpr bool ThreadSafeImageCache()
+    {
+        return true;
+    }
 
   private:
+    mutable std::mutex m_Mutex;
+
     const Project& m_Project;
 
     PixelSize m_PrecomputedCardSize;

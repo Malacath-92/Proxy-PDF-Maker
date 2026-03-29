@@ -9,7 +9,9 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <QPixmap>
+#include <ppp/svg/util.hpp>
+
+#include <ppp/profile/profile.hpp>
 
 namespace pngcrc
 {
@@ -56,10 +58,12 @@ static uint32_t CRC(const uchar* buf, int len)
 Image::Image(cv::Mat impl)
     : m_Impl{ std::move(impl) }
 {
+    TRACY_AUTO_SCOPE();
 }
 
 Image::~Image()
 {
+    TRACY_AUTO_SCOPE();
     Release();
 }
 
@@ -74,17 +78,21 @@ Image::Image(const Image& rhs)
 
 Image& Image::operator=(Image&& rhs)
 {
+    TRACY_AUTO_SCOPE();
     m_Impl = std::move(rhs.m_Impl);
     return *this;
 }
 Image& Image::operator=(const Image& rhs)
 {
+    TRACY_AUTO_SCOPE();
     m_Impl = rhs.m_Impl.clone();
     return *this;
 }
 
 Image Image::Read(const fs::path& path)
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     img.m_Impl = cv::imread(path.string().c_str(), cv::IMREAD_UNCHANGED);
     return img;
@@ -92,6 +100,8 @@ Image Image::Read(const fs::path& path)
 
 bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality) const
 {
+    TRACY_AUTO_SCOPE();
+
     const fs::path ext{ path.extension() };
     if (ext == ".png")
     {
@@ -129,6 +139,8 @@ bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, 
 
 bool Image::Write(const fs::path& path, std::optional<int32_t> png_compression, std::optional<int32_t> jpg_quality, ::Size dimensions) const
 {
+    TRACY_AUTO_SCOPE();
+
     const fs::path ext{ path.extension() };
     if (ext == ".png")
     {
@@ -266,6 +278,8 @@ Image Image::Decode(const EncodedImage& buffer)
 
 Image Image::Decode(EncodedImageView buffer)
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::InputArray cv_buffer{ reinterpret_cast<const uchar*>(buffer.data()),
                               static_cast<int>(buffer.size()) };
@@ -273,8 +287,43 @@ Image Image::Decode(EncodedImageView buffer)
     return img;
 }
 
+Image Image::PlainColor(PixelSize size, ColorRGB8 color)
+{
+    TRACY_AUTO_SCOPE();
+
+    const int rows{ static_cast<int>(size.x / 1_pix) };
+    const int cols{ static_cast<int>(size.y / 1_pix) };
+
+    Image img{};
+    img.m_Impl = cv::Mat{ rows, cols, CV_8UC4, cv::Scalar{
+                                                   static_cast<float>(color.b),
+                                                   static_cast<float>(color.g),
+                                                   static_cast<float>(color.r),
+                                               } };
+    return img;
+}
+
+Image Image::PlainColor(PixelSize size, ColorRGBA8 color)
+{
+    TRACY_AUTO_SCOPE();
+
+    const int rows{ static_cast<int>(size.x / 1_pix) };
+    const int cols{ static_cast<int>(size.y / 1_pix) };
+
+    Image img{};
+    img.m_Impl = cv::Mat{ rows, cols, CV_8UC4, cv::Scalar{
+                                                   static_cast<float>(color.b),
+                                                   static_cast<float>(color.g),
+                                                   static_cast<float>(color.r),
+                                                   static_cast<float>(color.a),
+                                               } };
+    return img;
+}
+
 EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 {
+    TRACY_AUTO_SCOPE();
+
     // Safety check: if image is empty, return empty buffer
     if (m_Impl.empty())
     {
@@ -304,6 +353,8 @@ EncodedImage Image::EncodePng(std::optional<int32_t> compression) const
 
 EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
 {
+    TRACY_AUTO_SCOPE();
+
     // Safety check: if image is empty, return empty buffer
     if (m_Impl.empty())
     {
@@ -329,25 +380,6 @@ EncodedImage Image::EncodeJpg(std::optional<int32_t> quality) const
     return {};
 }
 
-QPixmap Image::StoreIntoQtPixmap() const
-{
-    switch (m_Impl.channels())
-    {
-    case 1:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_Grayscale8));
-    case 3:
-        return QPixmap::fromImage(QImage(m_Impl.ptr(), m_Impl.cols, m_Impl.rows, m_Impl.step, QImage::Format_BGR888));
-    case 4:
-    {
-        cv::Mat img;
-        cv::cvtColor(m_Impl, img, cv::COLOR_BGR2RGBA);
-        return QPixmap::fromImage(QImage(img.ptr(), img.cols, img.rows, img.step, QImage::Format_RGBA8888));
-    }
-    default:
-        return QPixmap{ static_cast<int>(Width() / 1_pix), static_cast<int>(Height() / 1_pix) };
-    }
-}
-
 Image::operator bool() const
 {
     return !m_Impl.empty();
@@ -360,6 +392,8 @@ bool Image::Valid() const
 
 Image Image::Rotate(Rotation rotation) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     switch (rotation)
     {
@@ -380,6 +414,8 @@ Image Image::Rotate(Rotation rotation) const
 
 Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     const auto [w, h] = Size().pod();
     Image img{};
     img.m_Impl = m_Impl(
@@ -390,6 +426,8 @@ Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 
 Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -404,6 +442,8 @@ Image Image::AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) co
 
 Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::copyMakeBorder(m_Impl,
                        img.m_Impl,
@@ -416,8 +456,24 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     return img;
 }
 
+Image Image::EnsureAlpha() const
+{
+    TRACY_AUTO_SCOPE();
+
+    if (m_Impl.channels() == 4)
+    {
+        return Image{ m_Impl };
+    }
+
+    Image img{};
+    cv::cvtColor(m_Impl, img.m_Impl, cv::COLOR_RGB2RGBA);
+    return img;
+}
+
 Image Image::ApplyAlpha(const ColorRGB8& color) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Impl.channels() != 4)
     {
         return Image{ m_Impl };
@@ -457,6 +513,8 @@ Image Image::ApplyAlpha(const ColorRGB8& color) const
 
 Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
 {
+    TRACY_AUTO_SCOPE();
+
     const auto corner_radius_pixels{ static_cast<int>(dla::math::floor(Density(real_size) * corner_radius) / 1_pix) };
     if (corner_radius_pixels == 0)
     {
@@ -510,17 +568,114 @@ Image Image::RoundCorners(::Size real_size, ::Length corner_radius) const
     return Image{ out_impl };
 }
 
-Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) const
+Image Image::ClipSvg(const Svg& svg) const
 {
-    if (m_Impl.channels() != 4)
+    // For sub-pixel accuracy we can pass a shift parameter "s"
+    // A coordinate is then treated as x * 2^-s
+    static constexpr auto c_FractionalBits{ 16 };
+    static constexpr float c_OneOverAlpha{ 1 << c_FractionalBits }; // 2^s
+
+    using PixelAlignedPolygon = std::vector<cv::Point>;
+    const auto polys{
+        [](const Svg& svg,
+           PixelSize size,
+           uint32_t segment_resolution)
+        {
+            auto draw_bezier{
+                [&](auto& points, const auto& from, const auto& to)
+                {
+                    const auto& p1{ from.m_Position };
+                    const auto& p2{ from.m_NextHandle };
+                    const auto& p3{ to.m_PrevHandle };
+                    const auto& p4{ to.m_Position };
+
+                    auto interpolate{
+                        [](const auto& from, const auto& to, float percent)
+                        {
+                            const auto difference{ to - from };
+                            return from + difference * percent;
+                        }
+                    };
+
+                    for (size_t i = 1; i <= segment_resolution; i++)
+                    {
+                        const float alpha{ static_cast<float>(i) / segment_resolution };
+
+                        const auto p12{ interpolate(p1, p2, alpha) };
+                        const auto p23{ interpolate(p2, p3, alpha) };
+                        const auto p34{ interpolate(p3, p4, alpha) };
+
+                        const auto pa{ interpolate(p12, p23, alpha) };
+                        const auto pb{ interpolate(p23, p34, alpha) };
+
+                        const auto p{ interpolate(pa, pb, alpha) / svg.m_Size * size / 1_pix };
+
+                        points.push_back(cv::Point{
+                            static_cast<int>(p.x * c_OneOverAlpha),
+                            static_cast<int>(p.y * c_OneOverAlpha),
+                        });
+                    }
+                }
+            };
+
+            std::vector<PixelAlignedPolygon> polys{};
+            for (const auto& bezier_curve : svg.m_Curves)
+            {
+                auto& poly{ polys.emplace_back() };
+                if (bezier_curve.m_ControlPoints.empty())
+                {
+                    draw_bezier(poly,
+                                bezier_curve.m_StartPoint,
+                                bezier_curve.m_EndPoint);
+                }
+                else
+                {
+                    draw_bezier(poly,
+                                bezier_curve.m_StartPoint,
+                                bezier_curve.m_ControlPoints.front());
+                    for (size_t i{ 0 }; i < bezier_curve.m_ControlPoints.size() - 1; i++)
+                    {
+                        draw_bezier(poly,
+                                    bezier_curve.m_ControlPoints[i],
+                                    bezier_curve.m_ControlPoints[i + 1]);
+                    }
+                    draw_bezier(poly,
+                                bezier_curve.m_ControlPoints.back(),
+                                bezier_curve.m_EndPoint);
+                }
+            }
+            return polys;
+        }(svg, Size(), 32)
+    };
+
+    cv::Mat mask{ m_Impl.rows, m_Impl.cols, CV_8UC1, cv::Scalar{ 0 } };
+    cv::fillPoly(mask, polys, cv::Scalar{ 255 }, cv::LINE_AA, c_FractionalBits);
+
+    std::vector<cv::Mat> out_channels;
+    cv::split(m_Impl, out_channels);
+    if (out_channels.size() != 4)
     {
-        Image copy{};
-        copy.m_Impl = m_Impl.clone();
-        return copy;
+        out_channels.push_back(std::move(mask));
+    }
+    else
+    {
+        cv::multiply(mask, out_channels[3], out_channels[3]);
     }
 
+    cv::Mat out_impl;
+    cv::merge(out_channels, out_impl);
+    return Image{ out_impl };
+}
+
+Image Image::FillCorners(::Size real_size, ::Length corner_radius) const
+{
+    TRACY_AUTO_SCOPE();
+
+    Image rounded{ RoundCorners(real_size, corner_radius) };
+    cv::Mat img{ rounded.m_Impl };
+
     std::vector<cv::Mat> channels{};
-    cv::split(m_Impl, channels);
+    cv::split(img, channels);
 
     // Threshold alpha so we only have those pixels left that were completely opaque
     cv::threshold(channels[3], channels[3], 254, 255, cv::THRESH_BINARY);
@@ -530,7 +685,7 @@ Image Image::FillCorners(::Length /*corner_radius*/, ::Size /*physical_size*/) c
     {
         channels[i].convertTo(channels[i], CV_32FC1, 1.0f / 255);
     }
-    
+
     // Cut off anything from the source image that isn't part of the threshold area
     for (size_t i = 0; i < 3; ++i)
     {
@@ -599,15 +754,15 @@ struct CubeFilter
         // In Release we interpolate between the eight cube-elements
 
         const int r_lo{ static_cast<int>(std::floor(r)) };
-        const int r_hi{ static_cast<int>(std::ceil(r)) };
+        const int r_hi{ r_lo + 1 };
         const float r_frac{ r - static_cast<float>(r_lo) };
 
         const int g_lo{ static_cast<int>(std::floor(g)) };
-        const int g_hi{ static_cast<int>(std::ceil(g)) };
+        const int g_hi{ g_lo + 1 };
         const float g_frac{ g - static_cast<float>(g_lo) };
 
         const int b_lo{ static_cast<int>(std::floor(b)) };
-        const int b_hi{ static_cast<int>(std::ceil(b)) };
+        const int b_hi{ b_lo + 1 };
         const float b_frac{ b - static_cast<float>(b_lo) };
 
         static constexpr auto c_LinearInterpolate{
@@ -681,6 +836,8 @@ struct CubeFilter
 
 Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Impl.channels() == 1)
     {
         return *this;
@@ -704,6 +861,8 @@ Image Image::ApplyColorCube(const cv::Mat& color_cube) const
 
 Image Image::Resize(PixelSize size) const
 {
+    TRACY_AUTO_SCOPE();
+
     Image img{};
     cv::resize(m_Impl, img.m_Impl, cv::Size(static_cast<int>(size.x.value), static_cast<int>(size.y.value)), cv::INTER_AREA);
     return img;
@@ -748,6 +907,8 @@ PixelDensity Image::Density(::Size real_size) const
 
 uint64_t Image::Hash() const
 {
+    TRACY_AUTO_SCOPE();
+
     cv::Mat hash;
     cv::img_hash::pHash(m_Impl, hash);
     return *reinterpret_cast<uint64_t*>(hash.data);

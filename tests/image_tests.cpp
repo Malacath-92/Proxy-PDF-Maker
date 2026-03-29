@@ -71,7 +71,7 @@ TEST_CASE("Uncrop image", "[image_uncrop]")
 TEST_CASE("Apply color cube", "[image_color_cube]")
 {
     {
-        const cv::Mat vibrance_cube{ LoadColorCube("res/cubes/Foils Vibrance.CUBE") };
+        const cv::Mat vibrance_cube{ LoadColorCube("Foils Vibrance.CUBE") };
         const Image filtered_image{ g_BaseImage.ApplyColorCube(vibrance_cube) };
         REQUIRE(filtered_image.Width() == 248_pix);
         REQUIRE(filtered_image.Height() == 322_pix);
@@ -85,7 +85,7 @@ TEST_CASE("Apply color cube", "[image_color_cube]")
     }
 
     {
-        const cv::Mat madness_cube{ LoadColorCube("tests/madness.CUBE") };
+        const cv::Mat madness_cube{ LoadColorCube("madness.CUBE") };
         const Image filtered_image{ g_BaseImage.ApplyColorCube(madness_cube) };
         REQUIRE(filtered_image.Width() == 248_pix);
         REQUIRE(filtered_image.Height() == 322_pix);
@@ -115,9 +115,25 @@ TEST_CASE("Grow image", "[image_resize_grow]")
     REQUIRE(resized_image.Hash() == 0x1892b36349d83626);
 }
 
+inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
+{
+    if (card_size_info.m_RoundedRect.has_value())
+    {
+        return card_size_info.m_RoundedRect.value().m_CardSize.m_Dimensions;
+    }
+    else if (card_size_info.m_SvgInfo.has_value())
+    {
+        return card_size_info.m_SvgInfo.value().m_Svg.m_Size;
+    }
+    else
+    {
+        throw std::logic_error{ "Invalid card size..." };
+    }
+}
+
 TEST_CASE("Calculate DPI", "[image_dpi]")
 {
-    const auto card_size_info{ g_Cfg.m_CardSizes.at(g_Cfg.m_DefaultCardSize) };
-    const auto dpi{ g_BaseImage.Density(card_size_info.m_CardSize.m_Dimensions + 2.0f * card_size_info.m_InputBleed.m_Dimension) * card_size_info.m_CardSizeScale * 1_in };
+    const auto card_size_info{ g_Cfg.m_CardSizes.at("Standard") };
+    const auto dpi{ g_BaseImage.Density(GetCardSize(card_size_info) + 2.0f * card_size_info.m_InputBleed.m_Dimension) * card_size_info.m_CardSizeScale * 1_in };
     REQUIRE(static_cast<int>(dpi.value) == 87);
 }

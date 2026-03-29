@@ -28,4 +28,9 @@ function(setup_format_target FORMAT_TARGET_NAME)
         COMMAND ${CLANG_FORMAT_COMMAND} -f
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
+
+    set_target_properties(${FORMAT_TARGET_NAME} PROPERTIES
+        FOLDER formatting)
+    set_target_properties(${FORMAT_TARGET_NAME}_changes PROPERTIES
+        FOLDER formatting)
 endfunction()

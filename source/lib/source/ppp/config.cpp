@@ -12,8 +12,11 @@
 #include <ppp/constants.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
-#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
+
+#include <ppp/util/log.hpp>
+
+#include <ppp/profile/profile.hpp>
 
 Config g_Cfg{ LoadConfig() };
 
@@ -30,25 +33,92 @@ void Config::SetPdfBackend(PdfBackend backend)
     }
 }
 
-std::string_view Config::GetFirstValidPageSize() const
+auto GetFirstValidPageSizeIter(const Config& cfg)
 {
-    for (const auto& [page_size, info] : g_Cfg.m_PageSizes)
+    if (cfg.m_PageSizes.contains("Letter"))
     {
+        return cfg.m_PageSizes.find("Letter");
+    }
+    if (cfg.m_PageSizes.contains("A4"))
+    {
+        return cfg.m_PageSizes.find("A4");
+    }
+
+    for (auto it{ cfg.m_PageSizes.begin() }; it != cfg.m_PageSizes.end(); ++it)
+    {
+        const auto& [page_size, info]{ *it };
         if (page_size != Config::c_FitSize && page_size != Config::c_BasePDFSize)
         {
-            return page_size;
+            return it;
         }
     }
 
-    return "No Valid Page Size";
+    throw std::logic_error{ "No valid page sizes..." };
+}
+const Config::SizeInfo& Config::GetFirstValidPageSizeInfo() const
+{
+    return GetFirstValidPageSizeIter(*this)->second;
+}
+std::string_view Config::GetFirstValidPageSize() const
+{
+    return GetFirstValidPageSizeIter(*this)->first;
+}
+
+auto GetFirstValidCardSizeIter(const Config& cfg)
+{
+    if (cfg.m_CardSizes.contains("Standard"))
+    {
+        return cfg.m_CardSizes.find("Standard");
+    }
+
+    if (!cfg.m_CardSizes.empty())
+    {
+        return cfg.m_CardSizes.begin();
+    }
+
+    throw std::logic_error{ "No valid card sizes..." };
+}
+const Config::CardSizeInfo& Config::GetFirstValidCardSizeInfo() const
+{
+    return GetFirstValidCardSizeIter(*this)->second;
+}
+std::string_view Config::GetFirstValidCardSize() const
+{
+    return GetFirstValidCardSizeIter(*this)->first;
+}
+
+bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
+{
+    TRACY_AUTO_SCOPE();
+
+    if (!fs::exists(svg_path))
+    {
+        return false;
+    }
+
+    m_CardSizes[svg_path.stem().string()] = CardSizeInfo{
+        .m_InputBleed{ input_bleed },
+        .m_Hint{},
+        .m_CardSizeScale = 1.0f,
+
+        .m_RoundedRect{ std::nullopt },
+
+        .m_SvgInfo{ {
+            .m_SvgName{ svg_path.filename().string() },
+            .m_Svg{ LoadSvg(svg_path) },
+        } }
+    };
+
+    return true;
 }
 
 Config LoadConfig()
 {
+    TRACY_AUTO_SCOPE();
+
     Config config{};
     if (!QFile::exists("config.ini"))
     {
-        SaveConfig(config);
         return config;
     }
 
@@ -59,7 +129,6 @@ Config LoadConfig()
             settings.beginGroup("DEFAULT");
             if (!settings.value("Config.Version").isValid())
             {
-                SaveConfig(config);
                 return config;
             }
             settings.endGroup();
@@ -179,30 +248,64 @@ Config LoadConfig()
         {
             settings.beginGroup("DEFAULT");
 
+            config.m_CheckVersionOnStartup = settings.value("Startup.Version.Check", true).toBool();
+            config.m_ToastTimeoutMS = settings.value("Toast.Duration", 8000).toUInt();
+
             config.m_AdvancedMode = settings.value("Advanced.Mode", false).toBool();
 
             config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
             config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
-            config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
-            config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
-            config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
             {
-                const auto pdf_backend{ settings.value("PDF.Backend", "LibHaru").toString().toStdString() };
+                const auto card_order{
+                    settings.value("Card.Order", "Alphabetical").toString().toStdString()
+                };
+                const auto card_order_direction{
+                    settings.value("Card.Order.Direction", "Ascending").toString().toStdString()
+                };
+                config.m_CardOrder = magic_enum::enum_cast<CardOrder>(card_order)
+                                         .value_or(CardOrder::Alphabetical);
+                config.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(card_order_direction)
+                                                  .value_or(CardOrderDirection::Ascending);
+            }
+
+            config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
+            config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
+            if (settings.contains("Page.Size"))
+            {
+                config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
+            }
+            config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
+
+            config.m_VersionOutput = settings.value("Version.Output", false).toBool();
+
+            {
+                const auto pdf_backend{ settings.value("PDF.Backend", "PoDoFo").toString().toStdString() };
                 config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
-                                         .value_or(PdfBackend::LibHaru));
+                                         .value_or(PdfBackend::PoDoFo));
             }
 
             {
-                auto pdf_image_format{ settings.value("PDF.Backend.Image.Format", "Png").toString() };
-                if (pdf_image_format == "Jpg")
+                auto pdf_image_format{ settings.value("PDF.Backend.Image.Format") };
+                if (pdf_image_format.isValid())
                 {
-                    config.m_PdfImageFormat = ImageFormat::Jpg;
+                    if (pdf_image_format.toString() == "Jpg")
+                    {
+                        config.m_PdfImageCompression = ImageCompression::Lossy;
+                    }
+                    else
+                    {
+                        config.m_PdfImageCompression = ImageCompression::Lossless;
+                    }
                 }
                 else
                 {
-                    config.m_PdfImageFormat = ImageFormat::Png;
+                    auto pdf_image_compression{ settings.value("PDF.Backend.Image.Compression", "Lossy")
+                                                    .toString()
+                                                    .toStdString() };
+                    config.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(pdf_image_compression)
+                                                       .value_or(ImageCompression::Lossy);
                 }
             }
 
@@ -227,9 +330,11 @@ Config LoadConfig()
                 if (base_unit.isValid())
                 {
                     config.m_BaseUnit = UnitFromName(base_unit.toString().toStdString())
-                                            .value_or(Unit::Inches);
+                                            .value_or(Unit::Millimeter);
                 }
             }
+
+            config.m_RenderZeroBleedRoundedEdges = settings.value("Content.Creator.Mode", false).toBool();
 
             settings.endGroup();
         }
@@ -277,28 +382,59 @@ Config LoadConfig()
             [](const QSettings& settings)
             {
                 std::optional<Config::CardSizeInfo> full_card_size_info{};
-                auto card_size{ settings.value("Card.Size") };
                 auto bleed_edge{ settings.value("Input.Bleed") };
+                auto card_size{ settings.value("Card.Size") };
                 auto corner_radius{ settings.value("Corner.Radius") };
-                if (card_size.isValid() && bleed_edge.isValid() && corner_radius.isValid())
+                auto svg_name{ settings.value("Svg.Name") };
+                if (bleed_edge.isValid())
                 {
-                    auto card_size_info{ c_ParseSize(card_size.toString().toStdString()) };
                     auto bleed_edge_info{ c_ParseLength(bleed_edge.toString().toStdString()) };
-                    auto corner_radius_info{ c_ParseLength(corner_radius.toString().toStdString()) };
-                    if (card_size_info && bleed_edge_info && corner_radius_info)
+                    if (card_size.isValid() && corner_radius.isValid())
                     {
-                        full_card_size_info.emplace();
-                        full_card_size_info->m_CardSize = std::move(card_size_info).value();
-                        full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
-                        full_card_size_info->m_CornerRadius = std::move(corner_radius_info).value();
-                        full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
-
-                        auto hint{ settings.value("Usage.Hint") };
-                        if (hint.isValid())
+                        auto card_size_info{ c_ParseSize(card_size.toString().toStdString()) };
+                        auto corner_radius_info{ c_ParseLength(corner_radius.toString().toStdString()) };
+                        if (bleed_edge_info && card_size_info && corner_radius_info)
                         {
-                            full_card_size_info->m_Hint = hint.toString().toStdString();
+                            full_card_size_info.emplace();
+                            full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
+
+                            full_card_size_info->m_RoundedRect = {
+                                .m_CardSize{ std::move(card_size_info).value() },
+                                .m_CornerRadius{ std::move(corner_radius_info).value() },
+                            };
+
+                            auto hint{ settings.value("Usage.Hint") };
+                            if (hint.isValid())
+                            {
+                                full_card_size_info->m_Hint = hint.toString().toStdString();
+                            }
                         }
-                    };
+                    }
+                    else if (svg_name.isValid())
+                    {
+                        auto svg_path{ fs::path{ "res/card_svgs" } / svg_name.toString().toStdString() };
+                        if (bleed_edge_info && fs::exists(svg_path))
+                        {
+                            full_card_size_info.emplace();
+                            full_card_size_info->m_InputBleed = std::move(bleed_edge_info).value();
+
+                            full_card_size_info->m_SvgInfo = {
+                                .m_SvgName{ svg_name.toString().toStdString() },
+                                .m_Svg{ LoadSvg(svg_path) },
+                            };
+                        }
+                    }
+                }
+
+                if (full_card_size_info.has_value())
+                {
+                    full_card_size_info->m_CardSizeScale = std::max(settings.value("Card.Scale", 1.0f).toFloat(), 0.0f);
+
+                    auto hint{ settings.value("Usage.Hint") };
+                    if (hint.isValid())
+                    {
+                        full_card_size_info->m_Hint = hint.toString().toStdString();
+                    }
                 }
 
                 return full_card_size_info;
@@ -334,6 +470,8 @@ Config LoadConfig()
 
 void SaveConfig(Config config)
 {
+    TRACY_AUTO_SCOPE();
+
     QSettings settings("config.ini", QSettings::IniFormat);
     settings.clear();
 
@@ -364,31 +502,28 @@ void SaveConfig(Config config)
 
             settings.setValue("Config.Version", ToQString(ConfigFormatVersion()));
 
+            settings.setValue("Startup.Version.Check", config.m_CheckVersionOnStartup);
+            settings.setValue("Toast.Duration", config.m_ToastTimeoutMS);
+
             settings.setValue("Advanced.Mode", config.m_AdvancedMode);
 
             settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
+
+            const std::string_view card_order{ magic_enum::enum_name(config.m_CardOrder) };
+            const std::string_view card_order_direction{ magic_enum::enum_name(config.m_CardOrderDirection) };
+            settings.setValue("Card.Order", ToQString(card_order));
+            settings.setValue("Card.Order.Direction", ToQString(card_order_direction));
+
+            settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
-            settings.setValue("Page.Size", ToQString(config.m_DefaultPageSize));
             settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
+            settings.setValue("Version.Output", config.m_VersionOutput);
 
             const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
-
-            const char* pdf_image_format{
-                [](ImageFormat image_format)
-                {
-                    switch (image_format)
-                    {
-                    case ImageFormat::Jpg:
-                        return "Jpg";
-                    case ImageFormat::Png:
-                    default:
-                        return "Png";
-                    }
-                }(config.m_PdfImageFormat),
-            };
-            settings.setValue("PDF.Backend.Image.Format", ToQString(pdf_image_format));
+            settings.setValue("PDF.Backend.Image.Compression",
+                              ToQString(magic_enum::enum_name(config.m_PdfImageCompression)));
 
             if (config.m_PngCompression.has_value())
             {
@@ -402,6 +537,8 @@ void SaveConfig(Config config)
 
             const auto base_unit_name{ UnitName(config.m_BaseUnit) };
             settings.setValue("Base.Unit", ToQString(base_unit_name));
+
+            settings.setValue("Content.Creator.Mode", config.m_RenderZeroBleedRoundedEdges);
 
             settings.endGroup();
         }
@@ -440,9 +577,7 @@ void SaveConfig(Config config)
         static constexpr auto c_WriteCardSizeInfo{
             [](QSettings& settings, const Config::CardSizeInfo& card_size_info)
             {
-                c_SetSize(settings, "Card.Size", card_size_info.m_CardSize);
                 c_SetLength(settings, "Input.Bleed", card_size_info.m_InputBleed);
-                c_SetLength(settings, "Corner.Radius", card_size_info.m_CornerRadius);
                 if (static_cast<int32_t>(card_size_info.m_CardSizeScale * 10000) != 10000)
                 {
                     settings.setValue("Card.Scale", card_size_info.m_CardSizeScale);
@@ -450,6 +585,16 @@ void SaveConfig(Config config)
                 if (!card_size_info.m_Hint.empty())
                 {
                     settings.setValue("Usage.Hint", ToQString(card_size_info.m_Hint));
+                }
+
+                if (card_size_info.m_RoundedRect.has_value())
+                {
+                    c_SetSize(settings, "Card.Size", card_size_info.m_RoundedRect->m_CardSize);
+                    c_SetLength(settings, "Corner.Radius", card_size_info.m_RoundedRect->m_CornerRadius);
+                }
+                else if (card_size_info.m_SvgInfo.has_value())
+                {
+                    settings.setValue("Svg.Name", ToQString(card_size_info.m_SvgInfo->m_SvgName));
                 }
             }
         };

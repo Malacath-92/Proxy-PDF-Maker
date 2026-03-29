@@ -44,7 +44,6 @@ We will now go through all the settings to adjust them to exactly what LiberProx
 
 To start us off, expand the bottom section. Here we want to make sure to:
 - set `Units` to `mm`,
-- set `Rendering Backend` to either `LibHaru` or `PoDoFo`,
 - set `Image Format` to `Jpg`,
 - set `Jpg Quality` to `100`,
 - set `Color Cube` to `None` and
@@ -64,7 +63,7 @@ Extend this section and set the following options:
 - `Bleed Edge` to `1.5mm`,
 - `Spacing` to `1mm`,
 - tick `Enable Backside` and
-- `Offset` to `0mm`.
+- both `Backside Offset` values to `0mm`.
 
 <p align="center">
     <img src="./images/options_card.png" alt="Card Options"/>

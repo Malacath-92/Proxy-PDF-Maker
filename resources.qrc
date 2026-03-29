@@ -4,9 +4,17 @@
         <file>res/edit.png</file>
         <file>res/linked.png</file>
         <file>res/unlinked.png</file>
+        <file>res/clear.png</file>
+        <file>res/bulb.png</file>
+        <file>res/full_bleed.png</file>
+        <file>res/no_bleed.png</file>
+        <file>res/reset.png</file>
+        <file>res/expand.png</file>
+        <file>res/stretch.png</file>
+        <file>res/tap.png</file>
+        <file>res/untap.png</file>
         <file>res/styles/Combinear.qss</file>
         <file>res/styles/Darkeum.qss</file>
-        <file>res/styles/Wstartpage.qss</file>
         <file>res/styles/Material Dark.qss</file>
         <file compress="1" compress-algo="zstd">res/spinner.svg</file>
         <file compress="1" compress-algo="zstd">res/cubes/Foils Vibrance.CUBE</file>

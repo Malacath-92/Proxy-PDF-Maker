@@ -11,6 +11,8 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/profile/profile.hpp>
+
 class Log::LogImpl
 {
   public:
@@ -41,7 +43,7 @@ class Log::LogImpl
     Log* m_ParentLog{ nullptr };
 
     const std::string m_LogName;
-    std::mutex m_Mutex;
+    TRACY_DECLARE_MUTEX(std::mutex, m_Mutex);
 
     struct InstalledLogHook
     {

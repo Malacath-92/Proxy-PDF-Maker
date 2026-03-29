@@ -9,8 +9,26 @@ on:
     workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: 'ubuntu-latest'
+    steps:
+    - uses: octokit/request-action@v2.x
+      id: check_last_run
+      with:
+        route: GET /repos/${{github.repository}}/actions/workflows/Nightly.yml/runs?per_page=1&status=completed
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - run: "echo Last daily build: ${{ fromJson(steps.check_last_run.outputs.data).workflow_runs[0].head_sha }}"
+
+    outputs:
+      last_sha: ${{ fromJson(steps.check_last_run.outputs.data).workflow_runs[0].head_sha }}
+
   build:
     name: ${{ matrix.os }} ${{ matrix.compiler }}
+    needs: [check]
+    if: needs.check.outputs.last_sha != github.sha || github.event_name == 'workflow_dispatch'
+
     runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
@@ -93,6 +111,11 @@ jobs:
             conan --version
             conan profile detect --force
 
+      - name: Conan setup Backup Servers
+        run: |
+          cd .conan_home
+          echo 'core.sources:download_urls=["origin", "https://c3i.jfrog.io/artifactory/conan-center-backup-sources"]' > global.conf
+
       - name: Conan set Ninja Generator (MacOS)
         if: ${{ startsWith(matrix.os, 'MacOS') }}
         run: |
@@ -106,7 +129,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=Release -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES=${{matrix.arch}} -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=Release -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES=${{matrix.arch}} -DCMAKE_OSX_DEPLOYMENT_TARGET="13.3" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
 
       - name: Configure (Ubuntu)
         if: ${{ startsWith(matrix.os, 'Ubuntu') }}
@@ -143,15 +166,38 @@ jobs:
           cd publish
           tar -a -c -f ../${{ matrix.asset_name }} *
 
-      - name: Upload Binaries
-        uses: svenstaro/upload-release-action@2.9.0
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v5
         with:
-          release_name: Nightly
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ matrix.asset_name }}
-          asset_name: ${{ matrix.asset_name }}
-          overwrite: True
-          tag: "nightly"
+          name: nightly-artifact-${{ matrix.os }}
+          path: ${{ matrix.asset_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: False
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: nightly-artifacts
+          pattern: nightly-artifact-*
+          merge-multiple: true
+
+      - name: Delete old Nightly
+        run: gh release delete nightly --cleanup-tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create new Nightly
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nightly-artifacts/*
+          tag_name: "nightly"
           body: "Unstable nightly release, use at your own risk"
-          draft: False
-          prerelease: True
+          generate_release_notes: true
+          prerelease: true
+          token: ${{ secrets.GITHUB_TOKEN }}

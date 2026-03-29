@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 
+#include <QRunnable>
 #include <QTemporaryDir>
 
 #include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
@@ -23,12 +24,37 @@ class PluginInterface;
 enum class InputType
 {
     Decklist,
+    ScryfallQuery,
     MPCAutofill,
     None,
 };
 
+class MtgDownloaderImageWorker : public QObject, public QRunnable
+{
+    Q_OBJECT
+
+  public:
+    MtgDownloaderImageWorker(const Project& project,
+                             const QByteArray& image_data,
+                             bool fill_corners,
+                             std::vector<QString> out_files);
+
+    virtual void run() override;
+
+  signals:
+    void Done();
+
+  private:
+    const Project& m_Project;
+    QByteArray m_ImageData;
+    bool m_FillCorners;
+    std::vector<QString> m_OutFiles;
+};
+
 class MtgDownloaderPopup : public PopupBase
 {
+    Q_OBJECT
+
   public:
     MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
     ~MtgDownloaderPopup();
@@ -55,14 +81,20 @@ class MtgDownloaderPopup : public PopupBase
     InputType m_InputType{ InputType::None };
 
     QTextEdit* m_TextInput{ nullptr };
+    QCheckBox* m_Settings{ nullptr };
+    QCheckBox* m_Backsides{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
     QComboBox* m_UpscaleModel{ nullptr };
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
     QPushButton* m_DownloadButton{ nullptr };
+    QPushButton* m_CancelButton{ nullptr };
 
     QTemporaryDir m_OutputDir{};
+
+    uint32_t m_WaitingForImages{ 0 };
+    bool m_DownloaderDone{ false };
 
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
 

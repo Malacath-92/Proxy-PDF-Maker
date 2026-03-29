@@ -19,7 +19,7 @@ void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color)
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
     QPen pen{};
-    pen.setWidth(1);
+    pen.setWidth(0.1);
     pen.setColor(color);
     painter.setPen(pen);
     painter.drawPath(path);
@@ -29,23 +29,10 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::vec2 pixel_size,
                                const Project& project)
 {
-    QPainterPath card_border;
-    if (project.m_Data.m_BleedEdge > 0_mm)
-    {
-        const QRectF rect{
-            origin.x,
-            origin.y,
-            pixel_size.x,
-            pixel_size.y,
-        };
-        card_border.addRect(rect);
-    }
-
-    const auto cards_size{ project.ComputeCardsSize() };
+    const auto cards_size{ project.ComputeExactBordersSize() };
     const auto pixel_ratio{ pixel_size / cards_size };
 
     const auto transforms{ ComputeTransforms(project) };
-    const auto bleed_edge{ project.m_Data.m_BleedEdge * pixel_ratio };
     const auto corner_radius{ project.CardCornerRadius() * pixel_ratio };
     const auto margins{ project.ComputeMargins() };
 
@@ -58,28 +45,48 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
         margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
         margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
     };
-    const auto cards_offset{ cards_origin * pixel_ratio };
 
+    QPainterPath card_border;
     for (const auto& transform : transforms)
     {
-        const auto top_left_corner{ transform.m_Position * pixel_ratio - cards_offset };
-        const auto card_size{ transform.m_Size * pixel_ratio };
+        if (project.IsCardSvg())
+        {
+            DrawSvgToPainterPath(card_border,
+                                 project.CardSvgData(),
+                                 transform.m_Card.m_Position - cards_origin,
+                                 transform.m_Card.m_Size,
+                                 1.0f / pixel_ratio);
+        }
+        else
+        {
+            const auto top_left_corner{ (transform.m_Card.m_Position - cards_origin) * pixel_ratio };
+            const auto card_size{ transform.m_Card.m_Size * pixel_ratio };
 
-        const QRectF rect{
-            origin.x + top_left_corner.x + bleed_edge.x,
-            origin.y + top_left_corner.y + bleed_edge.y,
-            card_size.x - bleed_edge.x * 2.0f,
-            card_size.y - bleed_edge.x * 2.0f,
-        };
-        card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            const QRectF rect{
+                top_left_corner.x,
+                top_left_corner.y,
+                card_size.x,
+                card_size.y,
+            };
+            if (project.IsCardRoundedRect())
+            {
+                card_border.addRoundedRect(rect, corner_radius.x, corner_radius.y);
+            }
+            else
+            {
+                card_border.addRect(rect);
+            }
+        }
     }
+
+    card_border.translate(origin.x, origin.y);
 
     return card_border;
 }
 
 QPainterPath GenerateCardsPath(const Project& project)
 {
-    const auto svg_size{ project.ComputeCardsSize() / 1_mm };
+    const auto svg_size{ project.ComputeExactBordersSize() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
                              svg_size,
                              project);
@@ -89,13 +96,33 @@ void GenerateCardsSvg(const Project& project)
 {
     const auto svg_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
 
+    const auto svg_dpi{ 600 };
+    const auto mm_to_in{ 1_in / 1_mm };
+    const auto unit_conv{ svg_dpi / mm_to_in };
+    const auto cards_size{ project.ComputeExactBordersSize() / 1_mm * unit_conv };
+    const auto page_size{ project.ComputePageSize() / 1_mm * unit_conv };
+    const auto margins{ project.ComputeMargins() / 1_mm * unit_conv };
+    const dla::vec2 available_space{
+        page_size.x - margins.m_Left - margins.m_Right,
+        page_size.y - margins.m_Top - margins.m_Bottom,
+    };
+    const dla::vec2 offset{
+        margins.m_Left + (available_space.x - cards_size.x) / 2.0f,
+        margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
+    };
+
     LogInfo("Generating card path...");
-    const QPainterPath path{ GenerateCardsPath(project) };
+    const QPainterPath path{ GenerateCardsPath(offset, cards_size, project) };
+    const QSize svg_size{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) };
+    const QSizeF viewbox_size{ page_size.x, page_size.y };
 
     QSvgGenerator generator{};
     generator.setFileName(ToQString(svg_path));
     generator.setTitle("Card cutting guides.");
     generator.setDescription("An SVG containing exact cutting guides for the accompanying sheet.");
+    generator.setSize(QSize{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) });
+    generator.setViewBox(QRectF{ QPointF{ 0, 0 }, viewbox_size });
+    generator.setResolution(svg_dpi);
 
     LogInfo("Drawing card path...");
     QPainter painter;
@@ -106,6 +133,21 @@ void GenerateCardsSvg(const Project& project)
 
 void GenerateCardsDxf(const Project& project)
 {
+    /*
+     * Tbh, .dxf files kinda suck, but some tools will require subscriptions for importiong .svg files, so here we are
+     * A .dxf file works like this: (shitty tl;dr incoming)
+     *   a single line group code
+     *   followed by a value for that code
+     * Some entities will expect certain values following it, always preceeded by the corresponding group code
+     * Group codes used here are:
+     *   0       : Entity Type
+     *   8       : Layer Name
+     *   9       : Variable Name ID (used in HEADER)
+     *   10      : Primary Point, aka X value
+     *   20      : Y value
+     *   66      : "Entities Follow" flag
+     *   70 - 78 : Various integer values
+     */
     const auto dxf_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".dxf") };
 
     LogInfo("Generating card path...");
@@ -120,7 +162,7 @@ POLYLINE
   66
 1
   70
-9
+1
 )";
             return AtScopeExit{
                 [&output]()
@@ -152,22 +194,26 @@ VERTEX
     output << R"(  0
 SECTION
   2
+HEADER
+  9
+$MEASUREMENT
+  70
+1
+  9
+$INSUNITS
+  70
+4
+  0
+ENDSEC
+  0
+SECTION
+  2
 ENTITIES
 )";
 
-    const auto cards_size{ project.ComputeCardsSize() / 1_mm };
-    if (project.m_Data.m_BleedEdge > 0_mm)
-    {
-        auto poly_line{ start_poly_line() };
-
-        draw_vertex(dla::vec2{ 0, 0 });
-        draw_vertex(dla::vec2{ cards_size.x, 0 });
-        draw_vertex(dla::vec2{ cards_size.x, cards_size.y });
-        draw_vertex(dla::vec2{ 0, cards_size.y });
-    }
+    const auto cards_size{ project.ComputeExactBordersSize() / 1_mm };
 
     const auto transforms{ ComputeTransforms(project) };
-    const auto bleed_edge{ project.m_Data.m_BleedEdge / 1_mm };
     const auto radius{ project.CardCornerRadius() / 1_mm };
     const auto margins{ project.ComputeMargins() / 1_mm };
 
@@ -181,51 +227,158 @@ ENTITIES
         margins.m_Top + (available_space.y - cards_size.y) / 2.0f,
     };
 
+    using Curve = std::vector<dla::vec2>;
+    std::optional<std::vector<Curve>> card_curves;
+
     for (const auto& transform : transforms)
     {
-        const dla::vec2 position{ transform.m_Position.x / 1_mm, cards_size.y - transform.m_Position.y / 1_mm };
-        const auto card_size{ transform.m_Size / 1_mm - bleed_edge * 2.0f };
+        const auto top_left_corner{ transform.m_Card.m_Position / 1_mm };
+        const auto card_size{ transform.m_Card.m_Size / 1_mm };
 
-        const auto left{ position.x + bleed_edge - cards_offset.x };
+        const auto left{ top_left_corner.x - cards_offset.x };
         const auto right{ left + card_size.x };
-        const auto top{ position.y + bleed_edge - cards_offset.y };
+        const auto top{ cards_size.y - (top_left_corner.y - cards_offset.y) };
         const auto bottom{ top - card_size.y };
 
-        auto poly_line{ start_poly_line() };
+        if (project.IsCardRoundedRect())
+        {
+            auto poly_line{ start_poly_line() };
 
-        const auto draw_quarter_circle{
-            [&](const dla::vec2 center,
-                const float radius,
-                const float start_angle)
-            {
-                static constexpr auto c_Resolution{ 32 };
-                for (size_t i = 1; i < c_Resolution; i++)
+            const auto draw_quarter_circle{
+                [&](const dla::vec2 center,
+                    const float radius,
+                    const float start_angle)
                 {
-                    static constexpr float c_PiOver2{ std::numbers::pi_v<float> / 2 };
-                    static constexpr float c_DegToRad{ std::numbers::pi_v<float> / 180 };
-                    const float alpha{ start_angle * c_DegToRad + i * c_PiOver2 / c_Resolution };
-                    const float sin_i{ std::sin(alpha) };
-                    const float cos_i{ std::cos(alpha) };
-                    draw_vertex({
-                        center.x + sin_i * radius,
-                        center.y + cos_i * radius,
-                    });
-                }
-            },
-        };
+                    static constexpr auto c_Resolution{ 32 };
+                    for (size_t i = 1; i < c_Resolution; i++)
+                    {
+                        static constexpr float c_PiOver2{ std::numbers::pi_v<float> / 2 };
+                        static constexpr float c_DegToRad{ std::numbers::pi_v<float> / 180 };
+                        const float alpha{ start_angle * c_DegToRad + i * c_PiOver2 / c_Resolution };
+                        const float sin_i{ std::sin(alpha) };
+                        const float cos_i{ std::cos(alpha) };
+                        draw_vertex({
+                            center.x + sin_i * radius,
+                            center.y + cos_i * radius,
+                        });
+                    }
+                },
+            };
 
-        draw_vertex({ right, top - radius });
-        draw_vertex({ right, bottom + radius });
-        draw_quarter_circle({ right - radius, bottom + radius }, radius, 90);
-        draw_vertex({ right - radius, bottom });
-        draw_vertex({ left + radius, bottom });
-        draw_quarter_circle({ left + radius, bottom + radius }, radius, 180);
-        draw_vertex({ left, bottom + radius });
-        draw_vertex({ left, top - radius });
-        draw_quarter_circle({ left + radius, top - radius }, radius, 270);
-        draw_vertex({ left + radius, top });
-        draw_vertex({ right - radius, top });
-        draw_quarter_circle({ right - radius, top - radius }, radius, 0);
+            draw_vertex({ right, top - radius });
+            draw_vertex({ right, bottom + radius });
+            draw_quarter_circle({ right - radius, bottom + radius }, radius, 90);
+            draw_vertex({ right - radius, bottom });
+            draw_vertex({ left + radius, bottom });
+            draw_quarter_circle({ left + radius, bottom + radius }, radius, 180);
+            draw_vertex({ left, bottom + radius });
+            draw_vertex({ left, top - radius });
+            draw_quarter_circle({ left + radius, top - radius }, radius, 270);
+            draw_vertex({ left + radius, top });
+            draw_vertex({ right - radius, top });
+            draw_quarter_circle({ right - radius, top - radius }, radius, 0);
+        }
+        else
+        {
+            if (!card_curves.has_value())
+            {
+                card_curves.emplace();
+                const auto card_path{ ConvertSvgToPainterPath(project.CardSvgData()) };
+
+                Curve current_curve;
+
+                auto set_pos{
+                    [&](const auto& el)
+                    {
+                        current_curve.push_back(
+                            dla::vec2{ static_cast<float>(el.x), static_cast<float>(el.y) });
+                    }
+                };
+                auto draw_bezier{
+                    [&](auto p1, auto p2, auto p3, auto p4)
+                    {
+                        auto interpolate{
+                            [](auto from, auto to, float percent)
+                            {
+                                const auto difference{ to - from };
+                                return from + difference * percent;
+                            }
+                        };
+
+                        static constexpr auto c_Resolution{ 32 };
+                        for (size_t i = 1; i < c_Resolution; i++)
+                        {
+                            const float alpha{ static_cast<float>(i) / c_Resolution };
+
+                            const auto p12{ interpolate(p1, p2, alpha) };
+                            const auto p23{ interpolate(p2, p3, alpha) };
+                            const auto p34{ interpolate(p3, p4, alpha) };
+
+                            const auto pa{ interpolate(p12, p23, alpha) };
+                            const auto pb{ interpolate(p23, p34, alpha) };
+
+                            const auto p{ interpolate(pa, pb, alpha) };
+
+                            set_pos(p);
+                        }
+                    }
+                };
+                auto push_current_curve{
+                    [&]()
+                    {
+                        if (!current_curve.empty())
+                        {
+                            set_pos(current_curve.front());
+                            card_curves->push_back(std::move(current_curve));
+                            current_curve.clear();
+                        }
+                    }
+                };
+
+                for (int i{ 0 }; i < card_path.elementCount(); ++i)
+                {
+                    const auto el{ card_path.elementAt(i) };
+                    using enum QPainterPath::ElementType;
+                    switch (el.type)
+                    {
+                    case MoveToElement:
+                        push_current_curve();
+                        set_pos(el);
+                        break;
+                    case LineToElement:
+                        set_pos(el);
+                        break;
+                    case CurveToElement:
+                    {
+                        const auto k1{ card_path.elementAt(i + 1) };
+                        const auto k2{ card_path.elementAt(i + 2) };
+                        i += 2;
+
+                        draw_bezier(current_curve.back(),
+                                    dla::vec2{ static_cast<float>(el.x), static_cast<float>(el.y) },
+                                    dla::vec2{ static_cast<float>(k1.x), static_cast<float>(k1.y) },
+                                    dla::vec2{ static_cast<float>(k2.x), static_cast<float>(k2.y) });
+                        set_pos(k2);
+                        break;
+                    }
+                    case CurveToDataElement:
+                        LogError("Unsupported QPainterPath...");
+                        return;
+                    }
+                }
+
+                push_current_curve();
+            }
+
+            for (const auto& curve : card_curves.value())
+            {
+                auto poly_line{ start_poly_line() };
+                for (const auto& pt : curve)
+                {
+                    draw_vertex({ left + pt.x, top - pt.y });
+                }
+            }
+        }
     }
 
     output << R"(  0

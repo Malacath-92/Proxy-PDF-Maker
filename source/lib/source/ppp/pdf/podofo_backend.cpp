@@ -1,5 +1,10 @@
 #include <ppp/pdf/podofo_backend.hpp>
 
+#include <functional>
+#include <numbers>
+
+#include <dla/matrix_math.h>
+#include <dla/transform.h>
 #include <dla/vector_math.h>
 
 #include <podofo/podofo.h>
@@ -8,15 +13,138 @@
 
 #include <ppp/util/log.hpp>
 
+#include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-inline double ToPoDoFoPoints(Length l)
+static double ToPoDoFoPoints(Length l)
 {
     return static_cast<double>(l / 1_pts);
 }
 
+static Length FromPoDoFoPoints(double p)
+{
+    return p * 1_pts;
+}
+
+static auto Save(PoDoFo::PdfPainter& painter)
+{
+    TRACY_AUTO_SCOPE();
+
+    painter.Save();
+    return AtScopeExit{
+        [&painter]
+        {
+            painter.Restore();
+        }
+    };
+}
+
+static PoDoFo::PdfString MakeTransformString(const dla::trans2<double>& trans)
+{
+    TRACY_AUTO_SCOPE();
+
+    PoDoFo::PdfStringStream transform_stream;
+    transform_stream << trans[0][0] << " " // scale-x
+                     << trans[1][0] << " " // rot-1
+                     << trans[0][1] << " " // rot-2
+                     << trans[1][1] << " " // scale-y
+                     << trans[0][2] << " " // trans-x
+                     << trans[1][2] << " " // trans-y
+                     << "cm"
+                     << std::endl;
+    return PoDoFo::PdfString{ transform_stream.TakeString() };
+}
+
+static PoDoFo::PdfString MakeTransformString(Offset offset,
+                                             Angle angle)
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto dx{ -ToPoDoFoPoints(offset.x) };
+    const auto dy{ ToPoDoFoPoints(offset.y) };
+    const auto fa{ angle / 180_deg * std::numbers::pi };
+
+    const auto rot{ dla::make_rotation(fa) };
+    const auto tra{ dla::make_translation(dla::dvec2{ dx, dy }) };
+    const auto trans{ rot * tra };
+
+    return MakeTransformString(trans);
+}
+
+static PoDoFo::PdfString MakeTransformString(Offset offset,
+                                             Angle angle,
+                                             Offset pivot)
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto dx{ -ToPoDoFoPoints(offset.x) };
+    const auto dy{ ToPoDoFoPoints(offset.y) };
+    const auto px{ ToPoDoFoPoints(pivot.x) };
+    const auto py{ ToPoDoFoPoints(pivot.y) };
+    const auto fa{ angle / 180_deg * std::numbers::pi };
+
+    const auto piv_to{ dla::make_translation(dla::dvec2{ px, py }) };
+    const auto rot{ dla::make_rotation(fa) };
+    const auto piv_from{ dla::make_translation(-dla::dvec2{ px, py }) };
+    const auto tra{ dla::make_translation(dla::dvec2{ dx, dy }) };
+    const auto trans{ piv_to * rot * piv_from * tra };
+
+    return MakeTransformString(trans);
+}
+
+static void WrapPage(PoDoFo::PdfPage& page,
+                     const PoDoFo::PdfString& prepend,
+                     const PoDoFo::PdfString& append)
+{
+    TRACY_AUTO_SCOPE();
+
+    auto& contents{ page.GetContents()->GetObject() };
+    if (contents.IsArray())
+    {
+        auto* owner{ page.GetObject().GetDocument() };
+        auto& objects{ owner->GetObjects() };
+
+        auto& prepend_obj{ objects.CreateDictionaryObject() };
+        prepend_obj.GetOrCreateStream().SetData(prepend.GetString());
+        auto& append_obj{ objects.CreateDictionaryObject() };
+        append_obj.GetOrCreateStream().SetData(append.GetString());
+
+        auto& array{ contents.GetArray() };
+        array.insert(array.begin(), prepend_obj.GetIndirectReference());
+        array.insert(array.end(), append_obj.GetIndirectReference());
+    }
+    else
+    {
+        auto* contents_stream{ contents.GetStream() };
+        const auto stream_data{ contents_stream->GetCopy() };
+
+        auto out_stream{ contents_stream->GetOutputStream() };
+        out_stream.Write(prepend);
+        out_stream.Write("\n");
+        out_stream.Write(stream_data);
+        out_stream.Write("\n");
+        out_stream.Write(append);
+    }
+}
+
+PoDoFoPage::PoDoFoPage(PoDoFo::PdfPage* page,
+                       PoDoFo::PdfPainter* painter,
+                       PoDoFoDocument* document,
+                       PoDoFoImageCache* image_cache)
+    : m_Page{ page }
+    , m_Painter{ painter }
+    , m_Document{ document }
+    , m_ImageCache{ image_cache }
+{
+    TRACY_AUTO_SCOPE();
+
+    m_Painter->SetCanvas(*m_Page, PoDoFo::PdfPainterFlags::NoSaveRestorePrior);
+}
+
 void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& fx{ data.m_From.x };
     const auto& fy{ data.m_From.y };
     const auto& tx{ data.m_To.x };
@@ -29,21 +157,17 @@ void PoDoFoPage::DrawSolidLine(LineData data, LineStyle style)
     const auto line_width{ ToPoDoFoPoints(style.m_Thickness) };
     const PoDoFo::PdfColor col{ style.m_Color.r, style.m_Color.g, style.m_Color.b };
 
-    PoDoFo::PdfPainter painter;
-    painter.SetPage(m_Page);
-    painter.Save();
-
-    painter.SetStrokeWidth(line_width);
-    painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Solid, nullptr, false, 1.0, false);
-    painter.SetStrokingColor(col);
-    painter.DrawLine(real_fx, real_fy, real_tx, real_ty);
-
-    painter.Restore();
-    painter.FinishPage();
+    auto save{ Save(*m_Painter) };
+    m_Painter->GraphicsState.SetLineWidth(line_width);
+    m_Painter->GraphicsState.SetStrokingColor(col);
+    m_Painter->SetStrokeStyle(PoDoFo::PdfStrokeStyle::Solid);
+    m_Painter->DrawLine(real_fx, real_fy, real_tx, real_ty);
 }
 
 void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
 {
+    TRACY_AUTO_SCOPE();
+
     if (style.m_Color == style.m_SecondColor)
     {
         DrawSolidLine(data, style);
@@ -60,42 +184,39 @@ void PoDoFoPage::DrawDashedLine(LineData data, DashedLineStyle style)
     const auto real_tx{ ToPoDoFoPoints(tx) };
     const auto real_ty{ ToPoDoFoPoints(ty) };
     const auto line_width{ ToPoDoFoPoints(style.m_Thickness) };
-    const auto dash_size{ ToPoDoFoPoints(style.m_DashSize) };
+    const auto final_dash_size{ ComputeFinalDashSize(dla::distance(data.m_To, data.m_From), style.m_TargetDashSize) };
+    const auto dash_size{ ToPoDoFoPoints(final_dash_size) };
 
-    PoDoFo::PdfPainter painter;
-    painter.SetPage(m_Page);
-    painter.Save();
-
-    painter.SetStrokeWidth(line_width);
+    auto save{ Save(*m_Painter) };
+    m_Painter->GraphicsState.SetLineWidth(line_width);
 
     // First layer
     {
-        const std::string dash{ fmt::format("[{0:.2f} {0:.2f}] 0", dash_size) };
-        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, dash.c_str(), false, 1.0, false);
+        const std::array dash{ dash_size, dash_size };
+        m_Painter->SetStrokeStyle(dash, 0.0);
 
         const PoDoFo::PdfColor col{ style.m_Color.r, style.m_Color.g, style.m_Color.b };
-        painter.SetStrokingColor(col);
+        m_Painter->GraphicsState.SetStrokingColor(col);
 
-        painter.DrawLine(real_fx, real_fy, real_tx, real_ty);
+        m_Painter->DrawLine(real_fx, real_fy, real_tx, real_ty);
     }
 
     // Second layer with phase offset
     {
-        const std::string dash{ fmt::format("[{0:.2f} {0:.2f}] {0:.2f}", dash_size) };
-        painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Custom, dash.c_str(), false, 1.0, false);
+        const std::array dash{ dash_size, dash_size };
+        m_Painter->SetStrokeStyle(dash, dash_size);
 
         const PoDoFo::PdfColor col{ style.m_SecondColor.r, style.m_SecondColor.g, style.m_SecondColor.b };
-        painter.SetStrokingColor(col);
+        m_Painter->GraphicsState.SetStrokingColor(col);
 
-        painter.DrawLine(real_fx, real_fy, real_tx, real_ty);
+        m_Painter->DrawLine(real_fx, real_fy, real_tx, real_ty);
     }
-
-    painter.Restore();
-    painter.FinishPage();
 }
 
 void PoDoFoPage::DrawImage(ImageData data)
 {
+    TRACY_AUTO_SCOPE();
+
     const auto& image_path{ data.m_Path };
     const auto& rotation{ data.m_Rotation };
     const auto& x{ data.m_Pos.x };
@@ -112,48 +233,139 @@ void PoDoFoPage::DrawImage(ImageData data)
     const auto w_scale{ real_w / image->GetWidth() };
     const auto h_scale{ real_h / image->GetHeight() };
 
-    PoDoFo::PdfPainter painter;
-    painter.SetPage(m_Page);
-    painter.Save();
+    auto save{ Save(*m_Painter) };
 
-    painter.DrawImage(real_x, real_y, image, w_scale, h_scale);
+    if (data.m_ClipRect.has_value())
+    {
+        const auto& cx{ data.m_ClipRect.value().m_Position.x };
+        const auto& cy{ data.m_ClipRect.value().m_Position.y };
+        const auto& cw{ data.m_ClipRect.value().m_Size.x };
+        const auto& ch{ data.m_ClipRect.value().m_Size.y };
 
-    painter.Restore();
-    painter.FinishPage();
+        const auto real_cx{ ToPoDoFoPoints(cx) };
+        const auto real_cy{ ToPoDoFoPoints(cy) };
+        const auto real_cw{ ToPoDoFoPoints(cw) };
+        const auto real_ch{ ToPoDoFoPoints(ch) };
+
+        const PoDoFo::Rect clip_rect{
+            real_cx,
+            real_cy,
+            real_cw,
+            real_ch,
+        };
+        m_Painter->SetClipRect(clip_rect);
+    }
+
+    m_Painter->DrawImage(*image, real_x, real_y, w_scale, h_scale);
 }
 
-void PoDoFoPage::DrawText(std::string_view text, TextBoundingBox bounding_box)
+PoDoFoPage::TextBoundingBox PoDoFoPage::DrawText(TextData data)
 {
-    const PoDoFo::PdfRect rect{
-        ToPoDoFoPoints(bounding_box.m_TopLeft.x),
-        ToPoDoFoPoints(bounding_box.m_BottomRight.y),
-        ToPoDoFoPoints(bounding_box.m_BottomRight.x - bounding_box.m_TopLeft.x),
-        ToPoDoFoPoints(bounding_box.m_TopLeft.y - bounding_box.m_BottomRight.y),
+    TRACY_AUTO_SCOPE();
+
+    const auto& bb{ data.m_BoundingBox };
+    const PoDoFo::Rect rect{
+        ToPoDoFoPoints(bb.m_TopLeft.x),
+        ToPoDoFoPoints(bb.m_BottomRight.y),
+        ToPoDoFoPoints(bb.m_BottomRight.x - bb.m_TopLeft.x),
+        ToPoDoFoPoints(bb.m_TopLeft.y - bb.m_BottomRight.y),
+    };
+    const PoDoFo::PdfString str{ data.m_Text };
+    auto& font{ m_Document->GetFont() };
+
+    auto save{ Save(*m_Painter) };
+    m_Painter->TextState.SetFont(font, 12);
+
+    const auto out_bb{
+        [&, this]()
+        {
+            const auto& text_state{ m_Painter->TextState.GetState() };
+            const auto get_string_length{
+                [&](const auto& str)
+                { return text_state.Font->GetStringLength(str, text_state); }
+            };
+
+            const auto lines{ text_state.SplitTextAsLines(str, rect.Width) };
+
+            auto widths{ lines | std::views::transform(get_string_length) };
+            const auto max_width{ *std::ranges::max_element(widths) };
+            const auto width_reduce{ rect.Width - max_width };
+
+            const auto total_height{ font.GetLineSpacing(text_state) * lines.size() };
+            const auto height_reduce{ rect.Height - total_height };
+
+            const auto left{ FromPoDoFoPoints(rect.GetLeft() + width_reduce / 2) };
+            const auto bottom{ FromPoDoFoPoints(rect.GetBottom() + height_reduce / 2) };
+            const auto right{ left + FromPoDoFoPoints(rect.Width - width_reduce) };
+            const auto top{ bottom + FromPoDoFoPoints(rect.Height - height_reduce) };
+            const TextBoundingBox bb{
+                .m_TopLeft{ left, top },
+                .m_BottomRight{ right, bottom },
+            };
+            return bb;
+        }()
     };
 
-    PoDoFo::PdfPainter painter;
-    painter.SetPage(m_Page);
-    painter.Save();
+    if (data.m_Backdrop.has_value())
+    {
+        const PoDoFo::PdfColor col{
+            data.m_Backdrop.value().r,
+            data.m_Backdrop.value().g,
+            data.m_Backdrop.value().b,
+        };
 
-    painter.SetStrokeStyle(PoDoFo::ePdfStrokeStyle_Solid, nullptr, false, 1.0, false);
-    painter.SetFont(m_Document->GetFont());
-    painter.DrawMultiLineText(rect,
-                              PoDoFo::PdfString{ text.data(), static_cast<PoDoFo::pdf_long>(text.size()) },
-                              PoDoFo::ePdfAlignment_Center,
-                              PoDoFo::ePdfVerticalAlignment_Center);
+        const auto backdrop_rect{
+            PoDoFo::Rect::FromCorners(
+                ToPoDoFoPoints(out_bb.m_TopLeft.x),
+                ToPoDoFoPoints(out_bb.m_TopLeft.y),
+                ToPoDoFoPoints(out_bb.m_BottomRight.x),
+                ToPoDoFoPoints(out_bb.m_BottomRight.y))
+        };
 
-    painter.Restore();
-    painter.FinishPage();
+        auto save_backdrop{ Save(*m_Painter) };
+        m_Painter->GraphicsState.SetNonStrokingColor(col);
+        m_Painter->DrawRectangle(backdrop_rect, PoDoFo::PdfPathDrawMode::Fill);
+    }
+
+    PoDoFo::PdfDrawTextMultiLineParams params{
+        .HorizontalAlignment = PoDoFo::PdfHorizontalAlignment::Center,
+        .VerticalAlignment = PoDoFo::PdfVerticalAlignment::Center,
+    };
+    m_Painter->DrawTextMultiLine(str,
+                                 rect,
+                                 params);
+
+    return out_bb;
 }
 
-PoDoFoImageCache::PoDoFoImageCache(PoDoFo::PdfMemDocument* document, const Project& project)
+void PoDoFoPage::RotateFutureContent(Angle angle)
+{
+    TRACY_AUTO_SCOPE();
+
+    const PoDoFo::Vector2 center{
+        m_Page->GetRect().Width / 2,
+        m_Page->GetRect().Height / 2,
+    };
+    const auto matrix{ PoDoFo::Matrix::CreateRotation(center, angle / 180_deg * std::numbers::pi) };
+    m_Painter->GraphicsState.ConcatenateTransformationMatrix(matrix);
+}
+
+void PoDoFoPage::Finish()
+{
+    TRACY_AUTO_SCOPE();
+
+    m_Painter->FinishDrawing();
+}
+
+PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& project)
     : m_Document{ document }
     , m_Project{ project }
 {
 }
 
-PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotation rotation)
+PoDoFo::PdfImage* PoDoFoImageCache::GetImage(const fs::path& image_path, Image::Rotation rotation) const
 {
+    TRACY_SCOPED_SHARED_LOCK(m_Mutex);
     const auto it{
         std::ranges::find_if(m_Cache, [&](const ImageCacheEntry& entry)
                              { return entry.m_ImageRotation == rotation && entry.m_ImagePath == image_path; })
@@ -162,19 +374,32 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
     {
         return it->m_PoDoFoImage.get();
     }
+    return nullptr;
+}
+
+void PoDoFoImageCache::PreallocateImages(size_t num_images)
+{
+    TRACY_AUTO_SCOPE();
+    TRACY_SCOPED_LOCK(m_Mutex);
+
+    m_Cache.reserve(num_images);
+}
+
+void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
+{
+    TRACY_AUTO_SCOPE();
 
     const bool rounded_corners{
         m_Project.m_Data.m_Corners == CardCorners::Rounded &&
         m_Project.m_Data.m_BleedEdge == 0_mm
     };
-    const auto card_size{ m_Project.CardSize() };
-    const auto corner_radius{
-        rounded_corners
-            ? m_Project.CardCornerRadius()
-            : 0_mm,
-    };
 
-    const auto use_png{ g_Cfg.m_PdfImageFormat == ImageFormat::Png };
+    const auto use_jpg{
+        g_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
+        (g_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
+         std::ranges::contains(g_LossyImageExtensions, image_path.extension()))
+    };
+    const auto use_png{ !use_jpg };
     // clang-format off
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_png         ? [](const Image& image)
@@ -185,100 +410,229 @@ PoDoFo::PdfImage* PoDoFoImageCache::GetImage(fs::path image_path, Image::Rotatio
                           { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
     };
     // clang-format on
-    const auto loader{
-        use_png
-            ? &PoDoFo::PdfImage::LoadFromPngData
-            : &PoDoFo::PdfImage::LoadFromJpegData
-    };
 
     const Image loaded_image{
-        Image::Read(image_path)
-            .RoundCorners(card_size, corner_radius)
+        [&]()
+        {
+            if (rounded_corners)
+            {
+                if (m_Project.IsCardRoundedRect())
+                {
+                    const auto card_size{ m_Project.CardSize() };
+                    const auto corner_radius{
+                        rounded_corners
+                            ? m_Project.CardCornerRadius()
+                            : 0_mm,
+                    };
+
+                    return Image::Read(image_path)
+                        .RoundCorners(card_size, corner_radius);
+                }
+                else if (m_Project.IsCardSvg())
+                {
+                    return Image::Read(image_path)
+                        .ClipSvg(m_Project.CardSvgData());
+                }
+            }
+            return Image::Read(image_path);
+        }()
             .Rotate(rotation)
     };
 
     const auto encoded_image{ encoder(loaded_image) };
 
-    std::unique_ptr podofo_image{ std::make_unique<PoDoFo::PdfImage>(m_Document) };
-    (podofo_image.get()->*loader)(reinterpret_cast<const unsigned char*>(encoded_image.data()), encoded_image.size());
+    std::unique_ptr podofo_image{ [this]()
+                                  {
+                                      TRACY_SCOPED_LOCK(m_Mutex);
+                                      return m_Document.MakeImage();
+                                  }() };
+    podofo_image.get()->LoadFromBuffer(
+        PoDoFo::bufferview{
+            reinterpret_cast<const char*>(encoded_image.data()),
+            encoded_image.size(),
+        });
 
+    TRACY_SCOPED_LOCK(m_Mutex);
     m_Cache.push_back({
         std::move(image_path),
         rotation,
         std::move(podofo_image),
     });
-    return m_Cache.back().m_PoDoFoImage.get();
 }
 
 PoDoFoDocument::PoDoFoDocument(const Project& project)
     : m_Project{ project }
-    , m_BaseDocument{
-        project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf")
-            ? new PoDoFo::PdfMemDocument
-            : nullptr
-    }
 {
-    m_ImageCache = std::make_unique<PoDoFoImageCache>(&m_Document, project);
+    TRACY_AUTO_SCOPE();
 
-    if (m_BaseDocument != nullptr)
+    m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project);
+
+    if (project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf"))
     {
+        // Load base-pdf
         const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.m_Data.m_BasePdf + ".pdf" } };
-        m_BaseDocument->Load(full_path.c_str());
+        PoDoFo::PdfMemDocument temp_document;
+        temp_document.Load(full_path.string());
+
+        // Copy pages into our own pdf
+        m_BaseDocument.reset(new PoDoFo::PdfMemDocument);
+        m_BaseDocument->GetPages().InsertDocumentPageAt(0, temp_document, 0); // front-page
+
+        if (m_Project.m_Data.m_BacksideEnabled)
+        {
+            // Do all user-declared transformations on the backside page
+            m_BaseDocument->GetPages().InsertDocumentPageAt(1, temp_document, 0); // back-page
+            auto& backside_page{ m_BaseDocument->GetPages().GetPageAt(1) };
+
+            const PoDoFo::PdfString prepend{
+                [this, &backside_page]() -> PoDoFo::PdfString
+                {
+                    const auto page_width{ backside_page.GetRectRaw().GetWidth() };
+                    const auto page_height{ backside_page.GetRectRaw().GetHeight() };
+                    const Offset pivot{
+                        1_pts * page_width / 2,
+                        1_pts * page_height / 2,
+                    };
+                    return MakeTransformString(m_Project.m_Data.m_BacksideOffset,
+                                               m_Project.m_Data.m_BacksideRotation,
+                                               pivot);
+                }()
+            };
+
+            WrapPage(backside_page, prepend, "");
+        }
 
         {
             // Some pdf files, most likely written by Cairo, have a transform at the start of the page
             // that is not wrapped with q/Q, since the assumption is that the pdf won't be edited. To
             // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
-            PoDoFo::PdfPage* page{ m_BaseDocument->GetPage(0) };
+            const auto contain_naked_transforms{
+                [](PoDoFo::PdfPage& page)
+                {
+                    const PoDoFo::PdfString prepend{ "q" };
+                    const PoDoFo::PdfString append{
+                        [&page]() -> PoDoFo::PdfString
+                        {
+                            const auto rotation{ page.GetRotation() };
+                            if (rotation != 0)
+                            {
+                                const auto angle{ rotation * 1_deg };
+                                const auto offset{
+                                    [&]() -> Offset
+                                    {
+                                        const auto page_width{ page.GetRect().Width };
+                                        const auto page_height{ page.GetRect().Height };
+                                        switch (rotation)
+                                        {
+                                        case 90:
+                                            return { 0_pts, page_height * 1_pts };
+                                        case 180:
+                                            return { page_width * 1_pts, page_height * 1_pts };
+                                        case 270:
+                                            return { page_width * 1_pts, 0_pts };
+                                        }
+                                        std::unreachable();
+                                    }()
+                                };
+                                const auto transform_str{ MakeTransformString(-offset, angle) };
+                                return "Q\n" + std::string{ transform_str.GetString() };
+                            }
+                            return "Q";
+                        }()
+                    };
 
-            PoDoFo::PdfObject* save_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            save_graphics_state->GetStream()->Set("q");
-            PoDoFo::PdfObject* restore_graphics_state = page->GetObject()->GetOwner()->CreateObject();
-            restore_graphics_state->GetStream()->Set("Q");
+                    WrapPage(page, prepend, append);
+                }
+            };
 
-            auto contents{ page->GetContents() };
-            contents->GetArray().insert(contents->GetArray().begin(), save_graphics_state->Reference());
-            contents->GetArray().push_back(restore_graphics_state->Reference());
+            contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(0));
+
+            if (m_Project.m_Data.m_BacksideEnabled)
+            {
+                contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(1));
+            }
         }
     }
 }
 
-PoDoFoPage* PoDoFoDocument::NextPage()
+void PoDoFoDocument::ReservePages(size_t pages)
 {
-    auto& new_page{ m_Pages.emplace_back() };
-    const int new_page_idx{ static_cast<int>(m_Pages.size() - 1) };
+    TRACY_AUTO_SCOPE();
+    m_Pages.reserve(pages);
+}
+
+PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
+{
+    TRACY_AUTO_SCOPE();
+    const int new_page_idx{ static_cast<int>(m_Pages.size()) };
+    PoDoFo::PdfPage* page{ nullptr };
     if (m_BaseDocument != nullptr)
     {
-        new_page.m_Page = m_Document.InsertExistingPageAt(
-                                        *m_BaseDocument,
-                                        0,
-                                        new_page_idx)
-                              .GetPage(new_page_idx);
+        if (!is_backside)
+        {
+            m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 0);
+        }
+        else
+        {
+            m_Document.GetPages().InsertDocumentPageAt(new_page_idx, *m_BaseDocument, 1);
+        }
+
+        page = &m_Document
+                    .GetPages()
+                    .GetPageAt(new_page_idx);
     }
     else
     {
         const auto page_size{ m_Project.ComputePageSize() };
-        new_page.m_Page = m_Document.InsertPage(
-            PoDoFo::PdfRect(
+        page = &m_Document.GetPages().CreatePageAt(
+            new_page_idx,
+            PoDoFo::Rect(
                 0.0,
                 0.0,
                 ToPoDoFoPoints(page_size.x),
-                ToPoDoFoPoints(page_size.y)),
-            new_page_idx);
+                ToPoDoFoPoints(page_size.y)));
     }
-    new_page.m_Document = this;
-    new_page.m_ImageCache = m_ImageCache.get();
-    return &new_page;
+
+    auto* painter{ m_Painters.emplace_back(new PoDoFo::PdfPainter).get() };
+
+    m_Pages.push_back(PoDoFoPage{ page, painter, this, m_ImageCache.get() });
+    return &m_Pages.back();
 }
 
-fs::path PoDoFoDocument::Write(fs::path path)
+fs::path PoDoFoDocument::Write(fs::path path, bool version_output)
 {
+    TRACY_AUTO_SCOPE();
+
     try
     {
-        const auto pdf_path{ fs::path{ path }.replace_extension(".pdf") };
+        const auto pdf_path{
+            [&]() -> fs::path
+            {
+                const auto base_path{ fs::path{ path }.replace_extension(".pdf") };
+                if (version_output && fs::exists(base_path))
+                {
+                    return GetNextVersionedPath(base_path);
+                }
+                return base_path;
+            }(),
+        };
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
-        m_Document.Write(pdf_path.c_str());
+
+        if (g_Cfg.m_DeterminsticPdfOutput)
+        {
+            auto& trailer{ m_Document.GetTrailer() };
+            const auto& ref = trailer.GetDictionary().GetKey("Info")->GetReference();
+            auto* obj = m_Document.GetObjects().GetObject(ref);
+            obj->GetDictionary().RemoveKey("CreationDate");
+
+            m_Document.Save(pdf_path.string(), PoDoFo::PdfSaveOptions::NoMetadataUpdate);
+        }
+        else
+        {
+            m_Document.Save(pdf_path.string());
+        }
+
         return pdf_path;
     }
     catch (const PoDoFo::PdfError& e)
@@ -288,11 +642,28 @@ fs::path PoDoFoDocument::Write(fs::path path)
     }
 }
 
-PoDoFo::PdfFont* PoDoFoDocument::GetFont()
+void PoDoFoDocument::PreallocateImageCache(size_t num_images)
 {
-    if (m_Font == nullptr)
-    {
-        m_Font = m_Document.CreateFont("arial");
-    }
-    return m_Font;
+    m_ImageCache->PreallocateImages(num_images);
+}
+
+void PoDoFoDocument::PreCacheImage(ImageCacheData data)
+{
+    const auto& image_path{ data.m_Path };
+    const auto& rotation{ data.m_Rotation };
+    m_ImageCache->CacheImage(image_path, rotation);
+}
+
+PoDoFo::PdfFont& PoDoFoDocument::GetFont()
+{
+    TRACY_AUTO_SCOPE();
+    return m_Document
+        .GetFonts()
+        .GetStandard14Font(PoDoFo::PdfStandard14FontType::Helvetica);
+}
+
+std::unique_ptr<PoDoFo::PdfImage> PoDoFoDocument::MakeImage()
+{
+    TRACY_AUTO_SCOPE();
+    return m_Document.CreateImage();
 }

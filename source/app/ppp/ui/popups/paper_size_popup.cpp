@@ -4,14 +4,17 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include <QCursor>
 #include <QDoubleValidator>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QModelIndex>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QScrollBar>
 #include <QTableWidget>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <ppp/qt_util.hpp>
@@ -22,9 +25,12 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                                const Config& config)
     : PopupBase{ parent }
 {
-    m_AutoCenter = true;
+    m_AutoCenter = false;
+    m_PersistGeometry = true;
+
     setWindowFlags(Qt::WindowType::Dialog);
     setWindowTitle("Edit Paper Sizes");
+    setObjectName("PaperSizePopup");
 
     static constexpr auto c_MakeNumberEdit{
         [](QString initial_string)
@@ -71,15 +77,6 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
     m_Table->setAlternatingRowColors(true);
     build_table(config.m_PageSizes);
 
-    auto* table_wrapper_layout{ new QHBoxLayout };
-    table_wrapper_layout->setContentsMargins(0, 0, 0, 0);
-    table_wrapper_layout->addStretch();
-    table_wrapper_layout->addWidget(m_Table);
-    table_wrapper_layout->addStretch();
-
-    auto* table_wrapper{ new QWidget };
-    table_wrapper->setLayout(table_wrapper_layout);
-
     auto* new_button{ new QPushButton{ "New" } };
     auto* delete_button{ new QPushButton{ "Delete Selected" } };
     auto* restore_button{ new QPushButton{ "Restore Defaults" } };
@@ -107,21 +104,37 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
     window_buttons->setLayout(window_buttons_layout);
 
     auto* outer_layout{ new QVBoxLayout };
-    outer_layout->addWidget(table_wrapper);
+    outer_layout->addWidget(m_Table);
     outer_layout->addWidget(buttons);
     outer_layout->addWidget(window_buttons);
 
     setLayout(outer_layout);
 
+    QObject::connect(m_Table->horizontalHeader(),
+                     &QHeaderView::sectionResized,
+                     this,
+                     [this]()
+                     {
+                         AutoResizeToTable();
+                     });
+
     QObject::connect(new_button,
                      &QPushButton::clicked,
                      [this]()
                      {
+                         static constexpr auto c_MakeNumberEditFromNumber{
+                             [](double number)
+                             {
+                                 QLocale locale{};
+                                 return c_MakeNumberEdit(locale.toString(number, 'f', 1));
+                             }
+                         };
+
                          int i{ m_Table->rowCount() };
                          m_Table->insertRow(i);
                          m_Table->setCellWidget(i, 0, new QLineEdit{ "New Paper" });
-                         m_Table->setCellWidget(i, 1, c_MakeNumberEdit("40,4"));
-                         m_Table->setCellWidget(i, 2, c_MakeNumberEdit("40,4"));
+                         m_Table->setCellWidget(i, 1, c_MakeNumberEditFromNumber(40.4));
+                         m_Table->setCellWidget(i, 2, c_MakeNumberEditFromNumber(40.4));
                          m_Table->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
                          m_Table->selectRow(i);
@@ -132,6 +145,12 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      [this]()
                      {
                          const auto selected_rows{ m_Table->selectionModel()->selectedRows() };
+                         if (selected_rows.isEmpty())
+                         {
+                             QToolTip::showText(QCursor::pos(), "No row selected", this);
+                             return;
+                         }
+
                          for (const auto& i : selected_rows | std::views::reverse)
                          {
                              m_Table->removeRow(i.row());
@@ -177,23 +196,89 @@ PaperSizePopup::~PaperSizePopup()
 
 void PaperSizePopup::showEvent(QShowEvent* event)
 {
+    AutoResizeToTable();
+    PopupBase::showEvent(event);
+}
+
+void PaperSizePopup::resizeEvent(QResizeEvent* event)
+{
+    if (!m_BlockResizeEvents)
     {
-        // Hack the right size for the table...
-        int table_width{ 2 +
-                         m_Table->verticalHeader()->width() +
-                         m_Table->verticalScrollBar()->width() };
-        for (int i = 0; i < m_Table->columnCount(); i++)
+        const auto old_width{ event->oldSize().width() };
+        if (old_width > 0)
         {
-            table_width += m_Table->columnWidth(i);
+            const auto new_width{ event->size().width() };
+            const auto del_width{ new_width - old_width };
+
+            if (del_width != 0)
+            {
+                m_BlockResizeEvents = true;
+
+                const auto old_columns_width{ ComputeColumnsWidth() };
+                const auto new_columns_width{ old_columns_width + del_width };
+
+                auto* header{ m_Table->horizontalHeader() };
+
+                int total_columns_width{ 0 };
+                for (int i = 0; i < m_Table->columnCount(); i++)
+                {
+                    const auto relative_column_width{
+                        static_cast<float>(m_Table->columnWidth(i)) / old_columns_width
+                    };
+                    const auto new_column_width{
+                        static_cast<int>(relative_column_width * new_columns_width)
+                    };
+
+                    header->resizeSection(i, new_column_width);
+                    total_columns_width += new_column_width;
+                }
+
+                const auto left_over{ new_columns_width - total_columns_width };
+                const auto random_section{ rand() % m_Table->columnCount() };
+                const auto section_width{ header->sectionSize(random_section) };
+                header->resizeSection(random_section, section_width + left_over);
+
+                m_BlockResizeEvents = false;
+            }
         }
-        m_Table->setFixedWidth(table_width);
     }
 
-    const auto margins{ layout()->contentsMargins() };
-    const auto minimum_width{ m_Table->width() + margins.left() + margins.right() };
-    setMinimumWidth(minimum_width);
+    PopupBase::resizeEvent(event);
+}
 
-    PopupBase::showEvent(event);
+QByteArray PaperSizePopup::GetGeometry()
+{
+    QByteArray geometry{ PopupBase::GetGeometry() };
+
+    auto* header{ m_Table->horizontalHeader() };
+    for (int i = 0; i < m_Table->columnCount(); i++)
+    {
+        const auto column_width{ header->sectionSize(i) };
+        static_assert(sizeof(column_width) == sizeof(int));
+        const auto column_width_data{ std::bit_cast<std::array<char, sizeof(column_width)>>(column_width) };
+        geometry += QByteArray::fromRawData(column_width_data.data(), column_width_data.size());
+    }
+
+    return geometry;
+}
+
+void PaperSizePopup::RestoreGeometry(const QByteArray& geometry)
+{
+    const auto num_columns{ m_Table->columnCount() };
+    const auto columns_start{ geometry.size() - num_columns * sizeof(int) };
+
+    auto* header{ m_Table->horizontalHeader() };
+    for (int i = 0; i < num_columns; i++)
+    {
+        const auto column_offset{ i * sizeof(int) };
+        const auto column_width_bytes{ geometry.sliced(columns_start + column_offset, sizeof(int)) };
+        std::array<char, sizeof(int)> column_width_data{};
+        std::copy(column_width_bytes.begin(), column_width_bytes.end(), column_width_data.begin());
+        const auto column_width{ std::bit_cast<int>(column_width_data) };
+        header->resizeSection(i, column_width);
+    }
+
+    PopupBase::RestoreGeometry(geometry.sliced(0, columns_start));
 }
 
 void PaperSizePopup::Apply()
@@ -246,4 +331,41 @@ void PaperSizePopup::Apply()
     }
 
     PageSizesChanged(page_sizes);
+}
+
+int PaperSizePopup::ComputeColumnsWidth()
+{
+    int columns_width{ 0 };
+    for (int i = 0; i < m_Table->columnCount(); i++)
+    {
+        columns_width += m_Table->columnWidth(i);
+    }
+    return columns_width;
+}
+
+int PaperSizePopup::ComputeTableWidth()
+{
+    const auto table_width{ 2 +
+                            m_Table->verticalHeader()->width() +
+                            m_Table->verticalScrollBar()->width() +
+                            ComputeColumnsWidth() };
+    return table_width;
+}
+
+int PaperSizePopup::ComputeWidthToCoverTable()
+{
+    const auto table_width{ ComputeTableWidth() };
+    const auto margins{ layout()->contentsMargins() };
+    const auto minimum_width{ table_width + margins.left() + margins.right() };
+    return minimum_width;
+}
+
+void PaperSizePopup::AutoResizeToTable()
+{
+    if (!m_BlockResizeEvents)
+    {
+        m_BlockResizeEvents = true;
+        resize(ComputeWidthToCoverTable(), height());
+        m_BlockResizeEvents = false;
+    }
 }

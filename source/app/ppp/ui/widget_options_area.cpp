@@ -14,18 +14,20 @@
 
 #include <ppp/ui/collapse_button.hpp>
 
-OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
-                                     Project& project,
+#include <ppp/profile/profile.hpp>
+
+OptionsAreaWidget::OptionsAreaWidget(Project& project,
                                      PluginInterface& plugin_router,
                                      QWidget* actions,
                                      QWidget* print_options,
                                      QWidget* guides_options,
                                      QWidget* card_options,
                                      QWidget* global_options)
-    : m_App{ app }
-    , m_Project{ project }
+    : m_Project{ project }
     , m_PluginRouter{ plugin_router }
 {
+    TRACY_AUTO_SCOPE();
+
     auto* layout{ new QVBoxLayout };
     layout->addWidget(actions);
     layout->addStretch();
@@ -42,7 +44,7 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
     setWidget(widget);
     setWidgetResizable(true);
     setMinimumHeight(400);
-    setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding);
+    setSizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding);
     setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
 
@@ -57,6 +59,8 @@ OptionsAreaWidget::OptionsAreaWidget(const PrintProxyPrepApplication& app,
 
 void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 {
+    TRACY_AUTO_SCOPE();
+
     if (!m_Plugins.contains(plugin_name))
     {
         auto* plugin{ InitPlugin(plugin_name, m_Project) };
@@ -71,6 +75,8 @@ void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 
 void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 {
+    TRACY_AUTO_SCOPE();
+
     if (m_Plugins.contains(plugin_name))
     {
         auto* plugin{ m_Plugins[plugin_name] };
@@ -95,7 +101,13 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
 
 void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
 {
-    auto* collapse_button{ new CollapseButton{ widget, !m_App.GetObjectVisibility(widget->objectName()) } };
+    TRACY_AUTO_SCOPE();
+
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* collapse_button{ new CollapseButton{
+        widget,
+        !application.GetObjectVisibility(widget->objectName()),
+    } };
     layout->insertWidget(layout->count() - 1, collapse_button);
     layout->insertWidget(layout->count() - 1, widget);
 

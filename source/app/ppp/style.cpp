@@ -49,10 +49,11 @@ std::vector<std::string> GetStyles()
     return styles;
 }
 
-void SetStyle(QApplication& application, std::string_view style)
+void SetStyle(std::string_view style)
 {
     if (std::ranges::contains(c_BuiltInStyles, style))
     {
+        auto& application{ *qApp };
         application.setStyleSheet("");
 
         if (style == "Default")
@@ -76,6 +77,7 @@ void SetStyle(QApplication& application, std::string_view style)
         QFile style_file{ style_path };
         if (style_file.open(QFile::ReadOnly))
         {
+            auto& application{ *qApp };
             application.setStyleSheet(QLatin1String{ style_file.readAll() });
         }
     }

@@ -27,6 +27,7 @@ class PluginInterface : public QObject
         ROUTE(RefreshCardGrid);
         ROUTE(SetCardSizeChoice);
         ROUTE(SetEnableBackside);
+        ROUTE(SetBacksideAutoPattern);
 #undef ROUTE
     }
 
@@ -37,6 +38,8 @@ class PluginInterface : public QObject
 
     void SetCardSizeChoice(const std::string& card_size_choice);
     void SetEnableBackside(bool enabled);
+
+    void SetBacksideAutoPattern(const std::string& pattern);
 };
 
 using PluginInit = PluginInterface*(Project& project);

@@ -8,10 +8,14 @@
 #include <QNetworkReply>
 #include <QRegularExpression>
 
+#include <ppp/qt_util.hpp>
+#include <ppp/version.hpp>
+
 #include <ppp/util/log.hpp>
 
-MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files)
-    : m_SkipFiles{ std::move(skip_files) }
+MPCFillDownloader::MPCFillDownloader(std::vector<QString> skip_files,
+                                     const std::optional<QString>& backside_pattern)
+    : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
 }
 
@@ -70,6 +74,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
             }
         }
 
+        if (IncludeBacksides())
         {
             QDomElement backs{ order.firstChildElement("backs") };
             if (!backs.isNull())
@@ -86,7 +91,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
                             auto& card{ temporary_card_list[slot] };
                             assert(!card.m_Backside.has_value());
                             card.m_Backside = MPCFillBackside{
-                                .m_Name{ backside.m_Name },
+                                .m_Name{ BacksideFilename(card.m_Name) },
                                 .m_Id{ backside.m_Id },
                             };
                         }
@@ -125,6 +130,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
         }
     }
 
+    if (IncludeBacksides())
     {
         QDomElement backside{ order.firstChildElement("cardback") };
         if (backside.isNull())
@@ -220,7 +226,10 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
             queue_download(card.m_Backside.value().m_Name, card.m_Backside.value().m_Id);
         }
     }
-    queue_download("__back.png", m_Set.m_BacksideId);
+    if (m_Set.m_BacksideId.has_value())
+    {
+        queue_download("__back.png", m_Set.m_BacksideId.value());
+    }
 
     m_TotalRequests = m_PendingRequests.size();
     Progress(0, static_cast<int>(m_TotalRequests));
@@ -305,9 +314,9 @@ std::optional<QString> MPCFillDownloader::GetBackside(const QString& file_name) 
     auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
     if (card != m_Set.m_Frontsides.end() && card->m_Backside.has_value())
     {
-        return card->m_Backside.value().m_Name;
+        return card->m_Backside->m_Name;
     }
-    return "__back.png";
+    return std::nullopt;
 }
 
 std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) const
@@ -333,6 +342,7 @@ QString MPCFillDownloader::MPCFillIdFromUrl(const QString& url)
 MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDomElement& element)
 {
     auto name{ element.firstChildElement("name").text() };
+    name.replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_");
     auto id{ element.firstChildElement("id").text() };
     auto slots_str{ element.firstChildElement("slots").text().split(",") };
     auto amount{ slots_str.size() };
@@ -368,6 +378,11 @@ bool MPCFillDownloader::PushSingleRequest()
     LogInfo("Requesting card {}", name.toStdString());
 
     QNetworkRequest get_request{ std::move(request_uri) };
+    get_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                          ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    get_request.setRawHeader("Accept",
+                             "*/*");
+
     QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
 
     QObject::connect(reply,
@@ -375,8 +390,9 @@ bool MPCFillDownloader::PushSingleRequest()
                      reply,
                      [reply](QNetworkReply::NetworkError error)
                      {
-                         LogError("Error during request {}: {}",
-                                  reply->request().url().toString().toStdString(),
+                         LogError("Error during request {} {}: {}",
+                                  reply->request().url().toEncoded().toStdString(),
+                                  reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
                                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
                      });
 

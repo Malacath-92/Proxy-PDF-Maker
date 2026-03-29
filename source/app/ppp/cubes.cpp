@@ -39,8 +39,9 @@ std::vector<std::string> GetCubeNames()
     return cubes_names;
 }
 
-void PreloadCube(PrintProxyPrepApplication& application, std::string_view cube_name)
+void PreloadCube(std::string_view cube_name)
 {
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     if (cube_name == "None" || application.GetCube(std::string{ cube_name }) != nullptr)
     {
         return;
@@ -55,8 +56,10 @@ void PreloadCube(PrintProxyPrepApplication& application, std::string_view cube_n
     application.SetCube(std::string{ cube_name }, LoadColorCube(cube_path));
 }
 
-const cv::Mat* GetCubeImage(PrintProxyPrepApplication& application, std::string_view cube_name)
+const cv::Mat* GetCubeImage(std::string_view cube_name)
 {
-    PreloadCube(application, cube_name);
+    PreloadCube(cube_name);
+
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
     return application.GetCube(std::string{ cube_name });
 }

@@ -8,6 +8,8 @@
 #include <dla/literals.h>
 #include <dla/vector.h>
 
+#include <ppp/util/at_scope_exit.hpp>
+
 namespace fs = std::filesystem;
 
 using Length = dla::length_unit;
@@ -20,13 +22,23 @@ struct pixel
     static constexpr const char* id = "pixels";
     static constexpr const char* symbol = "pixels";
 };
+struct angle
+{
+    static constexpr const char* id = "degrees";
+    static constexpr const char* symbol = "deg";
+};
 // NOLINTEND
 } // namespace dla::unit_name
+
 using pixel_tag = dla::unit_tag<dla::unit_name::pixel>;
 using Pixel = dla::base_unit<pixel_tag>;
 
+using angle_tag = dla::unit_tag<dla::unit_name::angle>;
+using Angle = dla::base_unit<angle_tag>;
+
 using Size = dla::tvec2<Length>;
 using Position = dla::tvec2<Length>;
+using Offset = dla::tvec2<Length>;
 using PixelSize = dla::tvec2<Pixel>;
 using PixelDensity = decltype(Pixel{} / Length{});
 
@@ -51,6 +63,9 @@ constexpr auto operator""_dpi(unsigned long long v) { return Pixel{ float(v) } /
 
 constexpr auto operator""_pix(long double v) { return Pixel(float(v)); }
 constexpr auto operator""_pix(unsigned long long v) { return Pixel{ float(v) }; }
+
+constexpr auto operator""_deg(long double v) { return Angle(float(v)); }
+constexpr auto operator""_deg(unsigned long long v) { return Angle{ float(v) }; }
 
 inline auto operator""_p(const char *str, size_t len) { return fs::path(str, str + len); }
 inline auto operator""_p(const wchar_t *str, size_t len) { return fs::path(str, str + len); }
@@ -109,19 +124,11 @@ void ForEachFolder(const fs::path& path, FunT&& fun)
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
 std::vector<fs::path> ListFolders(const fs::path& path);
 
+fs::path GetNextVersionedPath(const fs::path& base_path);
+
 bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
-
-template<class FunT>
-struct AtScopeExit
-{
-    ~AtScopeExit()
-    {
-        m_Dtor();
-    }
-    FunT m_Dtor;
-};
 
 template<class T>
 concept Enum = std::is_enum_v<T>;

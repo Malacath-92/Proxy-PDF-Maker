@@ -4,10 +4,11 @@
 #include <string_view>
 #include <vector>
 
-#include <opencv2/core/mat.hpp>
-
-class PrintProxyPrepApplication;
+namespace cv
+{
+class Mat;
+}
 
 std::vector<std::string> GetCubeNames();
-void PreloadCube(PrintProxyPrepApplication& application, std::string_view cube_name);
-const cv::Mat* GetCubeImage(PrintProxyPrepApplication& application, std::string_view cube_name);
+void PreloadCube(std::string_view cube_name);
+const cv::Mat* GetCubeImage(std::string_view cube_name);

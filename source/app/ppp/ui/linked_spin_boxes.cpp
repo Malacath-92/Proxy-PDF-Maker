@@ -1,6 +1,5 @@
 #include <ppp/ui/linked_spin_boxes.hpp>
 
-#include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QVBoxLayout>
@@ -12,9 +11,9 @@ LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
     m_LinkedIcon = QIcon{ QPixmap{ ":/res/linked.png" } };
     m_UnLinkedIcon = QIcon{ QPixmap{ ":/res/unlinked.png" } };
 
-    m_First = MakeDoubleSpinBox();
+    m_First = MakeLengthSpinBox();
 
-    m_Second = MakeDoubleSpinBox();
+    m_Second = MakeLengthSpinBox();
     m_Second->setEnabled(!initially_linked);
 
     auto* inner_layout{ new QVBoxLayout };
@@ -49,7 +48,7 @@ LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
                          if (checked)
                          {
                              m_ChainButton->setIcon(m_LinkedIcon);
-                             m_Second->setValue(m_First->value());
+                             m_Second->SetValue(m_First->Value());
 
                              Linked();
                          }
@@ -61,22 +60,22 @@ LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
                          }
                      });
     QObject::connect(m_First,
-                     &QDoubleSpinBox::valueChanged,
-                     [this](double value)
+                     &LengthSpinBox::ValueChanged,
+                     [this](Length value)
                      {
                          if (!m_Second->isEnabled())
                          {
-                             m_Second->setValue(value);
+                             m_Second->SetValue(value);
                          }
                      });
 }
 
-QDoubleSpinBox* LinkedSpinBoxes::First()
+LengthSpinBox* LinkedSpinBoxes::First()
 {
     return m_First;
 }
 
-QDoubleSpinBox* LinkedSpinBoxes::Second()
+LengthSpinBox* LinkedSpinBoxes::Second()
 {
     return m_Second;
 }

@@ -1,13 +1,19 @@
 #pragma once
 
 #include <mutex>
+#include <optional>
 
 #include <QApplication>
 
 #include <opencv2/core/mat.hpp>
 
+#include <nlohmann/json_fwd.hpp>
+
 #include <ppp/constants.hpp>
+#include <ppp/json_util.hpp>
 #include <ppp/util.hpp>
+
+#include <ppp/profile/profile.hpp>
 
 class QMainWindow;
 
@@ -16,7 +22,9 @@ namespace Ort
 struct Session;
 }
 
-class PrintProxyPrepApplication : public QApplication
+class PrintProxyPrepApplication
+    : public QApplication,
+      public JsonProvider
 {
   public:
     PrintProxyPrepApplication(int& argc, char** argv);
@@ -24,6 +32,9 @@ class PrintProxyPrepApplication : public QApplication
 
     void SetMainWindow(QMainWindow* main_window);
     QMainWindow* GetMainWindow() const;
+
+    std::optional<QByteArray> LoadWindowGeometry(const QString& object_name) const;
+    void SaveWindowGeometry(const QString& object_name, QByteArray geometry);
 
     void SetProjectPath(fs::path project_path);
     const fs::path& GetProjectPath() const;
@@ -41,6 +52,12 @@ class PrintProxyPrepApplication : public QApplication
     bool GetObjectVisibility(const QString& object_name) const;
     void SetObjectVisibility(const QString& object_name, bool visible);
 
+    nlohmann::json GetProjectDefault(std::string_view path) const;
+    void SetProjectDefault(std::string_view path, nlohmann::json value);
+
+    virtual nlohmann::json GetJsonValue(std::string_view path) const override;
+    virtual void SetJsonValue(std::string_view path, nlohmann::json value) override;
+
   private:
     bool notify(QObject*, QEvent*) override;
 
@@ -48,17 +65,20 @@ class PrintProxyPrepApplication : public QApplication
     void Save() const;
 
     QMainWindow* m_MainWindow{ nullptr };
+    std::unordered_map<QString, QByteArray> m_WindowGeometries;
 
     fs::path m_ProjectPath{ cwd() / "proj.json" };
     std::string m_Theme{ "Default" };
 
-    mutable std::mutex m_CubesMutex;
+    mutable TRACY_DECLARE_MUTEX(std::mutex, m_CubesMutex);
     std::unordered_map<std::string, cv::Mat> m_Cubes;
 
     mutable std::mutex m_ModelsMutex;
     std::unordered_map<std::string, std::unique_ptr<Ort::Session>> m_Models;
 
     std::unordered_map<QString, bool> m_ObjectVisibilities;
+
+    std::unique_ptr<nlohmann::json> m_DefaultProjectData;
 
     std::optional<QByteArray> m_WindowGeometry{};
     std::optional<QByteArray> m_WindowState{};

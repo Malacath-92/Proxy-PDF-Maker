@@ -1,4 +1,3 @@
-#include <ppp/pdf/haru_backend.hpp>
 #include <ppp/pdf/png_backend.hpp>
 #include <ppp/pdf/podofo_backend.hpp>
 
@@ -8,14 +7,38 @@ std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project
 {
     switch (backend)
     {
-    case PdfBackend::LibHaru:
-        return std::make_unique<HaruPdfDocument>(project);
     case PdfBackend::PoDoFo:
         return std::make_unique<PoDoFoDocument>(project);
     case PdfBackend::Png:
         return std::make_unique<PngDocument>(project);
     default:
         return nullptr;
+    }
+}
+
+bool IsPageWriteThreadSafe(PdfBackend backend)
+{
+    switch (backend)
+    {
+    case PdfBackend::PoDoFo:
+        return PoDoFoDocument::ThreadSafePageWrite();
+    case PdfBackend::Png:
+        return PngDocument::ThreadSafePageWrite();
+    default:
+        return false;
+    }
+}
+
+bool IsImageCacheThreadSafe(PdfBackend backend)
+{
+    switch (backend)
+    {
+    case PdfBackend::PoDoFo:
+        return PoDoFoDocument::ThreadSafeImageCache();
+    case PdfBackend::Png:
+        return PngDocument::ThreadSafeImageCache();
+    default:
+        return false;
     }
 }
 
@@ -71,4 +94,14 @@ void PdfPage::DrawDashedCross(CrossData data, DashedLineStyle style)
         DrawDashedLine(LineData{ data.m_Pos, { tx, y } }, style);
         DrawDashedLine(LineData{ data.m_Pos, { x, ty } }, style);
     }
+}
+
+Length PdfPage::ComputeFinalDashSize(Length line_length, Length dash_size)
+{
+    // We want at least three dashes in a line
+    if (line_length / dash_size < 3.0f)
+    {
+        return line_length / 3.0f;
+    }
+    return dash_size;
 }
