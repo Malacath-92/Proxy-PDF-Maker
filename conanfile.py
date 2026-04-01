@@ -16,7 +16,7 @@ class ProxyPDF(ConanFile):
         self.requires("opencv/4.11.0")
 
         # JSON Write/Read
-        self.requires("nlohmann_json/3.12.0")
+        self.requires("nlohmann_json/3.12.0", override=True) # Overriding for onnxruntime
 
         # PDF Write/Read
         self.requires("podofo/1.0.3")
@@ -28,7 +28,7 @@ class ProxyPDF(ConanFile):
         self.requires("magic_enum/0.9.7")
 
         # Image Upscaling
-        self.requires("onnxruntime/1.18.1")
+        self.requires("onnxruntime/1.24.4")
 
         # Profiling
         self.requires("tracy/0.13.1")
@@ -41,6 +41,7 @@ class ProxyPDF(ConanFile):
         self.requires("openjpeg/2.5.2", override=True)
         self.requires("icu/74.2", override=True)
         self.requires("libjpeg/9f", override=True)
+        self.requires("abseil/20260107.1", override=True)
 
     def configure(self):
         self.options["qt"].shared = False
@@ -67,6 +68,7 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].objdetect = False
         self.options["opencv"].stitching = False
         self.options["opencv"].with_tiff = False
+        self.options["opencv"].with_eigen = False
         self.options["opencv"].with_ffmpeg = False
         self.options["opencv"].with_openexr = False
         self.options["opencv"].with_wayland = False
