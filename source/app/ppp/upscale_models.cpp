@@ -122,7 +122,7 @@ void LoadModel(PrintProxyPrepApplication& application, std::string_view model_na
     auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
 
     ONNXTensorElementDataType elem_type = tensor_info.GetElementType();
-    LogError("Element type: {}", elem_type);
+    LogError("Element type: {}", static_cast<int>(elem_type));
 
     std::vector<int64_t> input_shape = tensor_info.GetShape();
     LogError("Input shape: ");

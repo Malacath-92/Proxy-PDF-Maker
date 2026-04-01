@@ -35,8 +35,10 @@ class MtgDownloaderImageWorker : public QObject, public QRunnable
 
   public:
     MtgDownloaderImageWorker(const Project& project,
+                             QString image_name,
                              const QByteArray& image_data,
                              bool fill_corners,
+                             QString upscale_model,
                              std::vector<QString> out_files);
 
     virtual void run() override;
@@ -46,8 +48,10 @@ class MtgDownloaderImageWorker : public QObject, public QRunnable
 
   private:
     const Project& m_Project;
+    QString m_ImageName;
     QByteArray m_ImageData;
     bool m_FillCorners;
+    QString m_UpscaleModel;
     std::vector<QString> m_OutFiles;
 };
 
