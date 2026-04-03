@@ -51,7 +51,7 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
     m_PenTwo.setWidth(guides_width);
 
     const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
-    const auto offset{ m_Project.m_Data.m_GuidesOffset * pixel_ratio };
+    const auto offset{ -m_Project.m_Data.m_GuidesOffset * pixel_ratio };
 
     m_SolidLines.clear();
     m_DashedLines.clear();
