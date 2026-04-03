@@ -172,7 +172,7 @@ jobs:
         uses: ffurrer2/extract-release-notes@v2.2.0
 
       - name: Upload Binaries
-        uses: svenstaro/upload-release-action@2.9.0
+        uses: svenstaro/upload-release-action@2.11.5
         with:
           release_name: Release ${{ github.ref_name }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
