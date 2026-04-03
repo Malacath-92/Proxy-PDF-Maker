@@ -235,6 +235,9 @@ This determines what units all measurements are displayed in. The option `points
 #### Display Columns
 Determines how many columns are displayed in the card grid on the left. Smaller numbers are better for smaller screens.
 
+#### Version Output
+When this is enabled and a pdf is generated that would usually end up overriding a previously generated pdf file, instead the file name will be versioned, e.g. `_printme.pdf` to `_printme_1.pdf` to `_printme_2.pdf`, etc.
+
 #### Render to Png
 Sometimes you may want to render out `.png` files instead of `.pdf` files. This is particularly useful when using the `Fit` paper size option, then using the result outputs for manually creating a print layout in another software. Note that each page will be output to a separate file, including backsides.
 
