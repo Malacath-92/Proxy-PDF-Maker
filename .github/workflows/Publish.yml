@@ -176,7 +176,7 @@ jobs:
         with:
           release_name: Release ${{ github.ref_name }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: release-artifacts/*.zip
+          file: release-artifacts/*
           file_glob: true
           tag: ${{ github.ref }}
           body: ${{ steps.extract_release_notes.outputs.release_notes }}
