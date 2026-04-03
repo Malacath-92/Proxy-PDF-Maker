@@ -34,7 +34,7 @@ Now we can press `Render PDF`, this will generate a `_printme.svg` file which ha
 > [!NOTE]
 > Depending on what cutting machine you use you may have to set the `Paper Size` to `Fit`, `Card Orientation` to `Mixed` and play around with the vertical and horizontal layout values to get something that fits within the valid region of your registration marks.
 
-Now we can open a new project in _Silhouette Studio_ and choose the right page setup<sup>3</sup>. At this point we can drag-n-drop the `_printme.svg` or the `_printme.dxf` file into the project. Copy the `Cards Size`<sup>4</sup> values over to the size of the imported cutting guides (note that this should be already correct if using `_printme.dxf`, if not go into the settings and change the import to open "As-Is") and press the `Center to Page` option<sup>5</sup>.
+Now we can open a new project in _Silhouette Studio_ and choose the right page setup<sup>3</sup>. At this point we choose whether we import `_printme.svg` or `_printme.dxf`. Generally speaking, if you have a pro subscription you should just use `_printme.svg`. If not you will use `_printme.dxf`, and if you do, first go into the settings and change the import setting for `DXF` files to open "As-Is". Now we can drag-n-drop the `_printme.svg` or `_printme.dxf` file into the project and press the `Center to Page` option<sup>4</sup>.
 
 <p align="center">
     <img src="./images/silhouette_page_setup.png" alt="Page Setup"/>
@@ -43,34 +43,17 @@ Now we can open a new project in _Silhouette Studio_ and choose the right page s
 </p>
 
 <p align="center">
-    <img src="./images/cards_size.png" alt="Cards Size"/>
-    <br>
-    <sup>4</sup> Cards size in app, note that this respects spacing and bleed options correctly
-</p>
-
-<p align="center">
     <img src="./images/silhouette_guides_setup.png" alt="Silhouette Guides"/>
     <br>
-    <sup>5</sup> Resizing and centering guides in Silhouette Studio
+    <sup>4</sup> Centering guides in Silhouette Studio
 </p>
 
-Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible<sup>6</sup>. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it on your Desktop. Remember this for later!
-
-> [!NOTE]
-> On versions before v1.1.0 you will have to manually copy this `cutting_base.pdf` to the `res/base_pdfs` folder. This folder should be created for you already, relative to the working directory (which should be the same folder that the `.exe` is in), although it might be empty.
+Next select the `Print & Cut` option, enable registration marks and set them up so that the cross-hatched area does not overlap the cutting guides as little as possible<sup>5</sup>. At this point we can print the document to a pdf, name it `cutting_base.pdf` and save it on your Desktop. Remember this for later!
 
 <p align="center">
     <img src="./images/silhouette_print_and_cut.png" alt="Print & Cut"/>
     <br>
-    <sup>6</sup> Print & Cut settings for the sample project
-</p>
-
-While we are here we can also disable the outer-most cutting line. If you imported an `.svg`, right-click the outlines and choose `Release Compound Path`. If you imported a `.dxf`<sup>7</sup>, do Ungroup instead. After separating the outlines, select only the outer guides and delete them. Now select all the guides again, right-click and choose `Make Compound Path`.
-
-<p align="center">
-    <img src="./images/silhouette_release.png" alt="Release Compound Path"/>
-    <br>
-    <sup>7</sup> Splitting cutting guides into separate paths
+    <sup>5</sup> Print & Cut settings for the sample project
 </p>
 
 Now make sure to save this project! You will need it again when you do the cutting later.
@@ -78,15 +61,12 @@ Now make sure to save this project! You will need it again when you do the cutti
 
 ## Generating the full PDF in the App
 
-> [!NOTE]
-> On versions before v1.1.0 you will have restart the app at this point.
-
-First go to your Desktop and drag-and-drop the `cutting_base.pdf` onto the app. Now change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>8</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
+First go to your Desktop and drag-and-drop the `cutting_base.pdf` onto the app. Now change `Paper Size` to `Base Pdf`, which then shows another dropdown which we want to choose our pdf from, i.e. `cutting_base`<sup>7</sup>. This will generate all the pages on top of the base pdf, so the registration marks are automatically there. They will also show up on the backside, but we can't cut with the backside up as we probably have to fix the offset to align correctly.
 
 <p align="center">
     <img src="./images/base_pdf.png" alt="Base Pdf"/>
     <br>
-    <sup>8</sup> Setting up the Base Pdf option
+    <sup>7</sup> Setting up the Base Pdf option
 </p>
 
 Since we centered the cutting guides on the page we don't need to do anything else. If you however moved the guides on the page, be sure to set `Margins Mode` to `Simple` and paste the margins from within _Silhouette Studio_ into the margins field (`X` into `Left Margin` and `Y` into `Top Margin`).
