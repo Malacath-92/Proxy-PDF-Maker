@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-03-04
+
+### Added
+- A new option `Version Output` under `Global Config` is available that avoids overriding existing pdfs but instead writes as a new version.
+
+### Changed
+- Exported `.svg` and `.dxf` files no longer contain the outer-most edge that envelopes all cards, since the exported files contain correct dimensions anyways.
+
+### Fixed
+- When changing bleed while having rotated cards visible in the preview, those cards will no longer rotate to default.
+- The `Guides Offset` setting now affects the preview correctly.
+
 ## [1.6.0] - 2026-11-03
 
 ### Added
