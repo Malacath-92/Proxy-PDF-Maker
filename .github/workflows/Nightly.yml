@@ -38,24 +38,29 @@ jobs:
             compiler: MSVC
             runs_on: windows-2022
             asset_name: ${{ github.event.repository.name }}-windows_amd64.zip
+            tar_args: -a -c -f
           - os: Ubuntu-ARM64
             compiler: Gcc
             runs_on: ubuntu-24.04-arm
-            asset_name: ${{ github.event.repository.name }}-ubuntu_arm64.zip
+            asset_name: ${{ github.event.repository.name }}-ubuntu_arm64.tar.gz
+            tar_args: czf
           - os: Ubuntu-x86
             compiler: Gcc
             runs_on: ubuntu-24.04
-            asset_name: ${{ github.event.repository.name }}-ubuntu_amd64.zip
+            asset_name: ${{ github.event.repository.name }}-ubuntu_amd64.tar.gz
+            tar_args: czf
           - os: MacOS-ARM64
             compiler: AppleClang
             runs_on: macos-14
             arch: arm64
             asset_name: ${{ github.event.repository.name }}-osx_arm64.zip
+            tar_args: -a -c -f
           - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
             arch: x86_64
             asset_name: ${{ github.event.repository.name }}-osx_x86_64.zip
+            tar_args: -a -c -f
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -164,7 +169,7 @@ jobs:
       - name: Zip Release
         run: |
           cd publish
-          tar -a -c -f ../${{ matrix.asset_name }} *
+          tar ${{ matrix.tar_args }} ../${{ matrix.asset_name }} *
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v5
