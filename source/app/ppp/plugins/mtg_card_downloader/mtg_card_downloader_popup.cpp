@@ -68,6 +68,8 @@ MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
 
 void MtgDownloaderImageWorker::run()
 {
+    LogInfo("Writing image {}...", m_OutFiles[0].toStdString());
+
     if (m_FillCorners)
     {
         auto image{
@@ -210,6 +212,16 @@ void MtgDownloaderPopup::DownloadProgress(int progress, int target)
     if (progress == target)
     {
         m_DownloaderDone = true;
+        if (m_WaitingForImages > 0)
+        {
+            m_ProgressBar->setFormat("%v/%m Images");
+            m_ProgressBar->setMaximum(m_TotalImages);
+            m_ProgressBar->setValue(m_TotalImages - m_WaitingForImages);
+        }
+        else
+        {
+            FinalizeDownload();
+        }
     }
 }
 
@@ -233,13 +245,18 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
                      [this]()
                      {
                          m_WaitingForImages--;
-                         if (m_WaitingForImages == 0 && m_DownloaderDone)
+                         if (m_DownloaderDone)
                          {
-                             FinalizeDownload();
+                             m_ProgressBar->setValue(m_TotalImages - m_WaitingForImages);
+                             if (m_WaitingForImages == 0)
+                             {
+                                 FinalizeDownload();
+                             }
                          }
                      });
 
     m_WaitingForImages++;
+    m_TotalImages++;
     QThreadPool::globalInstance()->start(worker);
 }
 

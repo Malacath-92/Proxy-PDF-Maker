@@ -92,6 +92,7 @@ class MtgDownloaderPopup : public PopupBase
     QTemporaryDir m_OutputDir{};
 
     uint32_t m_WaitingForImages{ 0 };
+    uint32_t m_TotalImages{ 0 };
     bool m_DownloaderDone{ false };
 
     std::optional<uint32_t> m_LogHookId{ std::nullopt };
