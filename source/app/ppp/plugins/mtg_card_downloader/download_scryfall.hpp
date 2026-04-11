@@ -1,10 +1,9 @@
 #pragma once
 
 #include <optional>
+#include <vector>
 
-#include <QRegularExpression>
 #include <QString>
-#include <QTimer>
 
 #include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
 
@@ -13,6 +12,10 @@ class QNetworkReply;
 class QJsonDocument;
 
 struct DecklistCard;
+
+class ScryfallCollectionEndpoint;
+class ScryfallSearchEndpoint;
+class ScryfallDataEndpoint;
 
 class ScryfallDownloader : public CardArtDownloader
 {
@@ -35,23 +38,21 @@ class ScryfallDownloader : public CardArtDownloader
 
     virtual bool ProvidesBleedEdge() const override;
 
-  private:
-    struct BacksideRequest;
+  private slots:
+    void OnError(){};
 
+  private:
     static bool HasBackside(const QJsonDocument& card_info);
     static QString CardBackFilename(const QString& card_back_id);
 
-    enum class RequestType
-    {
-        CardInfo,
-        CardImage,
-        BacksideImage,
-    };
+    void RunQueries();
+    void DownloadCardDatas();
+    void DownloadCardImages();
 
-    QNetworkReply* DoRequestWithMetadata(QString request_uri, QString file_name, size_t index, RequestType request_type);
-    QNetworkReply* DoRequestWithoutMetadata(QString request_uri);
+    std::unique_ptr<ScryfallCollectionEndpoint> m_CollectionEndpoint;
+    std::unique_ptr<ScryfallDataEndpoint> m_DataEndpoint;
 
-    bool NextRequest();
+    std::unique_ptr<ScryfallSearchEndpoint> m_SearchEndpoint;
 
     std::vector<QString> m_Queries;
     std::optional<QString> m_QueryMoreData;
@@ -60,21 +61,9 @@ class ScryfallDownloader : public CardArtDownloader
     std::unordered_map<QString, size_t> m_FileNameIndexMap;
 
     std::vector<QJsonDocument> m_CardInfos;
-    std::vector<BacksideRequest> m_Backsides;
-    uint32_t m_Downloads{ 0 };
+    std::vector<QString> m_BacksideFiles;
 
     uint32_t m_Progress{ 0 };
 
-    struct MetaData
-    {
-        QString m_FileName;
-        size_t m_Index;
-        RequestType m_Type;
-    };
-    std::unordered_map<const QNetworkReply*, MetaData> m_ReplyMetaData;
-
     size_t m_TotalRequests{};
-    std::vector<QNetworkReply*> m_Requests{};
-    QTimer m_ScryfallTimer;
-    QNetworkAccessManager* m_NetworkManager{ nullptr };
 };

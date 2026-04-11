@@ -1,43 +1,23 @@
 #include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 
 #include <ranges>
-#include <vector>
 
-#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QMetaEnum>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 
-#include <ppp/qt_util.hpp>
 #include <ppp/version.hpp>
 
 #include <ppp/util/log.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
-
-struct ScryfallDownloader::BacksideRequest
-{
-    QString m_Uri;
-    DecklistCard m_Front;
-};
+#include <ppp/plugins/mtg_card_downloader/scryfall_endpoints.hpp>
 
 ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files,
                                        const std::optional<QString>& backside_pattern)
     : CardArtDownloader{ std::move(skip_files), backside_pattern }
 {
-    m_ScryfallTimer.setInterval(100);
-    m_ScryfallTimer.setSingleShot(true);
-
-    QObject::connect(&m_ScryfallTimer,
-                     &QTimer::timeout,
-                     this,
-                     [this]()
-                     {
-                         NextRequest();
-                     });
+    using namespace std::chrono_literals;
 }
 ScryfallDownloader::~ScryfallDownloader() = default;
 
@@ -72,161 +52,42 @@ bool ScryfallDownloader::ParseInput(const QString& input)
 
 bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
+    m_CollectionEndpoint = std::make_unique<ScryfallCollectionEndpoint>(network_manager);
+    QObject::connect(m_CollectionEndpoint.get(),
+                     &ScryfallEndpoint::OnError,
+                     this,
+                     &ScryfallDownloader::OnError);
+
+    m_DataEndpoint = std::make_unique<ScryfallDataEndpoint>(network_manager);
+    QObject::connect(m_DataEndpoint.get(),
+                     &ScryfallEndpoint::OnError,
+                     this,
+                     &ScryfallDownloader::OnError);
+
     if (!m_Queries.empty())
     {
+        m_SearchEndpoint = std::make_unique<ScryfallSearchEndpoint>(network_manager);
+        QObject::connect(m_SearchEndpoint.get(),
+                         &ScryfallEndpoint::OnError,
+                         this,
+                         &ScryfallDownloader::OnError);
+
         m_TotalRequests = m_Queries.size();
+        RunQueries();
     }
     else
     {
         m_TotalRequests = static_cast<uint32_t>(m_Cards.size()) * 2;
+        DownloadCardDatas();
     }
 
     Progress(0, static_cast<int>(m_TotalRequests));
 
-    m_NetworkManager = &network_manager;
-
-    return NextRequest();
+    return true;
 }
 
-void ScryfallDownloader::HandleReply(QNetworkReply* reply)
+void ScryfallDownloader::HandleReply(QNetworkReply* /*reply*/)
 {
-    if (reply->error() != QNetworkReply::NetworkError::NoError)
-    {
-        return;
-    }
-
-    if (!m_Queries.empty())
-    {
-        QJsonParseError reply_parse_error{};
-        auto reply_json{ QJsonDocument::fromJson(reply->readAll(), &reply_parse_error) };
-
-        if (reply_parse_error.error != QJsonParseError::NoError)
-        {
-            LogError("Failed parsing returned json data: {}",
-                     reply_parse_error.errorString().toStdString());
-            return;
-        }
-
-        // Using curly-braces for initializers here makes gcc and clang
-        // create an array-of-array, hence we are forced to use parens
-        const auto data(reply_json["data"].toArray());
-        LogInfo("Adding {} cards for query {}...",
-                data.size(),
-                m_Queries.back().toStdString());
-
-        for (const auto& card : data)
-        {
-            const auto card_obj{ card.toObject() };
-            auto card_name{
-                [&]()
-                {
-                    if (card_obj.contains("card_faces"))
-                    {
-                        return card_obj["card_faces"][0]["name"].toString();
-                    }
-                    return card_obj["name"].toString();
-                }()
-            };
-            auto card_set{ card_obj["set"].toString() };
-            auto card_collector_number{ card_obj["collector_number"].toString() };
-            auto card_file_name{ QString{ "%2 (%3) - %1.png" }
-                                     .arg(card_name)
-                                     .arg(card_set.toUpper())
-                                     .arg(card_collector_number.rightJustified(4, '0'))
-                                     .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
-            m_Cards.push_back(DecklistCard{
-                .m_Name{ std::move(card_name) },
-                .m_FileName{ std::move(card_file_name) },
-                .m_Amount = 1,
-                .m_Set{ std::move(card_set) },
-                .m_CollectorNumber{ std::move(card_collector_number) },
-            });
-            m_TotalRequests += 2;
-        }
-
-        if (reply_json["has_more"].toBool())
-        {
-            m_QueryMoreData = reply_json["next_page"].toString();
-            LogInfo("Query {} has more data, fetching next page...",
-                    m_Queries.back().toStdString());
-        }
-        else
-        {
-            m_Queries.pop_back();
-            m_Progress++;
-        }
-
-        if (m_Queries.empty())
-        {
-            for (size_t i = 0; i < m_Cards.size(); i++)
-            {
-                m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
-            }
-        }
-    }
-    else
-    {
-        const auto& meta_data{ m_ReplyMetaData[reply] };
-        if (meta_data.m_Type == RequestType::CardInfo)
-        {
-            QJsonParseError reply_parse_error{};
-            auto reply_json{ QJsonDocument::fromJson(reply->readAll(), &reply_parse_error) };
-
-            if (reply_parse_error.error != QJsonParseError::NoError)
-            {
-                LogError("Failed parsing returned json data: {}",
-                         reply_parse_error.errorString().toStdString());
-                return;
-            }
-
-            const auto& card{ m_Cards[meta_data.m_Index] };
-            if (!card.m_Set.has_value())
-            {
-                m_CardInfos.push_back(std::move(reply_json));
-            }
-            else if (!card.m_CollectorNumber.has_value())
-            {
-                m_CardInfos.push_back(QJsonDocument{
-                    reply_json["data"][0].toObject(),
-                });
-            }
-            else
-            {
-                m_CardInfos.push_back(std::move(reply_json));
-            }
-
-            m_Progress++;
-        }
-        else
-        {
-            auto image_available{
-                [this, reply](const QString& file_name)
-                {
-                    LogInfo("Received data of {}", file_name.toStdString());
-                    ImageAvailable(reply->readAll(), file_name);
-                    m_Downloads++;
-                    m_Progress++;
-                },
-            };
-            if (meta_data.m_Type == RequestType::CardImage)
-            {
-                const auto& card{ m_Cards[meta_data.m_Index] };
-                image_available(card.m_FileName);
-            }
-            else if (meta_data.m_Type == RequestType::BacksideImage)
-            {
-                const auto& backside_card{ m_Backsides[meta_data.m_Index] };
-                const auto file_name{ BacksideFilename(backside_card.m_Front.m_FileName) };
-                image_available(file_name);
-            }
-        }
-    }
-
-    Progress(static_cast<int>(m_Progress),
-             static_cast<int>(m_TotalRequests));
-
-    reply->deleteLater();
-    m_ScryfallTimer.start();
 }
 
 std::vector<QString> ScryfallDownloader::GetFiles() const
@@ -234,14 +95,7 @@ std::vector<QString> ScryfallDownloader::GetFiles() const
     auto cards{ m_Cards |
                 std::views::transform(&DecklistCard::m_FileName) |
                 std::ranges::to<std::vector>() };
-    auto backsides{
-        m_Backsides |
-        std::views::transform(&BacksideRequest::m_Front) |
-        std::views::transform(&DecklistCard::m_FileName) |
-        std::views::transform([this](const QString& n)
-                              { return BacksideFilename(n); })
-    };
-    cards.insert(cards.end(), backsides.begin(), backsides.end());
+    cards.insert(cards.end(), m_BacksideFiles.begin(), m_BacksideFiles.end());
     return cards;
 }
 
@@ -264,7 +118,7 @@ std::optional<QString> ScryfallDownloader::GetBackside(const QString& file_name)
         const auto card_info{ m_CardInfos[idx] };
         if (card_info["card_back_id"].isString())
         {
-            return BacksideFilename(CardBackFilename(card_info["card_back_id"].toString()));
+            return CardBackFilename(card_info["card_back_id"].toString());
         }
     }
 
@@ -300,192 +154,224 @@ QString ScryfallDownloader::CardBackFilename(const QString& card_back_id)
     return card_back_id + ".png";
 }
 
-QNetworkReply* ScryfallDownloader::DoRequestWithMetadata(QString request_uri,
-                                                         QString file_name,
-                                                         size_t index,
-                                                         RequestType request_type)
+void ScryfallDownloader::RunQueries()
 {
-    auto* reply{ DoRequestWithoutMetadata(std::move(request_uri)) };
-    m_ReplyMetaData[reply] = MetaData{
-        std::move(file_name),
-        index,
-        request_type,
-    };
-    return reply;
-}
-
-QNetworkReply* ScryfallDownloader::DoRequestWithoutMetadata(QString request_uri)
-{
-    if (request_uri.isEmpty())
+    const size_t pending_queries{ m_Queries.size() };
+    for (const QString& query : m_Queries)
     {
-        LogError("Empty request... Download cancelled...");
-        return nullptr;
-    }
-
-    LogInfo("Doing request \"{}\"...", request_uri.toStdString());
-
-    QNetworkRequest get_request{ std::move(request_uri) };
-    get_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
-                          ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
-    get_request.setRawHeader("Accept",
-                             "*/*");
-
-    QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
-
-    QObject::connect(reply,
-                     &QNetworkReply::errorOccurred,
-                     reply,
-                     [reply](QNetworkReply::NetworkError error)
-                     {
-                         LogError("Error during request {} {}: {}",
-                                  reply->request().url().toEncoded().toStdString(),
-                                  reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt(),
-                                  QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
-                     });
-
-    return reply;
-}
-
-bool ScryfallDownloader::NextRequest()
-{
-    if (m_QueryMoreData.has_value())
-    {
-        DoRequestWithoutMetadata(std::move(m_QueryMoreData.value()));
-        m_QueryMoreData.reset();
-        return true;
-    }
-
-    if (!m_Queries.empty())
-    {
-        DoRequestWithoutMetadata(QString("https://api.scryfall.com/cards/search?q=%1")
-                                     .arg(QUrl::toPercentEncoding(m_Queries.back())));
-        return true;
-    }
-
-    const auto cards_in_deck{ m_Cards.size() };
-    const bool want_more_infos{ m_CardInfos.size() < cards_in_deck };
-    const bool want_more_arts{ m_Downloads < cards_in_deck };
-    const bool want_more_back_arts{ m_Downloads < cards_in_deck + m_Backsides.size() };
-    if (want_more_infos)
-    {
-        const size_t index{ m_CardInfos.size() };
-        const auto& card{ m_Cards[index] };
-        LogInfo("Requesting info for card {}", card.m_Name.toStdString());
-
-        auto request_uri{
-            [&]()
+        m_SearchEndpoint->Queue(
+            query,
+            [this, query, pending_queries](const QJsonDocument& doc)
             {
-                if (!card.m_Set.has_value())
+                // Using curly-braces for initializers here makes gcc and clang
+                // create an array-of-array, hence we are forced to use parens
+                const auto data(doc["data"].toArray());
+                LogInfo("Adding {} cards for query {}...",
+                        data.size(),
+                        query.toStdString());
+
+                for (const auto& card : data)
                 {
-                    return QString("https://api.scryfall.com/cards/named?exact=%1")
-                        .arg(card.m_Name);
+                    const auto card_obj{ card.toObject() };
+                    auto card_name{
+                        [&]()
+                        {
+                            if (card_obj.contains("card_faces"))
+                            {
+                                return card_obj["card_faces"][0]["name"].toString();
+                            }
+                            return card_obj["name"].toString();
+                        }()
+                    };
+                    auto card_set{ card_obj["set"].toString() };
+                    auto card_collector_number{ card_obj["collector_number"].toString() };
+                    auto card_file_name{ QString{ "%2 (%3) - %1.png" }
+                                             .arg(card_name)
+                                             .arg(card_set.toUpper())
+                                             .arg(card_collector_number.rightJustified(4, '0'))
+                                             .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
+                    m_Cards.push_back(DecklistCard{
+                        .m_Name{ std::move(card_name) },
+                        .m_FileName{ std::move(card_file_name) },
+                        .m_Amount = 1,
+                        .m_Set{ std::move(card_set) },
+                        .m_CollectorNumber{ std::move(card_collector_number) },
+                    });
+                    m_TotalRequests += 2;
                 }
-                else if (!card.m_CollectorNumber.has_value())
+
+                ++m_Progress;
+
+                Progress(static_cast<int>(m_Progress),
+                         static_cast<int>(m_TotalRequests));
+
+                if (m_Progress == pending_queries)
                 {
-                    return QString(R"(https://api.scryfall.com/cards/search?q=!"%1"+set:%2&unique=prints)")
-                        .arg(card.m_Name)
-                        .arg(card.m_Set.value());
+                    for (size_t i = 0; i < m_Cards.size(); i++)
+                    {
+                        m_FileNameIndexMap[m_Cards[i].m_FileName] = i;
+                    }
+                    DownloadCardDatas();
                 }
-                else
-                {
-                    return QString("https://api.scryfall.com/cards/%1/%2")
-                        .arg(card.m_Set.value())
-                        .arg(card.m_CollectorNumber.value());
-                }
-            }()
-        };
-        DoRequestWithMetadata(std::move(request_uri), card.m_FileName, index, RequestType::CardInfo);
-        return true;
+            });
     }
-    else if (want_more_arts)
+}
+void ScryfallDownloader::DownloadCardDatas()
+{
+    m_CardInfos.resize(m_Cards.size());
+    auto batches{ m_Cards | std::views::chunk(ScryfallCollectionEndpoint::c_BatchSize) };
+
+    const size_t target_progress{ m_Progress + m_Cards.size() };
+    size_t batch_idx{ 0 };
+    for (const auto& batch : batches)
     {
-        const size_t index{ m_Downloads };
-        const auto& card{ m_Cards[index] };
-        const auto& card_info{ m_CardInfos[index] };
+        QJsonArray identifiers{};
+        for (const auto& card : batch)
+        {
+            QJsonObject identifier{};
+            identifier["name"] = card.m_Name;
+            if (card.m_Set.has_value())
+            {
+                identifier["set"] = card.m_Set.value();
+            }
+            else if (card.m_CollectorNumber.has_value())
+            {
+                identifier["collector_number"] = card.m_CollectorNumber.value();
+            }
+            identifiers.push_back(std::move(identifier));
+        }
+
+        QJsonObject batch_json;
+        batch_json["identifiers"] = std::move(identifiers);
+
+        m_CollectionEndpoint->Queue(
+            QJsonDocument{ std::move(batch_json) },
+            [this, batch_idx, target_progress](const QJsonDocument& batch, const QJsonDocument& result)
+            {
+                // Using curly-braces for initializers here makes gcc and clang
+                // create an array-of-array, hence we are forced to use parens
+                const auto identifiers(batch["identifiers"].toArray());
+                const auto not_found(result["not_found"].toArray());
+                const auto data(result["data"].toArray());
+
+                size_t card_idx{ 0 };
+                for (qsizetype id_idx{ 0 }; id_idx < data.size(); ++id_idx, ++m_Progress)
+                {
+                    if (!not_found.isEmpty())
+                    {
+                        if (not_found.contains(identifiers[id_idx]))
+                        {
+                            continue;
+                        }
+                    }
+
+                    const auto info_idx{ batch_idx * ScryfallCollectionEndpoint::c_BatchSize + card_idx };
+                    m_CardInfos[info_idx] = QJsonDocument{ std::move(data[card_idx].toObject()) };
+                    ++card_idx;
+                }
+
+                Progress(static_cast<int>(m_Progress),
+                         static_cast<int>(m_TotalRequests));
+
+                if (m_Progress == target_progress)
+                {
+                    DownloadCardImages();
+                }
+            });
+
+        ++batch_idx;
+    }
+}
+void ScryfallDownloader::DownloadCardImages()
+{
+    for (const auto& [card, card_info] : std::views::zip(m_Cards, m_CardInfos))
+    {
         const bool has_backside{ HasBackside(card_info) };
 
         if (std::ranges::contains(m_SkipFiles, card.m_FileName))
         {
             LogInfo("Skipping card {}", card.m_Name.toStdString());
-            m_Downloads++;
-            m_Progress++;
+            ++m_Progress;
             Progress(static_cast<int>(m_Progress),
                      static_cast<int>(m_TotalRequests));
-            return NextRequest();
+            continue;
+        }
+
+        auto image_available{
+            [this](const QString& file_name, const QByteArray& data)
+            {
+                LogInfo("Received data of {}", file_name.toStdString());
+                ImageAvailable(data, file_name);
+                ++m_Progress;
+                Progress(static_cast<int>(m_Progress),
+                         static_cast<int>(m_TotalRequests));
+            },
+        };
+
+        LogInfo("Requesting artwork for card {}", card.m_Name.toStdString());
+        if (has_backside)
+        {
+            const auto& card_faces{ card_info["card_faces"] };
+            const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
+            m_DataEndpoint->Call(request_uri.toString(),
+                                 [&card, image_available](const QByteArray& data)
+                                 {
+                                     image_available(card.m_FileName, data);
+                                 });
+
+            if (IncludeBacksides())
+            {
+                if (has_backside &&
+                    !std::ranges::contains(m_SkipFiles, BacksideFilename(card.m_FileName)))
+                {
+                    LogInfo("Requesting backside artwork for card {}", card.m_Name.toStdString());
+
+                    const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
+                    const auto backside_file_name{ BacksideFilename(card.m_FileName) };
+                    m_BacksideFiles.push_back(backside_file_name);
+
+                    ++m_TotalRequests;
+                    m_DataEndpoint->Call(back_face_uri.toString(),
+                                         [backside_file_name, image_available](const QByteArray& data)
+                                         {
+                                             image_available(backside_file_name, data);
+                                         });
+                }
+            }
         }
         else
         {
-            LogInfo("Requesting artwork for card {}", card.m_Name.toStdString());
-            if (HasBackside(card_info))
+            const auto& request_uri{ card_info["image_uris"]["png"] };
+            m_DataEndpoint->Call(request_uri.toString(),
+                                 [card, image_available](const QByteArray& data)
+                                 {
+                                     image_available(card.m_FileName, data);
+                                 });
+
+            if (IncludeBacksides() && card_info["card_back_id"].isString())
             {
-                const auto& card_faces{ card_info["card_faces"] };
-                const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
-                DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
-
-                if (IncludeBacksides())
+                const auto& card_back_id{ card_info["card_back_id"].toString() };
+                if (!std::ranges::contains(m_SkipFiles, card_back_id))
                 {
-                    if (has_backside &&
-                        !std::ranges::contains(m_SkipFiles, BacksideFilename(card.m_FileName)))
-                    {
-                        const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
+                    LogInfo("Requesting card back {}", card_back_id.toStdString());
 
-                        m_Backsides.push_back(BacksideRequest{
-                            .m_Uri{ back_face_uri.toString() },
-                            .m_Front{ card },
-                        });
-                        ++m_TotalRequests;
-                    }
-                }
-            }
-            else
-            {
-                const auto& request_uri{ card_info["image_uris"]["png"] };
-                DoRequestWithMetadata(request_uri.toString(), card.m_FileName, index, RequestType::CardImage);
+                    const auto card_back_uri{ QString{ "https://backs.scryfall.io/png/%1/%2/%3.png" }
+                                                  .arg(card_back_id[0])
+                                                  .arg(card_back_id[1])
+                                                  .arg(card_back_id) };
+                    const auto backside_file_name{ CardBackFilename(card_back_id) };
 
-                if (IncludeBacksides())
-                {
-                    if (card_info["card_back_id"].isString())
-                    {
-                        const auto& card_back_id{ card_info["card_back_id"].toString() };
-                        LogInfo("Requesting card back id for card {}", card.m_Name.toStdString());
+                    m_BacksideFiles.push_back(backside_file_name);
+                    m_SkipFiles.push_back(card_back_id);
 
-                        if (!std::ranges::contains(m_SkipFiles, card_back_id))
-                        {
-                            const auto card_back_uri{ QString{ "https://backs.scryfall.io/png/%1/%2/%3.png" }
-                                                          .arg(card_back_id[0])
-                                                          .arg(card_back_id[1])
-                                                          .arg(card_back_id) };
-
-                            m_Backsides.push_back(BacksideRequest{
-                                .m_Uri{ card_back_uri },
-                                .m_Front{
-                                    .m_Name{ card_back_id },
-                                    .m_FileName{ CardBackFilename(card_back_id) },
-                                    .m_Amount = 0,
-
-                                    .m_Set{ std::nullopt },
-                                    .m_CollectorNumber{ std::nullopt },
-                                },
-                            });
-                            ++m_TotalRequests;
-
-                            m_SkipFiles.push_back(card_back_id);
-                        }
-                    }
+                    ++m_TotalRequests;
+                    m_DataEndpoint->Call(card_back_uri,
+                                         [backside_file_name, image_available](const QByteArray& data)
+                                         {
+                                             image_available(backside_file_name, data);
+                                         });
                 }
             }
         }
-
-        return true;
     }
-    else if (want_more_back_arts)
-    {
-        const size_t index{ m_Downloads - cards_in_deck };
-        const auto& backside_card{ m_Backsides[index] };
-        LogInfo("Requesting backside artwork for card {}", backside_card.m_Front.m_Name.toStdString());
-        DoRequestWithMetadata(backside_card.m_Uri, BacksideFilename(backside_card.m_Front.m_FileName), index, RequestType::BacksideImage);
-
-        return true;
-    }
-    return false;
 }
