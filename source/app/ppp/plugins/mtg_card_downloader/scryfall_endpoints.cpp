@@ -20,7 +20,7 @@ ScryfallEndpoint::ScryfallEndpoint(QNetworkAccessManager& network_manager,
     if (rate_limit.count() > 0)
     {
         m_RateLimiter.emplace();
-        m_RateLimiter.value().setInterval(rate_limit.count());
+        m_RateLimiter.value().setInterval(static_cast<int>(rate_limit.count()));
         m_RateLimiter.value().setSingleShot(true);
 
         QObject::connect(&m_RateLimiter.value(),
@@ -141,6 +141,7 @@ void ScryfallSearchEndpoint::Queue(const QString& query, OnDoneFun on_done)
     m_Queue.push_back(Query{
         query,
         std::move(on_done),
+        std::nullopt,
     });
 
     if (m_Queue.size() == 1)
