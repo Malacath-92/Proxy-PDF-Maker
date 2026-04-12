@@ -233,13 +233,17 @@ void ScryfallDownloader::DownloadCardDatas()
             const auto& card{ m_Cards[batch_begin + card_idx] };
 
             QJsonObject identifier{};
-            identifier["name"] = card.m_Name;
-            if (card.m_Set.has_value())
+            if (!card.m_Set.has_value() || !card.m_CollectorNumber.has_value())
+            {
+                identifier["name"] = card.m_Name;
+                if (card.m_Set.has_value())
+                {
+                    identifier["set"] = card.m_Set.value();
+                }
+            }
+            else 
             {
                 identifier["set"] = card.m_Set.value();
-            }
-            else if (card.m_CollectorNumber.has_value())
-            {
                 identifier["collector_number"] = card.m_CollectorNumber.value();
             }
             identifiers.push_back(std::move(identifier));
@@ -265,6 +269,7 @@ void ScryfallDownloader::DownloadCardDatas()
                     {
                         if (not_found.contains(identifiers[card_idx]))
                         {
+                            // TODO: Fallback to direct download
                             continue;
                         }
                     }
