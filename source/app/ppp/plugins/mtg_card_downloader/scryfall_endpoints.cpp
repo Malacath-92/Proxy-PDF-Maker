@@ -19,8 +19,10 @@ ScryfallEndpoint::ScryfallEndpoint(QNetworkAccessManager& network_manager,
 {
     if (rate_limit.count() > 0)
     {
+        static constexpr auto c_RateLimitBuffer{ 1.1f };
+
         m_RateLimiter.emplace();
-        m_RateLimiter.value().setInterval(static_cast<int>(rate_limit.count()));
+        m_RateLimiter.value().setInterval(static_cast<int>(rate_limit.count() * c_RateLimitBuffer));
         m_RateLimiter.value().setSingleShot(true);
 
         QObject::connect(&m_RateLimiter.value(),
