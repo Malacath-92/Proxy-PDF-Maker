@@ -219,15 +219,19 @@ void ScryfallDownloader::RunQueries()
 void ScryfallDownloader::DownloadCardDatas()
 {
     m_CardInfos.resize(m_Cards.size());
-    auto batches{ m_Cards | std::views::chunk(ScryfallCollectionEndpoint::c_BatchSize) };
+
+    static constexpr auto c_BatchSize{ ScryfallCollectionEndpoint::c_BatchSize };
 
     const size_t target_progress{ m_Progress + m_Cards.size() };
-    size_t batch_idx{ 0 };
-    for (const auto& batch : batches)
+    for (size_t batch_begin{ 0 }; batch_begin < m_Cards.size(); batch_begin += c_BatchSize)
     {
         QJsonArray identifiers{};
-        for (const auto& card : batch)
+        for (size_t card_idx{ 0 };
+             card_idx < c_BatchSize && batch_begin + card_idx < m_Cards.size();
+             ++card_idx)
         {
+            const auto& card{ m_Cards[batch_begin + card_idx] };
+
             QJsonObject identifier{};
             identifier["name"] = card.m_Name;
             if (card.m_Set.has_value())
@@ -246,7 +250,7 @@ void ScryfallDownloader::DownloadCardDatas()
 
         m_CollectionEndpoint->Queue(
             QJsonDocument{ std::move(batch_json) },
-            [this, batch_idx, target_progress](const QJsonDocument& batch, const QJsonDocument& result)
+            [this, batch_begin, target_progress](const QJsonDocument& batch, const QJsonDocument& result)
             {
                 // Using curly-braces for initializers here makes gcc and clang
                 // create an array-of-array, hence we are forced to use parens
@@ -254,20 +258,24 @@ void ScryfallDownloader::DownloadCardDatas()
                 const auto not_found(result["not_found"].toArray());
                 const auto data(result["data"].toArray());
 
-                size_t card_idx{ 0 };
-                for (qsizetype id_idx{ 0 }; id_idx < data.size(); ++id_idx, ++m_Progress)
+                if (!not_found.isEmpty())
+                {
+                    LogError("Some cards were not found: {}", QJsonDocument{ not_found }.toJson().toStdString());
+                }
+
+                size_t data_idx{ 0 };
+                for (qsizetype card_idx{ 0 }; card_idx < identifiers.size(); ++card_idx, ++m_Progress)
                 {
                     if (!not_found.isEmpty())
                     {
-                        if (not_found.contains(identifiers[id_idx]))
+                        if (not_found.contains(identifiers[card_idx]))
                         {
                             continue;
                         }
                     }
 
-                    const auto info_idx{ batch_idx * ScryfallCollectionEndpoint::c_BatchSize + card_idx };
-                    m_CardInfos[info_idx] = QJsonDocument{ std::move(data[card_idx].toObject()) };
-                    ++card_idx;
+                    m_CardInfos[batch_begin + card_idx] = QJsonDocument{ std::move(data[data_idx].toObject()) };
+                    ++data_idx;
                 }
 
                 Progress(static_cast<int>(m_Progress),
@@ -278,8 +286,6 @@ void ScryfallDownloader::DownloadCardDatas()
                     DownloadCardImages();
                 }
             });
-
-        ++batch_idx;
     }
 }
 void ScryfallDownloader::DownloadCardImages()
