@@ -258,11 +258,6 @@ void ScryfallDownloader::DownloadCardDatas()
                 const auto not_found(result["not_found"].toArray());
                 const auto data(result["data"].toArray());
 
-                if (!not_found.isEmpty())
-                {
-                    LogError("Some cards were not found: {}", QJsonDocument{ not_found }.toJson().toStdString());
-                }
-
                 size_t data_idx{ 0 };
                 for (qsizetype card_idx{ 0 }; card_idx < identifiers.size(); ++card_idx, ++m_Progress)
                 {
@@ -293,6 +288,15 @@ void ScryfallDownloader::DownloadCardImages()
     for (const auto& [card, card_info] : std::views::zip(m_Cards, m_CardInfos))
     {
         const bool has_backside{ HasBackside(card_info) };
+
+        if (card_info.isNull())
+        {
+            LogError("Card {} not resolved, no image(s) downloaded...", card.m_Name.toStdString());
+            ++m_Progress;
+            Progress(static_cast<int>(m_Progress),
+                     static_cast<int>(m_TotalRequests));
+            continue;
+        }
 
         if (std::ranges::contains(m_SkipFiles, card.m_FileName))
         {
