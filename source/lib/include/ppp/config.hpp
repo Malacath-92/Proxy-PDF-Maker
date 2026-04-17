@@ -12,6 +12,7 @@
 enum class CardOrder
 {
     Alphabetical,
+    Backside,
     LastModified,
     LastAdded,
 };

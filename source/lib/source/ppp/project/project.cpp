@@ -38,6 +38,21 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
             };
         }
         std::unreachable();
+    case CardOrder::Backside:
+        switch (g_Cfg.m_CardOrderDirection)
+        {
+        case CardOrderDirection::Ascending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_Backside < rhs.m_Backside;
+            };
+        case CardOrderDirection::Descending:
+            return [](const CardInfo& lhs, const CardInfo& rhs)
+            {
+                return lhs.m_Backside > rhs.m_Backside;
+            };
+        }
+        std::unreachable();
     case CardOrder::LastModified:
         switch (g_Cfg.m_CardOrderDirection)
         {
