@@ -180,7 +180,11 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
         static constexpr std::string_view c_FileUriStart{ "file:///" };
         if (uri.startsWith(c_FileUriStart.data()))
         {
-            const fs::path path{ uri.sliced(c_FileUriStart.size()).toStdString() };
+            const fs::path path{ QUrl::fromPercentEncoding(
+                                     uri
+                                         .sliced(c_FileUriStart.size())
+                                         .toUtf8())
+                                     .toStdString() };
             const auto ext{ path.extension() };
             if (ext == ".pdf")
             {
