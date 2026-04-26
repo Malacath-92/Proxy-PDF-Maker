@@ -113,6 +113,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
 
     m_Backsides = new QCheckBox{ "Download Backsides" };
     m_Backsides->setChecked(true);
+    m_Backsides->setToolTip("If unticked, will maintain current default backside if any.");
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
@@ -394,17 +395,28 @@ void MtgDownloaderPopup::FinalizeDownload()
     const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
     if (clear_image_folder)
     {
-        const auto images{
-            ListImageFiles(target_dir)
-        };
-        for (const auto& img : images)
+        std::vector<fs::path> cards_to_remove;
+        for (const auto& card_info : m_Project.m_Data.m_Cards)
         {
-            if (!std::ranges::contains(downloaded_file_paths, img) &&
-                fs::exists(target_dir / img))
+            if (!m_Backsides->isChecked() &&
+                card_info.m_Name == m_Project.m_Data.m_BacksideDefault)
             {
-                fs::remove(target_dir / img);
+                continue;
             }
-            m_Project.CardRemoved(img);
+
+            if (!card_info.m_ExternalPath.has_value() &&
+                !std::ranges::contains(downloaded_file_paths, card_info.m_Name) &&
+                fs::exists(target_dir / card_info.m_Name))
+            {
+                fs::remove(target_dir / card_info.m_Name);
+            }
+
+            cards_to_remove.push_back(card_info.m_Name);
+        }
+
+        for (const auto& card_name : cards_to_remove)
+        {
+            m_Project.CardRemoved(card_name);
         }
     }
 
@@ -422,16 +434,20 @@ void MtgDownloaderPopup::FinalizeDownload()
         m_Project.CardAdded(path);
         m_Project.SetCardCount(path, m_Downloader->GetAmount(card));
 
-        if (const std::optional backside{ m_Downloader->GetBackside(card) })
+        m_Project.SetBacksideImageDefault(path);
+        if (m_Backsides->isChecked())
         {
-            m_Project.SetBacksideImage(path, backside.value().toStdString());
-        }
-        else
-        {
-            m_Project.SetBacksideImageDefault(path);
+            if (const std::optional backside{ m_Downloader->GetBackside(card) })
+            {
+                m_Project.SetBacksideImage(path, backside.value().toStdString());
+            }
         }
     }
-    m_Project.m_Data.m_BacksideDefault = "__back.png";
+
+    if (m_Backsides->isChecked())
+    {
+        m_Project.m_Data.m_BacksideDefault = "__back.png";
+    }
 
     m_Router.RefreshCardGrid();
     m_Router.UnpauseCropper();
@@ -478,9 +494,14 @@ void MtgDownloaderPopup::ValidateSettings()
         m_Router.SetCardSizeChoice("Standard");
     }
 
-    if (m_Backsides->isChecked() != m_Project.m_Data.m_BacksideEnabled)
+    const bool download_backsides{ m_Backsides->isChecked() };
+    if (download_backsides || m_Project.HasValidDefaultBackside())
     {
-        m_Router.SetEnableBackside(m_Backsides->isChecked());
+        m_Router.SetEnableBackside(true);
+    }
+    else
+    {
+        m_Router.SetEnableBackside(false);
     }
 
     if (m_Project.m_Data.m_BacksideAutoPattern.empty())

@@ -241,7 +241,7 @@ void ScryfallDownloader::DownloadCardDatas()
                     identifier["set"] = card.m_Set.value();
                 }
             }
-            else 
+            else
             {
                 identifier["set"] = card.m_Set.value();
                 identifier["collector_number"] = card.m_CollectorNumber.value();

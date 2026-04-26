@@ -1340,6 +1340,12 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
+bool Project::HasValidDefaultBackside() const
+{
+    return !m_Data.m_BacksideDefault.has_value() ||
+           fs::exists(GetCardImagePath(m_Data.m_BacksideDefault.value()));
+}
+
 bool Project::HasClearBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })
