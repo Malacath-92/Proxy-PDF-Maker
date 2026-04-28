@@ -46,6 +46,8 @@ struct Config
 {
     bool m_AdvancedMode{ false };
 
+    bool m_NoCropMode{ true };
+
     bool m_CheckVersionOnStartup{ true };
     uint32_t m_ToastTimeoutMS{ 8000 };
 

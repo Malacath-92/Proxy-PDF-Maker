@@ -78,6 +78,17 @@ PagePreview::PagePreview(Project& project,
         image_companion->setStyleSheet("background-color: purple;");
         image_companion->setParent(m_ImageContainer);
 
+        const auto bleed_edge{
+            g_Cfg.m_NoCropMode
+                ? project.CardFullBleed()
+            : params.m_IsBackside
+                ? project.m_Data.m_BleedEdge +
+                      project.m_Data.m_EnvelopeBleedEdge +
+                      project.m_Data.m_BacksideExtraBleedEdge
+                : project.m_Data.m_BleedEdge +
+                      project.m_Data.m_EnvelopeBleedEdge,
+        };
+
         auto* image_widget{
             new PrintPreviewCardImage{
                 card_name.value(),
@@ -85,14 +96,7 @@ PagePreview::PagePreview(Project& project,
                 CardImageWidgetParams{
                     .m_RoundedCorners = rounded_corners,
                     .m_Rotation = rotation,
-                    .m_BleedEdge{
-                        params.m_IsBackside
-                            ? project.m_Data.m_BleedEdge +
-                                  project.m_Data.m_EnvelopeBleedEdge +
-                                  project.m_Data.m_BacksideExtraBleedEdge
-                            : project.m_Data.m_BleedEdge +
-                                  project.m_Data.m_EnvelopeBleedEdge,
-                    },
+                    .m_BleedEdge{ bleed_edge },
                 },
                 index,
                 image_companion,

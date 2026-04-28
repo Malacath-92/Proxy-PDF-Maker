@@ -310,6 +310,12 @@ void CropperCropWork::run()
             // empty hash indicates that the source has not changed
             if (uncrop_input_file_hash.isEmpty())
             {
+                if (g_Cfg.m_NoCropMode)
+                {
+                    Finished(Conclusion::Skipped);
+                    return;
+                }
+
                 // load the uncropped file
                 source_image = Image::Read(uncropped_file_path);
             }
@@ -321,13 +327,24 @@ void CropperCropWork::run()
                                                    card_aspect_ratio);
                 const Image uncropped_image{ UncropImage(source_image, m_CardName, card_size, fancy_uncrop) };
                 uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
-                source_image = std::move(uncropped_image);
-
                 m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
+
+                if (g_Cfg.m_NoCropMode)
+                {
+                    Finished(Conclusion::Success);
+                    return;
+                }
+                source_image = std::move(uncropped_image);
             }
         }
         else
         {
+            if (g_Cfg.m_NoCropMode)
+            {
+                Finished(Conclusion::Skipped);
+                return;
+            }
+
             source_image = FixImageAspectRatio(source_image,
                                                m_BadAspectRatioHandling,
                                                card_with_full_bleed_aspect_ratio);

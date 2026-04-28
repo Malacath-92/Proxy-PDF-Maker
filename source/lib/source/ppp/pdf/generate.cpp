@@ -100,8 +100,8 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
                              const std::vector<ImageCacheData>& frontside_images,
                              PdfDocument* backside_pdf,
                              const std::vector<ImageCacheData>& backside_images,
-                             const fs::path& output_dir,
-                             const fs::path& backside_output_dir,
+                             std::function<const fs::path(const fs::path&)> get_frontside_file,
+                             std::function<const fs::path(const fs::path&)> get_backside_file,
                              std::atomic_uint32_t& work_signal)
 {
     TRACY_AUTO_SCOPE();
@@ -109,7 +109,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
     std::vector<std::function<void()>> image_cache_work;
     for (const auto [img, size, rot] : frontside_images)
     {
-        const auto img_path{ output_dir / img };
+        const auto img_path{ get_frontside_file(img) };
         image_cache_work.push_back(
             [=]()
             {
@@ -124,7 +124,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
     };
     for (const auto [img, size, rot] : backside_images)
     {
-        const auto img_path{ backside_output_dir / img };
+        const auto img_path{ get_backside_file(img) };
         image_cache_work.push_back(
             [=]()
             {
@@ -177,6 +177,34 @@ PdfResults GeneratePdf(const Project& project)
 
     const auto output_dir{ project.GetOutputFolder() };
     const auto backside_output_dir{ project.GetBacksideOutputFolder() };
+    const auto get_frontside_file{
+        [&project, &output_dir](const fs::path& card_name)
+        {
+            if (g_Cfg.m_NoCropMode)
+            {
+                if (fs::exists(project.m_Data.m_UncropDir / card_name))
+                {
+                    return project.m_Data.m_UncropDir / card_name;
+                }
+                return project.GetCardImagePath(card_name);
+            }
+            return output_dir / card_name;
+        }
+    };
+    const auto get_backside_file{
+        [&project, &backside_output_dir](const fs::path& card_name)
+        {
+            if (g_Cfg.m_NoCropMode)
+            {
+                if (fs::exists(project.m_Data.m_UncropDir / card_name))
+                {
+                    return project.m_Data.m_UncropDir / card_name;
+                }
+                return project.GetCardImagePath(card_name);
+            }
+            return backside_output_dir / card_name;
+        }
+    };
 
     const auto& [darker_color, lighter_color]{
         CategorizeColors(project.m_Data.m_GuidesColorA,
@@ -371,8 +399,8 @@ PdfResults GeneratePdf(const Project& project)
                             frontside_images,
                             backside_pdf,
                             backside_images,
-                            output_dir,
-                            backside_output_dir,
+                            get_frontside_file,
+                            get_backside_file,
                             cache_work_done)
     };
     auto wait_for_cache_work{
@@ -405,11 +433,11 @@ PdfResults GeneratePdf(const Project& project)
         [&](PdfPage* page,
             const PageImage& image,
             const PageImageTransform& transform,
-            const fs::path output_dir)
+            std::function<const fs::path(const fs::path&)> get_image_file)
         {
             if (image.m_Image.has_value())
             {
-                const auto img_path{ output_dir / image.m_Image.value() };
+                const auto img_path{ get_image_file(image.m_Image.value()) };
                 if (fs::exists(img_path))
                 {
                     PdfPage::ImageData image_data{
@@ -507,7 +535,7 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(front_page, card, transform, output_dir);
+                    draw_image(front_page, card, transform, get_frontside_file);
                 }
             }
 
@@ -579,7 +607,7 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(back_page, card, transform, backside_output_dir);
+                    draw_image(back_page, card, transform, get_backside_file);
                 }
             }
 

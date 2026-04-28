@@ -118,6 +118,24 @@ void GenerateEnvelope(std::span<PageImageTransform> transforms,
     ClipClipRects(transforms);
 }
 
+void MaximizeTransforms(std::span<PageImageTransform> transforms,
+                        Length bleed_excess)
+{
+    for (auto& transform : transforms)
+    {
+        if (!transform.m_ClipRect.has_value())
+        {
+            transform.m_ClipRect = ClipRect{
+                .m_Position{ transform.m_Position },
+                .m_Size{ transform.m_Size },
+            };
+        }
+
+        transform.m_Position -= bleed_excess;
+        transform.m_Size += 2 * bleed_excess;
+    }
+}
+
 PageImageTransforms ComputeTransforms(const Project& project)
 {
     const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
@@ -232,6 +250,15 @@ PageImageTransforms ComputeTransforms(const Project& project)
             project.m_Data.m_EnvelopeBleedEdge);
     }
 
+    if (g_Cfg.m_NoCropMode)
+    {
+        const auto total_bleed{ project.m_Data.m_BleedEdge +
+                                project.m_Data.m_EnvelopeBleedEdge };
+        const auto full_bleed{ project.CardFullBleed() };
+        const auto bleed_delta{ dla::math::max(0_mm, full_bleed - total_bleed) };
+        MaximizeTransforms(transforms, bleed_delta);
+    }
+
     return transforms;
 }
 
@@ -273,11 +300,15 @@ PageImageTransforms ComputeBacksideTransforms(
 
     for (const PageImageTransform& transform : frontside_transforms)
     {
-        const auto& frontside_size{ transform.m_Size - envelope_size * 2 };
+        const auto& frontside_size{ g_Cfg.m_NoCropMode
+                                        ? transform.m_ClipRect.value().m_Size
+                                        : transform.m_Size - envelope_size * 2 };
         const auto backside_position{
             [&]
             {
-                const auto& frontside_position{ transform.m_Position + envelope_size };
+                const auto& frontside_position{ g_Cfg.m_NoCropMode
+                                                    ? transform.m_ClipRect.value().m_Position
+                                                    : transform.m_Position + envelope_size };
 
                 if (flip_on_left)
                 {
@@ -343,6 +374,15 @@ PageImageTransforms ComputeBacksideTransforms(
                 horizontal_images_per_page,
             },
             full_envelope_size);
+    }
+
+    if (g_Cfg.m_NoCropMode)
+    {
+        const auto total_bleed{ project.m_Data.m_BleedEdge +
+                                project.m_Data.m_EnvelopeBleedEdge };
+        const auto full_bleed{ project.CardFullBleed() };
+        const auto bleed_delta{ dla::math::max(0_mm, full_bleed - total_bleed) };
+        MaximizeTransforms(backside_transforms, bleed_delta);
     }
 
     return backside_transforms;
