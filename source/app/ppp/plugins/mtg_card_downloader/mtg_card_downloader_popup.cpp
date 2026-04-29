@@ -64,12 +64,16 @@ MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
                                                    const QByteArray& image_data,
                                                    bool fill_corners,
                                                    QString upscale_model,
+                                                   Size physical_card_size,
+                                                   PixelDensity max_density,
                                                    std::vector<QString> out_files)
     : m_Project{ project }
     , m_ImageName{ std::move(image_name) }
     , m_ImageData{ image_data }
     , m_FillCorners{ fill_corners }
     , m_UpscaleModel{ std::move(upscale_model) }
+    , m_PhysicalCardSize{ physical_card_size }
+    , m_MaxDensity{ max_density }
     , m_OutFiles{ std::move(out_files) }
 {
 }
@@ -103,11 +107,10 @@ void MtgDownloaderImageWorker::run()
         };
 
         auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-        auto upscaled_image{ RunModel(*app, m_UpscaleModel.toStdString(), image) };
+        auto upscaled_image{ RunModel(*app, m_UpscaleModel.toStdString(), image, m_PhysicalCardSize, m_MaxDensity) };
 
-        fs::path out_file{ m_OutFiles[0].toStdString() };
-        out_file.replace_filename(out_file.filename().string() + "_up");
-        upscaled_image.Write(out_file);
+        const auto encoded_image{ upscaled_image.EncodePng() };
+        m_ImageData.assign((const char*)encoded_image.data(), (const char*)encoded_image.data() + encoded_image.size());
     }
 
     for (const auto& out_file : m_OutFiles)
@@ -283,7 +286,16 @@ void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QStr
         out_file = m_OutputDir.filePath(out_file);
     }
 
-    auto* worker{ new MtgDownloaderImageWorker{ m_Project, file_name, image_data, fill_corners, std::move(upscale_model), std::move(out_files) } };
+    auto* worker{ new MtgDownloaderImageWorker{
+        m_Project,
+        file_name,
+        image_data,
+        fill_corners,
+        std::move(upscale_model),
+        m_Project.CardSize(),
+        g_Cfg.m_MaxDPI,
+        std::move(out_files),
+    } };
     QObject::connect(worker,
                      &MtgDownloaderImageWorker::Done,
                      this,
