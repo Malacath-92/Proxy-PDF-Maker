@@ -174,7 +174,7 @@ TEST_CASE("Run CLI with one image", "[cli_one_image]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xae\x1a\x0e\x4d\x90\x1a\x65\xd0\xf2\x5c\xf3\xf4\xa2\xf4\x1b\x5b"
+        "\xf4\x44\x11\x3a\x36\x48\x1e\x61\x25\xe5\xc7\xda\xd8\x85\x46\xa0"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -194,7 +194,7 @@ TEST_CASE("Run CLI with some images", "[cli_some_images]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xd0\x61\x68\xda\x1c\x0e\xde\xee\x5d\x10\x59\xc5\xb2\xc2\xa2\x20"
+        "\xfc\xa5\xf3\x8d\x7f\x91\x6b\xc8\x32\x86\x0c\x43\x69\xe7\x86\x50"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -220,7 +220,7 @@ TEST_CASE("Run CLI with some images with bleed", "[cli_some_images_with_bleed]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x59\xa1\xbb\xf0\x3d\x41\xe2\xe0\xc6\xae\xf6\xe8\x3c\xed\x31\xf4"
+        "\x13\x5d\x71\x10\x92\xf0\x34\x27\x25\x03\x09\x27\xa0\xbe\x65\xb5"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -247,7 +247,7 @@ TEST_CASE("Run CLI with some images with spacing", "[cli_some_images_with_spacin
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xc1\x23\xc7\x41\x27\x0a\x07\x20\x84\x42\x3f\xb4\x13\x21\x50\x94"
+        "\x81\x36\x40\xd1\xa6\x95\xe3\x8d\x0a\x51\xd8\xf6\x27\xb2\xb2\x16"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -276,7 +276,7 @@ TEST_CASE("Run CLI with some images with spacing and backside",
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xbb\xa2\x96\xa1\x5e\xab\x80\x7e\xca\x77\xd1\x64\x19\x0c\xa4\x11"
+        "\x18\xfa\x73\x96\x67\x08\x0f\x56\x1e\x7d\xd8\x9e\xb9\xf3\xfa\x3b"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -306,7 +306,7 @@ TEST_CASE("Run CLI with some images with spacing and backside bleed",
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x78\xb1\x64\x3e\x1a\x9c\x1b\x51\xeb\xf0\x5b\x33\x5d\x39\xae\xe2"
+        "\x8e\x72\xc3\xbf\x90\x1c\x82\x07\xd8\xbb\xee\x3e\x71\x4f\xa4\xcb"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
