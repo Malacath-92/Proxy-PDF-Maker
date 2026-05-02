@@ -868,6 +868,17 @@ Image Image::Resize(PixelSize size) const
     return img;
 }
 
+Image Image::CapDensity(::Size real_size, PixelDensity max_density) const
+{
+    const auto density{ Density(real_size) };
+    if (density > max_density)
+    {
+        const auto new_size{ dla::round(Size() * (max_density / density)) };
+        return Resize(new_size);
+    }
+    return *this;
+}
+
 Pixel Image::Width() const
 {
     return Size().x;

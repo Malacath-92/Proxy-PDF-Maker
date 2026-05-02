@@ -106,6 +106,8 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
 {
     TRACY_AUTO_SCOPE();
 
+    const PixelDensity max_density{ g_Cfg.m_MaxDPI };
+
     std::vector<std::function<void()>> image_cache_work;
     for (const auto [img, size, rot] : frontside_images)
     {
@@ -118,6 +120,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
                     .m_Path{ img_path },
                     .m_Size{ size },
                     .m_Rotation = rot,
+                    .m_MaxDensity{ max_density },
                 };
                 frontside_pdf->PreCacheImage(image_data);
             });
@@ -133,6 +136,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
                     .m_Path{ img_path },
                     .m_Size{ size },
                     .m_Rotation = rot,
+                    .m_MaxDensity{ max_density },
                 };
                 backside_pdf->PreCacheImage(image_data);
             });

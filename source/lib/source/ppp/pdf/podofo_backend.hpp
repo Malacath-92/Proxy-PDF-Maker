@@ -52,10 +52,13 @@ class PoDoFoImageCache
   public:
     PoDoFoImageCache(PoDoFoDocument& document, const Project& project);
 
-    PoDoFo::PdfImage* GetImage(const fs::path& image_path, Image::Rotation rotation) const;
+    PoDoFo::PdfImage* GetImage(const fs::path& image_path,
+                               Image::Rotation rotation) const;
 
     void PreallocateImages(size_t num_images);
-    void CacheImage(fs::path image_path, Image::Rotation rotation);
+    void CacheImage(fs::path image_path,
+                    Image::Rotation rotation,
+                    PixelDensity max_density);
 
   private:
     mutable TRACY_DECLARE_MUTEX(std::shared_mutex, m_Mutex);

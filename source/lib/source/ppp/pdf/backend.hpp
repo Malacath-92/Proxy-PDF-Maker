@@ -125,6 +125,7 @@ class PdfDocument
         const fs::path& m_Path;
         Size m_Size;
         Image::Rotation m_Rotation;
+        PixelDensity m_MaxDensity;
     };
     virtual void PreCacheImage(ImageCacheData data) = 0;
 };

@@ -66,6 +66,8 @@ class [[nodiscard]] Image
 
     Image Resize(PixelSize size) const;
 
+    Image CapDensity(::Size real_size, PixelDensity max_density) const;
+
     Pixel Width() const;
     Pixel Height() const;
     PixelSize Size() const;

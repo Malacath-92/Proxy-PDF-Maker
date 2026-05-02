@@ -385,7 +385,9 @@ void PoDoFoImageCache::PreallocateImages(size_t num_images)
     m_Cache.reserve(num_images);
 }
 
-void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
+void PoDoFoImageCache::CacheImage(fs::path image_path,
+                                  Image::Rotation rotation,
+                                  PixelDensity max_density)
 {
     TRACY_AUTO_SCOPE();
 
@@ -411,6 +413,7 @@ void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
     };
     // clang-format on
 
+    const auto card_size{ m_Project.CardSize() };
     const Image loaded_image{
         [&]()
         {
@@ -418,7 +421,6 @@ void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
             {
                 if (m_Project.IsCardRoundedRect())
                 {
-                    const auto card_size{ m_Project.CardSize() };
                     const auto corner_radius{
                         rounded_corners
                             ? m_Project.CardCornerRadius()
@@ -437,6 +439,7 @@ void PoDoFoImageCache::CacheImage(fs::path image_path, Image::Rotation rotation)
             return Image::Read(image_path);
         }()
             .Rotate(rotation)
+            .CapDensity(card_size, max_density)
     };
 
     const auto encoded_image{ encoder(loaded_image) };
@@ -649,9 +652,7 @@ void PoDoFoDocument::PreallocateImageCache(size_t num_images)
 
 void PoDoFoDocument::PreCacheImage(ImageCacheData data)
 {
-    const auto& image_path{ data.m_Path };
-    const auto& rotation{ data.m_Rotation };
-    m_ImageCache->CacheImage(image_path, rotation);
+    m_ImageCache->CacheImage(data.m_Path, data.m_Rotation, data.m_MaxDensity);
 }
 
 PoDoFo::PdfFont& PoDoFoDocument::GetFont()

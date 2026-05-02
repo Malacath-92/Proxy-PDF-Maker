@@ -83,15 +83,9 @@ Image CropImage(const Image& image,
         }
     }
 
-    Image cropped_image{ image.Crop(c, c, c, c) };
-    if (density > max_density)
-    {
-        const PixelSize new_size{ dla::round(cropped_image.Size() * (max_density / density)) };
-        const PixelDensity max_dpi{ (max_density * 1_in / 1_m) };
-        LogInfo("Cropping images...\n{} - Exceeds maximum DPI {}, resizing to {}", card_name.string(), max_dpi.value, static_cast<dla::uvec2>(new_size / 1_pix));
-        return cropped_image.Resize(new_size);
-    }
-    return cropped_image;
+    return image
+        .Crop(c, c, c, c)
+        .CapDensity(card_size, max_density);
 }
 
 Image UncropImage(const Image& image, const fs::path& card_name, Size card_size, bool fancy_uncrop)
