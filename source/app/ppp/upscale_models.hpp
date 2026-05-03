@@ -5,6 +5,8 @@
 #include <string_view>
 #include <vector>
 
+#include <ppp/util.hpp>
+
 class Image;
 class PrintProxyPrepApplication;
 
@@ -19,4 +21,6 @@ void LoadModel(PrintProxyPrepApplication& application, std::string_view model_na
 void UnloadModel(PrintProxyPrepApplication& application, std::string_view model_name);
 Image RunModel(PrintProxyPrepApplication& application,
                std::string_view model_name,
-               const Image& image);
+               const Image& image,
+               Size physical_size,
+               PixelDensity max_density);

@@ -9,6 +9,7 @@
 
 #include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
 #include <ppp/ui/popups.hpp>
+#include <ppp/util.hpp>
 
 class QCheckBox;
 class QComboBox;
@@ -35,8 +36,12 @@ class MtgDownloaderImageWorker : public QObject, public QRunnable
 
   public:
     MtgDownloaderImageWorker(const Project& project,
+                             QString image_name,
                              const QByteArray& image_data,
                              bool fill_corners,
+                             QString upscale_model,
+                             Size physical_card_size,
+                             PixelDensity max_density,
                              std::vector<QString> out_files);
 
     virtual void run() override;
@@ -46,8 +51,12 @@ class MtgDownloaderImageWorker : public QObject, public QRunnable
 
   private:
     const Project& m_Project;
+    QString m_ImageName;
     QByteArray m_ImageData;
     bool m_FillCorners;
+    QString m_UpscaleModel;
+    Size m_PhysicalCardSize;
+    PixelDensity m_MaxDensity;
     std::vector<QString> m_OutFiles;
 };
 
