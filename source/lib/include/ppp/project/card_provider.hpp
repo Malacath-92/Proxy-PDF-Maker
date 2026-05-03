@@ -25,6 +25,7 @@ class CardProvider : public QObject, public efsw::FileWatchListener
     void BacksideExtraBleedChanged();
     void ColorCubeChanged();
     void BasePreviewWidthChanged();
+    void NoCropModeChanged();
     void MaxDPIChanged();
 
     void ExternalCardAdded(const fs::path& absolute_image_path);

@@ -244,6 +244,7 @@ int main(int argc, char** argv)
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &project, &Project::EnsureOutputFolder);
+        QObject::connect(global_options, &GlobalOptionsWidget::NoCropModeChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
         QObject::connect(global_options, &GlobalOptionsWidget::CardOrderChanged, &project, &Project::CardOrderChanged);
@@ -271,6 +272,7 @@ int main(int argc, char** argv)
         QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &card_provider, &CardProvider::BacksideExtraBleedChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::NoCropModeChanged, &card_provider, &CardProvider::NoCropModeChanged);
         QObject::connect(global_options, &GlobalOptionsWidget::MaxDPIChanged, &card_provider, &CardProvider::MaxDPIChanged);
     }
 

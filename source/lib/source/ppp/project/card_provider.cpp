@@ -169,6 +169,14 @@ void CardProvider::BasePreviewWidthChanged()
         CardAdded(image, false, true);
     }
 }
+void CardProvider::NoCropModeChanged()
+{
+    // Generate new crops only ...
+    for (const fs::path& image : ListFiles())
+    {
+        CardAdded(image, true, false);
+    }
+}
 void CardProvider::MaxDPIChanged()
 {
     // Generate new crops only ...

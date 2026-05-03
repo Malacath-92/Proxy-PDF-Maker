@@ -156,6 +156,10 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto* preview_width{ new WidgetWithLabel{ "&Preview Width", preview_width_spin_box } };
     preview_width->setToolTip("Width of each card in pixels in the preview.");
 
+    auto* no_crop{ new QCheckBox{ "No &Crop Mode" } };
+    no_crop->setToolTip("If checked, images won't be cropped. Speeds up work while making pdfs slightly bigger.");
+    no_crop->setChecked(g_Cfg.m_NoCropMode);
+
     auto* max_dpi_spin_box{ MakeDoubleSpinBox() };
     max_dpi_spin_box->setDecimals(0);
     max_dpi_spin_box->setRange(300, 1200);
@@ -217,6 +221,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(jpg_quality);
     layout->addWidget(m_ColorCube);
     layout->addWidget(preview_width);
+    layout->addWidget(no_crop);
     layout->addWidget(max_dpi);
     layout->addWidget(card_order);
     layout->addWidget(card_order_direction);
@@ -309,6 +314,16 @@ GlobalOptionsWidget::GlobalOptionsWidget()
             SaveConfig(g_Cfg);
             PreloadCube(g_Cfg.m_ColorCube);
             ColorCubeChanged();
+        }
+    };
+
+    auto change_no_crop{
+        [this, no_crop](const Qt::CheckState& s)
+        {
+            const bool no_crop_mode{ s == Qt::CheckState::Checked };
+            g_Cfg.m_NoCropMode = no_crop_mode;
+            SaveConfig(g_Cfg);
+            NoCropModeChanged();
         }
     };
 
@@ -436,6 +451,10 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QComboBox::currentTextChanged,
                      this,
                      change_color_cube);
+    QObject::connect(no_crop,
+                     &QCheckBox::checkStateChanged,
+                     this,
+                     change_no_crop);
     QObject::connect(preview_width_spin_box,
                      &QDoubleSpinBox::valueChanged,
                      this,

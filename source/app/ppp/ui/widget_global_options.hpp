@@ -22,6 +22,7 @@ class GlobalOptionsWidget : public QWidget
     void ImageCompressionChanged();
     void JpgQualityChanged();
     void ColorCubeChanged();
+    void NoCropModeChanged();
     void BasePreviewWidthChanged();
     void MaxDPIChanged();
     void CardOrderChanged();
