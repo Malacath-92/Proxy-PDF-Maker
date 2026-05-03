@@ -73,6 +73,9 @@ class PluginsPopup : public PopupBase
             plugins->setLayout(layout);
         }
 
+        auto* info{ new QLabel{ "Enabled plugins can be opened at the very bottom of the side panel." } };
+        info->setWordWrap(true);
+
         auto* buttons{ new QWidget{} };
         {
             auto* okay_button{ new QPushButton{ "OK" } };
@@ -89,6 +92,7 @@ class PluginsPopup : public PopupBase
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(plugins);
+        layout->addWidget(info);
         layout->addWidget(buttons);
         setLayout(layout);
     }
