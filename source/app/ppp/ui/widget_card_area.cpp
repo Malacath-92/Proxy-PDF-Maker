@@ -750,11 +750,11 @@ CardArea::CardArea(Project& project)
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
             QString(
-                "Start by adding images into the <a href=\"file:///%1\">image folder</a>, drag-and-drop")
+                "To start either add images into the <a href=\"file:///%1\">image folder</a>, drag-and-drop")
                 .arg(ToQString(project.m_Data.m_ImageDir).replace(' ', "%20")),
         } };
         auto* onboarding_line_3{ new QLabel{
-            "images onto the app, or enabling one of the <a href=\"#plugins\">plugins</a>.",
+            "images onto the app, or enable one of the <a href=\"#plugins\">plugins</a>.",
         } };
         onboarding_line_3->setOpenExternalLinks(false);
 
