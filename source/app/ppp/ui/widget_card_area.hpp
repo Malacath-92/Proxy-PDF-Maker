@@ -36,6 +36,9 @@ class CardArea : public QWidget
 
     void FullRefresh();
 
+  signals:
+    void RequestOpenPluginsWindow();
+
   private:
     const Project& m_Project;
     QWidget* m_OnboardingHint;

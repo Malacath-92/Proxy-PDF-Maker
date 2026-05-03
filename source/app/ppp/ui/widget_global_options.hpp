@@ -33,6 +33,8 @@ class GlobalOptionsWidget : public QWidget
     void PluginDisabled(std::string_view plugin_name);
 
   public slots:
+    void RequestOpenPluginsWindow();
+
     void PageSizesChanged();
     void CardSizesChanged();
 
@@ -40,6 +42,8 @@ class GlobalOptionsWidget : public QWidget
     void StyleAdded();
 
   private:
+    void OpenPluginsWindow();
+
     ComboBoxWithLabel* m_ColorCube{ nullptr };
     ComboBoxWithLabel* m_Style{ nullptr };
 };

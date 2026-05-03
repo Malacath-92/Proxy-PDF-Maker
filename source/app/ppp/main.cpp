@@ -385,6 +385,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_global_options);
 
+        QObject::connect(card_area, &CardArea::RequestOpenPluginsWindow, global_options, &GlobalOptionsWidget::RequestOpenPluginsWindow);
         QObject::connect(print_options, &PrintOptionsWidget::PageSizesChanged, global_options, &GlobalOptionsWidget::PageSizesChanged);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizesChanged, global_options, &GlobalOptionsWidget::CardSizesChanged);
     }

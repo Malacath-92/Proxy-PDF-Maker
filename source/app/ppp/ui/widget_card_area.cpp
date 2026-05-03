@@ -750,12 +750,13 @@ CardArea::CardArea(Project& project)
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
             QString(
-                "Start by adding images into the <a href=\"file:///%1\">image folder</a>")
+                "Start by adding images into the <a href=\"file:///%1\">image folder</a>, drag-and-drop")
                 .arg(ToQString(project.m_Data.m_ImageDir).replace(' ', "%20")),
         } };
         auto* onboarding_line_3{ new QLabel{
-            "or drag-and-drop images onto the app",
+            "images onto the app, or enabling one of the <a href=\"#plugins\">plugins</a>.",
         } };
+        onboarding_line_3->setOpenExternalLinks(false);
 
         onboarding_line_1->setAlignment(Qt::AlignmentFlag::AlignCenter);
         onboarding_line_2->setAlignment(Qt::AlignmentFlag::AlignCenter);
@@ -783,11 +784,24 @@ CardArea::CardArea(Project& project)
                 }
             }
         };
+        auto plugins_link_activated{
+            [this](const QString& link)
+            {
+                if (link == "#plugins")
+                {
+                    RequestOpenPluginsWindow();
+                }
+            }
+        };
 
         QObject::connect(onboarding_line_2,
                          &QLabel::linkActivated,
                          this,
                          image_folder_link_activated);
+        QObject::connect(onboarding_line_3,
+                         &QLabel::linkActivated,
+                         this,
+                         plugins_link_activated);
     }
 
     {

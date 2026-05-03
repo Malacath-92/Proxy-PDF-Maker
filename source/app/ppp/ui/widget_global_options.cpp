@@ -399,26 +399,6 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         }
     };
 
-    const auto open_plugins_popup{
-        [this]()
-        {
-            PluginsPopup plugins{ nullptr };
-
-            QObject::connect(&plugins,
-                             &PluginsPopup::PluginEnabled,
-                             this,
-                             &GlobalOptionsWidget::PluginEnabled);
-            QObject::connect(&plugins,
-                             &PluginsPopup::PluginDisabled,
-                             this,
-                             &GlobalOptionsWidget::PluginDisabled);
-
-            window()->setEnabled(false);
-            plugins.Show();
-            window()->setEnabled(true);
-        }
-    };
-
     QObject::connect(advanced_checkbox,
                      &QCheckBox::checkStateChanged,
                      this,
@@ -490,7 +470,12 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     QObject::connect(plugins,
                      &QPushButton::clicked,
                      this,
-                     open_plugins_popup);
+                     &GlobalOptionsWidget::OpenPluginsWindow);
+}
+
+void GlobalOptionsWidget::RequestOpenPluginsWindow()
+{
+    OpenPluginsWindow();
 }
 
 void GlobalOptionsWidget::PageSizesChanged()
@@ -557,6 +542,24 @@ void GlobalOptionsWidget::StyleAdded()
             style_combo_box->addItem(ToQString(style_name));
         }
     }
+}
+
+void GlobalOptionsWidget::OpenPluginsWindow()
+{
+    PluginsPopup plugins{ nullptr };
+
+    QObject::connect(&plugins,
+                     &PluginsPopup::PluginEnabled,
+                     this,
+                     &GlobalOptionsWidget::PluginEnabled);
+    QObject::connect(&plugins,
+                     &PluginsPopup::PluginDisabled,
+                     this,
+                     &GlobalOptionsWidget::PluginDisabled);
+
+    window()->setEnabled(false);
+    plugins.Show();
+    window()->setEnabled(true);
 }
 
 #include <widget_global_options.moc>
