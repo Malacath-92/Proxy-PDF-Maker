@@ -7,6 +7,8 @@
 #include <QMainWindow>
 #include <QSettings>
 
+#include <onnxruntime/core/session/onnxruntime_cxx_api.h>
+
 #include <nlohmann/json.hpp>
 
 #include <ppp/qt_util.hpp>
@@ -21,7 +23,7 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     TRACY_AUTO_SCOPE();
 
     // Create folders for user-content
-    for (const auto& folder : { "res/base_pdfs", "res/cubes", "res/styles", "res/card_svgs" })
+    for (const auto& folder : { "res/cubes", "res/styles", "res/base_pdfs", "res/card_svgs", "res/models" })
     {
         if (!fs::exists(folder))
         {
@@ -114,6 +116,35 @@ const cv::Mat* PrintProxyPrepApplication::GetCube(const std::string& cube_name) 
     if (m_Cubes.contains(cube_name))
     {
         return &m_Cubes.at(cube_name);
+    }
+    return nullptr;
+}
+
+void PrintProxyPrepApplication::SetUpscaleModel(std::string model_name, std::unique_ptr<Ort::Session> model)
+{
+    std::lock_guard lock{ m_ModelsMutex };
+    if (!m_Models.contains(model_name))
+    {
+        m_Models[std::move(model_name)] = std::move(model);
+    }
+}
+std::unique_ptr<Ort::Session> PrintProxyPrepApplication::ReleaseUpscaleModel(std::string model_name)
+{
+    std::lock_guard lock{ m_ModelsMutex };
+    if (!m_Models.contains(model_name))
+    {
+        auto model{ std::move(m_Models[model_name]) };
+        m_Models.erase(model_name);
+        return model;
+    }
+    return nullptr;
+}
+Ort::Session* PrintProxyPrepApplication::GetUpscaleModel(const std::string& model_name) const
+{
+    std::lock_guard lock{ m_ModelsMutex };
+    if (m_Models.contains(model_name))
+    {
+        return m_Models.at(model_name).get();
     }
     return nullptr;
 }

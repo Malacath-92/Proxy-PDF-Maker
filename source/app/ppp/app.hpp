@@ -17,6 +17,11 @@
 
 class QMainWindow;
 
+namespace Ort
+{
+struct Session;
+}
+
 class PrintProxyPrepApplication
     : public QApplication,
       public JsonProvider
@@ -39,6 +44,10 @@ class PrintProxyPrepApplication
 
     void SetCube(std::string cube_name, cv::Mat cube);
     const cv::Mat* GetCube(const std::string& cube_name) const;
+
+    void SetUpscaleModel(std::string model_name, std::unique_ptr<Ort::Session> model);
+    std::unique_ptr<Ort::Session> ReleaseUpscaleModel(std::string model_name);
+    Ort::Session* GetUpscaleModel(const std::string& model_name) const;
 
     bool GetObjectVisibility(const QString& object_name) const;
     void SetObjectVisibility(const QString& object_name, bool visible);
@@ -63,6 +72,9 @@ class PrintProxyPrepApplication
 
     mutable TRACY_DECLARE_MUTEX(std::mutex, m_CubesMutex);
     std::unordered_map<std::string, cv::Mat> m_Cubes;
+
+    mutable std::mutex m_ModelsMutex;
+    std::unordered_map<std::string, std::unique_ptr<Ort::Session>> m_Models;
 
     std::unordered_map<QString, bool> m_ObjectVisibilities;
 

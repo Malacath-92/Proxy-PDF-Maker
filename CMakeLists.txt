@@ -23,7 +23,13 @@ option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
 include(cmake/conan.cmake)
-set(CONAN_INSTALL_ARGS --build=missing)
+set(CONAN_INSTALL_ARGS
+	--build=missing
+	-s onnxruntime/*:compiler.cppstd=17
+	-s protobuf/*:compiler.cppstd=17
+	-s onnx/*:compiler.cppstd=17
+	-s abseil/*:compiler.cppstd=17
+	-s re2/*:compiler.cppstd=17)
 run_conan(
     HOST_PROFILE default auto-cmake
     BUILD_PROFILE default
@@ -70,13 +76,13 @@ string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
 
 # --------------------------------------------------
 # Find packages
-find_package(fmt REQUIRED)
 find_package(Qt6 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(podofo REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
+find_package(onnxruntime REQUIRED)
 if (PPP_PROFILE)
 	find_package(tracy REQUIRED)
 endif()
@@ -317,6 +323,7 @@ else()
 endif()
 target_link_libraries(proxy_pdf PRIVATE
 	qt_toast_lib
+	onnxruntime::onnxruntime
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
 set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
