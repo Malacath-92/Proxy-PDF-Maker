@@ -16,6 +16,7 @@ jobs:
       runs_on: macos-14
       build_type: Debug
       arch: x86_64
+      cache_key: MacOS-x86
   macos-x86-release:
     uses: ./.github/workflows/CI.yml
     with:
@@ -24,3 +25,4 @@ jobs:
       runs_on: macos-14
       build_type: Release
       arch: x86_64
+      cache_key: MacOS-x86

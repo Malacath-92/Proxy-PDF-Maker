@@ -18,6 +18,9 @@ on:
       arch:
         required: false
         type: string
+      cache_key:
+        required: true
+        type: string
 
 jobs:
   build:
@@ -72,7 +75,7 @@ jobs:
         with:
           path: |
             ./.conan_home
-          key: ${{ inputs.os }}-${{ inputs.build_type }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
+          key: ${{ inputs.cache_key }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
       - name: Install Conan
         run: |
@@ -95,7 +98,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="13.3" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="13.3" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
@@ -111,7 +114,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES=${{inputs.build_type}} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Clean up Conan
         run: |

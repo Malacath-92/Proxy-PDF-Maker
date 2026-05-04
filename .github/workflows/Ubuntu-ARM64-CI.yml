@@ -15,6 +15,7 @@ jobs:
       compiler: Gcc
       runs_on: ubuntu-24.04-arm
       build_type: Debug
+      cache_key: Ubuntu-ARM64-Debug
   ubuntu-release:
     uses: ./.github/workflows/CI.yml
     with:
@@ -22,3 +23,4 @@ jobs:
       compiler: Gcc
       runs_on: ubuntu-24.04-arm
       build_type: Release
+      cache_key: Ubuntu-ARM64-Release
