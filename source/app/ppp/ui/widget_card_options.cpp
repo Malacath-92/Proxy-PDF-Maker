@@ -182,14 +182,28 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         "backside_default",
         [this, &project](nlohmann::json default_value)
         {
-            const auto& default_backside{ default_value.get_ref<const std::string&>() };
-            project.m_Data.m_BacksideDefault = fs::path{ default_backside };
+            if (default_value.is_null())
+            {
+                project.m_Data.m_BacksideDefault.reset();
+            }
+            else
+            {
+                const auto& default_backside{ default_value.get_ref<const std::string&>() };
+                project.m_Data.m_BacksideDefault = fs::path{ default_backside };
+            }
             m_BacksideDefaultPreview->Refresh();
             BacksideDefaultChanged();
         },
-        [&project]()
+        [&project]() -> nlohmann::json
         {
-            return project.m_Data.m_BacksideDefault;
+            if (project.m_Data.m_BacksideDefault.has_value())
+            {
+                return project.m_Data.m_BacksideDefault.value();
+            }
+            else
+            {
+                return nlohmann::json{};
+            }
         });
 
     {
