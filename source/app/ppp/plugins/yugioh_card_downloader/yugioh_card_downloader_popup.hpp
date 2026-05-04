@@ -22,27 +22,18 @@ class QNetworkReply;
 class Project;
 class PluginInterface;
 
-enum class InputType
-{
-    Decklist,
-    ScryfallQuery,
-    MPCAutofill,
-    None,
-};
-
-class MtgDownloaderImageWorker : public QObject, public QRunnable
+class YuGiOhDownloaderImageWorker : public QObject, public QRunnable
 {
     Q_OBJECT
 
   public:
-    MtgDownloaderImageWorker(const Project& project,
-                             QString image_name,
-                             const QByteArray& image_data,
-                             bool fill_corners,
-                             QString upscale_model,
-                             Size physical_card_size,
-                             PixelDensity max_density,
-                             std::vector<QString> out_files);
+    YuGiOhDownloaderImageWorker(const Project& project,
+                                QString image_name,
+                                QString out_file,
+                                const QByteArray& image_data,
+                                QString upscale_model,
+                                Size physical_card_size,
+                                PixelDensity max_density);
 
     virtual void run() override;
 
@@ -52,21 +43,20 @@ class MtgDownloaderImageWorker : public QObject, public QRunnable
   private:
     const Project& m_Project;
     QString m_ImageName;
+    QString m_OutFile;
     QByteArray m_ImageData;
-    bool m_FillCorners;
     QString m_UpscaleModel;
     Size m_PhysicalCardSize;
     PixelDensity m_MaxDensity;
-    std::vector<QString> m_OutFiles;
 };
 
-class MtgDownloaderPopup : public PopupBase
+class YuGiOhDownloaderPopup : public PopupBase
 {
     Q_OBJECT
 
   public:
-    MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
-    ~MtgDownloaderPopup();
+    YuGiOhDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
+    ~YuGiOhDownloaderPopup();
 
   private slots:
     void DownloadProgress(int progress, int target);
@@ -81,19 +71,13 @@ class MtgDownloaderPopup : public PopupBase
 
     void ValidateSettings();
 
-    static InputType StupidInferSource(const QString& text);
-
     Project& m_Project;
 
     PluginInterface& m_Router;
 
-    InputType m_InputType{ InputType::None };
-
     QTextEdit* m_TextInput{ nullptr };
     QCheckBox* m_Settings{ nullptr };
-    QCheckBox* m_Backsides{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
-    QCheckBox* m_FillCornersCheckbox{ nullptr };
     QComboBox* m_UpscaleModel{ nullptr };
     QLabel* m_Hint{ nullptr };
     QProgressBar* m_ProgressBar{ nullptr };
@@ -110,18 +94,4 @@ class MtgDownloaderPopup : public PopupBase
 
     std::unique_ptr<CardArtDownloader> m_Downloader;
     std::unique_ptr<QNetworkAccessManager> m_NetworkManager;
-};
-
-class SelectInputTypePopup : public PopupBase
-{
-  public:
-    SelectInputTypePopup(QWidget* parent);
-
-    InputType GetInputType() const
-    {
-        return m_InputType;
-    }
-
-  private:
-    InputType m_InputType{ InputType::None };
 };

@@ -32,32 +32,11 @@
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
+#include <ppp/plugins/decklist_textbox.hpp>
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_mpcfill.hpp>
 #include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
-
-class DownloaderTextEdit : public QTextEdit
-{
-    virtual void insertFromMimeData(const QMimeData* source) override
-    {
-        if (source->hasText())
-        {
-            const auto url{ QUrl::fromUserInput(source->text()) };
-            if (url.isValid() && url.isLocalFile() && QFile::exists(url.toLocalFile()))
-            {
-                QFile file{ url.toLocalFile() };
-                if (file.open(QFile::OpenModeFlag::ReadOnly))
-                {
-                    insertPlainText(file.readAll());
-                    return;
-                }
-            }
-        }
-
-        QTextEdit::insertFromMimeData(source);
-    }
-};
 
 MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
                                                    QString image_name,
@@ -80,10 +59,10 @@ MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
 
 void MtgDownloaderImageWorker::run()
 {
-    LogInfo("Writing image {}...", m_OutFiles[0].toStdString());
-
     if (m_FillCorners)
     {
+        LogInfo("Filling corners of image {}...", m_ImageName.toStdString());
+
         auto image{
             Image::Decode(EncodedImageView{
                 reinterpret_cast<const std::byte*>(m_ImageData.constData()),
@@ -117,6 +96,8 @@ void MtgDownloaderImageWorker::run()
 
     for (const auto& out_file : m_OutFiles)
     {
+        LogInfo("Writing image {}...", m_ImageName.toStdString());
+
         QFile file(out_file);
         file.open(QIODevice::WriteOnly);
         file.write(m_ImageData);
@@ -135,7 +116,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
-    m_TextInput = new DownloaderTextEdit;
+    m_TextInput = new DecklistTextEdit;
     m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), MPC Autofill xml, or a Scryfall query prepended with $");
 
     m_Settings = new QCheckBox{ "Adjust Settings" };
@@ -356,55 +337,64 @@ void MtgDownloaderPopup::DoDownload()
         const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
         if (ModelRequiresDownload(upscale_model))
         {
-            if (auto url{ GetModelUrl(upscale_model) })
+            if (upscale_model != "None")
             {
-                LogInfo("Downloading model {}", upscale_model);
-                m_ProgressBar->setVisible(true);
+                {
+                    if (auto url{ GetModelUrl(upscale_model) })
+                    {
+                        LogInfo("Downloading model {}", upscale_model);
+                        m_ProgressBar->setVisible(true);
 
-                QNetworkRequest get_request{ ToQString(url.value()) };
-                QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+                        QNetworkRequest get_request{ ToQString(url.value()) };
+                        QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
 
-                QObject::connect(reply,
-                                 &QNetworkReply::finished,
-                                 this,
-                                 [this, upscale_model, reply]()
-                                 {
-                                     {
-                                         QFile file(ToQString(GetModelFilename(upscale_model)));
-                                         file.open(QIODevice::WriteOnly);
-                                         file.write(reply->readAll());
-                                     }
+                        QObject::connect(reply,
+                                         &QNetworkReply::finished,
+                                         this,
+                                         [this, upscale_model, reply]()
+                                         {
+                                             {
+                                                 QFile file(ToQString(GetModelFilename(upscale_model)));
+                                                 file.open(QIODevice::WriteOnly);
+                                                 file.write(reply->readAll());
+                                             }
 
-                                     m_ProgressBar->setVisible(false);
-                                     reply->deleteLater();
+                                             m_ProgressBar->setVisible(false);
+                                             reply->deleteLater();
 
-                                     // Initiate the download again
-                                     DoDownload();
-                                 });
-                QObject::connect(reply,
-                                 &QNetworkReply::downloadProgress,
-                                 this,
-                                 [this](qint64 bytes_received, qint64 bytes_total)
-                                 {
-                                     m_ProgressBar->setValue(bytes_received);
-                                     m_ProgressBar->setMaximum(bytes_total);
-                                 });
-                QObject::connect(reply,
-                                 &QNetworkReply::errorOccurred,
-                                 reply,
-                                 [](QNetworkReply::NetworkError error)
-                                 {
-                                     LogError("Failed downloading model: {}",
-                                              QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
-                                 });
+                                             // Initiate the download again
+                                             DoDownload();
+                                         });
+                        QObject::connect(reply,
+                                         &QNetworkReply::downloadProgress,
+                                         this,
+                                         [this](qint64 bytes_received, qint64 bytes_total)
+                                         {
+                                             m_ProgressBar->setValue(bytes_received);
+                                             m_ProgressBar->setMaximum(bytes_total);
+                                         });
+                        QObject::connect(reply,
+                                         &QNetworkReply::errorOccurred,
+                                         reply,
+                                         [](QNetworkReply::NetworkError error)
+                                         {
+                                             LogError("Failed downloading model: {}",
+                                                      QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
+                                         });
 
-                return;
+                        // Quit here, we reinitiate once we are done downloading
+                        return;
+                    }
+                }
             }
         }
 
-        LogInfo("Preloading upscaling model...");
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-        LoadModel(*app, upscale_model);
+        if (upscale_model != "None")
+        {
+            LogInfo("Preloading upscaling model...");
+            auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+            LoadModel(*app, upscale_model);
+        }
     }
 
     connect(m_NetworkManager.get(),
@@ -445,7 +435,7 @@ void MtgDownloaderPopup::DoDownload()
     case InputType::ScryfallQuery:
         LogInfo("Downloading {} to {}",
                 m_InputType == InputType::Decklist
-                    ? "Decklist"
+                    ? "MtG Decklist"
                     : "Scryfall query",
                 m_OutputDir.path().toStdString());
         m_Downloader = std::make_unique<ScryfallDownloader>(

@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include <ppp/plugins/mtg_card_downloader/download_interface.hpp>
+#include <ppp/plugins/download_interface.hpp>
 
 class QDomElement;
 

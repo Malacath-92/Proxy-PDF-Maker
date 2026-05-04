@@ -5,12 +5,18 @@
 #include <ppp/plugins/plugin_interface.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader.hpp>
+#include <ppp/plugins/yugioh_card_downloader/yugioh_card_downloader.hpp>
 
 inline constexpr std::array c_Plugins{
     Plugin{
         "MtG Card Downloader",
         &InitMtGCardDownloaderPlugin,
         &DestroyMtGCardDownloaderPlugin,
+    },
+    Plugin{
+        "YuGiOh Card Downloader",
+        &InitYuGiOhCardDownloaderPlugin,
+        &DestroyYuGiOhCardDownloaderPlugin,
     },
 };
 

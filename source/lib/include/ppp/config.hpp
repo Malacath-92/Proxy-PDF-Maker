@@ -180,7 +180,7 @@ struct Config
         {
             "Japanese",
             {
-                .m_InputBleed{ 2_mm, Unit::Millimeter, 0u },
+                .m_InputBleed{ 3_mm, Unit::Millimeter, 0u },
                 .m_Hint{ ".e.g. Yu-Gi-Oh!" },
                 .m_CardSizeScale = 1.0f,
 

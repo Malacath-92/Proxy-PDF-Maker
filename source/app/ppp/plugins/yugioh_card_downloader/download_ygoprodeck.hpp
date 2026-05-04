@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <QString>
+#include <QTimer>
 
 #include <ppp/plugins/download_interface.hpp>
 
@@ -17,14 +18,13 @@ class ScryfallCollectionEndpoint;
 class ScryfallSearchEndpoint;
 class ScryfallDataEndpoint;
 
-class ScryfallDownloader : public CardArtDownloader
+class YGOProDeckDownloader : public CardArtDownloader
 {
     Q_OBJECT
 
   public:
-    ScryfallDownloader(std::vector<QString> skip_files,
-                       const std::optional<QString>& backside_pattern);
-    virtual ~ScryfallDownloader() override;
+    YGOProDeckDownloader(std::vector<QString> skip_files);
+    virtual ~YGOProDeckDownloader() override;
 
     virtual bool ParseInput(const QString& input) override;
     virtual bool BeginDownload(QNetworkAccessManager& network_manager) override;
@@ -42,28 +42,21 @@ class ScryfallDownloader : public CardArtDownloader
     void OnError(){};
 
   private:
-    static bool HasBackside(const QJsonDocument& card_info);
-    static QString CardBackFilename(const QString& card_back_id);
+    void NextRequest();
 
-    void RunQueries();
-    void DownloadCardDatas();
-    void DownloadCardImages();
+    QNetworkAccessManager* m_NetworkManager;
 
-    std::unique_ptr<ScryfallCollectionEndpoint> m_CollectionEndpoint;
-    std::unique_ptr<ScryfallDataEndpoint> m_DataEndpoint;
+    struct CardInfo
+    {
+        uint32_t m_Amount{ 0 };
+        QString m_FileName{ "" };
+    };
+    std::unordered_map<uint32_t, CardInfo> m_Cards;
+    std::unordered_map<QString, uint32_t> m_FileNameIdMap;
+    std::vector<uint32_t> m_CardIds;
 
-    std::unique_ptr<ScryfallSearchEndpoint> m_SearchEndpoint;
-
-    std::vector<QString> m_Queries;
-    std::optional<QString> m_QueryMoreData;
-
-    std::vector<DecklistCard> m_Cards;
-    std::unordered_map<QString, size_t> m_FileNameIndexMap;
-
-    std::vector<QJsonDocument> m_CardInfos;
-    std::vector<QString> m_BacksideFiles;
+    QTimer m_Timer;
 
     uint32_t m_Progress{ 0 };
-
     size_t m_TotalRequests{};
 };
