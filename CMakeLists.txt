@@ -25,11 +25,11 @@ option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 include(cmake/conan.cmake)
 set(CONAN_INSTALL_ARGS
 	--build=missing
-	-s:a onnxruntime/*:compiler.cppstd=17
-	-s:a protobuf/*:compiler.cppstd=17
-	-s:a onnx/*:compiler.cppstd=17
-	-s:a abseil/*:compiler.cppstd=17
-	-s:a re2/*:compiler.cppstd=17)
+	-s onnxruntime/*:compiler.cppstd=17
+	-s protobuf/*:compiler.cppstd=17
+	-s onnx/*:compiler.cppstd=17
+	-s abseil/*:compiler.cppstd=17
+	-s re2/*:compiler.cppstd=17)
 run_conan(
     HOST_PROFILE default auto-cmake
     BUILD_PROFILE default
