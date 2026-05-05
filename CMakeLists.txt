@@ -162,6 +162,8 @@ endif()
 add_library(proxy_pdf_options INTERFACE)
 if(MSVC)
 	target_compile_options(proxy_pdf_options INTERFACE /utf-8)
+elseif (CMAKE_COMPILER_IS_GNUCC)
+	target_compile_options(proxy_pdf_options INTERFACE -fno-fast-math -ffp-contract=off)
 endif()
 
 add_library(proxy_pdf_definitions INTERFACE)
