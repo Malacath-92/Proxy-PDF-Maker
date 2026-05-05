@@ -278,8 +278,8 @@ void YuGiOhDownloaderPopup::DoDownload()
                                  this,
                                  [this](qint64 bytes_received, qint64 bytes_total)
                                  {
-                                     m_ProgressBar->setValue(bytes_received);
-                                     m_ProgressBar->setMaximum(bytes_total);
+                                     m_ProgressBar->setValue(static_cast<int>(bytes_received));
+                                     m_ProgressBar->setMaximum(static_cast<int>(bytes_total));
                                  });
                 QObject::connect(reply,
                                  &QNetworkReply::errorOccurred,
