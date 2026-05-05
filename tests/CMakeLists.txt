@@ -17,6 +17,10 @@ function(proxyPdfAddTest NAME SHOULD_COPY_DEPENDENCIES)
 	set(TEST_NAME ${NAME})
 
 	add_executable(${TEST_NAME} ${NAME}.cpp)
+	if (CMAKE_COMPILER_IS_GNUCC)
+		target_compile_options(${TEST_NAME} PRIVATE -fno-fast-math -ffp-contract=off)
+	endif()
+
 	target_link_libraries(${TEST_NAME} PRIVATE
 		catch2_main
 		proxy_pdf_test)

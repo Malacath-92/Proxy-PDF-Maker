@@ -10,7 +10,6 @@
 #include <ppp/project/project.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
-#include <ppp/util/log.hpp>
 
 std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 {
@@ -132,10 +131,6 @@ QByteArray HashPdfFile(const fs::path& file_path)
     const auto id_less_data{ source_data.sliced(0, id_start) +
                              source_data.sliced(id_end + 2) };
 
-    std::stringstream data_str;
-    data_str << source_data;
-    LogError("{}", data_str.str());
-
     return QCryptographicHash::hash(id_less_data, QCryptographicHash::Md5);
 }
 
@@ -145,11 +140,6 @@ void TestPdfFile(const fs::path& pdf_path, const char (&expected)[N])
     const auto file_hash{ HashPdfFile(pdf_path) };
     REQUIRE(file_hash == QByteArray{ expected, N - 1 });
 }
-
-static constexpr LogFlags log_flags{
-    LogFlags::Console
-};
-static Log main_log{ log_flags, Log::c_MainLogName };
 
 TEST_CASE("Run CLI without any images", "[cli_empty_project]")
 {
