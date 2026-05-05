@@ -1,5 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <sstream>
+
 #include <QCryptographicHash>
 #include <QFile>
 
@@ -8,6 +10,16 @@
 #include <ppp/project/project.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
+#include <ppp/util/log.hpp>
+
+std::ostream& operator<<(std::ostream& os, const QByteArray& value)
+{
+    for (auto b : value)
+    {
+        os << fmt::format("\\x{:0>2x}", b);
+    }
+    return os;
+}
 
 auto SetupImages(
     const fs::path& folder,
@@ -119,6 +131,11 @@ QByteArray HashPdfFile(const fs::path& file_path)
     const auto id_end{ source_data.indexOf(">]", id_start) };
     const auto id_less_data{ source_data.sliced(0, id_start) +
                              source_data.sliced(id_end + 2) };
+
+    std::stringstream data_str;
+    data_str << source_data;
+    LogError("{}", data_str.str());
+
     return QCryptographicHash::hash(id_less_data, QCryptographicHash::Md5);
 }
 
@@ -129,14 +146,10 @@ void TestPdfFile(const fs::path& pdf_path, const char (&expected)[N])
     REQUIRE(file_hash == QByteArray{ expected, N - 1 });
 }
 
-std::ostream& operator<<(std::ostream& os, const QByteArray& value)
-{
-    for (auto b : value)
-    {
-        os << fmt::format("\\x{:0>2x}", b);
-    }
-    return os;
-}
+static constexpr LogFlags log_flags{
+    LogFlags::Console
+};
+static Log main_log{ log_flags, Log::c_MainLogName };
 
 TEST_CASE("Run CLI without any images", "[cli_empty_project]")
 {
