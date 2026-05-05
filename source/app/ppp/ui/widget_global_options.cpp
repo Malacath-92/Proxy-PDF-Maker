@@ -322,7 +322,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto change_no_crop{
-        [this, no_crop](const Qt::CheckState& s)
+        [this](const Qt::CheckState& s)
         {
             const bool no_crop_mode{ s == Qt::CheckState::Checked };
             g_Cfg.m_NoCropMode = no_crop_mode;
