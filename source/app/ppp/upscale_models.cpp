@@ -284,7 +284,7 @@ Image RunModel(PrintProxyPrepApplication& application,
         const Ort::TypeInfo output_type_info{ session->GetOutputTypeInfo(0) };
         const auto output_tensor_info{ output_type_info.GetTensorTypeAndShapeInfo() };
         const auto output_shape{ output_tensor_info.GetShape() };
-        upscale_factor = dtatic_cast<int>(output_shape[2] / input_shape[2]);
+        upscale_factor = static_cast<int>(output_shape[2] / input_shape[2]);
 
         const int input_height{ input_mat.rows };
         const int input_width{ input_mat.cols };
