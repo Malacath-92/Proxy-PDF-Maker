@@ -88,10 +88,14 @@ Image CropImage(const Image& image,
         .CapDensity(card_size, max_density);
 }
 
-Image UncropImage(const Image& image, const fs::path& card_name, Size card_size, bool fancy_uncrop)
+Image UncropImage(const Image& image,
+                  const fs::path& card_name,
+                  Size card_size,
+                  Length bleed_edge,
+                  bool fancy_uncrop)
 {
     const PixelDensity density{ image.Density(card_size) };
-    Pixel c{ 0.12_in * density };
+    Pixel c{ bleed_edge * density };
 
     const PixelDensity dpi{ (density * 1_in / 1_m) };
     LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", card_name.string(), dpi.value, c);
