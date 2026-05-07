@@ -253,6 +253,8 @@ Config LoadConfig()
 
             config.m_AdvancedMode = settings.value("Advanced.Mode", false).toBool();
 
+            config.m_NoCropMode = settings.value("No.Crop.Mode", true).toBool();
+
             config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
             config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
@@ -506,6 +508,8 @@ void SaveConfig(Config config)
             settings.setValue("Toast.Duration", config.m_ToastTimeoutMS);
 
             settings.setValue("Advanced.Mode", config.m_AdvancedMode);
+
+            settings.setValue("No.Crop.Mode", config.m_NoCropMode);
 
             settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
