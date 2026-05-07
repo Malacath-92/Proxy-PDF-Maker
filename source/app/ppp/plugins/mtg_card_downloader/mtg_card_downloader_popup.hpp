@@ -1,26 +1,9 @@
 #pragma once
 
-#include <any>
-#include <memory>
-#include <optional>
-
-#include <QRunnable>
-#include <QTemporaryDir>
-
-#include <ppp/plugins/download_interface.hpp>
-#include <ppp/ui/popups.hpp>
-#include <ppp/util.hpp>
+#include <ppp/plugins/card_downloader_popup.hpp>
 
 class QCheckBox;
-class QComboBox;
-class QTextEdit;
-class QProgressBar;
-class QPushButton;
 class QNetworkAccessManager;
-class QNetworkReply;
-
-class Project;
-class PluginInterface;
 
 enum class InputType
 {
@@ -30,86 +13,37 @@ enum class InputType
     None,
 };
 
-class MtgDownloaderImageWorker : public QObject, public QRunnable
-{
-    Q_OBJECT
-
-  public:
-    MtgDownloaderImageWorker(const Project& project,
-                             QString image_name,
-                             const QByteArray& image_data,
-                             bool fill_corners,
-                             QString upscale_model,
-                             Size physical_card_size,
-                             PixelDensity max_density,
-                             std::vector<QString> out_files);
-
-    virtual void run() override;
-
-  signals:
-    void Done();
-
-  private:
-    const Project& m_Project;
-    QString m_ImageName;
-    QByteArray m_ImageData;
-    bool m_FillCorners;
-    QString m_UpscaleModel;
-    Size m_PhysicalCardSize;
-    PixelDensity m_MaxDensity;
-    std::vector<QString> m_OutFiles;
-};
-
-class MtgDownloaderPopup : public PopupBase
+class MtgDownloaderPopup : public CardDownloaderPopup
 {
     Q_OBJECT
 
   public:
     MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
-    ~MtgDownloaderPopup();
-
-  private slots:
-    void DownloadProgress(int progress, int target);
-    void ImageAvailable(const QByteArray& image_data, const QString& file_name);
 
   private:
-    void DoDownload();
-    void FinalizeDownload();
+    virtual bool ClearImageFolder() const override;
+    virtual bool DownloadBacksides() const override;
+    virtual bool FillCorners() const override;
+    virtual QString UpscaleModel() const override;
 
-    void InstallLogHook();
-    void UninstallLogHook();
+    virtual void TextChanged(const QString& text) override;
+    virtual void PreDownload() override;
+    virtual std::unique_ptr<CardArtDownloader> MakeDownloader(
+        std::vector<QString> skip_files,
+        std::optional<QString> backside_pattern) override;
+    virtual void OnDownload() override;
+    virtual void PostDownload() override;
 
-    void ValidateSettings();
+    virtual void ValidateSettings() override;
 
     static InputType StupidInferSource(const QString& text);
 
-    Project& m_Project;
-
-    PluginInterface& m_Router;
-
     InputType m_InputType{ InputType::None };
 
-    QTextEdit* m_TextInput{ nullptr };
     QCheckBox* m_Settings{ nullptr };
     QCheckBox* m_Backsides{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
-    QComboBox* m_UpscaleModel{ nullptr };
-    QLabel* m_Hint{ nullptr };
-    QProgressBar* m_ProgressBar{ nullptr };
-    QPushButton* m_DownloadButton{ nullptr };
-    QPushButton* m_CancelButton{ nullptr };
-
-    QTemporaryDir m_OutputDir{};
-
-    uint32_t m_WaitingForImages{ 0 };
-    uint32_t m_TotalImages{ 0 };
-    bool m_DownloaderDone{ false };
-
-    std::optional<uint32_t> m_LogHookId{ std::nullopt };
-
-    std::unique_ptr<CardArtDownloader> m_Downloader;
-    std::unique_ptr<QNetworkAccessManager> m_NetworkManager;
 };
 
 class SelectInputTypePopup : public PopupBase

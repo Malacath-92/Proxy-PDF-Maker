@@ -1,35 +1,13 @@
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
 
-#include <ranges>
-
-#include <magic_enum/magic_enum.hpp>
-
-#include <fmt/ranges.h>
-
-#include <QApplication>
 #include <QCheckBox>
-#include <QDropEvent>
 #include <QLabel>
-#include <QMetaEnum>
-#include <QMimeData>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QProgressBar>
 #include <QPushButton>
-#include <QRegularExpression>
-#include <QTextEdit>
-#include <QThreadPool>
 #include <QVBoxLayout>
 
-#include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
-#include <ppp/app.hpp>
-#include <ppp/config.hpp>
-#include <ppp/qt_util.hpp>
-#include <ppp/upscale_models.hpp>
-
-#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_label.hpp>
 
 #include <ppp/plugins/decklist_textbox.hpp>
@@ -38,86 +16,13 @@
 #include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
 
-MtgDownloaderImageWorker::MtgDownloaderImageWorker(const Project& project,
-                                                   QString image_name,
-                                                   const QByteArray& image_data,
-                                                   bool fill_corners,
-                                                   QString upscale_model,
-                                                   Size physical_card_size,
-                                                   PixelDensity max_density,
-                                                   std::vector<QString> out_files)
-    : m_Project{ project }
-    , m_ImageName{ std::move(image_name) }
-    , m_ImageData{ image_data }
-    , m_FillCorners{ fill_corners }
-    , m_UpscaleModel{ std::move(upscale_model) }
-    , m_PhysicalCardSize{ physical_card_size }
-    , m_MaxDensity{ max_density }
-    , m_OutFiles{ std::move(out_files) }
-{
-}
-
-void MtgDownloaderImageWorker::run()
-{
-    if (m_FillCorners)
-    {
-        LogInfo("Filling corners of image {}...", m_ImageName.toStdString());
-
-        auto image{
-            Image::Decode(EncodedImageView{
-                reinterpret_cast<const std::byte*>(m_ImageData.constData()),
-                static_cast<size_t>(m_ImageData.size()),
-            }),
-        };
-        const auto image_with_corners{
-            image.FillCorners(m_Project.CardSize(), m_Project.CardCornerRadius() * 1.65f)
-        };
-        const auto encoded_image{ image_with_corners.EncodePng() };
-        m_ImageData.assign((const char*)encoded_image.data(), (const char*)encoded_image.data() + encoded_image.size());
-    }
-
-    if (!m_UpscaleModel.isEmpty())
-    {
-        LogInfo("Upscaling card image {}", m_ImageName.toStdString());
-
-        auto image{
-            Image::Decode(EncodedImageView{
-                reinterpret_cast<const std::byte*>(m_ImageData.constData()),
-                static_cast<size_t>(m_ImageData.size()),
-            }),
-        };
-
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-        auto upscaled_image{ RunModel(*app, m_UpscaleModel.toStdString(), image, m_PhysicalCardSize, m_MaxDensity) };
-
-        const auto encoded_image{ upscaled_image.EncodePng() };
-        m_ImageData.assign((const char*)encoded_image.data(), (const char*)encoded_image.data() + encoded_image.size());
-    }
-
-    for (const auto& out_file : m_OutFiles)
-    {
-        LogInfo("Writing image {}...", m_ImageName.toStdString());
-
-        QFile file(out_file);
-        file.open(QIODevice::WriteOnly);
-        file.write(m_ImageData);
-    }
-
-    Done();
-}
-
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
                                        PluginInterface& router)
-    : PopupBase{ parent }
-    , m_Project{ project }
-    , m_Router{ router }
+    : CardDownloaderPopup{ parent, project, router }
 {
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
-
-    m_TextInput = new DecklistTextEdit;
-    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), MPC Autofill xml, or a Scryfall query prepended with $");
 
     m_Settings = new QCheckBox{ "Adjust Settings" };
     m_Settings->setChecked(true);
@@ -132,301 +37,76 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_FillCornersCheckbox = new QCheckBox{ "Fill Corners" };
     m_FillCornersCheckbox->setChecked(true);
 
-    auto* upscale{ new ComboBoxWithLabel{ "Upscale", GetModelNames(), "None" } };
-    m_UpscaleModel = upscale->GetWidget();
-
-    m_Hint = new QLabel;
-    m_Hint->setVisible(false);
-
-    m_ProgressBar = new QProgressBar;
-    m_ProgressBar->setTextVisible(true);
-    m_ProgressBar->setVisible(false);
-    m_ProgressBar->setFormat("%v/%m Requests");
-
-    auto* buttons{ new QWidget{} };
-    {
-        m_DownloadButton = new QPushButton{ "Download" };
-        m_CancelButton = new QPushButton{ "Cancel" };
-
-        auto* layout{ new QHBoxLayout };
-        layout->addWidget(m_DownloadButton);
-        layout->addWidget(m_CancelButton);
-        buttons->setLayout(layout);
-
-        QObject::connect(m_DownloadButton,
-                         &QPushButton::clicked,
-                         this,
-                         &MtgDownloaderPopup::DoDownload);
-        QObject::connect(m_CancelButton,
-                         &QPushButton::clicked,
-                         this,
-                         &QDialog::close);
-    }
-
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
     layout->addWidget(m_Settings);
     layout->addWidget(m_Backsides);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
-    layout->addWidget(upscale);
+    layout->addWidget(m_Upscale);
     layout->addWidget(m_Hint);
     layout->addWidget(m_ProgressBar);
-    layout->addWidget(buttons);
+    layout->addWidget(m_Buttons);
     setLayout(layout);
-
-    const auto text_changed{
-        [this]()
-        {
-            const QString& text{ m_TextInput->toPlainText() };
-            m_InputType = StupidInferSource(text);
-
-            m_Hint->setVisible(true);
-            m_FillCornersCheckbox->setEnabled(true);
-            m_UpscaleModel->setEnabled(true);
-
-            switch (m_InputType)
-            {
-            case InputType::Decklist:
-                m_Hint->setText("Input inferred as decklist...");
-                break;
-            case InputType::ScryfallQuery:
-                m_Hint->setText("Input inferred as Scryfall query...");
-                break;
-            case InputType::MPCAutofill:
-                m_Hint->setText("Input inferred as MPC Autofill xml...");
-                m_FillCornersCheckbox->setEnabled(false);
-                m_UpscaleModel->setEnabled(false);
-                break;
-            case InputType::None:
-            default:
-                m_Hint->setText("Can't infer input type...");
-                break;
-            }
-        }
-    };
-    auto change_upscale_model{
-        [this](const QString& t)
-        {
-            if (ModelRequiresDownload(t.toStdString()))
-            {
-                m_Hint->setVisible(true);
-                m_Hint->setText("Upscale model will have to be downloaded.");
-            }
-            else
-            {
-                m_Hint->setVisible(false);
-            }
-        }
-    };
-
-    QObject::connect(m_TextInput,
-                     &QTextEdit::textChanged,
-                     this,
-                     text_changed);
-    QObject::connect(m_UpscaleModel,
-                     &QComboBox::currentTextChanged,
-                     this,
-                     change_upscale_model);
-
-    m_OutputDir.setAutoRemove(true);
-
-    m_Router.PauseCropper();
 }
 
-MtgDownloaderPopup::~MtgDownloaderPopup()
+bool MtgDownloaderPopup::ClearImageFolder() const
 {
-    m_Router.UnpauseCropper();
-    UninstallLogHook();
+    return m_ClearCheckbox->isChecked();
 }
-
-void MtgDownloaderPopup::DownloadProgress(int progress, int target)
+bool MtgDownloaderPopup::DownloadBacksides() const
 {
-    m_ProgressBar->setValue(progress);
-    m_ProgressBar->setMaximum(target);
-
-    if (progress == target)
-    {
-        m_DownloaderDone = true;
-        if (m_WaitingForImages > 0)
-        {
-            m_ProgressBar->setFormat("%v/%m Images");
-            m_ProgressBar->setMaximum(m_TotalImages);
-            m_ProgressBar->setValue(m_TotalImages - m_WaitingForImages);
-        }
-        else
-        {
-            FinalizeDownload();
-        }
-    }
+    return m_Backsides->isChecked();
 }
-
-void MtgDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QString& file_name)
+bool MtgDownloaderPopup::FillCorners() const
 {
-    LogInfo("Received data for card {}", file_name.toStdString());
-
-    const bool fill_corners{ m_FillCornersCheckbox->isChecked() && !m_Downloader->ProvidesBleedEdge() };
-
-    auto upscale_model{ m_UpscaleModel->currentText() };
-    if (upscale_model == "None")
-    {
-        upscale_model.clear();
-    }
-
-    std::vector<QString> out_files{ m_Downloader->GetDuplicates(file_name) };
-    out_files.insert(out_files.begin(), file_name);
-    for (auto& out_file : out_files)
-    {
-        out_file = m_OutputDir.filePath(out_file);
-    }
-
-    auto* worker{ new MtgDownloaderImageWorker{
-        m_Project,
-        file_name,
-        image_data,
-        fill_corners,
-        std::move(upscale_model),
-        m_Project.CardSize(),
-        g_Cfg.m_MaxDPI,
-        std::move(out_files),
-    } };
-    QObject::connect(worker,
-                     &MtgDownloaderImageWorker::Done,
-                     this,
-                     [this]()
-                     {
-                         m_WaitingForImages--;
-                         if (m_DownloaderDone)
-                         {
-                             m_ProgressBar->setValue(m_TotalImages - m_WaitingForImages);
-                             if (m_WaitingForImages == 0)
-                             {
-                                 FinalizeDownload();
-                             }
-                         }
-                     });
-
-    m_WaitingForImages++;
-    m_TotalImages++;
-    QThreadPool::globalInstance()->start(worker);
+    return m_FillCornersCheckbox->isChecked();
 }
-
-void MtgDownloaderPopup::DoDownload()
+QString MtgDownloaderPopup::UpscaleModel() const
 {
-    ValidateSettings();
-
-    if (m_InputType == InputType::None)
-    {
-        SelectInputTypePopup type_selector{ nullptr };
-
-        setEnabled(false);
-        type_selector.Show();
-        setEnabled(true);
-
-        m_InputType = type_selector.GetInputType();
-
-        DoDownload();
-        return;
-    }
-
-    m_NetworkManager = std::make_unique<QNetworkAccessManager>(this);
-    InstallLogHook();
-
     if (m_InputType == InputType::Decklist)
     {
-        const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
-        if (ModelRequiresDownload(upscale_model))
+        const auto model{ m_UpscaleModel->currentText() };
+        if (model == "None")
         {
-            if (upscale_model != "None")
-            {
-                {
-                    if (auto url{ GetModelUrl(upscale_model) })
-                    {
-                        LogInfo("Downloading model {}", upscale_model);
-                        m_ProgressBar->setVisible(true);
-
-                        QNetworkRequest get_request{ ToQString(url.value()) };
-                        QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
-
-                        QObject::connect(reply,
-                                         &QNetworkReply::finished,
-                                         this,
-                                         [this, upscale_model, reply]()
-                                         {
-                                             {
-                                                 QFile file(ToQString(GetModelFilename(upscale_model)));
-                                                 file.open(QIODevice::WriteOnly);
-                                                 file.write(reply->readAll());
-                                             }
-
-                                             m_ProgressBar->setVisible(false);
-                                             reply->deleteLater();
-
-                                             // Initiate the download again
-                                             DoDownload();
-                                         });
-                        QObject::connect(reply,
-                                         &QNetworkReply::downloadProgress,
-                                         this,
-                                         [this](qint64 bytes_received, qint64 bytes_total)
-                                         {
-                                             m_ProgressBar->setValue(static_cast<int>(bytes_received));
-                                             m_ProgressBar->setMaximum(static_cast<int>(bytes_total));
-                                         });
-                        QObject::connect(reply,
-                                         &QNetworkReply::errorOccurred,
-                                         reply,
-                                         [](QNetworkReply::NetworkError error)
-                                         {
-                                             LogError("Failed downloading model: {}",
-                                                      QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(error));
-                                         });
-
-                        // Quit here, we reinitiate once we are done downloading
-                        return;
-                    }
-                }
-            }
+            return "";
         }
-
-        if (upscale_model != "None")
-        {
-            LogInfo("Preloading upscaling model...");
-            auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-            LoadModel(*app, upscale_model);
-        }
+        return model;
     }
+    return "";
+}
 
-    connect(m_NetworkManager.get(),
-            &QNetworkAccessManager::sslErrors,
-            this,
-            [](QNetworkReply* reply, const QList<QSslError>& errors)
-            {
-                auto error_strings{
-                    errors |
-                    std::views::transform([](QSslError error)
-                                          { return error.errorString().toStdString(); })
-                };
-                LogError("SSL errors during request {}: {}",
-                         reply->url().toString().toStdString(),
-                         error_strings);
-            });
+void MtgDownloaderPopup::TextChanged(const QString& text)
+{
+    m_InputType = StupidInferSource(text);
 
-    const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
-    const auto skip_images{
-        (!clear_image_folder
-             ? ListImageFiles(m_Project.m_Data.m_ImageDir, m_Project.m_Data.m_CropDir)
-             : std::vector<fs::path>{}) |
-        std::views::transform(static_cast<QString (*)(const fs::path&)>(&ToQString)) |
-        std::ranges::to<std::vector>()
-    };
+    m_Hint->setVisible(true);
+    m_FillCornersCheckbox->setEnabled(true);
+    m_UpscaleModel->setEnabled(true);
 
-    const auto backside_pattern{
-        m_Backsides->isChecked()
-            ? std::optional{ ToQString(m_Project.m_Data.m_BacksideAutoPattern) }
-            : std::nullopt
-    };
-
+    switch (m_InputType)
+    {
+    case InputType::Decklist:
+        m_Hint->setText("Input inferred as decklist...");
+        break;
+    case InputType::ScryfallQuery:
+        m_Hint->setText("Input inferred as Scryfall query...");
+        break;
+    case InputType::MPCAutofill:
+        m_Hint->setText("Input inferred as MPC Autofill xml...");
+        m_FillCornersCheckbox->setEnabled(false);
+        m_UpscaleModel->setEnabled(false);
+        break;
+    case InputType::None:
+    default:
+        m_Hint->setText("Can't infer input type...");
+        break;
+    }
+}
+std::unique_ptr<CardArtDownloader> MtgDownloaderPopup::MakeDownloader(
+    std::vector<QString> skip_files,
+    std::optional<QString> backside_pattern)
+{
     switch (m_InputType)
     {
     default:
@@ -437,175 +117,40 @@ void MtgDownloaderPopup::DoDownload()
                 m_InputType == InputType::Decklist
                     ? "MtG Decklist"
                     : "Scryfall query",
-                m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<ScryfallDownloader>(
-            std::move(skip_images),
+                OutputDir().toStdString());
+        return std::make_unique<ScryfallDownloader>(
+            std::move(skip_files),
             backside_pattern);
-        break;
     case InputType::MPCAutofill:
-        LogInfo("Downloading MPCFill files to {}", m_OutputDir.path().toStdString());
-        m_Downloader = std::make_unique<MPCFillDownloader>(
-            std::move(skip_images),
+        LogInfo("Downloading MPCFill files to {}", OutputDir().toStdString());
+        return std::make_unique<MPCFillDownloader>(
+            std::move(skip_files),
             backside_pattern);
-        break;
     }
-
-    if (m_Downloader->ParseInput(m_TextInput->toPlainText()))
+}
+void MtgDownloaderPopup::PreDownload()
+{
+    if (m_InputType == InputType::None)
     {
-        connect(m_NetworkManager.get(),
-                &QNetworkAccessManager::finished,
-                m_Downloader.get(),
-                &CardArtDownloader::HandleReply);
+        SelectInputTypePopup type_selector{ nullptr };
 
-        connect(m_Downloader.get(),
-                &CardArtDownloader::Progress,
-                this,
-                &MtgDownloaderPopup::DownloadProgress);
-        connect(m_Downloader.get(),
-                &CardArtDownloader::ImageAvailable,
-                this,
-                &MtgDownloaderPopup::ImageAvailable);
+        setEnabled(false);
+        type_selector.Show();
+        setEnabled(true);
 
-        if (m_Downloader->BeginDownload(*m_NetworkManager))
-        {
-            m_ProgressBar->setVisible(true);
-        }
-        else
-        {
-            LogError("Failed initializing download...");
-        }
+        m_InputType = type_selector.GetInputType();
+        ValidateSettings();
     }
-    else
-    {
-        LogError("Failed parsing input file...");
-    }
-
-    m_DownloadButton->setDisabled(true);
+}
+void MtgDownloaderPopup::OnDownload()
+{
     m_Settings->setDisabled(true);
     m_Backsides->setDisabled(true);
     m_ClearCheckbox->setDisabled(true);
     m_FillCornersCheckbox->setDisabled(true);
-    m_UpscaleModel->setDisabled(true);
 }
-
-void MtgDownloaderPopup::FinalizeDownload()
+void MtgDownloaderPopup::PostDownload()
 {
-    if (m_InputType == InputType::Decklist)
-    {
-        const auto upscale_model{ m_UpscaleModel->currentText().toStdString() };
-        if (upscale_model != "None")
-        {
-            auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-            UnloadModel(*app, upscale_model);
-        }
-    }
-
-    const auto downloaded_files{
-        m_Downloader->GetFiles()
-    };
-    const auto downloaded_file_paths{
-        downloaded_files |
-        std::views::transform([](const auto& file)
-                              { return fs::path{ file.toStdString() }; }) |
-        std::ranges::to<std::vector>()
-    };
-
-    const auto& target_dir{
-        m_Project.m_Data.m_ImageDir
-    };
-    if (!fs::exists(target_dir))
-    {
-        fs::create_directories(target_dir);
-    }
-
-    const bool clear_image_folder{ m_ClearCheckbox->isChecked() };
-    if (clear_image_folder)
-    {
-        std::vector<fs::path> cards_to_remove;
-        for (const auto& card_info : m_Project.m_Data.m_Cards)
-        {
-            if (!m_Backsides->isChecked() &&
-                card_info.m_Name == m_Project.m_Data.m_BacksideDefault)
-            {
-                continue;
-            }
-
-            if (!card_info.m_ExternalPath.has_value() &&
-                !std::ranges::contains(downloaded_file_paths, card_info.m_Name) &&
-                fs::exists(target_dir / card_info.m_Name))
-            {
-                fs::remove(target_dir / card_info.m_Name);
-            }
-
-            cards_to_remove.push_back(card_info.m_Name);
-        }
-
-        for (const auto& card_name : cards_to_remove)
-        {
-            m_Project.CardRemoved(card_name);
-        }
-    }
-
-    const fs::path output_dir{
-        m_OutputDir.path().toStdString()
-    };
-
-    for (const auto& [card, path] : std::views::zip(downloaded_files, downloaded_file_paths))
-    {
-        if (fs::exists(output_dir / path))
-        {
-            fs::rename(output_dir / path, target_dir / path);
-        }
-
-        m_Project.CardAdded(path);
-        m_Project.SetCardCount(path, m_Downloader->GetAmount(card));
-
-        m_Project.SetBacksideImageDefault(path);
-        if (m_Backsides->isChecked())
-        {
-            if (const std::optional backside{ m_Downloader->GetBackside(card) })
-            {
-                m_Project.SetBacksideImage(path, backside.value().toStdString());
-            }
-        }
-    }
-
-    if (m_Backsides->isChecked())
-    {
-        m_Project.m_Data.m_BacksideDefault = "__back.png";
-    }
-
-    m_Router.RefreshCardGrid();
-    m_Router.UnpauseCropper();
-
-    m_CancelButton->setText("Close");
-
-    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-    main_window->Toast(ToastType::Info,
-                       "MtG Download done",
-                       "All files have been downloaded, you can now close the plugin.");
-}
-
-void MtgDownloaderPopup::InstallLogHook()
-{
-    UninstallLogHook();
-
-    // clang-format off
-    m_LogHookId = Log::GetInstance(Log::c_MainLogName)->InstallHook(
-        [this](const Log::DetailInformation&, Log::LogLevel, std::string_view message)
-        {
-            m_Hint->setVisible(true);
-            m_Hint->setText(ToQString(message));
-        });
-    // clang-format on
-}
-
-void MtgDownloaderPopup::UninstallLogHook()
-{
-    if (m_LogHookId.has_value())
-    {
-        Log::GetInstance(Log::c_MainLogName)->UninstallHook(m_LogHookId.value());
-    }
 }
 
 void MtgDownloaderPopup::ValidateSettings()
