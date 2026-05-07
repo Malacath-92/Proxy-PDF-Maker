@@ -83,9 +83,10 @@ Image CropImage(const Image& image,
         }
     }
 
+    const Size card_size_with_bleed{ card_size + 2 * bleed_edge };
     return image
         .Crop(c, c, c, c)
-        .CapDensity(card_size, max_density);
+        .CapDensity(card_size_with_bleed, max_density);
 }
 
 Image UncropImage(const Image& image,
