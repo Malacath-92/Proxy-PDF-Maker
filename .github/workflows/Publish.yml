@@ -19,28 +19,33 @@ jobs:
             runs_on: windows-2022
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-windows_amd64.zip
             tar_args: -a -c -f
+            cache_key: Windows-x86
           - os: Ubuntu-ARM64
             compiler: Gcc
             runs_on: ubuntu-24.04-arm
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_arm64.tar.gz
             tar_args: czf
+            cache_key: Ubuntu-ARM64-Release
           - os: Ubuntu-x86
             compiler: Gcc
             runs_on: ubuntu-24.04
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-ubuntu_amd64.tar.gz
             tar_args: czf
+            cache_key: Ubuntu-x86-Release
           - os: MacOS-ARM64
             compiler: AppleClang
             runs_on: macos-14
             arch: arm64
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
             tar_args: -a -c -f
+            cache_key: MacOS-ARM64
           - os: MacOS-x86
             compiler: AppleClang
             runs_on: macos-14
             arch: x86_64
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
             tar_args: -a -c -f
+            cache_key: MacOS-x86
 
     steps:
       - name: Free Disk Space (Ubuntu)
@@ -87,7 +92,7 @@ jobs:
         with:
           path: |
             ./.conan_home
-          key: ${{ matrix.os }}-Release-conan-cpp23-${{ hashFiles('conanfile.py') }}
+          key: ${{ matrix.cache_key }}-conan-cpp23-${{ hashFiles('conanfile.py') }}
 
       - name: Install Conan
         run: |
