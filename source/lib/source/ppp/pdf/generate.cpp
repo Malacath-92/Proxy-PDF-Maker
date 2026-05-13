@@ -755,8 +755,23 @@ fs::path GenerateTestPdf(const Project& project)
         {
             const Position text_top_left{ 0_mm, page_height - page_sixteenth.y };
             const Position text_bottom_right{ page_width, page_height - page_eighth.y };
-            front_page->DrawText({ "This is a test page, follow instructions to verify your settings will work fine for proxies.",
-                                   { text_top_left, text_bottom_right } });
+            const auto text_bb{ front_page->DrawText({ "This is a test page, follow instructions to verify your settings will work fine for proxies.",
+                                                       { text_top_left, text_bottom_right } }) };
+
+            const auto backside_offset{ project.m_Data.m_BacksideOffset / UnitValue(g_Cfg.m_BaseUnit) };
+            const auto unit_name{ UnitShortName(g_Cfg.m_BaseUnit) };
+            const auto settings{
+                fmt::format("Settings:\nHorizontal Backside Offset: {:.2f} {}\nVertical Backside Offset: {:.2f} {}\nBackside Rotation: {:.2f} degrees\nFlip On: {}",
+                            backside_offset.x,
+                            backside_offset.y,
+                            unit_name,
+                            project.m_Data.m_BacksideRotation / 1_deg,
+                            magic_enum::enum_name(project.m_Data.m_FlipOn)),
+            };
+            const Position settings_top_left{ text_bb.m_TopLeft.x, text_bb.m_BottomRight.y };
+            const Position settings_bottom_right{ text_bottom_right.x, settings_top_left.y - page_eighth.y };
+            front_page->DrawText({ settings,
+                                   { settings_top_left, settings_bottom_right } });
         }
 
         {
