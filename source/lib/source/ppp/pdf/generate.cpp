@@ -763,6 +763,7 @@ fs::path GenerateTestPdf(const Project& project)
             const auto settings{
                 fmt::format("Settings:\nHorizontal Backside Offset: {:.2f} {}\nVertical Backside Offset: {:.2f} {}\nBackside Rotation: {:.2f} degrees\nFlip On: {}",
                             backside_offset.x,
+                            unit_name,
                             backside_offset.y,
                             unit_name,
                             project.m_Data.m_BacksideRotation / 1_deg,
