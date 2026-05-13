@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-13-05
+
+### Added
+- A new `Upscale` option has been added to the MtG Card Downloader.
+- You can now sort cards by their backside with the `Card Order` option.
+- YuGiOh decks can now be downloaded via a new YuGiOh Card Downloader plugin.
+- Current relevant settings are now printed on the alignment page.
+
+### Changed
+- When disabling backside downloads in the MtG Card Downloader, the existing default backside will no longer be reset or deleted.
+- Images are no longer cropped, but inserted with a clipping mast into pdf files. This should significantly speed up the full workflow. This behavior can be reverted via the `No Crop Mode` under `Global Config`.
+- The onboarding instructions (seen when no cards are part of the project) now also points towards the plugins.
+- In the plugins popup, some info has been added to guide users to how to actually use a plugin once enabled.
+
+### Fixed
+- Adjusted the MtG Card Downloader to the new Scryfall rate-limits.
+- When dropping an image onto the window, the image will be added properly now even if the path contains unusual characters.
+- Some hardcoded mentions of bleed edge no longer cause generation of bad previews with some card sizes.
+- DPI capping code will no longer incorrectly cap in some corner cases.
+
 ## [1.6.1] - 2026-03-04
 
 ### Added
