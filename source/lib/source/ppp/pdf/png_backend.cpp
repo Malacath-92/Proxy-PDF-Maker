@@ -264,6 +264,7 @@ void PngImageCache::CacheImage(fs::path image_path, int32_t w, int32_t h, Image:
             }
             return Image::Read(image_path);
         }()
+            .Rotate(rotation)
             .Resize({ w * 1_pix, h * 1_pix })
     };
 
