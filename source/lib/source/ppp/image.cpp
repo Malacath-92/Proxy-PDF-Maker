@@ -95,6 +95,17 @@ Image Image::Read(const fs::path& path)
 
     Image img{};
     img.m_Impl = cv::imread(path.string().c_str(), cv::IMREAD_UNCHANGED);
+
+    switch (img.m_Impl.depth())
+    {
+    case CV_8U:
+        break;
+    case CV_16U:
+        img.m_Impl.convertTo(img.m_Impl, CV_MAKETYPE(CV_8U, img.m_Impl.channels()), 1 / 256.0f);
+        break;
+    default:
+        return {};
+    }
     return img;
 }
 
