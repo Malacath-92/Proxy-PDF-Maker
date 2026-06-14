@@ -278,6 +278,8 @@ class Project : public QObject
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
     bool HasValidDefaultBackside() const;
+    void SetBacksideDefault(const fs::path& backside_card_name);
+    void ClearBacksideDefault();
 
     bool HasClearBacksideImage(const fs::path& card_name) const;
     bool HasNonDefaultBacksideImage(const fs::path& card_name) const;

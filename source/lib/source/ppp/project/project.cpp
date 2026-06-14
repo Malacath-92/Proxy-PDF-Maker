@@ -1346,6 +1346,25 @@ bool Project::HasValidDefaultBackside() const
            fs::exists(GetCardImagePath(m_Data.m_BacksideDefault.value()));
 }
 
+void Project::SetBacksideDefault(const fs::path& backside_card_name)
+{
+    if (m_Data.m_BacksideDefault.has_value())
+    {
+        UnhideCard(m_Data.m_BacksideDefault.value());
+    }
+    m_Data.m_BacksideDefault = backside_card_name;
+    HideCard(m_Data.m_BacksideDefault.value());
+}
+
+void Project::ClearBacksideDefault()
+{
+    if (m_Data.m_BacksideDefault.has_value())
+    {
+        UnhideCard(m_Data.m_BacksideDefault.value());
+    }
+    m_Data.m_BacksideDefault.reset();
+}
+
 bool Project::HasClearBacksideImage(const fs::path& card_name) const
 {
     if (auto* card{ FindCard(card_name) })

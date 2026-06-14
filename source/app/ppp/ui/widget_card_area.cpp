@@ -21,6 +21,7 @@
 #include <ppp/ui/popups.hpp>
 #include <ppp/ui/widget_card.hpp>
 
+#include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
 #include <ppp/profile/profile.hpp>
@@ -632,6 +633,17 @@ class CardGrid : public QWidget
         setFixedHeight(heightForWidth(size().width()));
     }
 
+    bool SetCardCount(const fs::path& card_name, uint32_t card_count) const
+    {
+        auto it{ m_Cards.find(card_name) };
+        if (it != m_Cards.end())
+        {
+            it->second->ApplyNumber(m_Project, static_cast<int64_t>(card_count));
+            return true;
+        }
+        return false;
+    }
+
     bool HasCard(const fs::path& card_name) const
     {
         return m_Cards.contains(card_name);
@@ -812,6 +824,7 @@ CardArea::CardArea(Project& project)
         auto* global_decrement_button{ new QPushButton{ "-" } };
         auto* global_increment_button{ new QPushButton{ "+" } };
         auto* global_set_zero_button{ new QPushButton{ "Zero All" } };
+        auto* global_decklist_button{ new QPushButton{ "From Decklist" } };
         m_Filter = new QLineEdit;
         m_Filter->setPlaceholderText("Filter");
         m_RemoveExternalCards = new QPushButton{ "Remove All External Cards" };
@@ -819,6 +832,7 @@ CardArea::CardArea(Project& project)
         global_decrement_button->setToolTip("Remove one from all");
         global_increment_button->setToolTip("Add one to all");
         global_set_zero_button->setToolTip("Set all to zero");
+        global_decklist_button->setToolTip("Set amounts from a decklist (matching filenames)");
         m_Filter->setToolTip("Filter by filename");
         m_RemoveExternalCards->setToolTip("Removes all cards not part of the images folder");
 
@@ -827,6 +841,7 @@ CardArea::CardArea(Project& project)
         header_layout->addWidget(global_decrement_button);
         header_layout->addWidget(global_increment_button);
         header_layout->addWidget(global_set_zero_button);
+        header_layout->addWidget(global_decklist_button);
         header_layout->addWidget(m_Filter);
         header_layout->addWidget(m_RemoveExternalCards);
         header_layout->addStretch();
@@ -867,6 +882,53 @@ CardArea::CardArea(Project& project)
             }
         };
 
+        auto open_decklist{
+            [this, &project]()
+            {
+                window()->setEnabled(false);
+                {
+                    DecklistPopup decklist_popup{ nullptr, m_Project };
+
+                    QObject::connect(
+                        &decklist_popup,
+                        &DecklistPopup::DecklistChanged,
+                        [this, &project](const std::unordered_map<fs::path, uint32_t>& decklist)
+                        {
+                            for (const auto& card : m_Project.m_Data.m_Cards)
+                            {
+                                const auto card_count{
+                                    [&]()
+                                    {
+                                        auto it{ decklist.find(card.m_Name) };
+                                        if (it != decklist.end())
+                                        {
+                                            return it->second;
+                                        }
+                                        else
+                                        {
+                                            return 0u;
+                                        }
+                                    }()
+                                };
+
+                                const auto& grid{ m_ScrollArea->GetGrid() };
+                                if (grid.HasCard(card.m_Name))
+                                {
+                                    grid.SetCardCount(card.m_Name, card_count);
+                                }
+                                else
+                                {
+                                    project.SetCardCount(card.m_Name, card_count);
+                                }
+                            }
+                        });
+
+                    decklist_popup.Show();
+                }
+                window()->setEnabled(true);
+            }
+        };
+
         auto apply_filter{
             [this](const QString& text)
             {
@@ -899,6 +961,10 @@ CardArea::CardArea(Project& project)
                          &QPushButton::clicked,
                          this,
                          reset_number);
+        QObject::connect(global_decklist_button,
+                         &QPushButton::clicked,
+                         this,
+                         open_decklist);
         QObject::connect(m_Filter,
                          &QLineEdit::textChanged,
                          this,

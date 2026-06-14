@@ -184,12 +184,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
         {
             if (default_value.is_null())
             {
-                project.m_Data.m_BacksideDefault.reset();
+                project.ClearBacksideDefault();
             }
             else
             {
                 const auto& default_backside{ default_value.get_ref<const std::string&>() };
-                project.m_Data.m_BacksideDefault = fs::path{ default_backside };
+                project.SetBacksideDefault(fs::path{ default_backside });
             }
             m_BacksideDefaultPreview->Refresh();
             BacksideDefaultChanged();
@@ -426,11 +426,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project)
             auto prev_backside{ project.m_Data.m_BacksideDefault };
             if (const auto default_backside_choice{ image_browser.Show() })
             {
-                project.m_Data.m_BacksideDefault = default_backside_choice.value();
+                project.SetBacksideDefault(default_backside_choice.value());
             }
             else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
             {
-                project.m_Data.m_BacksideDefault.reset();
+                project.ClearBacksideDefault();
             }
             else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
             {
