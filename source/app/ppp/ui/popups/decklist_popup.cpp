@@ -18,8 +18,6 @@
 
 #include <ppp/project/project.hpp>
 
-#include <QDebug>
-
 class CardNameModel : public QStringListModel
 {
   public:
@@ -128,10 +126,6 @@ void LocalDecklistTextEdit::keyPressEvent(QKeyEvent* e)
                 cr.setWidth(popup->sizeHintForColumn(0) +
                             popup->verticalScrollBar()->sizeHint().width());
                 m_Completer->complete(cr);
-
-                qDebug() << completion_prefix;
-                qDebug() << m_Completer->completionCount();
-                qDebug() << m_Completer->currentCompletion();
             }
             else
             {
