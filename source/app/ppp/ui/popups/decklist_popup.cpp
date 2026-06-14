@@ -39,7 +39,7 @@ class CardNameModel : public QStringListModel
 
     int rowCount(const QModelIndex& /*parent*/ = QModelIndex()) const override
     {
-        return m_Strings.size();
+        return static_cast<int>(m_Strings.size());
     }
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
@@ -188,7 +188,7 @@ void LocalDecklistTextEdit::Complete(const QString& completion)
 {
     auto tc{ textCursor() };
     const auto prefix{ m_Completer->completionPrefix().length() };
-    tc.setPosition(tc.position() - prefix, QTextCursor::KeepAnchor);
+    tc.setPosition(tc.position() - static_cast<int>(prefix), QTextCursor::KeepAnchor);
     tc.insertText(completion + "\n");
     setTextCursor(tc);
 }
