@@ -18,20 +18,33 @@
 
 #include <ppp/project/project.hpp>
 
-class CardNameModel : public QStringListModel
+template<class FunT>
+static auto ForEachCardInList(const QString& decklist,
+                              FunT&& fun)
+{
+    const auto lines{
+        decklist.split(QRegularExpression{ "[\r\n]" }, Qt::SplitBehaviorFlags::SkipEmptyParts)
+    };
+    for (const auto& line : lines)
+    {
+        const auto first_space{ line.indexOf("x ") };
+        const auto amount{ line.mid(0, first_space).toUInt() };
+        auto card_name{ line.mid(first_space + 2) };
+        fun(std::move(card_name), amount);
+    }
+}
+
+class CardNameModel : public QAbstractListModel
 {
   public:
     CardNameModel(const Project& project)
-        : QStringListModel{
-            project.m_Data.m_Cards |
-            std::views::filter(std::not_fn(&CardInfo::m_Transient)) |
-            std::views::filter(std::not_fn(&CardInfo::m_Hidden)) |
-            std::views::transform(&CardInfo::m_Name) |
-            std::views::transform(&fs::path::filename) |
-            std::views::transform(QOverload<const fs::path&>::of(&ToQString)) |
-            std::ranges::to<QList>()
-        }
-        , m_Strings{ QStringListModel::stringList() }
+        : m_Strings{ project.m_Data.m_Cards |
+                     std::views::filter(std::not_fn(&CardInfo::m_Transient)) |
+                     std::views::filter(std::not_fn(&CardInfo::m_Hidden)) |
+                     std::views::transform(&CardInfo::m_Name) |
+                     std::views::transform(&fs::path::filename) |
+                     std::views::transform(QOverload<const fs::path&>::of(&ToQString)) |
+                     std::ranges::to<QList>() }
     {
     }
 
@@ -52,8 +65,29 @@ class CardNameModel : public QStringListModel
         return QVariant{};
     }
 
+    void DecklistChanged(const QString& decklist)
+    {
+        QList<QString> strings{ m_Strings + m_BlockedStrings };
+        QList<QString> blocked_string{};
+        ForEachCardInList(decklist,
+                          [&](QString card_name, uint32_t /*amount*/)
+                          {
+                              if (strings.contains(card_name))
+                              {
+                                  strings.removeAll(card_name);
+                                  blocked_string.append(std::move(card_name));
+                              }
+                          });
+
+        beginResetModel();
+        m_Strings = std::move(strings);
+        m_BlockedStrings = std::move(blocked_string);
+        endResetModel();
+    }
+
   private:
     QList<QString> m_Strings;
+    QList<QString> m_BlockedStrings;
 };
 
 LocalDecklistTextEdit::LocalDecklistTextEdit(const Project& project)
@@ -127,7 +161,7 @@ void LocalDecklistTextEdit::keyPressEvent(QKeyEvent* e)
                             popup->verticalScrollBar()->sizeHint().width());
                 m_Completer->complete(cr);
             }
-            else
+            else if (m_Completer->popup()->isVisible())
             {
                 m_Completer->popup()->hide();
             }
@@ -150,19 +184,24 @@ QCompleter* LocalDecklistTextEdit::MakeCompleter(const Project& project)
 {
     auto* completer{ new QCompleter{ this } };
     completer->setWidget(this);
-    completer->setModel(new CardNameModel{ project });
     completer->setModelSorting(QCompleter::UnsortedModel);
     completer->setWrapAround(true);
     completer->setCompletionMode(QCompleter::PopupCompletion);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
 
-    if (completer != nullptr)
-    {
-        QObject::connect(completer,
-                         QOverload<const QString&>::of(&QCompleter::activated),
-                         this,
-                         &LocalDecklistTextEdit::Complete);
-    }
+    auto* model{ new CardNameModel{ project } };
+    completer->setModel(model);
+
+    QObject::connect(completer,
+                     QOverload<const QString&>::of(&QCompleter::activated),
+                     this,
+                     &LocalDecklistTextEdit::Complete);
+    QObject::connect(this,
+                     &QTextEdit::textChanged,
+                     model,
+                     [this, model]()
+                     { model->DecklistChanged(toPlainText()); });
+
     return completer;
 }
 
@@ -280,15 +319,10 @@ void DecklistPopup::keyPressEvent(QKeyEvent* e)
 void DecklistPopup::Apply()
 {
     std::unordered_map<fs::path, uint32_t> decklist;
-    const auto lines{
-        m_Text->toPlainText().split(QRegularExpression{ "[\r\n]" }, Qt::SplitBehaviorFlags::SkipEmptyParts)
-    };
-    for (const auto& line : lines)
-    {
-        const auto first_space{ line.indexOf("x ") };
-        const auto amount{ line.mid(0, first_space).toUInt() };
-        const auto card_name{ line.mid(first_space + 2) };
-        decklist[fs::path{ card_name.toStdString() }] = amount;
-    }
+    ForEachCardInList(m_Text->toPlainText(),
+                      [&](QString card_name, uint32_t amount)
+                      {
+                          decklist[fs::path{ card_name.toStdString() }] = amount;
+                      });
     DecklistChanged(decklist);
 }
