@@ -185,7 +185,7 @@ void ScryfallDownloader::RunQueries()
                     };
                     auto card_set{ card_obj["set"].toString() };
                     auto card_collector_number{ card_obj["collector_number"].toString() };
-                    auto card_file_name{ QString{ "%2 (%3) - %1.png" }
+                    auto card_file_name{ QString{ "%1 - %2 (%3).png" }
                                              .arg(card_name)
                                              .arg(card_set.toUpper())
                                              .arg(card_collector_number.rightJustified(4, '0'))
