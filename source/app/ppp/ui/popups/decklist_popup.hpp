@@ -11,7 +11,7 @@ class Project;
 
 class LocalDecklistTextEdit : public QTextEdit
 {
-    Q_OBJECT;
+    Q_OBJECT
 
   public:
     LocalDecklistTextEdit(const Project& project);
