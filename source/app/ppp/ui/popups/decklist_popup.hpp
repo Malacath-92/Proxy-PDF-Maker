@@ -6,6 +6,7 @@
 
 class QTextEdit;
 class QCompleter;
+class QSyntaxHighlighter;
 
 class Project;
 
@@ -20,6 +21,7 @@ class LocalDecklistTextEdit : public QTextEdit
     bool CompleterActive() const;
 
   private:
+    virtual bool event(QEvent* e) override;
     virtual void keyPressEvent(QKeyEvent* e) override;
 
     QCompleter* MakeCompleter(const Project& project);
@@ -28,6 +30,7 @@ class LocalDecklistTextEdit : public QTextEdit
     void Complete(const QString& completion);
 
     QCompleter* m_Completer{ nullptr };
+    QSyntaxHighlighter* m_Highlighter{ nullptr };
 };
 
 class DecklistPopup : public PopupBase

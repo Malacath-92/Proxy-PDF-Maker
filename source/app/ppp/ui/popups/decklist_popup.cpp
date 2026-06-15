@@ -11,7 +11,9 @@
 #include <QPushButton>
 #include <QScrollBar>
 #include <QStringListModel>
+#include <QSyntaxHighlighter>
 #include <QTextEdit>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <ppp/qt_util.hpp>
@@ -29,7 +31,7 @@ static auto ForEachCardInList(const QString& decklist,
     {
         const auto first_space{ line.indexOf("x ") };
         const auto amount{ line.mid(0, first_space).toUInt() };
-        auto card_name{ line.mid(first_space + 2) };
+        auto card_name{ line.mid(first_space + 2).trimmed() };
         fun(std::move(card_name), amount);
     }
 }
@@ -90,21 +92,109 @@ class CardNameModel : public QAbstractListModel
     QList<QString> m_BlockedStrings;
 };
 
+class DecklistHighlighter : public QSyntaxHighlighter
+{
+  public:
+    DecklistHighlighter(QTextDocument* parent,
+                        const Project& project)
+        : QSyntaxHighlighter{ parent }
+        , m_Project{ project }
+    {
+    }
+
+    virtual void highlightBlock(const QString& text) override
+    {
+        const QRegularExpression number_re{ "^\\d+x" };
+        const auto number_match{ number_re.match(text) };
+        if (number_match.isValid() && number_match.capturedLength() > 0)
+        {
+            QTextCharFormat number_format{};
+            number_format.setFontWeight(QFont::Bold);
+            setFormat(number_match.capturedStart(), number_match.capturedLength() - 1, number_format);
+
+            const QRegularExpression card_re{ "[^\\s].*$" };
+            const auto card_match{ card_re.match(text, number_match.capturedLength()) };
+            if (card_match.isValid() && card_match.capturedLength() > 0)
+            {
+                QTextCharFormat card_format{};
+                if (m_Project.HasCard(card_match.captured().toStdString()))
+                {
+                    card_format.setFontItalic(true);
+                }
+                else
+                {
+                    card_format.setBackground(Qt::darkRed);
+                    card_format.setToolTip("This card is not part of the project");
+                }
+                setFormat(card_match.capturedStart(), card_match.capturedLength(), card_format);
+            }
+        }
+        else
+        {
+            QTextCharFormat error_format{};
+            error_format.setBackground(Qt::darkRed);
+            error_format.setToolTip("The line has to start with the amount, e.g. \"1x Card.png\"");
+            setFormat(0, text.length(), error_format);
+        }
+    }
+
+  private:
+    const Project& m_Project;
+};
+
 LocalDecklistTextEdit::LocalDecklistTextEdit(const Project& project)
     : QTextEdit{}
     , m_Completer{ MakeCompleter(project) }
+    , m_Highlighter{ new DecklistHighlighter{ document(), project } }
 {
+    setMouseTracking(true);
 }
 LocalDecklistTextEdit::LocalDecklistTextEdit(const Project& project, const QString& text)
     : QTextEdit{ text }
     , m_Completer{ MakeCompleter(project) }
+    , m_Highlighter{ new DecklistHighlighter{ document(), project } }
 {
+    setMouseTracking(true);
 }
 
 bool LocalDecklistTextEdit::CompleterActive() const
 {
     return m_Completer->popup() != nullptr &&
            m_Completer->popup()->isVisible();
+}
+
+bool LocalDecklistTextEdit::event(QEvent* e)
+{
+    if (e->type() == QEvent::Type::ToolTip)
+    {
+        const auto* help_e{ static_cast<QHelpEvent*>(e) };
+        const auto cursor{ cursorForPosition(help_e->pos()) };
+        const auto block{ cursor.block() };
+        const auto formats{ block.layout()->formats() };
+        const auto relative_pos{ cursor.position() - block.position() };
+
+        for (const auto& range : formats)
+        {
+            if (relative_pos >= range.start &&
+                relative_pos < (range.start + range.length))
+            {
+                const auto& format{ range.format };
+                if (format.hasProperty(QTextFormat::Property::TextToolTip))
+                {
+                    const auto tooltip_text{ format.toolTip() };
+                    if (!tooltip_text.isEmpty())
+                    {
+                        QToolTip::showText(help_e->globalPos(), tooltip_text, this);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    QToolTip::hideText();
+
+    return QTextEdit::event(e);
 }
 
 void LocalDecklistTextEdit::keyPressEvent(QKeyEvent* e)
@@ -214,7 +304,7 @@ QString LocalDecklistTextEdit::TextUnderCursor() const
     const auto first_space{ line.indexOf(' ') };
     return first_space == -1 || first_space == line.size()
                ? ""
-               : line.sliced(first_space + 1);
+               : line.sliced(first_space + 1).trimmed();
 }
 
 void LocalDecklistTextEdit::Complete(const QString& completion)
