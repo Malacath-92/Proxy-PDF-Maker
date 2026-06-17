@@ -110,7 +110,9 @@ class DecklistHighlighter : public QSyntaxHighlighter
         {
             QTextCharFormat number_format{};
             number_format.setFontWeight(QFont::Bold);
-            setFormat(number_match.capturedStart(), number_match.capturedLength() - 1, number_format);
+            setFormat(static_cast<int>(number_match.capturedStart()),
+                      static_cast<int>(number_match.capturedLength()) - 1,
+                      number_format);
 
             const QRegularExpression card_re{ "[^\\s].*$" };
             const auto card_match{ card_re.match(text, number_match.capturedLength()) };
@@ -126,7 +128,9 @@ class DecklistHighlighter : public QSyntaxHighlighter
                     card_format.setBackground(Qt::darkRed);
                     card_format.setToolTip("This card is not part of the project");
                 }
-                setFormat(card_match.capturedStart(), card_match.capturedLength(), card_format);
+                setFormat(static_cast<int>(card_match.capturedStart()),
+                          static_cast<int>(card_match.capturedLength()),
+                          card_format);
             }
         }
         else
@@ -134,7 +138,9 @@ class DecklistHighlighter : public QSyntaxHighlighter
             QTextCharFormat error_format{};
             error_format.setBackground(Qt::darkRed);
             error_format.setToolTip("The line has to start with the amount, e.g. \"1x Card.png\"");
-            setFormat(0, text.length(), error_format);
+            setFormat(0,
+                      static_cast<int>(text.length()),
+                      error_format);
         }
     }
 
