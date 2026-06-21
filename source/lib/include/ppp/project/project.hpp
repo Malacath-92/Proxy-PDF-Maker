@@ -235,6 +235,10 @@ class Project : public QObject
     const CardInfo* FindCard(const fs::path& card_name) const;
     CardInfo* FindCard(const fs::path& card_name);
 
+    bool HasCardByStem(const fs::path& card_name) const;
+    const CardInfo* FindCardByStem(const fs::path& card_name) const;
+    CardInfo* FindCardByStem(const fs::path& card_name);
+
     CardInfo& PutCard(const fs::path& card_name);
     CardInfo& PutCard(CardInfo card);
     std::optional<CardInfo> EatCard(const fs::path& card_name);

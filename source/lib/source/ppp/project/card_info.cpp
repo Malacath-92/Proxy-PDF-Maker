@@ -2,6 +2,11 @@
 
 #include <ppp/project/project.hpp>
 
+fs::path CardInfo::Stem() const
+{
+    return m_Name.stem();
+}
+
 fs::path CardInfo::GetSourcePath(const ProjectData& data) const
 {
     return m_ExternalPath

@@ -900,6 +900,11 @@ CardArea::CardArea(Project& project)
                                     [&]()
                                     {
                                         auto it{ decklist.find(card.m_Name) };
+                                        if (it == decklist.end())
+                                        {
+                                            it = decklist.find(card.Stem());
+                                        }
+
                                         if (it != decklist.end())
                                         {
                                             return it->second;

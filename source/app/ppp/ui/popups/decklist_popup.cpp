@@ -79,6 +79,18 @@ class CardNameModel : public QAbstractListModel
                                   strings.removeAll(card_name);
                                   blocked_string.append(std::move(card_name));
                               }
+                              else
+                              {
+                                  for (auto it{ strings.begin() }; it != strings.end(); ++it)
+                                  {
+                                      const auto stem{ it->mid(it->lastIndexOf(".")) };
+                                      if (stem == card_name)
+                                      {
+                                          blocked_string.append(std::move(*it));
+                                          strings.erase(it);
+                                      }
+                                  }
+                              }
                           });
 
         beginResetModel();
@@ -119,7 +131,8 @@ class DecklistHighlighter : public QSyntaxHighlighter
             if (card_match.isValid() && card_match.capturedLength() > 0)
             {
                 QTextCharFormat card_format{};
-                if (m_Project.HasCard(card_match.captured().toStdString()))
+                const auto card_name{ card_match.captured().toStdString() };
+                if (m_Project.HasCard(card_name) || m_Project.HasCardByStem(card_name))
                 {
                     card_format.setFontItalic(true);
                 }

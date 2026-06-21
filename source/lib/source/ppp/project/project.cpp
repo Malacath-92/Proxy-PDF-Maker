@@ -1222,6 +1222,29 @@ CardInfo* Project::FindCard(const fs::path& card_name)
     return it != m_Data.m_Cards.end() ? &*it : nullptr;
 }
 
+bool Project::HasCardByStem(const fs::path& card_name) const
+{
+    return std::ranges::find(m_Data.m_Cards,
+                             card_name,
+                             &CardInfo::Stem) != m_Data.m_Cards.end();
+}
+
+const CardInfo* Project::FindCardByStem(const fs::path& card_name) const
+{
+    auto it{ std::ranges::find(m_Data.m_Cards,
+                               card_name,
+                               &CardInfo::Stem) };
+    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+}
+
+CardInfo* Project::FindCardByStem(const fs::path& card_name)
+{
+    auto it{ std::ranges::find(m_Data.m_Cards,
+                               card_name,
+                               &CardInfo::Stem) };
+    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+}
+
 CardInfo& Project::PutCard(const fs::path& card_name)
 {
     if (auto* existing_card{ FindCard(card_name) })

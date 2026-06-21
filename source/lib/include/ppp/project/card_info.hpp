@@ -51,6 +51,8 @@ struct CardInfo
 
     bool m_Transient{ false };
 
+    fs::path Stem() const;
+
     fs::path GetSourcePath(const ProjectData& data) const;
     fs::path GetSourceFolder(const ProjectData& data) const;
 };
