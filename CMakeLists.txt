@@ -11,6 +11,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -326,7 +327,6 @@ target_link_libraries(proxy_pdf PRIVATE
 	onnxruntime::onnxruntime
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
-set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
     C_VISIBILITY_PRESET hidden
