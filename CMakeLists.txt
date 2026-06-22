@@ -358,6 +358,7 @@ endif()
 target_link_libraries(proxy_pdf_launcher PRIVATE
 	Qt6::Core)
 set_target_properties(proxy_pdf_launcher PROPERTIES OUTPUT_NAME "proxy_pdf")
+add_dependencies(proxy_pdf_launcher proxy_pdf)
 
 # --------------------------------------------------
 # Create CLI executable
