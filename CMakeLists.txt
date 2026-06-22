@@ -38,6 +38,12 @@ run_conan(
 )
 
 # --------------------------------------------------
+# Put Qt's _autogen targets and related files into a different folder
+set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER "QtAutogen")
+set_property(GLOBAL PROPERTY QT_TARGETS_FOLDER "QtAutogen")
+set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "Generated Qt Files")
+
+# --------------------------------------------------
 # Define Project
 project(ProxyPDF CXX C)
 
