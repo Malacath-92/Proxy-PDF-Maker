@@ -30,6 +30,9 @@ class ProxyPDF(ConanFile):
         # Image Upscaling
         self.requires("onnxruntime/1.24.4")
 
+        # Unzipping during Auto-Update
+        self.requires("libarchive/3.8.7")
+
         # Profiling
         self.requires("tracy/0.13.1")
 

@@ -3,6 +3,7 @@
 #include <fmt/format.h>
 
 #include <QApplication>
+#include <QDesktopServices>
 #include <QThreadPool>
 
 #include <QtPlugin>
@@ -25,6 +26,7 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
+#include <ppp/auto_update.hpp>
 #include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 #include <ppp/version_check.hpp>
@@ -67,6 +69,8 @@ struct AppContext
     Lazy<Cropper> m_Cropper;
     Lazy<CardProvider> m_CardProvider;
     PluginRouter m_PluginRouter;
+
+    bool m_RebootRequested{ false };
 };
 
 extern "C"
@@ -599,18 +603,66 @@ extern "C"
 
             if (auto new_version{ NewAvailableVersion() })
             {
+                static constexpr char c_AutoUpdate[]{ "#auto-update" };
+                static auto s_AutoUpdate{
+                    [main_window, ctx](std::string_view version)
+                    {
+                        if (DownloadRelease(version))
+                        {
+                            static constexpr char c_Restart[]{ "#restart" };
+                            main_window->Toast(
+                                ToastType::Info,
+                                "Restart to Update",
+                                QString{ "New version downloaded, <a style=\"color:CornflowerBlue\" href=\"%1\">"
+                                         "restart app"
+                                         "</a> to finish" }
+                                    .arg(c_Restart),
+                                [=](const QString& /*link*/)
+                                {
+                                    ctx->m_RebootRequested = true;
+                                    QApplication::exit();
+                                });
+                        }
+                    }
+                };
                 main_window->Toast(
                     ToastType::Info,
                     "New version available",
                     QString{ "<a style=\"color:CornflowerBlue\" href=\"%1\">"
                              "Download the new version %2 from GitHub"
+                             "</a> or <a style=\"color:CornflowerBlue\" href=\"%3\">"
+                             "Auto-Update"
                              "</a>" }
                         .arg(ReleaseURL(new_version.value()).c_str())
-                        .arg(new_version.value().c_str()));
+                        .arg(new_version.value().c_str())
+                        .arg(c_AutoUpdate),
+                    [=](const QString& link)
+                    {
+                        if (link == c_AutoUpdate)
+                        {
+                            s_AutoUpdate(new_version.value());
+                        }
+                        else
+                        {
+                            QDesktopServices::openUrl(link);
+                        }
+                    });
             }
         }
 
         return ctx;
+    }
+
+    PROXY_PDF_EXPORT int Execute(void*)
+    {
+        TRACY_AUTO_SCOPE();
+        return QApplication::exec();
+    }
+
+    PROXY_PDF_EXPORT bool RebootRequested(void* user_data)
+    {
+        auto* ctx{ static_cast<AppContext*>(user_data) };
+        return ctx->m_RebootRequested;
     }
 
     PROXY_PDF_EXPORT void Shutdown(void* user_data)
@@ -618,11 +670,5 @@ extern "C"
         auto* ctx{ static_cast<AppContext*>(user_data) };
         ctx->m_Project.Dump(ctx->m_App->GetProjectPath());
         delete ctx;
-    }
-
-    PROXY_PDF_EXPORT int Execute(void*)
-    {
-        TRACY_AUTO_SCOPE();
-        return QApplication::exec();
     }
 }

@@ -83,6 +83,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(onnxruntime REQUIRED)
+find_package(LibArchive REQUIRED)
 if (PPP_PROFILE)
 	find_package(tracy REQUIRED)
 endif()
@@ -213,7 +214,8 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::TlsBackendOpenSSLPlugin
 	Qt6::Widgets
 	Qt6::SvgWidgets
-	Qt6::Xml)
+	Qt6::Xml
+	LibArchive::LibArchive)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
