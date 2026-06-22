@@ -355,6 +355,7 @@ if (WIN32)
 else()
 	qt_add_executable(proxy_pdf_launcher ${proxy_pdf_launcher_sources} ${proxy_pdf_launcher_headers} ${proxy_pdf_launcher_resources})
 endif()
+target_include_directories(proxy_pdf_launcher PRIVATE "source/launcher")
 target_link_libraries(proxy_pdf_launcher PRIVATE
 	Qt6::Core)
 set_target_properties(proxy_pdf_launcher PROPERTIES OUTPUT_NAME "proxy_pdf")
