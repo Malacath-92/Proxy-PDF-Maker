@@ -415,7 +415,7 @@ group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sourc
 
 # --------------------------------------------------
 # Set startup project
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf_launcher)
 
 # --------------------------------------------------
 # Install exectuable and resource files
