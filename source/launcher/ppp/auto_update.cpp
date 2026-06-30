@@ -112,6 +112,8 @@ AutoUpdateConclusion AutoUpdateTryInitialize(std::span<char*> argv)
                     ToQString(c_ExeDir),                              // path
                     ToQString(c_ExeDir / c_InstallManifestExtracted), // manifest
                 });
+
+            return AutoUpdateConclusion::Initiated;
         }
         catch (...)
         {
