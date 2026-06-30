@@ -425,6 +425,10 @@ group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sourc
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf_launcher)
 
 # --------------------------------------------------
+# Include install-hooks to generate install manifest
+include(cmake/generate_install_manifest.cmake)
+
+# --------------------------------------------------
 # Install exectuable and resource files
 install(TARGETS
 	proxy_pdf
@@ -436,3 +440,7 @@ install(FILES
 	fallback.png
 	README.pdf
 	DESTINATION .)
+
+# --------------------------------------------------
+# Bundle install manifest with the launcher
+qt_target_add_install_manifest(proxy_pdf_launcher "install_manifest.txt")
