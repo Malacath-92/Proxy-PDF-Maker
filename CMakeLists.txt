@@ -91,6 +91,7 @@ find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(onnxruntime REQUIRED)
 find_package(LibArchive REQUIRED)
+find_package(whereami REQUIRED)
 if (PPP_PROFILE)
 	find_package(tracy REQUIRED)
 endif()
@@ -363,7 +364,9 @@ else()
 endif()
 target_include_directories(proxy_pdf_launcher PRIVATE "source/launcher")
 target_link_libraries(proxy_pdf_launcher PRIVATE
-	Qt6::Core)
+	Qt6::Core
+	magic_enum::magic_enum
+	whereami::whereami)
 set_target_properties(proxy_pdf_launcher PROPERTIES OUTPUT_NAME "proxy_pdf")
 add_dependencies(proxy_pdf_launcher proxy_pdf)
 

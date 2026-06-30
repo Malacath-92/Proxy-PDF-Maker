@@ -33,6 +33,9 @@ class ProxyPDF(ConanFile):
         # Unzipping during Auto-Update
         self.requires("libarchive/3.8.7")
 
+        # Find executable without QCoreApplication
+        self.requires("whereami/cci.20220112")
+
         # Profiling
         self.requires("tracy/0.13.1")
 
