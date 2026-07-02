@@ -253,7 +253,31 @@ void PoDoFoPage::DrawImage(ImageData data)
             real_cw,
             real_ch,
         };
-        m_Painter->SetClipRect(clip_rect);
+        if (data.m_CornerSize > 0_mm)
+        {
+            const auto corner_size{ ToPoDoFoPoints(data.m_CornerSize) };
+            PoDoFo::PdfPainterPath rounded_rect;
+            rounded_rect.AddRectangle(clip_rect, corner_size, corner_size);
+            m_Painter->ClipPath(rounded_rect);
+        }
+        else
+        {
+            m_Painter->SetClipRect(clip_rect);
+        }
+    }
+    else if (data.m_CornerSize > 0_mm)
+    {
+        const PoDoFo::Rect rect{
+            real_x,
+            real_y,
+            real_w,
+            real_h,
+        };
+        const auto corner_size{ ToPoDoFoPoints(data.m_CornerSize) };
+
+        PoDoFo::PdfPainterPath rounded_rect;
+        rounded_rect.AddRectangle(rect, corner_size, corner_size);
+        m_Painter->ClipPath(rounded_rect);
     }
 
     m_Painter->DrawImage(*image, real_x, real_y, w_scale, h_scale);
@@ -391,11 +415,6 @@ void PoDoFoImageCache::CacheImage(fs::path image_path,
 {
     TRACY_AUTO_SCOPE();
 
-    const bool rounded_corners{
-        m_Project.m_Data.m_Corners == CardCorners::Rounded &&
-        m_Project.m_Data.m_BleedEdge == 0_mm
-    };
-
     const auto use_jpg{
         g_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
         (g_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
@@ -405,9 +424,7 @@ void PoDoFoImageCache::CacheImage(fs::path image_path,
     // clang-format off
     const std::function<std::vector<std::byte>(const Image&)> encoder{
         use_png         ? [](const Image& image)
-                          { return image.EncodePng(std::optional{ 0 }); } :
-        rounded_corners ? [](const Image& image)
-                          { return image.ApplyAlpha({ 255, 255, 255 }).EncodeJpg(g_Cfg.m_JpgQuality); }
+                          { return image.EncodePng(std::optional{ 0 }); } 
                         : [](const Image& image)
                           { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
     };
@@ -415,29 +432,7 @@ void PoDoFoImageCache::CacheImage(fs::path image_path,
 
     const auto card_size{ m_Project.CardSize() };
     const Image loaded_image{
-        [&]()
-        {
-            if (rounded_corners)
-            {
-                if (m_Project.IsCardRoundedRect())
-                {
-                    const auto corner_radius{
-                        rounded_corners
-                            ? m_Project.CardCornerRadius()
-                            : 0_mm,
-                    };
-
-                    return Image::Read(image_path)
-                        .RoundCorners(card_size, corner_radius);
-                }
-                else if (m_Project.IsCardSvg())
-                {
-                    return Image::Read(image_path)
-                        .ClipSvg(m_Project.CardSvgData());
-                }
-            }
-            return Image::Read(image_path);
-        }()
+        Image::Read(image_path)
             .Rotate(rotation)
             .CapDensity(card_size, max_density)
     };

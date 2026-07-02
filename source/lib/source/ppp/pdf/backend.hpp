@@ -62,6 +62,7 @@ class PdfPage
         const fs::path& m_Path;
         Position m_Pos;
         Size m_Size;
+        Length m_CornerSize;
         Image::Rotation m_Rotation;
         std::optional<ClipRect> m_ClipRect{ std::nullopt };
     };
