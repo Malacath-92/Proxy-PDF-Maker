@@ -36,6 +36,13 @@ inline const std::array g_LossyImageExtensions{
     ".webp"_p
 };
 
+enum class UncropMode
+{
+    Black,
+    Mirror,
+    Transparent,
+};
+
 std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 
@@ -49,7 +56,7 @@ Image UncropImage(const Image& image,
                   const fs::path& card_name,
                   Size card_size,
                   Length bleed_edge,
-                  bool fancy_uncrop);
+                  UncropMode uncrop_mode);
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 

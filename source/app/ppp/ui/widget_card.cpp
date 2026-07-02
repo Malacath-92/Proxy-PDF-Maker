@@ -447,6 +447,32 @@ Image CardImage::GetImage(const ImagePreview& preview) const
 
     if (m_BleedEdge > 0_mm)
     {
+        if (m_OriginalParams.m_RoundedCorners)
+        {
+            const auto finalize_image{
+                [&, this](const Image& base_image)
+                {
+                    return UncropImage(base_image,
+                                       m_CardName,
+                                       m_CardSize,
+                                       m_BleedEdge,
+                                       UncropMode::Transparent)
+                        .Rotate(m_OriginalParams.m_Rotation);
+                }
+            };
+            if (m_Project.IsCardRoundedRect())
+            {
+                return finalize_image(
+                    preview.m_CroppedImage
+                        .RoundCorners(m_CardSize, m_CornerRadius));
+            }
+            else if (m_Project.IsCardSvg())
+            {
+                return finalize_image(
+                    preview.m_CroppedImage
+                        .ClipSvg(m_Project.CardSvgData()));
+            }
+        }
         return CropImage(preview.m_UncroppedImage,
                          m_CardName,
                          m_CardSize,

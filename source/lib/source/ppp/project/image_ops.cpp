@@ -93,7 +93,7 @@ Image UncropImage(const Image& image,
                   const fs::path& card_name,
                   Size card_size,
                   Length bleed_edge,
-                  bool fancy_uncrop)
+                  UncropMode uncrop_mode)
 {
     const PixelDensity density{ image.Density(card_size) };
     Pixel c{ bleed_edge * density };
@@ -101,13 +101,16 @@ Image UncropImage(const Image& image,
     const PixelDensity dpi{ (density * 1_in / 1_m) };
     LogInfo("Reinserting bleed edge...\n{} - DPI calculated: {}, adding {} around frame", card_name.string(), dpi.value, c);
 
-    if (fancy_uncrop)
+    switch (uncrop_mode)
     {
-        return image.AddReflectBorder(c, c, c, c);
-    }
-    else
-    {
+    case UncropMode::Black:
         return image.AddBlackBorder(c, c, c, c);
+    case UncropMode::Mirror:
+        return image.AddReflectBorder(c, c, c, c);
+    case UncropMode::Transparent:
+        return image.AddTransparentBorder(c, c, c, c);
+    default:
+        std::unreachable();
     }
 }
 

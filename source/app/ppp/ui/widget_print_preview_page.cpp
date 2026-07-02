@@ -22,7 +22,18 @@ PagePreview::PagePreview(Project& project,
     setAutoFillBackground(true);
     setPalette(pal);
 
-    const bool rounded_corners{ project.m_Data.m_Corners == CardCorners::Rounded && project.m_Data.m_BleedEdge <= 0_mm };
+    const auto total_bleed_edge{
+        params.m_IsBackside
+            ? project.m_Data.m_BleedEdge +
+                  project.m_Data.m_EnvelopeBleedEdge +
+                  project.m_Data.m_BacksideExtraBleedEdge
+            : project.m_Data.m_BleedEdge +
+                  project.m_Data.m_EnvelopeBleedEdge
+    };
+    const bool rounded_corners{
+        project.m_Data.m_Corners == CardCorners::Rounded &&
+        total_bleed_edge == 0_mm
+    };
 
     m_ImageContainer = new QWidget;
     m_ImageContainer->setParent(this);
@@ -81,12 +92,7 @@ PagePreview::PagePreview(Project& project,
         const auto bleed_edge{
             g_Cfg.m_NoCropMode
                 ? project.CardFullBleed()
-            : params.m_IsBackside
-                ? project.m_Data.m_BleedEdge +
-                      project.m_Data.m_EnvelopeBleedEdge +
-                      project.m_Data.m_BacksideExtraBleedEdge
-                : project.m_Data.m_BleedEdge +
-                      project.m_Data.m_EnvelopeBleedEdge,
+                : total_bleed_edge,
         };
 
         auto* image_widget{
