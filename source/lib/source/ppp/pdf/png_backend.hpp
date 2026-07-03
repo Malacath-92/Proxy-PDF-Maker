@@ -60,7 +60,7 @@ class PngImageCache
   public:
     PngImageCache(const Project& project);
 
-    const cv::Mat* GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const;
+    const Image* GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const;
 
     void PreallocateImages(size_t num_images);
     void CacheImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation);
@@ -76,7 +76,7 @@ class PngImageCache
         int32_t m_Width;
         int32_t m_Height;
         Image::Rotation m_ImageRotation;
-        cv::Mat m_PngImage;
+        Image m_Image;
     };
     std::vector<ImageCacheEntry> m_Cache;
 };

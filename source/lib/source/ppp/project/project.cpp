@@ -2152,7 +2152,7 @@ Length ProjectData::CardCornerRadius(const Config& config) const
     const auto& card_size_info{ CardSizeInfo(config) };
     if (!card_size_info.m_RoundedRect.has_value())
     {
-        return 0_mm;
+        return 1_cm;
     }
     return card_size_info.m_RoundedRect.value().m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
