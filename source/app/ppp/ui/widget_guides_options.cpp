@@ -327,9 +327,12 @@ void GuidesOptionsWidget::NewProjectOpened()
 void GuidesOptionsWidget::CardSizeChanged()
 {
     const auto card_size{ m_Project.CardSize() };
-
     m_GuidesLengthSpin->SetRange(0_mm, dla::math::min(card_size.x, card_size.y) / 2.0f);
-    m_GuidesLengthSpin->SetValue(m_Project.CardCornerRadius() / 2.0f);
+
+    if (m_Project.IsCardRoundedRect())
+    {
+        m_GuidesLengthSpin->SetValue(m_Project.CardCornerRadius() / 2.0f);
+    }
 }
 
 void GuidesOptionsWidget::BleedChanged()
