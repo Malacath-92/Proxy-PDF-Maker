@@ -10,6 +10,7 @@
 #include <podofo/podofo.h>
 
 #include <ppp/pdf/util.hpp>
+#include <ppp/svg/util.hpp>
 
 #include <ppp/util/log.hpp>
 
@@ -19,6 +20,14 @@
 static double ToPoDoFoPoints(Length l)
 {
     return static_cast<double>(l / 1_pts);
+}
+
+static dla::dvec2 ToPoDoFoPoints(Size s)
+{
+    return {
+        static_cast<double>(s.x / 1_pts),
+        static_cast<double>(s.y / 1_pts),
+    };
 }
 
 static Length FromPoDoFoPoints(double p)
@@ -235,6 +244,57 @@ void PoDoFoPage::DrawImage(ImageData data)
 
     auto save{ Save(*m_Painter) };
 
+    static constexpr auto make_custom_path{
+        [](PoDoFo::PdfPainterPath& custom_path,
+           const Svg& svg,
+           const Position& offset)
+        {
+            auto to_podofo{
+                [&](auto pt)
+                {
+                    pt.y = svg.m_Size.y - pt.y;
+                    return ToPoDoFoPoints(pt + offset);
+                }
+            };
+            auto move_to{
+                [to_podofo](PoDoFo::PdfPainterPath& path,
+                            const auto& pt)
+                {
+                    const auto [sx, sy]{ to_podofo(pt).pod() };
+                    path.MoveTo(sx, sy);
+                }
+            };
+            auto line_to{
+                [to_podofo](PoDoFo::PdfPainterPath& path,
+                            const auto& /*from*/,
+                            const auto& to)
+                {
+                    const auto [tx, ty]{ to_podofo(to.m_Position).pod() };
+                    path.AddLineTo(tx, ty);
+                }
+            };
+            auto cubic_to{
+                [to_podofo](PoDoFo::PdfPainterPath& path,
+                            const auto& from,
+                            const auto& to)
+                {
+                    const auto [nhx, nhy]{ to_podofo(from.m_NextHandle).pod() };
+                    const auto [phx, phy]{ to_podofo(to.m_PrevHandle).pod() };
+                    const auto [tx, ty]{ to_podofo(to.m_Position).pod() };
+                    path.AddCubicBezierTo(nhx, nhy, phx, phy, tx, ty);
+                }
+            };
+            auto close_path{
+                [](PoDoFo::PdfPainterPath& path)
+                {
+                    path.Close();
+                }
+            };
+
+            DrawSvgToPath(custom_path, move_to, line_to, cubic_to, close_path, svg);
+        }
+    };
+
     if (data.m_ClipRect.has_value())
     {
         const auto& cx{ data.m_ClipRect.value().m_Position.x };
@@ -247,23 +307,38 @@ void PoDoFoPage::DrawImage(ImageData data)
         const auto real_cw{ ToPoDoFoPoints(cw) };
         const auto real_ch{ ToPoDoFoPoints(ch) };
 
-        const PoDoFo::Rect clip_rect{
-            real_cx,
-            real_cy,
-            real_cw,
-            real_ch,
-        };
-        if (data.m_CornerSize > 0_mm)
+        if (data.m_CustomShape != nullptr)
         {
-            const auto corner_size{ ToPoDoFoPoints(data.m_CornerSize) };
-            PoDoFo::PdfPainterPath rounded_rect;
-            rounded_rect.AddRectangle(clip_rect, corner_size, corner_size);
-            m_Painter->ClipPath(rounded_rect);
+            PoDoFo::PdfPainterPath custom_path;
+            make_custom_path(custom_path, *data.m_CustomShape, data.m_ClipRect.value().m_Position);
+            m_Painter->ClipPath(custom_path);
         }
         else
         {
-            m_Painter->SetClipRect(clip_rect);
+            const PoDoFo::Rect clip_rect{
+                real_cx,
+                real_cy,
+                real_cw,
+                real_ch,
+            };
+            if (data.m_CornerSize > 0_mm)
+            {
+                const auto corner_size{ ToPoDoFoPoints(data.m_CornerSize) };
+                PoDoFo::PdfPainterPath rounded_rect;
+                rounded_rect.AddRectangle(clip_rect, corner_size, corner_size);
+                m_Painter->ClipPath(rounded_rect);
+            }
+            else
+            {
+                m_Painter->SetClipRect(clip_rect);
+            }
         }
+    }
+    else if (data.m_CustomShape != nullptr)
+    {
+        PoDoFo::PdfPainterPath custom_path;
+        make_custom_path(custom_path, *data.m_CustomShape, data.m_Pos);
+        m_Painter->ClipPath(custom_path);
     }
     else if (data.m_CornerSize > 0_mm)
     {

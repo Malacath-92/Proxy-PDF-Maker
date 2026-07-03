@@ -82,54 +82,33 @@ void DrawSvgToPainterPath(QPainterPath& path,
             return QPointF{ px.x, px.y };
         }
     };
+    auto move_to{
+        [to_qpoint](QPainterPath& path,
+                    const auto& pt)
+        {
+            path.moveTo(to_qpoint(pt));
+        }
+    };
+    auto line_to{
+        [to_qpoint](QPainterPath& path,
+                    const auto& /*from*/,
+                    const auto& to)
+        {
+            path.lineTo(to_qpoint(to.m_Position));
+        }
+    };
     auto cubic_to{
         [to_qpoint](QPainterPath& path,
                     const auto& from,
                     const auto& to)
         {
-            const bool is_linear{
-                (from.m_NextHandle.x == to.m_PrevHandle.x && from.m_NextHandle.x == to.m_Position.x) ||
-                (from.m_NextHandle.y == to.m_PrevHandle.y && from.m_NextHandle.y == to.m_Position.y)
-            };
-            if (is_linear)
-            {
-                path.lineTo(to_qpoint(to.m_Position));
-            }
-            else
-            {
-                path.cubicTo(to_qpoint(from.m_NextHandle),
-                             to_qpoint(to.m_PrevHandle),
-                             to_qpoint(to.m_Position));
-            }
+            path.cubicTo(to_qpoint(from.m_NextHandle),
+                         to_qpoint(to.m_PrevHandle),
+                         to_qpoint(to.m_Position));
         }
     };
 
-    for (const auto& curve : svg.m_Curves)
-    {
-        // Move to start of curve ...
-        path.moveTo(to_qpoint(curve.m_StartPoint.m_Position));
-
-        if (curve.m_ControlPoints.empty())
-        {
-            // ... draw bezier to end point if the curve has only two nodes ...
-            cubic_to(path, curve.m_StartPoint, curve.m_EndPoint);
-        }
-        else
-        {
-            // ... or draw bezier to first point ...
-            cubic_to(path, curve.m_StartPoint, curve.m_ControlPoints.front());
-
-            for (size_t i{ 0 }; i < curve.m_ControlPoints.size() - 1; i++)
-            {
-                const size_t j{ i + 1 };
-                // ... continue drawing beziers to next point ...
-                cubic_to(path, curve.m_ControlPoints[i], curve.m_ControlPoints[j]);
-            }
-
-            // ... until we draw bezier to the last point
-            cubic_to(path, curve.m_ControlPoints.back(), curve.m_EndPoint);
-        }
-    }
+    DrawSvgToPath(path, move_to, line_to, cubic_to, [](QPainterPath&) {}, svg);
 }
 
 QPainterPath ConvertSvgToPainterPath(const Svg& svg)

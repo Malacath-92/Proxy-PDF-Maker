@@ -13,6 +13,7 @@
 
 class Project;
 class PdfDocument;
+struct Svg;
 
 std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project);
 bool IsPageWriteThreadSafe(PdfBackend backend);
@@ -63,6 +64,7 @@ class PdfPage
         Position m_Pos;
         Size m_Size;
         Length m_CornerSize;
+        const Svg* m_CustomShape;
         Image::Rotation m_Rotation;
         std::optional<ClipRect> m_ClipRect{ std::nullopt };
     };

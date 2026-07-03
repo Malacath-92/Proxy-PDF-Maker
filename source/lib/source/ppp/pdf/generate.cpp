@@ -260,6 +260,17 @@ PdfResults GeneratePdf(const Project& project)
             : 0_mm
     };
 
+    const auto frontside_svg{
+        project.IsCardSvg()
+            ? &project.CardSvgData()
+            : nullptr
+    };
+    const auto backside_svg{
+        project.m_Data.m_BacksideExtraBleedEdge == 0_mm
+            ? frontside_svg
+            : nullptr
+    };
+
     const auto pages{ DistributeCardsToPages(project) };
     const auto transforms{ ComputeTransforms(project) };
 
@@ -450,6 +461,7 @@ PdfResults GeneratePdf(const Project& project)
             const PageImage& image,
             const PageImageTransform& transform,
             const Length corner_size,
+            const Svg* custom_card_shape,
             std::function<const fs::path(const fs::path&)> get_image_file)
         {
             if (image.m_Image.has_value())
@@ -465,6 +477,7 @@ PdfResults GeneratePdf(const Project& project)
                         },
                         .m_Size{ transform.m_Size },
                         .m_CornerSize{ corner_size },
+                        .m_CustomShape{ custom_card_shape },
                         .m_Rotation = transform.m_Rotation,
                         .m_ClipRect{
                             transform.m_ClipRect.and_then(
@@ -553,7 +566,12 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(front_page, card, transform, frontside_corner_size, get_frontside_file);
+                    draw_image(front_page,
+                               card,
+                               transform,
+                               frontside_corner_size,
+                               frontside_svg,
+                               get_frontside_file);
                 }
             }
 
@@ -625,7 +643,12 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
-                    draw_image(back_page, card, transform, backside_corner_size, get_backside_file);
+                    draw_image(back_page,
+                               card,
+                               transform,
+                               backside_corner_size,
+                               backside_svg,
+                               get_backside_file);
                 }
             }
 
