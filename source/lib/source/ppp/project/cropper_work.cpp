@@ -325,7 +325,12 @@ void CropperCropWork::run()
                 source_image = FixImageAspectRatio(source_image,
                                                    m_BadAspectRatioHandling,
                                                    card_aspect_ratio);
-                const Image uncropped_image{ UncropImage(source_image, m_CardName, card_size, full_bleed_edge, fancy_uncrop) };
+                const Image uncropped_image{ UncropImage(source_image,
+                                                         m_CardName,
+                                                         card_size,
+                                                         full_bleed_edge,
+                                                         fancy_uncrop ? UncropMode::Mirror
+                                                                      : UncropMode::Black) };
                 uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
                 m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
 
@@ -601,7 +606,12 @@ void CropperPreviewWork::run()
                     };
 
                     image_preview->m_CroppedImage = image;
-                    image_preview->m_UncroppedImage = UncropImage(image, m_CardName, card_size, full_bleed_edge, fancy_uncrop);
+                    image_preview->m_UncroppedImage = UncropImage(image,
+                                                                  m_CardName,
+                                                                  card_size,
+                                                                  full_bleed_edge,
+                                                                  fancy_uncrop ? UncropMode::Mirror
+                                                                               : UncropMode::Black);
                     image_preview->m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
                     image_preview->m_BadRotation = bad_rotation;
                 }

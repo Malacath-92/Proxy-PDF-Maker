@@ -1,6 +1,10 @@
+#include <optional>
+
 #include <fmt/format.h>
 
 #include <QApplication>
+#include <QDesktopServices>
+#include <QMessageBox>
 #include <QThreadPool>
 
 #include <QtPlugin>
@@ -23,10 +27,12 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/project/project.hpp>
 
 #include <ppp/app.hpp>
+#include <ppp/auto_update.hpp>
 #include <ppp/cubes.hpp>
 #include <ppp/style.hpp>
 #include <ppp/version_check.hpp>
 
+#include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/main_window.hpp>
@@ -52,6 +58,14 @@ class PluginRouter : public PluginInterface
     }
 };
 
+void Reboot()
+{
+    QProcess::startDetached(
+        QApplication::arguments()[0],
+        QApplication::arguments().mid(1));
+    QApplication::exit();
+}
+
 int main(int argc, char** argv)
 {
     TRACY_WAIT_CONNECT();
@@ -70,17 +84,60 @@ int main(int argc, char** argv)
     LogFlags log_flags{
         LogFlags::Console |
         LogFlags::File |
-        LogFlags::FatalQuit |
         LogFlags::DetailFile |
         LogFlags::DetailLine |
         LogFlags::DetailColumn |
         LogFlags::DetailThread |
         LogFlags::DetailStacktrace
     };
+
     Log main_log{ log_flags, Log::c_MainLogName };
 
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app.GetTheme());
+
+    main_log.InstallHook(
+        [](const Log::DetailInformation&, Log::LogLevel level, std::string_view message)
+        {
+            if (level == Log::LogLevel::Fatal)
+            {
+                QMessageBox::critical(nullptr,
+                                      "Fatal Error",
+                                      ToQString(message));
+            }
+        });
+
+    {
+        const std::span args{ argv, static_cast<size_t>(argc) };
+
+        try
+        {
+            if (auto auto_update_phase{ ResolveAutoUpdatePhase(args) })
+            {
+                if (auto_update_phase(args))
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                switch (AutoUpdateTryInitialize(args))
+                {
+                case AutoUpdateConclusion::Initiated:
+                    return 0;
+                case AutoUpdateConclusion::Error:
+                    return 1;
+                default:
+                    break;
+                }
+            }
+        }
+        catch (std::exception& e)
+        {
+            LogFatal("Executing auto-update failed: {}\n", e.what());
+            return 1;
+        }
+    }
 
     {
         // Backwards compatiblity of saving card/page size default in Config
@@ -121,9 +178,7 @@ int main(int argc, char** argv)
     project.Load(app.GetProjectPath());
 
     Cropper cropper{ [](std::string_view cube_name)
-                     {
-                         return GetCubeImage(cube_name);
-                     },
+                     { return GetCubeImage(cube_name); },
                      project };
     CardProvider card_provider{ project };
 
@@ -579,26 +634,62 @@ int main(int argc, char** argv)
 
         if (auto new_version{ NewAvailableVersion() })
         {
+            static constexpr char c_AutoUpdate[]{ "#auto-update" };
+            static auto s_AutoUpdate{
+                [main_window](std::string_view version)
+                {
+                    if (AutoUpdateDownloadRelease(version))
+                    {
+                        static constexpr char c_Restart[]{ "#restart" };
+                        main_window->Toast(
+                            ToastType::Info,
+                            "Restart to Update",
+                            QString{ "New version downloaded, <a style=\"color:CornflowerBlue\" href=\"%1\">"
+                                     "restart app"
+                                     "</a> to finish" }
+                                .arg(c_Restart),
+                            [=](const QString& /*link*/)
+                            {
+                                Reboot();
+                            });
+                    }
+                }
+            };
             main_window->Toast(
                 ToastType::Info,
                 "New version available",
                 QString{ "<a style=\"color:CornflowerBlue\" href=\"%1\">"
                          "Download the new version %2 from GitHub"
+                         "</a> or <a style=\"color:CornflowerBlue\" href=\"%3\">"
+                         "Auto-Update"
                          "</a>" }
                     .arg(ReleaseURL(new_version.value()).c_str())
-                    .arg(new_version.value().c_str()));
+                    .arg(new_version.value().c_str())
+                    .arg(c_AutoUpdate),
+                [=](const QString& link)
+                {
+                    if (link == c_AutoUpdate)
+                    {
+                        s_AutoUpdate(new_version.value());
+                    }
+                    else
+                    {
+                        QDesktopServices::openUrl(link);
+                    }
+                });
         }
     }
 
-    const int return_code{
+    const auto ret{
         []()
         {
             TRACY_AUTO_SCOPE();
-            TRACY_SCOPE_NAME(main_exec);
+            TRACY_SCOPE_NAME(QApplication::exec);
             return QApplication::exec();
         }()
     };
 
     project.Dump(app.GetProjectPath());
-    return return_code;
+
+    return ret;
 }

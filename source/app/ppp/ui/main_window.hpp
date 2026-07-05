@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <QMainWindow>
 
 #include <ppp/project/project.hpp>
@@ -22,9 +24,11 @@ class PrintProxyPrepMainWindow : public QMainWindow
 
     void OpenAboutPopup();
 
+    using OnLinkFn = std::function<void(const QString& link)>;
     void Toast(ToastType type,
                QString title,
-               QString message);
+               QString message,
+               OnLinkFn on_link = nullptr);
 
     void ImageDropRejected(const fs::path& absolute_image_path);
 

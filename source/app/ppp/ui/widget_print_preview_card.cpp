@@ -94,7 +94,7 @@ void PrintPreviewCardImage::dragLeaveEvent(QDragLeaveEvent* event)
 
 void PrintPreviewCardImage::paintEvent(QPaintEvent* event)
 {
-    if (m_ClipRect.has_value())
+    if (m_ClipRect.has_value() && false)
     {
         const auto clipped_rect{ event->rect().intersected(GetClippedRect()) };
         const auto scaled_pixmap{
@@ -149,8 +149,10 @@ QRect PrintPreviewCardImage::GetClippedRect() const
         const auto pixel_clip_offset{ m_ClipRect.value().m_Position * pixel_ratio };
         const auto pixel_clip_size{ m_ClipRect.value().m_Size * pixel_ratio };
         const QRect clipped_rect{
-            QPoint{ (int)pixel_clip_offset.x, (int)pixel_clip_offset.y },
-            QSize{ (int)pixel_clip_size.x, (int)pixel_clip_size.y },
+            QPoint{ (int)std::floor(pixel_clip_offset.x),
+                    (int)std::floor(pixel_clip_offset.y) },
+            QSize{ (int)std::ceil(pixel_clip_size.x),
+                   (int)std::ceil(pixel_clip_size.y) },
         };
         return clipped_rect;
     }

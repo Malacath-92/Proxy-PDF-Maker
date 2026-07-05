@@ -81,7 +81,8 @@ void PrintProxyPrepMainWindow::OpenAboutPopup()
 
 void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString title,
-                                     QString message)
+                                     QString message,
+                                     OnLinkFn on_link)
 {
     if (g_Cfg.m_ToastTimeoutMS == 0)
     {
@@ -97,6 +98,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
     toast->setPosition(ToastPosition::BOTTOM_LEFT);
+    toast->setOnLink(std::move(on_link));
 
     const bool dark_mode{
         QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark

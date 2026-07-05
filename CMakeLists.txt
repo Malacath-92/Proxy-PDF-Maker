@@ -8,17 +8,25 @@ if (LINUX)
 	set(CMAKE_CXX_EXTENSIONS ON)
 endif()
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
+set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # --------------------------------------------------
 # Define options
 option(PPP_BUILD_TESTS "Build test suite" OFF)
+option(PPP_BUILD_FAKE_UPDATE " Build fake target to update to" OFF)
 option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
+
+# --------------------------------------------------
+# Install to custom location
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
+if(PPP_BUILD_FAKE_UPDATE)
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/_proxy_pdf_update")
+endif()
 
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
@@ -35,6 +43,12 @@ run_conan(
     BUILD_PROFILE default
     INSTALL_ARGS ${CONAN_INSTALL_ARGS}
 )
+
+# --------------------------------------------------
+# Put Qt's _autogen targets and related files into a different folder
+set_property(GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER "QtAutogen")
+set_property(GLOBAL PROPERTY QT_TARGETS_FOLDER "QtAutogen")
+set_property(GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP "Generated Qt Files")
 
 # --------------------------------------------------
 # Define Project
@@ -57,18 +71,22 @@ endif()
 
 # --------------------------------------------------
 # Get version tag
-find_package(Git)
-if(NOT GIT_FOUND)
-	SET(GIT_EXECUTABLE git)
-endif()
+if(PPP_BUILD_FAKE_UPDATE)
+	set(PROXY_PDF_GIT_VERSION "This.Some.Fake.Version")
+else()
+	find_package(Git)
+	if(NOT GIT_FOUND)
+		SET(GIT_EXECUTABLE git)
+	endif()
 
-execute_process(
-	COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty=-modified
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	OUTPUT_VARIABLE PROXY_PDF_GIT_VERSION
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-	ECHO_ERROR_VARIABLE
-	COMMAND_ERROR_IS_FATAL ANY)
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty=-modified
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+		OUTPUT_VARIABLE PROXY_PDF_GIT_VERSION
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		ECHO_ERROR_VARIABLE
+		COMMAND_ERROR_IS_FATAL ANY)
+endif()
 
 # --------------------------------------------------
 # Timestamp
@@ -83,6 +101,8 @@ find_package(nlohmann_json REQUIRED)
 find_package(efsw REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(onnxruntime REQUIRED)
+find_package(LibArchive REQUIRED)
+find_package(whereami REQUIRED)
 if (PPP_PROFILE)
 	find_package(tracy REQUIRED)
 endif()
@@ -326,9 +346,10 @@ endif()
 target_link_libraries(proxy_pdf PRIVATE
 	qt_toast_lib
 	onnxruntime::onnxruntime
+	LibArchive::LibArchive
+	whereami::whereami
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
-set_target_properties(proxy_pdf PROPERTIES AUTOMOC TRUE)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
     VS_GLOBAL_RunCodeAnalysis false
@@ -393,6 +414,10 @@ group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sourc
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 
 # --------------------------------------------------
+# Include install-hooks to generate install manifest
+include(cmake/generate_install_manifest.cmake)
+
+# --------------------------------------------------
 # Install exectuable and resource files
 install(TARGETS
 	proxy_pdf
@@ -403,3 +428,7 @@ install(FILES
 	fallback.png
 	README.pdf
 	DESTINATION .)
+
+# --------------------------------------------------
+# Bundle install manifest with the launcher
+qt_target_add_install_manifest(proxy_pdf "install_manifest.txt")

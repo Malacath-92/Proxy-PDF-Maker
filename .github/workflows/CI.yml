@@ -132,8 +132,68 @@ jobs:
         run: |
             cd build
             cmake --build . --config ${{inputs.build_type}}
+            cmake --install . --config ${{inputs.build_type}}
 
       - name: Test
         run: |
             cd build
             ctest . -C ${{inputs.build_type}} --output-on-failure
+
+      - name: Reconfigure fake Update
+        run: |
+          mkdir build
+          cd build
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=OFF -DPPP_BUILD_FAKE_UPDATE=ON
+
+      - name: Build fake Update
+        run: |
+            cd build
+            cmake --build . --config ${{inputs.build_type}}
+            cmake --install . --config ${{inputs.build_type}}
+
+      - name: Execute fake Update
+        if: ${{ inputs.os != 'Windows' }}
+        run: |
+            cd publish
+            .\proxy_pdf
+
+      - name: Hash Pre-Update
+        id: hash_pre
+        run: |
+          echo "old_app_hash=${{ hashFIles('publish/*') }} }}" >> $GITHUB_OUTPUT
+          echo "new_app_hash=${{ hashFIles('publish/_proxy_pdf_update/*') }} }}" >> $GITHUB_OUTPUT
+
+      - name: Execute fake Update (Windows)
+        if: ${{ inputs.os == 'Windows' }}
+        run: |
+            cd publish
+            ./proxy_pdf.exe
+
+      - name: Hash Post-Update
+        id: hash_post
+        run: |
+          echo "backup_app_hash=${{ hashFIles('publish/_proxy_pdf_backup/*') }} }}" >> $GITHUB_OUTPUT
+          echo "update_app_hash=${{ hashFIles('publish/*') }} }}" >> $GITHUB_OUTPUT
+
+      - name: Verify Update Success
+        shell: bash
+        run: |
+          OLD_HASH="${{ steps.hash_pre.outputs.old_app_hash }}"
+          NEW_HASH="${{ steps.hash_pre.outputs.new_app_hash }}"
+          BACKUP_HASH="${{ steps.hash_post.outputs.backup_app_hash }}"
+          UPDATE_HASH="${{ steps.hash_post.outputs.update_app_hash }}"
+
+          if [ "$OLD_HASH" != "$BACKUP_HASH" ]; then
+            echo "::error::Old app and backup hashes do not match! Expected $OLD_HASH but got $BACKUP_HASH"
+            exit 1
+          fi
+
+          if [ "$NEW_HASH" != "$UPDATE_HASH" ]; then
+            echo "::error::New app and update hashes do not match! Expected $NEW_HASH but got $UPDATE_HASH"
+            exit 1
+          fi
+
+          if [ "$OLD_HASH" == "$UPDATE_HASH" ]; then
+            echo "::error::Old app and update hashes match but shouldn't! Likely no update happened!"
+            exit 1
+          fi

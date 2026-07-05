@@ -96,28 +96,84 @@ void PngPage::DrawImage(ImageData data)
     const auto& rotation{ data.m_Rotation };
     const auto& x{ data.m_Pos.x };
     const auto& y{ data.m_Pos.y };
+
+    int32_t real_x;
+    int32_t real_y;
+    int32_t real_w;
+    int32_t real_h;
+    const Image* image;
+
     if (m_PerfectFit)
     {
         const auto card_idx_x{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(x)) / m_CardSize.x))) };
         const auto card_idx_y{ static_cast<int32_t>(std::round(static_cast<float>(static_cast<float>(ToPixels(y)) / m_CardSize.y))) };
-        const auto real_w{ static_cast<int32_t>(m_CardSize.x / 1_pix) };
-        const auto real_h{ static_cast<int32_t>(m_CardSize.y / 1_pix) };
-        const auto real_x{ card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix) };
-        const auto real_y{ m_PageHeight - card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) + real_h };
-        m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            ->copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
+
+        real_w = static_cast<int32_t>(m_CardSize.x / 1_pix);
+        real_h = static_cast<int32_t>(m_CardSize.y / 1_pix);
+        real_x = card_idx_x * static_cast<int32_t>(m_CardSize.x / 1_pix);
+        real_y = m_PageHeight - card_idx_y * static_cast<int32_t>(m_CardSize.y / 1_pix) + real_h;
+
+        image = m_ImageCache->GetImage(image_path, real_w, real_h, rotation);
     }
     else
     {
         const auto& w{ data.m_Size.x };
         const auto& h{ data.m_Size.y };
 
-        const auto real_x{ ToPixels(x) };
-        const auto real_y{ m_PageHeight - ToPixels(y + h) };
-        const auto real_w{ ToPixels(w) };
-        const auto real_h{ ToPixels(h) };
-        m_ImageCache->GetImage(image_path, real_w, real_h, rotation)
-            ->copyTo(TargetImage()(cv::Rect(real_x, real_y, real_w, real_h)));
+        real_x = ToPixels(x);
+        real_y = m_PageHeight - ToPixels(y + h);
+        real_w = ToPixels(w);
+        real_h = ToPixels(h);
+
+        image = m_ImageCache->GetImage(image_path, real_w, real_h, rotation);
+    }
+
+    if (image != nullptr)
+    {
+        cv::Mat source_mat{ image->GetUnderlying() };
+        cv::Mat target_mat;
+
+        if (data.m_ClipRect.has_value())
+        {
+            const auto& clip_pos{ data.m_ClipRect.value().m_Position };
+            const auto& clip_size{ data.m_ClipRect.value().m_Size };
+
+            const auto& w{ clip_size.x };
+            const auto& h{ clip_size.y };
+
+            const auto tx{ ToPixels(clip_pos.x) };
+            const auto ty{ m_PageHeight - ToPixels(clip_pos.y + h) };
+            const auto tw{ ToPixels(w) };
+            const auto th{ ToPixels(h) };
+            const cv::Rect target_rect{ tx, ty, tw, th };
+            target_mat = TargetImage()(target_rect);
+
+            const auto& rel_clip_pos{ clip_pos - data.m_Pos };
+            const auto cx{ ToPixels(rel_clip_pos.x) };
+            const auto cy{ real_h - ToPixels(rel_clip_pos.y + h) };
+            const cv::Rect clip_rect{ cx, cy, tw, th };
+            source_mat = source_mat(clip_rect);
+        }
+        else
+        {
+            const cv::Rect target_rect{ real_x, real_y, real_w, real_h };
+            target_mat = TargetImage()(target_rect);
+        }
+
+        if (data.m_CustomShape != nullptr)
+        {
+            source_mat = Image{ source_mat }
+                             .ClipSvg(*data.m_CustomShape)
+                             .GetUnderlying();
+        }
+        else if (data.m_CornerSize > 0_mm)
+        {
+            source_mat = Image{ source_mat }
+                             .RoundCorners(m_Project->CardSize(), data.m_CornerSize)
+                             .GetUnderlying();
+        }
+
+        source_mat.copyTo(target_mat);
     }
 }
 
@@ -207,7 +263,7 @@ PngImageCache::PngImageCache(const Project& project)
 {
 }
 
-const cv::Mat* PngImageCache::GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const
+const Image* PngImageCache::GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const
 {
     std::shared_lock lock{ m_Mutex };
     // clang-format off
@@ -222,7 +278,7 @@ const cv::Mat* PngImageCache::GetImage(const fs::path& image_path, int32_t w, in
     // clang-format on
     if (it != m_Cache.end())
     {
-        return &it->m_PngImage;
+        return &it->m_Image;
     }
     return nullptr;
 }
@@ -234,36 +290,8 @@ void PngImageCache::PreallocateImages(size_t num_images)
 
 void PngImageCache::CacheImage(fs::path image_path, int32_t w, int32_t h, Image::Rotation rotation)
 {
-    const bool rounded_corners{
-        m_Project.m_Data.m_Corners == CardCorners::Rounded &&
-        m_Project.m_Data.m_BleedEdge == 0_mm
-    };
-
     const Image loaded_image{
-        [&]()
-        {
-            if (rounded_corners)
-            {
-                if (m_Project.IsCardRoundedRect())
-                {
-                    const auto card_size{ m_Project.CardSize() };
-                    const auto corner_radius{
-                        rounded_corners
-                            ? m_Project.CardCornerRadius()
-                            : 0_mm,
-                    };
-
-                    return Image::Read(image_path)
-                        .RoundCorners(card_size, corner_radius);
-                }
-                else if (m_Project.IsCardSvg())
-                {
-                    return Image::Read(image_path)
-                        .ClipSvg(m_Project.CardSvgData());
-                }
-            }
-            return Image::Read(image_path);
-        }()
+        Image::Read(image_path)
             .Rotate(rotation)
             .Resize({ w * 1_pix, h * 1_pix })
     };
@@ -279,7 +307,7 @@ void PngImageCache::CacheImage(fs::path image_path, int32_t w, int32_t h, Image:
         w,
         h,
         rotation,
-        std::move(four_channel_image),
+        Image{ std::move(four_channel_image) },
     });
 }
 

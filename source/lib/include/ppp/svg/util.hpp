@@ -30,11 +30,24 @@ struct CubicBezier
 
 struct Svg
 {
+    // Size is only the precomputed AABB of the bezier
     Size m_Size;
     std::vector<CubicBezier> m_Curves;
 };
 
 Svg LoadSvg(const fs::path& svg_path);
+
+template<class PathT,
+         class MoveToT,
+         class LineToT,
+         class CubicBezierToT,
+         class EndPathT>
+void DrawSvgToPath(PathT& path,
+                   MoveToT move_to,
+                   LineToT line_to,
+                   CubicBezierToT cubic_to,
+                   EndPathT end_path,
+                   const Svg& svg);
 
 class QPainterPath;
 void DrawSvgToPainterPath(QPainterPath& path,
@@ -43,3 +56,66 @@ void DrawSvgToPainterPath(QPainterPath& path,
                           Size size,
                           Size pixel_scaling);
 QPainterPath ConvertSvgToPainterPath(const Svg& svg);
+
+template<class PathT,
+         class MoveToT,
+         class LineToT,
+         class CubicBezierToT,
+         class EndPathT>
+void DrawSvgToPath(PathT& path,
+                   MoveToT move_to,
+                   LineToT line_to,
+                   CubicBezierToT cubic_to,
+                   EndPathT end_path,
+                   const Svg& svg)
+{
+    const auto curve_to{
+        [&](PathT& path,
+            const auto& from,
+            const auto& to)
+        {
+            const bool is_linear{
+                (from.m_NextHandle.x == to.m_PrevHandle.x && from.m_NextHandle.x == to.m_Position.x) ||
+                (from.m_NextHandle.y == to.m_PrevHandle.y && from.m_NextHandle.y == to.m_Position.y)
+            };
+            if (is_linear)
+            {
+                line_to(path, from, to);
+            }
+            else
+            {
+                cubic_to(path, from, to);
+            }
+        }
+    };
+
+    for (const auto& curve : svg.m_Curves)
+    {
+        // Move to start of curve ...
+        move_to(path, curve.m_StartPoint.m_Position);
+
+        if (curve.m_ControlPoints.empty())
+        {
+            // ... draw curve to end point if the curve has only two nodes ...
+            curve_to(path, curve.m_StartPoint, curve.m_EndPoint);
+        }
+        else
+        {
+            // ... or draw curve to first point ...
+            curve_to(path, curve.m_StartPoint, curve.m_ControlPoints.front());
+
+            for (size_t i{ 0 }; i < curve.m_ControlPoints.size() - 1; i++)
+            {
+                const size_t j{ i + 1 };
+                // ... continue drawing curves to next point ...
+                curve_to(path, curve.m_ControlPoints[i], curve.m_ControlPoints[j]);
+            }
+
+            // ... until we draw curve to the last point ...
+            curve_to(path, curve.m_ControlPoints.back(), curve.m_EndPoint);
+        }
+
+        // ... and finally finish up the path.
+        end_path(path);
+    }
+}
