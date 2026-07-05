@@ -161,13 +161,13 @@ jobs:
         if: ${{ inputs.os != 'Windows' }}
         run: |
             cd publish
-            ./proxy_pdf
+            ./proxy_pdf_cli --update
 
       - name: Execute fake Update (Windows)
         if: ${{ inputs.os == 'Windows' }}
         run: |
             cd publish
-            ./proxy_pdf.exe
+            ./proxy_pdf_cli.exe --update
 
       - name: Hash Post-Update
         id: hash_post

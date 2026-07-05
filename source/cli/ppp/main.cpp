@@ -25,11 +25,16 @@
 
 #include <ppp/pdf/generate.hpp>
 
+#include <ppp/auto_update.hpp>
+#include <ppp/version_check.hpp>
+
 using ProjectOverrides = std::unordered_map<std::string, std::string>;
 
 struct CommandLineOptions
 {
     bool m_HelpDisplayed{ false };
+
+    bool m_Update{ false };
 
     bool m_IgnoreUserDefaults{ false };
 
@@ -47,6 +52,8 @@ constexpr const char c_HelpStr[]{
 Command Line Interface for Proxy-PDF-Maker
 
     --help                  Display this information.
+    --update                Updates to the latest version if it is newer
+                            than the current version
     --ignore-user-defaults  Do not load user-defaults that were set from
                             within the GUI application.
     --render                Wait for the cropper, render the pdf, then quit.
@@ -142,11 +149,9 @@ class OverridesProvider : public JsonProvider
     const ProjectOverrides& m_Overrides;
 };
 
-CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
+CommandLineOptions ParseCommandLine(std::span<const char*> argv)
 {
     using namespace std::string_view_literals;
-
-    std::span argv{ raw_argv, static_cast<size_t>(argc) };
 
     CommandLineOptions cli;
 
@@ -164,6 +169,13 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
         if (arg == "--cropper")
         {
             LogInfo("--cropper argument has been deprecated, it will be ignored.");
+        }
+        else if (arg == "--update")
+        {
+            cli.m_Update = true;
+            // Immediately return so we don't have to worry about other options
+            // that are passed as part of the update process
+            return cli;
         }
         else if (arg == "--ignore-user-defaults")
         {
@@ -222,7 +234,7 @@ CommandLineOptions ParseCommandLine(int argc, char** raw_argv)
     return cli;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char** raw_argv)
 {
 #ifdef WIN32
     {
@@ -246,14 +258,53 @@ int main(int argc, char** argv)
     };
     Log main_log{ log_flags, Log::c_MainLogName };
 
-    QCoreApplication app{ argc, argv };
+    QCoreApplication app{ argc, raw_argv };
 
     QThreadPool::globalInstance()->setMaxThreadCount(g_Cfg.m_MaxWorkerThreads);
 
-    CommandLineOptions cli{ ParseCommandLine(argc, argv) };
+    std::span argv{ raw_argv, static_cast<size_t>(argc) };
+    CommandLineOptions cli{ ParseCommandLine(argv) };
     if (cli.m_HelpDisplayed)
     {
         return 0;
+    }
+
+    if (cli.m_Update)
+
+    {
+        if (!NewAvailableVersion().has_value())
+        {
+            LogInfo("No newer version is available...");
+            return 0;
+        }
+
+        try
+        {
+            if (auto auto_update_phase{ ResolveAutoUpdatePhase(argv) })
+            {
+                auto_update_phase(argv);
+                // Always exit on the CLI so we don't reboot into a --update
+                // call after we just finished the update
+                return 0;
+            }
+            else
+            {
+                switch (AutoUpdateTryInitialize(argv))
+                {
+                default:
+                    [[fallthrough]];
+                case AutoUpdateConclusion::Initiated:
+                    return 0;
+                case AutoUpdateConclusion::Error:
+                    return 1;
+                }
+            }
+        }
+        catch (std::exception& e)
+        {
+            LogFatal("Executing auto-update failed: {}\n", e.what());
+            return 1;
+        }
     }
 
     if (cli.m_Deterministic)
