@@ -1,13 +1,16 @@
 #include <ppp/auto_update.hpp>
 
-#include <future>
 #include <filesystem>
+#include <functional>
+#include <future>
 #include <ranges>
 #include <span>
 #include <string_view>
 #include <thread>
 
+#include <QCoreApplication>
 #include <QEventLoop>
+#include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -15,11 +18,9 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QObject>
+#include <QProcess>
 #include <QRunnable>
 #include <QThreadPool>
-#include <QCoreApplication>
-#include <QFile>
-#include <QProcess>
 
 #include <fmt/format.h>
 
@@ -88,9 +89,9 @@ class UnzipWorker : public QObject, public QRunnable
         }
 
         auto* reader{ archive_read_new() };
-        AtScopeExit reader_deleter{ std::bind_back(archive_read_free, reader) };
+        AtScopeExit reader_deleter{ std::bind_front(archive_read_free, reader) };
         auto* writer{ archive_write_disk_new() };
-        AtScopeExit writer_deleter{ std::bind_back(archive_write_free, writer) };
+        AtScopeExit writer_deleter{ std::bind_front(archive_write_free, writer) };
 
         if (reader == nullptr || writer == nullptr)
         {
@@ -116,7 +117,6 @@ class UnzipWorker : public QObject, public QRunnable
         }
 
         archive_entry* entry;
-        int res;
         while (archive_read_next_header(reader, &entry) == ARCHIVE_OK)
         {
             const auto current_path{ archive_entry_pathname(entry) };
@@ -124,8 +124,8 @@ class UnzipWorker : public QObject, public QRunnable
             const auto full_output_path_str{ full_output_path.string() };
             archive_entry_set_pathname(entry, full_output_path_str.c_str());
 
-            res = archive_write_header(writer, entry);
-            if (res < ARCHIVE_OK)
+            const auto write_header_res{ archive_write_header(writer, entry) };
+            if (write_header_res < ARCHIVE_OK)
             {
                 // TODO: Handle error
                 continue;
@@ -140,19 +140,23 @@ class UnzipWorker : public QObject, public QRunnable
 
                 while (true)
                 {
-                    res = archive_read_data_block(reader, &buff, &size, &offset);
-                    if (res == ARCHIVE_EOF)
+                    const auto read_block_res{
+                        archive_read_data_block(reader, &buff, &size, &offset)
+                    };
+                    if (read_block_res == ARCHIVE_EOF)
                     {
                         break;
                     }
-                    if (res < ARCHIVE_OK)
+                    if (read_block_res < ARCHIVE_OK)
                     {
                         // TODO: Handle error
                         break;
                     }
 
-                    res = archive_write_data_block(writer, buff, size, offset);
-                    if (res < ARCHIVE_OK)
+                    const auto write_block_res{
+                        archive_write_data_block(writer, buff, size, offset)
+                    };
+                    if (write_block_res < ARCHIVE_OK)
                     {
                         // TODO: Handle error
                         break;
@@ -237,7 +241,7 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 #elif defined(__linux__)
         "ubunutu_"
 #else
-        #error "Unknown Platform"
+#error "Unknown Platform"
 #endif
 
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64)
@@ -245,7 +249,7 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 #elif defined(__aarch64__) || defined(_M_ARM64)
         "arm64"
 #else
-        #error "Unknown Arch"
+#error "Unknown Arch"
 #endif
 
 #if defined(__linux__)
@@ -477,7 +481,7 @@ bool AutoUpdateBackupOldVersion(std::span<char*> argv)
     for (const auto& installed_file : manifest_contents)
     {
         MoveFileWithRetryStrategy(from / installed_file.toStdString(),
-                 to / installed_file.toStdString());
+                                  to / installed_file.toStdString());
     }
 
     // Delete old version's manifest
@@ -517,7 +521,7 @@ bool AutoUpdateUpdateCopyNewVersion(std::span<char*> argv)
     for (const auto& installed_file : manifest_contents)
     {
         MoveFileWithRetryStrategy(from / installed_file.toStdString(),
-                 to / installed_file.toStdString());
+                                  to / installed_file.toStdString());
     }
 
     // Delete new version's manifest
