@@ -8,7 +8,6 @@ if (LINUX)
 	set(CMAKE_CXX_EXTENSIONS ON)
 endif()
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR} ${CMAKE_MODULE_PATH})
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR} ${CMAKE_PREFIX_PATH})
 set(CMAKE_AUTOMOC ON)
@@ -18,8 +17,16 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------------------------------------
 # Define options
 option(PPP_BUILD_TESTS "Build test suite" OFF)
+option(PPP_BUILD_FAKE_UPDATE " Build fake target to update to" OFF)
 option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
+
+# --------------------------------------------------
+# Install to custom location
+set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
+if(PPP_BUILD_FAKE_UPDATE)
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/_proxy_pdf_update")
+endif()
 
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
@@ -64,18 +71,22 @@ endif()
 
 # --------------------------------------------------
 # Get version tag
-find_package(Git)
-if(NOT GIT_FOUND)
-	SET(GIT_EXECUTABLE git)
-endif()
+if(PPP_BUILD_FAKE_UPDATE)
+	set(PROXY_PDF_GIT_VERSION "This.Some.Fake.Version")
+else()
+	find_package(Git)
+	if(NOT GIT_FOUND)
+		SET(GIT_EXECUTABLE git)
+	endif()
 
-execute_process(
-	COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty=-modified
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	OUTPUT_VARIABLE PROXY_PDF_GIT_VERSION
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-	ECHO_ERROR_VARIABLE
-	COMMAND_ERROR_IS_FATAL ANY)
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty=-modified
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+		OUTPUT_VARIABLE PROXY_PDF_GIT_VERSION
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		ECHO_ERROR_VARIABLE
+		COMMAND_ERROR_IS_FATAL ANY)
+endif()
 
 # --------------------------------------------------
 # Timestamp
