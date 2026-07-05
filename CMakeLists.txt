@@ -222,8 +222,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::TlsBackendOpenSSLPlugin
 	Qt6::Widgets
 	Qt6::SvgWidgets
-	Qt6::Xml
-	LibArchive::LibArchive)
+	Qt6::Xml)
 
 if(WIN32)
 	target_link_libraries(proxy_pdf_dependencies INTERFACE
@@ -328,47 +327,23 @@ else()
 endif()
 file(GLOB_RECURSE proxy_pdf_sources CONFIGURE_DEPENDS "source/app/*.cpp")
 file(GLOB_RECURSE proxy_pdf_headers CONFIGURE_DEPENDS "source/app/*.hpp" "source/app/*.inl")
-qt_add_library(proxy_pdf SHARED ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+if (WIN32)
+	qt_add_executable(proxy_pdf WIN32 ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+else()
+	qt_add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
+endif()
 target_link_libraries(proxy_pdf PRIVATE
 	qt_toast_lib
 	onnxruntime::onnxruntime
+	LibArchive::LibArchive
+	whereami::whereami
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden
-	VISIBILITY_INLINES_HIDDEN ON
     VS_GLOBAL_RunCodeAnalysis false
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
     VS_GLOBAL_EnableClangTidyCodeAnalysis true)
-
-include(GenerateExportHeader)
-generate_export_header(proxy_pdf
-    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/proxy_pdf_gen/proxy_pdf_export.h")
-target_include_directories(proxy_pdf PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/proxy_pdf_gen")
-
-# --------------------------------------------------
-# Create CLI executable
-if (WIN32)
-	set(proxy_pdf_launcher_resources "res/proxy_pdf.rc")
-else()
-	set(proxy_pdf_launcher_resources "")
-endif()
-file(GLOB_RECURSE proxy_pdf_launcher_sources CONFIGURE_DEPENDS "source/launcher/*.cpp")
-file(GLOB_RECURSE proxy_pdf_launcher_headers CONFIGURE_DEPENDS "source/launcher/*.hpp" "source/launcher/*.inl")
-if (WIN32)
-	qt_add_executable(proxy_pdf_launcher WIN32 ${proxy_pdf_launcher_sources} ${proxy_pdf_launcher_headers} ${proxy_pdf_launcher_resources})
-else()
-	qt_add_executable(proxy_pdf_launcher ${proxy_pdf_launcher_sources} ${proxy_pdf_launcher_headers} ${proxy_pdf_launcher_resources})
-endif()
-target_include_directories(proxy_pdf_launcher PRIVATE "source/launcher")
-target_link_libraries(proxy_pdf_launcher PRIVATE
-	Qt6::Core
-	magic_enum::magic_enum
-	whereami::whereami)
-set_target_properties(proxy_pdf_launcher PROPERTIES OUTPUT_NAME "proxy_pdf")
-add_dependencies(proxy_pdf_launcher proxy_pdf)
 
 # --------------------------------------------------
 # Create CLI executable
@@ -388,7 +363,7 @@ set_target_properties(proxy_pdf_cli PROPERTIES
 
 # --------------------------------------------------
 # Set debugging properties
-set_target_properties(proxy_pdf_launcher PROPERTIES
+set_target_properties(proxy_pdf PROPERTIES
 	VS_DEBUGGER_COMMAND_ARGUMENTS ""
 	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 set_target_properties(proxy_pdf_cli PROPERTIES
@@ -425,7 +400,7 @@ group_files("${proxy_pdf_lib_sources};${proxy_pdf_lib_headers};${proxy_pdf_sourc
 
 # --------------------------------------------------
 # Set startup project
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf_launcher)
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT proxy_pdf)
 
 # --------------------------------------------------
 # Include install-hooks to generate install manifest
@@ -435,7 +410,6 @@ include(cmake/generate_install_manifest.cmake)
 # Install exectuable and resource files
 install(TARGETS
 	proxy_pdf
-	proxy_pdf_launcher
 	proxy_pdf_cli
 	RUNTIME
 	DESTINATION .)
@@ -446,4 +420,4 @@ install(FILES
 
 # --------------------------------------------------
 # Bundle install manifest with the launcher
-qt_target_add_install_manifest(proxy_pdf_launcher "install_manifest.txt")
+qt_target_add_install_manifest(proxy_pdf "install_manifest.txt")

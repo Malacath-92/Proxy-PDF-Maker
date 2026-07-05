@@ -140,10 +140,10 @@ function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
     endif()
 
     set_source_files_properties("${QRC_FILE}" PROPERTIES
-        QT_RESOURCE_ALIAS "resources.qrc"
+        QT_RESOURCE_ALIAS "install_manifest_resources.qrc"
     )
     target_sources(${TARGET_NAME} PRIVATE "${QRC_FILE}")
-    qt_add_resources(${TARGET_NAME} "resources"
+    qt_add_resources(${TARGET_NAME} "install_manifest_resources"
         FILES "${QRC_FILE}"
     )
     add_dependencies(${TARGET_NAME} ${MANIFEST_TARGET_NAME})

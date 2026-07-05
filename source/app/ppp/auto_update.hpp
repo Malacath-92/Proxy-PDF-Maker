@@ -13,6 +13,9 @@ enum class AutoUpdateConclusion
     Error,
 };
 
+// Download binaries and extract to a sub-folder
+bool AutoUpdateDownloadRelease(std::string_view version);
+
 // Try to start the auto-update progress
 AutoUpdateConclusion AutoUpdateTryInitialize(std::span<char*> argv);
 
