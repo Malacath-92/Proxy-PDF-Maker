@@ -149,7 +149,7 @@ class OverridesProvider : public JsonProvider
     const ProjectOverrides& m_Overrides;
 };
 
-CommandLineOptions ParseCommandLine(std::span<const char*> argv)
+CommandLineOptions ParseCommandLine(std::span<char*> argv)
 {
     using namespace std::string_view_literals;
 
