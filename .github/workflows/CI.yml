@@ -154,8 +154,8 @@ jobs:
         id: hash_pre
         shell: bash
         run: |
-          echo "old_app_hash=${{ hashFiles('publish/*') }}" >> $GITHUB_OUTPUT
-          echo "new_app_hash=${{ hashFiles('publish/_proxy_pdf_update/*') }}" >> $GITHUB_OUTPUT
+          echo "old_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
+          echo "new_app_hash=${{ hashFiles('publish/_proxy_pdf_update/proxy_pdf*') }}" >> $GITHUB_OUTPUT
 
       - name: Execute fake Update
         if: ${{ inputs.os != 'Windows' }}
@@ -173,8 +173,8 @@ jobs:
         id: hash_post
         shell: bash
         run: |
-          echo "backup_app_hash=${{ hashFiles('publish/_proxy_pdf_backup/*') }}" >> $GITHUB_OUTPUT
-          echo "update_app_hash=${{ hashFiles('publish/*') }}" >> $GITHUB_OUTPUT
+          echo "backup_app_hash=${{ hashFiles('publish/_proxy_pdf_backup/proxy_pdf*') }}" >> $GITHUB_OUTPUT
+          echo "update_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
 
       - name: Verify Update Success
         shell: bash
