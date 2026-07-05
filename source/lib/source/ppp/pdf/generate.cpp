@@ -477,7 +477,7 @@ PdfResults GeneratePdf(const Project& project)
                         },
                         .m_Size{ transform.m_Size },
                         .m_CornerSize{ corner_size },
-                        .m_CustomShape{ custom_card_shape },
+                        .m_CustomShape = custom_card_shape,
                         .m_Rotation = transform.m_Rotation,
                         .m_ClipRect{
                             transform.m_ClipRect.and_then(
