@@ -141,7 +141,6 @@ jobs:
 
       - name: Reconfigure fake Update
         run: |
-          mkdir build
           cd build
           cmake .. -Wno-dev -DPPP_BUILD_TESTS=OFF -DPPP_BUILD_FAKE_UPDATE=ON
 
@@ -151,17 +150,17 @@ jobs:
             cmake --build . --config ${{inputs.build_type}}
             cmake --install . --config ${{inputs.build_type}}
 
-      - name: Execute fake Update
-        if: ${{ inputs.os != 'Windows' }}
-        run: |
-            cd publish
-            .\proxy_pdf
-
       - name: Hash Pre-Update
         id: hash_pre
         run: |
           echo "old_app_hash=${{ hashFIles('publish/*') }} }}" >> $GITHUB_OUTPUT
           echo "new_app_hash=${{ hashFIles('publish/_proxy_pdf_update/*') }} }}" >> $GITHUB_OUTPUT
+
+      - name: Execute fake Update
+        if: ${{ inputs.os != 'Windows' }}
+        run: |
+            cd publish
+            .\proxy_pdf
 
       - name: Execute fake Update (Windows)
         if: ${{ inputs.os == 'Windows' }}
