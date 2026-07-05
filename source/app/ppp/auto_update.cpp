@@ -237,16 +237,15 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 #elif defined(__linux__)
         "ubunutu_"
 #else
-#error "Unknown Platform"
+        #error "Unknown Platform"
 #endif
 
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64)
-        "amd64"
-        //"x86_64"
-#elif defined(__i386__) || defined(_M_IX86)
+        "x86_64"
+#elif defined(__aarch64__) || defined(_M_ARM64)
         "arm64"
 #else
-#error "Unknown Arch"
+        #error "Unknown Arch"
 #endif
 
 #if defined(__linux__)
