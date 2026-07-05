@@ -272,12 +272,6 @@ int main(int argc, char** raw_argv)
     if (cli.m_Update)
 
     {
-        if (!NewAvailableVersion().has_value())
-        {
-            LogInfo("No newer version is available...");
-            return 0;
-        }
-
         try
         {
             if (auto auto_update_phase{ ResolveAutoUpdatePhase(argv) })
@@ -289,13 +283,33 @@ int main(int argc, char** raw_argv)
             }
             else
             {
-                switch (AutoUpdateTryInitialize(argv))
+                const auto auto_update_conclusion{
+                    [&]()
+                    {
+                        const auto auto_update_conclusion{
+                            AutoUpdateTryInitialize(argv)
+                        };
+                        if (auto_update_conclusion == AutoUpdateConclusion::NoUpdate)
+                        {
+                            if (!NewAvailableVersion().has_value())
+                            {
+                                LogInfo("No newer version is available...");
+                                return AutoUpdateConclusion::Error;
+                            }
+                            return AutoUpdateTryInitialize(argv);
+                        }
+                        return auto_update_conclusion;
+                    }()
+                };
+
+                switch (auto_update_conclusion)
                 {
                 default:
                     [[fallthrough]];
                 case AutoUpdateConclusion::Initiated:
                     return 0;
                 case AutoUpdateConclusion::Error:
+                    LogError("Failed to initiated auto-update...");
                     return 1;
                 }
             }

@@ -373,35 +373,28 @@ AutoUpdateConclusion AutoUpdateTryInitialize(std::span<char*> argv)
     const auto update_folder{ c_ExeDir / c_UpdateFolder };
     if (fs::exists(update_folder) && std::filesystem::is_directory(update_folder))
     {
-        try
+        if (fs::exists(c_ExeDir / c_BackupFolder))
         {
-            if (fs::exists(c_ExeDir / c_BackupFolder))
-            {
-                fs::remove_all(c_ExeDir / c_BackupFolder);
-            }
-
-            // Write out old version's install manifest
-            if (!ExtractInstallManifest(c_ExeDir))
-            {
-                return AutoUpdateConclusion::Error;
-            }
-
-            // Execute the new executable to backup the old version
-            Execute(
-                ToQString(update_folder / c_ExeName),
-                argv | std::views::drop(1),
-                {
-                    c_AutoUpdateBackupOldVersion,                     // move
-                    ToQString(c_ExeDir),                              // path
-                    ToQString(c_ExeDir / c_InstallManifestExtracted), // manifest
-                });
-
-            return AutoUpdateConclusion::Initiated;
+            fs::remove_all(c_ExeDir / c_BackupFolder);
         }
-        catch (...)
+
+        // Write out old version's install manifest
+        if (!ExtractInstallManifest(c_ExeDir))
         {
             return AutoUpdateConclusion::Error;
         }
+
+        // Execute the new executable to backup the old version
+        Execute(
+            ToQString(update_folder / c_ExeName),
+            argv | std::views::drop(1),
+            {
+                c_AutoUpdateBackupOldVersion,                     // move
+                ToQString(c_ExeDir),                              // path
+                ToQString(c_ExeDir / c_InstallManifestExtracted), // manifest
+            });
+
+        return AutoUpdateConclusion::Initiated;
     }
 
     return AutoUpdateConclusion::NoUpdate;
