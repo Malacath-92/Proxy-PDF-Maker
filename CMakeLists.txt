@@ -224,6 +224,8 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	nlohmann_json::nlohmann_json
 	efsw::efsw
 	magic_enum::magic_enum
+	LibArchive::LibArchive
+	whereami::whereami
 	OpenSSL::SSL
 	OpenSSL::Crypto
 	Qt6::Core
@@ -346,8 +348,6 @@ endif()
 target_link_libraries(proxy_pdf PRIVATE
 	qt_toast_lib
 	onnxruntime::onnxruntime
-	LibArchive::LibArchive
-	whereami::whereami
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
