@@ -431,4 +431,5 @@ install(FILES
 
 # --------------------------------------------------
 # Bundle install manifest with the launcher
-qt_target_add_install_manifest(proxy_pdf_lib "install_manifest.txt")
+qt_target_add_install_manifest(proxy_pdf "install_manifest_resources" "install_manifest.txt")
+qt_target_add_install_manifest(proxy_pdf_cli "cli_install_manifest_resources" "install_manifest.txt")

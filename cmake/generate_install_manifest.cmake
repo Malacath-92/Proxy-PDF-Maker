@@ -85,7 +85,7 @@ function(install)
     set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "${_GLOBAL_INTERNAL_INSTALL_MANIFEST}" PARENT_SCOPE)
 endfunction()
 
-function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
+function(qt_target_add_install_manifest TARGET_NAME MANIFEST_ALIAS ALIAS_PATH)
     set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_manifest_${TARGET_NAME}")
     set(MANIFEST_FILE "${GEN_DIR}/install_manifest.txt")
     set(QRC_FILE "${GEN_DIR}/resources_${TARGET_NAME}.qrc")
@@ -132,11 +132,11 @@ function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
     endif()
 
     set_source_files_properties("${QRC_FILE}" PROPERTIES
-        QT_RESOURCE_ALIAS "install_manifest_resources.qrc"
+        QT_RESOURCE_ALIAS "${MANIFEST_ALIAS}.qrc"
     )
 
     target_sources(${TARGET_NAME} PRIVATE "${QRC_FILE}")
-    qt_add_resources(${TARGET_NAME} "install_manifest_resources"
+    qt_add_resources(${TARGET_NAME} "${MANIFEST_ALIAS}"
         FILES "${QRC_FILE}"
     )
     add_dependencies(${TARGET_NAME} ${MANIFEST_TARGET_NAME})
