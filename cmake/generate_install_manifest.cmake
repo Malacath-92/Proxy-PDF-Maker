@@ -1,6 +1,4 @@
 set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "")
-set(_GLOBAL_INTERNAL_QRC_FILE "")
-set(_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "")
 
 function(install)
     _install(${ARGV})
@@ -137,16 +135,19 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
         QT_RESOURCE_ALIAS "install_manifest_resources.qrc"
     )
 
-    set(_GLOBAL_INTERNAL_QRC_FILE "${QRC_FILE}" PARENT_SCOPE)
-    set(_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "${MANIFEST_TARGET_NAME}" PARENT_SCOPE)
+    message(STATUS "Generated install manifest target ${MANIFEST_TARGET_NAME} backed by .qrc file ${QRC_FILE}")
 
-    message(STATUS "Generated install manifest target ${_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME} backed by .qrc file ${_GLOBAL_INTERNAL_QRC_FILE}")
+    set_property(GLOBAL PROPERTY GLOBAL_INTERNAL_QRC_FILE "${QRC_FILE}")
+    set_property(GLOBAL PROPERTY GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "${MANIFEST_TARGET_NAME}")
 endfunction()
 
 function(qt_target_add_install_manifest TARGET_NAME)
-    target_sources(${TARGET_NAME} PRIVATE "${_GLOBAL_INTERNAL_QRC_FILE}")
+    get_property(QRC_FILE GLOBAL PROPERTY GLOBAL_INTERNAL_QRC_FILE)
+    get_property(MANIFEST_TARGET GLOBAL PROPERTY GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME)
+
+    target_sources(${TARGET_NAME} PRIVATE "${QRC_FILE}")
     qt_add_resources(${TARGET_NAME} "install_manifest_resources"
-        FILES "${_GLOBAL_INTERNAL_QRC_FILE}"
+        FILES "${QRC_FILE}"
     )
-    add_dependencies(${TARGET_NAME} ${_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME})
+    add_dependencies(${TARGET_NAME} ${MANIFEST_TARGET})
 endfunction()
