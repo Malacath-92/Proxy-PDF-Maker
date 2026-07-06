@@ -139,6 +139,8 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
 
     set(_GLOBAL_INTERNAL_QRC_FILE "${QRC_FILE}" PARENT_SCOPE)
     set(_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "${MANIFEST_TARGET_NAME}" PARENT_SCOPE)
+
+    message(STATUS "Generated install manifest target ${_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME} backed by .qrc file ${_GLOBAL_INTERNAL_QRC_FILE}")
 endfunction()
 
 function(qt_target_add_install_manifest TARGET_NAME)
