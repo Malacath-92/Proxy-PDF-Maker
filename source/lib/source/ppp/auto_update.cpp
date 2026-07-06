@@ -344,7 +344,7 @@ bool AutoUpdateDownloadRelease(std::string_view version)
     default:
         if (unzip_worker->HasError())
         {
-            throw std::logic_error{ unzip_worker->GetError() };
+            LogFatal("Unzip Error: {}", unzip_worker->GetError());
         }
         return false;
     }
@@ -385,6 +385,10 @@ bool ExtractInstallManifest(const fs::path& dir)
         {
             manifest_out.write(manifest_in.readAll());
         }
+    }
+    else
+    {
+        LogFatal("Failed opening bundled install manifest...");
     }
 
     return true;
@@ -456,11 +460,11 @@ void MoveFileWithRetryStrategy(const fs::path& from, const fs::path& to)
         }
         else
         {
-            throw std::logic_error{ "Can't move file..." };
+            LogFatal("Can't move file {}...", from.string());
         }
     }
 
-    throw std::logic_error{ "Can't move file after retries..." };
+    LogFatal("Can't move file {} after retries...", from.string());
 }
 
 QStringList ExtractManifestContents(const fs::path& manifest_path)
@@ -477,7 +481,7 @@ QStringList ExtractManifestContents(const fs::path& manifest_path)
     }
     else
     {
-        throw std::logic_error{ "Failed reading old install manifest..." };
+        LogFatal("Failed reading old install manifest...");
     }
     return manifest_out;
 }
@@ -506,7 +510,7 @@ bool AutoUpdateBackupOldVersion(std::span<char*> argv)
     // Write out new version's install manifest
     if (!ExtractInstallManifest(from))
     {
-        throw std::logic_error{ "Failed writing old install manifest..." };
+        LogFatal("Failed writing old install manifest...");
     }
 
     // Execute the backed-up executable to move the new executable
