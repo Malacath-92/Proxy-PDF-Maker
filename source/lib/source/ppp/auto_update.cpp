@@ -375,8 +375,6 @@ bool ExtractInstallManifest(const fs::path& dir)
         fs::remove(target_manifest);
     }
 
-    Q_INIT_RESOURCE(install_manifest_resources);
-
     QFile manifest_in{ c_InstallManifestBundled };
     if (manifest_in.open(QIODevice::ReadOnly | QIODevice::Text))
     {
