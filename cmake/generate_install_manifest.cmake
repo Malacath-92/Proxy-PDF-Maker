@@ -107,8 +107,8 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
 </RCC>\n"
     )
 
-    set(MANIFEST_PROJECT_NAME "${PROJECT_NAME}_generate_install_manifest")
-    add_custom_target(${MANIFEST_PROJECT_NAME} ALL
+    set(MANIFEST_TARGET_NAME "${PROJECT_NAME}_generate_install_manifest")
+    add_custom_target(${MANIFEST_TARGET_NAME} ALL
         DEPENDS "${MANIFEST_FILE}" "${QRC_FILE}"
         COMMENT "Generating install manifest for ${PROJECT_NAME}..."
     )
@@ -118,7 +118,7 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
         set(USER_TARGET_FOLDER "${AUTOGEN_TARGETS_FOLDER}")
     endif()
     if(USER_TARGET_FOLDER)
-        set_target_properties(${MANIFEST_PROJECT_NAME} PROPERTIES
+        set_target_properties(${MANIFEST_TARGET_NAME} PROPERTIES
             FOLDER "${USER_TARGET_FOLDER}"
         )
     endif()
