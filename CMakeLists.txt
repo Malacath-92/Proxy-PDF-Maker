@@ -431,6 +431,5 @@ install(FILES
 
 # --------------------------------------------------
 # Bundle install manifest with the launcher
-qt_generate_install_manifest(${CMAKE_PROJECT_NAME} "install_manifest.txt")
-qt_target_add_install_manifest(proxy_pdf)
-qt_target_add_install_manifest(proxy_pdf_cli)
+qt_target_add_install_manifest(proxy_pdf "install_manifest.txt")
+qt_target_add_install_manifest(proxy_pdf_cli "install_manifest.txt")

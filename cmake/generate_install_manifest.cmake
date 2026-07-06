@@ -85,10 +85,10 @@ function(install)
     set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "${_GLOBAL_INTERNAL_INSTALL_MANIFEST}" PARENT_SCOPE)
 endfunction()
 
-function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
-    set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_manifest_${PROJECT_NAME}")
+function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
+    set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_manifest_${TARGET_NAME}")
     set(MANIFEST_FILE "${GEN_DIR}/install_manifest.txt")
-    set(QRC_FILE "${GEN_DIR}/resources_${PROJECT_NAME}.qrc")
+    set(QRC_FILE "${GEN_DIR}/resources_${TARGET_NAME}.qrc")
 
     file(MAKE_DIRECTORY "${GEN_DIR}")
 
@@ -107,10 +107,10 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
 </RCC>\n"
     )
 
-    set(MANIFEST_TARGET_NAME "${PROJECT_NAME}_generate_install_manifest")
+    set(MANIFEST_TARGET_NAME "${TARGET_NAME}_generate_install_manifest")
     add_custom_target(${MANIFEST_TARGET_NAME} ALL
         DEPENDS "${MANIFEST_FILE}" "${QRC_FILE}"
-        COMMENT "Generating install manifest for ${PROJECT_NAME}..."
+        COMMENT "Generating install manifest for ${TARGET_NAME}..."
     )
 
     get_property(USER_TARGET_FOLDER GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER)
@@ -134,16 +134,6 @@ function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
     set_source_files_properties("${QRC_FILE}" PROPERTIES
         QT_RESOURCE_ALIAS "install_manifest_resources.qrc"
     )
-
-    message(STATUS "Generated install manifest target ${MANIFEST_TARGET_NAME} backed by .qrc file ${QRC_FILE}")
-
-    set_property(GLOBAL PROPERTY GLOBAL_INTERNAL_QRC_FILE "${QRC_FILE}")
-    set_property(GLOBAL PROPERTY GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "${MANIFEST_TARGET_NAME}")
-endfunction()
-
-function(qt_target_add_install_manifest TARGET_NAME)
-    get_property(QRC_FILE GLOBAL PROPERTY GLOBAL_INTERNAL_QRC_FILE)
-    get_property(MANIFEST_TARGET GLOBAL PROPERTY GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME)
 
     target_sources(${TARGET_NAME} PRIVATE "${QRC_FILE}")
     qt_add_resources(${TARGET_NAME} "install_manifest_resources"
