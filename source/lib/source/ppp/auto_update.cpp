@@ -31,6 +31,7 @@
 
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
+#include <ppp/util/log.hpp>
 
 namespace fs = std::filesystem;
 
@@ -355,6 +356,9 @@ void Execute(QString process, std::span<char*> argv, QStringList extra_args = {}
     {
         extra_args.append(arg);
     }
+    LogInfo("Executing detached subprocess: {} {}",
+            process.toStdString(),
+            extra_args.join(" ").toStdString());
     QProcess::startDetached(process, extra_args);
 }
 
