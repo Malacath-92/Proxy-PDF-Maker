@@ -638,6 +638,9 @@ int main(int argc, char** argv)
             static auto s_AutoUpdate{
                 [main_window](std::string_view version)
                 {
+                    // Resource from the static lib, but needs to be initialized in the executable code
+                    Q_INIT_RESOURCE(install_manifest_resources);
+
                     if (AutoUpdateDownloadRelease(version))
                     {
                         static constexpr char c_Restart[]{ "#restart" };

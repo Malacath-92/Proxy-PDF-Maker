@@ -297,6 +297,10 @@ int main(int argc, char** raw_argv)
                                 LogInfo("No newer version is available...");
                                 return AutoUpdateConclusion::Error;
                             }
+
+                            // Resource from the static lib, but needs to be initialized in the executable code
+                            Q_INIT_RESOURCE(install_manifest_resources);
+
                             if (!AutoUpdateDownloadRelease(new_version.value()))
                             {
                                 LogInfo("No newer version could not be downloaded...");
