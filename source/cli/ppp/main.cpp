@@ -300,7 +300,7 @@ int main(int argc, char** raw_argv)
 
                             // Resource used in the static lib, but needs to be initialized
                             // in the executable code
-                            Q_INIT_RESOURCE(install_manifest_resources);
+                            Q_INIT_RESOURCE(cli_install_manifest_resources);
 
                             if (!AutoUpdateDownloadRelease(new_version.value()))
                             {
