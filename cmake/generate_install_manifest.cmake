@@ -1,6 +1,6 @@
 set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "")
-
-set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "")
+set(_GLOBAL_INTERNAL_QRC_FILE "")
+set(_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "")
 
 function(install)
     _install(${ARGV})
@@ -87,10 +87,10 @@ function(install)
     set(_GLOBAL_INTERNAL_INSTALL_MANIFEST "${_GLOBAL_INTERNAL_INSTALL_MANIFEST}" PARENT_SCOPE)
 endfunction()
 
-function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
-    set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_manifest_${TARGET_NAME}")
+function(qt_generate_install_manifest PROJECT_NAME ALIAS_PATH)
+    set(GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_manifest_${PROJECT_NAME}")
     set(MANIFEST_FILE "${GEN_DIR}/install_manifest.txt")
-    set(QRC_FILE "${GEN_DIR}/resources_${TARGET_NAME}.qrc")
+    set(QRC_FILE "${GEN_DIR}/resources_${PROJECT_NAME}.qrc")
 
     file(MAKE_DIRECTORY "${GEN_DIR}")
 
@@ -109,29 +109,23 @@ function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
 </RCC>\n"
     )
 
-    set(MANIFEST_TARGET_NAME "${TARGET_NAME}_generate_install_manifest")
-    add_custom_target(${MANIFEST_TARGET_NAME} ALL
+    set(MANIFEST_PROJECT_NAME "${PROJECT_NAME}_generate_install_manifest")
+    add_custom_target(${MANIFEST_PROJECT_NAME} ALL
         DEPENDS "${MANIFEST_FILE}" "${QRC_FILE}"
-        COMMENT "Generating install manifest for ${TARGET_NAME}..."
+        COMMENT "Generating install manifest for ${PROJECT_NAME}..."
     )
 
-    get_target_property(USER_TARGET_FOLDER ${TARGET_NAME} AUTOGEN_TARGETS_FOLDER)
-    if(NOT USER_TARGET_FOLDER)
-        get_property(USER_TARGET_FOLDER GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER)
-    endif()
+    get_property(USER_TARGET_FOLDER GLOBAL PROPERTY AUTOGEN_TARGETS_FOLDER)
     if(NOT USER_TARGET_FOLDER AND DEFINED AUTOGEN_TARGETS_FOLDER)
         set(USER_TARGET_FOLDER "${AUTOGEN_TARGETS_FOLDER}")
     endif()
     if(USER_TARGET_FOLDER)
-        set_target_properties(${MANIFEST_TARGET_NAME} PROPERTIES
+        set_target_properties(${MANIFEST_PROJECT_NAME} PROPERTIES
             FOLDER "${USER_TARGET_FOLDER}"
         )
     endif()
 
-    get_target_property(USER_SOURCE_GROUP ${TARGET_NAME} AUTOGEN_SOURCE_GROUP)
-    if(NOT USER_TARGET_FOLDER)
-        get_property(USER_SOURCE_GROUP GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP)
-    endif()
+    get_property(USER_SOURCE_GROUP GLOBAL PROPERTY AUTOGEN_SOURCE_GROUP)
     if(NOT USER_SOURCE_GROUP AND DEFINED AUTOGEN_SOURCE_GROUP)
         set(USER_SOURCE_GROUP "${AUTOGEN_SOURCE_GROUP}")
     endif()
@@ -142,9 +136,15 @@ function(qt_target_add_install_manifest TARGET_NAME ALIAS_PATH)
     set_source_files_properties("${QRC_FILE}" PROPERTIES
         QT_RESOURCE_ALIAS "install_manifest_resources.qrc"
     )
-    target_sources(${TARGET_NAME} PRIVATE "${QRC_FILE}")
+
+    set(_GLOBAL_INTERNAL_QRC_FILE "${QRC_FILE}" PARENT_SCOPE)
+    set(_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME "${MANIFEST_TARGET_NAME}" PARENT_SCOPE)
+endfunction()
+
+function(qt_target_add_install_manifest TARGET_NAME)
+    target_sources(${TARGET_NAME} PRIVATE "${_GLOBAL_INTERNAL_QRC_FILE}")
     qt_add_resources(${TARGET_NAME} "install_manifest_resources"
-        FILES "${QRC_FILE}"
+        FILES "${_GLOBAL_INTERNAL_QRC_FILE}"
     )
-    add_dependencies(${TARGET_NAME} ${MANIFEST_TARGET_NAME})
+    add_dependencies(${TARGET_NAME} ${_GLOBAL_INTERNAL_INSTALL_MANIFEST_TARGET_NAME})
 endfunction()
