@@ -670,7 +670,18 @@ int main(int argc, char** argv)
                 {
                     if (link == c_AutoUpdate)
                     {
-                        s_AutoUpdate(new_version.value());
+                        try
+                        {
+                            s_AutoUpdate(new_version.value());
+                        }
+                        catch (const std::exception& e)
+                        {
+                            LogError("Error during Auto-Update: {}", e.what());
+                            main_window->Toast(
+                                ToastType::Error,
+                                "Auto-Update Error",
+                                "Failed downloading new version...");
+                        }
                     }
                     else
                     {

@@ -127,8 +127,8 @@ class UnzipWorker : public QObject, public QRunnable
             const auto write_header_res{ archive_write_header(writer, entry) };
             if (write_header_res < ARCHIVE_OK)
             {
-                // TODO: Handle error
-                continue;
+                Failed("Failed writing file header while extracting file from archive.");
+                return;
             }
 
             // Extract the file content by streaming data blocks from reader to writer
@@ -149,8 +149,8 @@ class UnzipWorker : public QObject, public QRunnable
                     }
                     if (read_block_res < ARCHIVE_OK)
                     {
-                        // TODO: Handle error
-                        break;
+                        Failed("Failed reading data from archive.");
+                        return;
                     }
 
                     const auto write_block_res{
@@ -158,7 +158,7 @@ class UnzipWorker : public QObject, public QRunnable
                     };
                     if (write_block_res < ARCHIVE_OK)
                     {
-                        // TODO: Handle error
+                        Failed("Failed writing data from archive to disk.");
                         break;
                     }
                 }
@@ -180,6 +180,14 @@ class UnzipWorker : public QObject, public QRunnable
     {
         return m_Conclusion;
     }
+    bool HasError() const
+    {
+        return !m_Error.empty();
+    }
+    const std::string& GetError() const
+    {
+        return m_Error;
+    }
 
   signals:
     void Done();
@@ -188,6 +196,12 @@ class UnzipWorker : public QObject, public QRunnable
     void Failed()
     {
         m_Conclusion = Conclusion::Failed;
+        Done();
+    }
+    void Failed(std::string error)
+    {
+        m_Conclusion = Conclusion::Failed;
+        m_Error = std::move(error);
         Done();
     }
     void Succeeded()
@@ -199,6 +213,7 @@ class UnzipWorker : public QObject, public QRunnable
     QByteArray m_ArchiveData;
     fs::path m_OutputFolder;
     Conclusion m_Conclusion = Conclusion::Pending;
+    std::string m_Error;
 };
 
 bool AutoUpdateDownloadRelease(std::string_view version)
@@ -326,6 +341,10 @@ bool AutoUpdateDownloadRelease(std::string_view version)
     case UnzipWorker::Conclusion::Success:
         return true;
     default:
+        if (unzip_worker->HasError())
+        {
+            throw std::logic_error{ unzip_worker->GetError() };
+        }
         return false;
     }
 }

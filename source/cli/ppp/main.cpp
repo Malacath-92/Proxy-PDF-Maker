@@ -291,9 +291,15 @@ int main(int argc, char** raw_argv)
                         };
                         if (auto_update_conclusion == AutoUpdateConclusion::NoUpdate)
                         {
-                            if (!NewAvailableVersion().has_value())
+                            const auto new_version{ NewAvailableVersion() };
+                            if (!new_version.has_value())
                             {
                                 LogInfo("No newer version is available...");
+                                return AutoUpdateConclusion::Error;
+                            }
+                            if (!AutoUpdateDownloadRelease(new_version.value()))
+                            {
+                                LogInfo("No newer version could not be downloaded...");
                                 return AutoUpdateConclusion::Error;
                             }
                             return AutoUpdateTryInitialize(argv);
