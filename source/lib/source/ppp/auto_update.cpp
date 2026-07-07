@@ -258,7 +258,7 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 #elif defined(__APPLE__) && defined(__MACH__)
 #define PLATFORM "osx_"
 #elif defined(__linux__)
-#define PLATFORM "ubunutu_"
+#define PLATFORM "ubuntu_"
 #else
 #error "Unknown Platform"
 #endif
