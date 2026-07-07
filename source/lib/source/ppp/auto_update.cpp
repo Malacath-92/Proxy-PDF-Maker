@@ -32,6 +32,7 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
+#include <ppp/version.hpp>
 
 namespace fs = std::filesystem;
 
