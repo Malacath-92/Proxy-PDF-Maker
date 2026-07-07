@@ -11,6 +11,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 
+#include <ppp/github_request.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
@@ -24,13 +25,9 @@ std::optional<std::string> NewAvailableVersion()
 {
     QNetworkAccessManager network_manager;
 
-    QNetworkRequest request{ ToQString(c_LatestReleaesURI) };
-    request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
-                      ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
-    request.setRawHeader("Accept",
-                         "*/*");
-
+    QNetworkRequest request{ PrepareGithubRequest(ToQString(c_LatestReleaesURI)) };
     QNetworkReply* reply{ network_manager.get(std::move(request)) };
+
     {
         QEventLoop loop;
         QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);

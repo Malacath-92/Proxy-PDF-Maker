@@ -146,16 +146,11 @@ jobs:
           echo "old_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
 
       - name: Execute fake Update
-        if: ${{ inputs.os != 'Windows' }}
+        env:
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
             cd publish
             ./proxy_pdf_cli --update
-
-      - name: Execute fake Update (Windows)
-        if: ${{ inputs.os == 'Windows' }}
-        run: |
-            cd publish
-            ./proxy_pdf_cli.exe --update
 
       - name: Hash Post-Update
         id: hash_post
