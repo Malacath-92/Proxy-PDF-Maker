@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-07-07
+
+### Added
+- A button in the card grid that lets you modify the amount of each card in a decklist format, featuring full auto-complete features.
+
+### Changed
+- In `No Crop Mode` the rounded corner option now uses only clipping paths, speeding up pdf generation in that case.
+
+### Fixed
+- Rounded corner option works in `No Crop Mode` again.
+- `No Crop Mode` and `Render to PNG` now function together as expected.
+- Image files downloaded from Scryfall from a query now have a name matching cards downloaded via a decklist.
+
 ## [1.7.1] - 2026-22-05
 
 ### Fixed
