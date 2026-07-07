@@ -6,6 +6,7 @@
 
 #include <QEventLoop>
 #include <QJsonDocument>
+#include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -39,7 +40,8 @@ std::optional<std::string> NewAvailableVersion()
 
     if (reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        LogWarning("Failed fetching latests release.");
+        LogWarning("Failed fetching latests release: {}",
+                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(reply->error()));
         return std::nullopt;
     }
 
