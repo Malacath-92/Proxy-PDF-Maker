@@ -664,6 +664,8 @@ int main(int argc, char** argv)
                 "New version available",
                 QString{ "<a style=\"color:CornflowerBlue\" href=\"%1\">"
                          "Download the new version %2 from GitHub"
+                         "</a> or <a style=\"color:CornflowerBlue\" href=\"%3\">"
+                         "Auto-Update"
                          "</a>" }
                     .arg(ReleaseURL(new_version.value()).c_str())
                     .arg(new_version.value().c_str())
