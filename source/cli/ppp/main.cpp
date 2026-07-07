@@ -29,6 +29,7 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/pdf/generate.hpp>
 
 #include <ppp/auto_update.hpp>
+#include <ppp/version.hpp>
 #include <ppp/version_check.hpp>
 
 using ProjectOverrides = std::unordered_map<std::string, std::string>;
@@ -160,7 +161,10 @@ CommandLineOptions ParseCommandLine(std::span<char*> argv)
 
     if (std::ranges::contains(argv, "--help"sv))
     {
-        fmt::print("{}", c_HelpStr);
+        fmt::print("{}/{}\n{}",
+                   fs::path{ argv[0] }.filename().string(),
+                   ProxyPdfVersion(),
+                   c_HelpStr);
         cli.m_HelpDisplayed = true;
         return cli;
     }
