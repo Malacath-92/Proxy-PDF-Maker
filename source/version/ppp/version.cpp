@@ -41,7 +41,7 @@ SemanticVersion ProxyPdfToSemanticVersion(std::string_view version)
                 part = part.substr(0, part.find('-'));
             }
 
-            int32_t i;
+            int32_t i{ 0 };
             std::from_chars(part.data(), part.data() + part.size(), i);
             return i;
         }
