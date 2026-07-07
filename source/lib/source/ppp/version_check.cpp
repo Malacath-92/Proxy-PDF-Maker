@@ -12,6 +12,7 @@
 
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
+#include <ppp/util/log.hpp>
 #include <ppp/version.hpp>
 
 inline constexpr std::string_view c_LatestReleaesURI{
@@ -38,14 +39,14 @@ std::optional<std::string> NewAvailableVersion()
 
     if (reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        // Failed fetching latest release
+        LogWarning("Failed fetching latests release.");
         return std::nullopt;
     }
 
     const auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
     if (reply_json.isEmpty())
     {
-        // Empty reply
+        LogWarning("Empty reply for latestst release.");
         return std::nullopt;
     }
 
@@ -57,6 +58,9 @@ std::optional<std::string> NewAvailableVersion()
 
     if (latest_semver <= this_semver)
     {
+        LogInfo("Latestst release is not newer than current: {} <= {}",
+                latest_version,
+                this_version);
         return std::nullopt;
     }
 
