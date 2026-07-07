@@ -223,8 +223,12 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     const auto release_url{ fmt::format("https://api.github.com/repos/Malacath-92/Proxy-PDF-Maker/releases/tags/{}", version) };
     QNetworkRequest release_json_request{ ToQString(release_url) };
-    QNetworkReply* release_json_reply{ network_manager.get(std::move(release_json_request)) };
+    release_json_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                                   ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    release_json_request.setRawHeader("Accept",
+                                      "*/*");
 
+    QNetworkReply* release_json_reply{ network_manager.get(std::move(release_json_request)) };
     {
         QEventLoop loop;
         QObject::connect(release_json_reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
@@ -300,8 +304,12 @@ bool AutoUpdateDownloadRelease(std::string_view version)
     }
 
     QNetworkRequest release_data_request{ asset_url.value() };
-    QNetworkReply* release_data_reply{ network_manager.get(std::move(release_data_request)) };
+    release_data_request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                                   ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    release_data_request.setRawHeader("Accept",
+                                      "*/*");
 
+    QNetworkReply* release_data_reply{ network_manager.get(std::move(release_data_request)) };
     {
         QEventLoop loop;
         QObject::connect(release_data_reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);

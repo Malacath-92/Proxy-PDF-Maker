@@ -25,8 +25,12 @@ std::optional<std::string> NewAvailableVersion()
     QNetworkAccessManager network_manager;
 
     QNetworkRequest request{ ToQString(c_LatestReleaesURI) };
-    QNetworkReply* reply{ network_manager.get(std::move(request)) };
+    request.setHeader(QNetworkRequest::KnownHeaders::UserAgentHeader,
+                      ToQString(fmt::format("Proxy-PDF-Maker/{}", ProxyPdfVersion())));
+    request.setRawHeader("Accept",
+                         "*/*");
 
+    QNetworkReply* reply{ network_manager.get(std::move(request)) };
     {
         QEventLoop loop;
         QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
