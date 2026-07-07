@@ -324,7 +324,7 @@ int main(int argc, char** raw_argv)
                 case AutoUpdateConclusion::Initiated:
                     return 0;
                 case AutoUpdateConclusion::Error:
-                    LogError("Failed to initiated auto-update...");
+                    LogError("Failed to initiate auto-update...");
                     return 1;
                 }
             }
