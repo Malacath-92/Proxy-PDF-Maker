@@ -23,7 +23,8 @@ class ScryfallDownloader : public CardArtDownloader
 
   public:
     ScryfallDownloader(std::vector<QString> skip_files,
-                       const std::optional<QString>& backside_pattern);
+                       const std::optional<QString>& backside_pattern,
+                       bool download_art_crops);
     virtual ~ScryfallDownloader() override;
 
     virtual bool ParseInput(const QString& input) override;
@@ -39,7 +40,7 @@ class ScryfallDownloader : public CardArtDownloader
     virtual bool ProvidesBleedEdge() const override;
 
   private slots:
-    void OnError(){};
+    void OnError() {};
 
   private:
     static bool HasBackside(const QJsonDocument& card_info);
@@ -53,6 +54,8 @@ class ScryfallDownloader : public CardArtDownloader
     std::unique_ptr<ScryfallDataEndpoint> m_DataEndpoint;
 
     std::unique_ptr<ScryfallSearchEndpoint> m_SearchEndpoint;
+
+    bool m_DownloadArtCrops;
 
     std::vector<QString> m_Queries;
     std::optional<QString> m_QueryMoreData;

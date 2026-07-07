@@ -14,8 +14,10 @@
 #include <ppp/plugins/mtg_card_downloader/scryfall_endpoints.hpp>
 
 ScryfallDownloader::ScryfallDownloader(std::vector<QString> skip_files,
-                                       const std::optional<QString>& backside_pattern)
+                                       const std::optional<QString>& backside_pattern,
+                                       bool download_art_crops)
     : CardArtDownloader{ std::move(skip_files), backside_pattern }
+    , m_DownloadArtCrops{ download_art_crops }
 {
     using namespace std::chrono_literals;
 }
@@ -327,7 +329,10 @@ void ScryfallDownloader::DownloadCardImages()
         if (has_backside)
         {
             const auto& card_faces{ card_info["card_faces"] };
-            const auto& request_uri{ card_faces[0]["image_uris"]["png"] };
+            const auto& image_uris{ card_faces[0]["image_uris"] };
+            const auto& request_uri{ m_DownloadArtCrops
+                                         ? image_uris["art_crop"]
+                                         : image_uris["png"] };
             m_DataEndpoint->Call(request_uri.toString(),
                                  [&card, image_available](const QByteArray& data)
                                  {
@@ -341,7 +346,10 @@ void ScryfallDownloader::DownloadCardImages()
                 {
                     LogInfo("Requesting backside artwork for card {}", card.m_Name.toStdString());
 
-                    const auto& back_face_uri{ card_faces[1]["image_uris"]["png"] };
+                    const auto& back_image_uris{ card_faces[1]["image_uris"] };
+                    const auto& back_face_uri{ m_DownloadArtCrops
+                                                   ? back_image_uris["art_crop"]
+                                                   : back_image_uris["png"] };
                     const auto backside_file_name{ BacksideFilename(card.m_FileName) };
                     m_BacksideFiles.push_back(backside_file_name);
 
@@ -356,7 +364,10 @@ void ScryfallDownloader::DownloadCardImages()
         }
         else
         {
-            const auto& request_uri{ card_info["image_uris"]["png"] };
+            const auto& image_uris{ card_info["image_uris"] };
+            const auto& request_uri{ m_DownloadArtCrops
+                                         ? image_uris["art_crop"]
+                                         : image_uris["png"] };
             m_DataEndpoint->Call(request_uri.toString(),
                                  [card, image_available](const QByteArray& data)
                                  {

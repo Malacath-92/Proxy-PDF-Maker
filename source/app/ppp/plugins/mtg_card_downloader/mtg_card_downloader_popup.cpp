@@ -31,6 +31,11 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_Backsides->setChecked(true);
     m_Backsides->setToolTip("If unticked, will maintain current default backside if any.");
 
+    m_ArtCropCheckbox = new QCheckBox{ "Art Crops" };
+    m_ArtCropCheckbox->setChecked(false);
+    m_ArtCropCheckbox->setToolTip("If ticked, only the art crop will be downloaded from Scryfall.");
+    m_ArtCropCheckbox->setVisible(g_Cfg.m_CardSizes.contains("Scryfall Art Crop"));
+
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);
 
@@ -41,6 +46,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     layout->addWidget(m_TextInput);
     layout->addWidget(m_Settings);
     layout->addWidget(m_Backsides);
+    layout->addWidget(m_ArtCropCheckbox);
     layout->addWidget(m_ClearCheckbox);
     layout->addWidget(m_FillCornersCheckbox);
     layout->addWidget(m_Upscale);
@@ -120,7 +126,8 @@ std::unique_ptr<CardArtDownloader> MtgDownloaderPopup::MakeDownloader(
                 OutputDir().toStdString());
         return std::make_unique<ScryfallDownloader>(
             std::move(skip_files),
-            backside_pattern);
+            backside_pattern,
+            m_ArtCropCheckbox->isChecked());
     case InputType::MPCAutofill:
         LogInfo("Downloading MPCFill files to {}", OutputDir().toStdString());
         return std::make_unique<MPCFillDownloader>(
@@ -146,6 +153,7 @@ void MtgDownloaderPopup::OnDownload()
 {
     m_Settings->setDisabled(true);
     m_Backsides->setDisabled(true);
+    m_ArtCropCheckbox->setDisabled(true);
     m_ClearCheckbox->setDisabled(true);
     m_FillCornersCheckbox->setDisabled(true);
 }
@@ -160,7 +168,14 @@ void MtgDownloaderPopup::ValidateSettings()
         return;
     }
 
-    if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
+    if (m_ArtCropCheckbox->isChecked())
+    {
+        if (m_Project.m_Data.m_CardSizeChoice != "Scryfall Art Crop")
+        {
+            m_Router.SetCardSizeChoice("Scryfall Art Crop");
+        }
+    }
+    else if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
     {
         m_Router.SetCardSizeChoice("Standard");
     }

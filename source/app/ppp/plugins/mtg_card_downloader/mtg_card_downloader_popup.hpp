@@ -42,6 +42,7 @@ class MtgDownloaderPopup : public CardDownloaderPopup
 
     QCheckBox* m_Settings{ nullptr };
     QCheckBox* m_Backsides{ nullptr };
+    QCheckBox* m_ArtCropCheckbox{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };
     QCheckBox* m_FillCornersCheckbox{ nullptr };
 };
