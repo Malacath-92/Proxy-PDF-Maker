@@ -14,6 +14,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -240,41 +241,44 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     if (release_json_reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        // Failed fetching release json
+        LogWarning("Failed fetching release json: {}",
+                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
         return false;
     }
 
     const auto reply_json{ QJsonDocument::fromJson(release_json_reply->readAll()) };
     if (reply_json.isEmpty())
     {
-        // Empty reply
+        LogWarning("Empty reply for release json.");
         return false;
     }
 
-    static constexpr char c_AssetSuffix[]{
 #if defined(_WIN32) || defined(_WIN64)
-        "windows_"
+#define PLATFORM "windows_"
 #elif defined(__APPLE__) && defined(__MACH__)
-        "osx_"
+#define PLATFORM "osx_"
 #elif defined(__linux__)
-        "ubunutu_"
+#define PLATFORM "ubunutu_"
 #else
 #error "Unknown Platform"
 #endif
 
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64)
-        "x86_64"
+#define ARCH "x86_64"
 #elif defined(__aarch64__) || defined(_M_ARM64)
-        "arm64"
+#define ARCH "arm64"
 #else
 #error "Unknown Arch"
 #endif
 
 #if defined(__linux__)
-        ".tar.gz"
+#define ZIP ".tar.gz"
 #else
-        ".zip"
+#define ZIP ".zip"
 #endif
+
+    static constexpr char c_AssetSuffix[]{
+        PLATFORM ARCH ZIP
     };
 
     const auto asset_url{
@@ -297,7 +301,8 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     if (!asset_url.has_value())
     {
-        // No asset for platform + arch
+        LogError("No asset ending with {}",
+                 PLATFORM ARCH ZIP);
         return false;
     }
 
@@ -317,14 +322,15 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     if (release_data_reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        // Failed fetching release data
+        LogWarning("Failed fetching release data: {}",
+                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
         return false;
     }
 
     auto release_data{ release_data_reply->readAll() };
     if (release_data.isEmpty())
     {
-        // Empty reply
+        LogWarning("Empty reply for release data.");
         return false;
     }
 

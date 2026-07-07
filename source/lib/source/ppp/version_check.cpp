@@ -41,7 +41,7 @@ std::optional<std::string> NewAvailableVersion()
 
     if (reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        LogWarning("Failed fetching latests release: {}",
+        LogWarning("Failed fetching latest release: {}",
                    QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(reply->error()));
         return std::nullopt;
     }
@@ -49,7 +49,7 @@ std::optional<std::string> NewAvailableVersion()
     const auto reply_json{ QJsonDocument::fromJson(reply->readAll()) };
     if (reply_json.isEmpty())
     {
-        LogWarning("Empty reply for latestst release.");
+        LogWarning("Empty reply for latest release.");
         return std::nullopt;
     }
 

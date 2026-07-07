@@ -303,7 +303,7 @@ int main(int argc, char** raw_argv)
 
                             if (!AutoUpdateDownloadRelease(new_version.value()))
                             {
-                                LogInfo("No newer version could not be downloaded...");
+                                LogInfo("Newer version could not be downloaded...");
                                 return AutoUpdateConclusion::Error;
                             }
 
