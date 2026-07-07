@@ -13,6 +13,9 @@
 #include <QSettings>
 #include <QThreadPool>
 
+#include <QtPlugin>
+Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
+
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/image_ops.hpp>
