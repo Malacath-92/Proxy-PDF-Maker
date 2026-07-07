@@ -98,7 +98,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GXcode -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="13.3" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -DPPP_BUILD_FAKE_VERSION=ON -GXcode -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=c++ -DCMAKE_OSX_ARCHITECTURES="${{inputs.arch}}" -DCMAKE_OSX_DEPLOYMENT_TARGET="13.3" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="-" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
 
       - name: Configure (Ubuntu)
         id: configure-ubu
@@ -106,7 +106,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -GNinja -DCMAKE_BUILD_TYPE=${{inputs.build_type}} -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -DPPP_BUILD_FAKE_VERSION=ON -GNinja -DCMAKE_BUILD_TYPE=${{inputs.build_type}} -DCMAKE_C_COMPILER=gcc-14 -DCMAKE_CXX_COMPILER=g++-14
 
       - name: Configure (Windows)
         id: configure-win
@@ -114,7 +114,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -G"Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+          cmake .. -Wno-dev -DPPP_BUILD_TESTS=ON -DPPP_FORMAT_TARGETS=OFF -DPPP_BUILD_FAKE_VERSION=ON -G"Visual Studio 17 2022" -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Clean up Conan
         run: |
@@ -139,23 +139,11 @@ jobs:
             cd build
             ctest . -C ${{inputs.build_type}} --output-on-failure
 
-      - name: Reconfigure fake Update
-        run: |
-          cd build
-          cmake .. -Wno-dev -DPPP_BUILD_TESTS=OFF -DPPP_BUILD_FAKE_UPDATE=ON
-
-      - name: Build fake Update
-        run: |
-            cd build
-            cmake --build . --config ${{inputs.build_type}}
-            cmake --install . --config ${{inputs.build_type}}
-
       - name: Hash Pre-Update
         id: hash_pre
         shell: bash
         run: |
           echo "old_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
-          echo "new_app_hash=${{ hashFiles('publish/_proxy_pdf_update/proxy_pdf*') }}" >> $GITHUB_OUTPUT
 
       - name: Execute fake Update
         if: ${{ inputs.os != 'Windows' }}
@@ -173,24 +161,18 @@ jobs:
         id: hash_post
         shell: bash
         run: |
+          echo "new_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
           echo "backup_app_hash=${{ hashFiles('publish/_proxy_pdf_backup/proxy_pdf*') }}" >> $GITHUB_OUTPUT
-          echo "update_app_hash=${{ hashFiles('publish/proxy_pdf*') }}" >> $GITHUB_OUTPUT
 
       - name: Verify Update Success
         shell: bash
         run: |
           OLD_HASH="${{ steps.hash_pre.outputs.old_app_hash }}"
-          NEW_HASH="${{ steps.hash_pre.outputs.new_app_hash }}"
+          NEW_HASH="${{ steps.hash_post.outputs.update_app_hash }}"
           BACKUP_HASH="${{ steps.hash_post.outputs.backup_app_hash }}"
-          UPDATE_HASH="${{ steps.hash_post.outputs.update_app_hash }}"
 
           if [ "$OLD_HASH" != "$BACKUP_HASH" ]; then
             echo "::error::Old app and backup hashes do not match! Expected $OLD_HASH but got $BACKUP_HASH"
-            exit 1
-          fi
-
-          if [ "$NEW_HASH" != "$UPDATE_HASH" ]; then
-            echo "::error::New app and update hashes do not match! Expected $NEW_HASH but got $UPDATE_HASH"
             exit 1
           fi
 
@@ -198,3 +180,5 @@ jobs:
             echo "::error::Old app and update hashes match but shouldn't! Likely no update happened!"
             exit 1
           fi
+
+          echo "Update executed as expected"

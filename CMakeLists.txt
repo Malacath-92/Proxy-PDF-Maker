@@ -17,16 +17,13 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # --------------------------------------------------
 # Define options
 option(PPP_BUILD_TESTS "Build test suite" OFF)
-option(PPP_BUILD_FAKE_UPDATE " Build fake target to update to" OFF)
+option(PPP_BUILD_FAKE_VERSION "Build target with fake version, used to test auto-update" OFF)
 option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 
 # --------------------------------------------------
 # Install to custom location
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
-if(PPP_BUILD_FAKE_UPDATE)
-	set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/_proxy_pdf_update")
-endif()
 
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
@@ -71,7 +68,7 @@ endif()
 
 # --------------------------------------------------
 # Get version tag
-if(PPP_BUILD_FAKE_UPDATE)
+if(PPP_BUILD_FAKE_VERSION)
 	set(PROXY_PDF_GIT_VERSION "This.Some.Fake.Version")
 else()
 	find_package(Git)
