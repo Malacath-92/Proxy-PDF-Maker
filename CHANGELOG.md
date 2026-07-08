@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-09-07
+
+### Added
+- Auto-Update functionality is now available, either from the update toast message or via the cli with `--update`.
+- Another option for fixing bad aspect ratio is available that will just crop the image to make the aspect ratio fit.
+
 ## [1.8.0] - 2026-07-07
 
 ### Added
