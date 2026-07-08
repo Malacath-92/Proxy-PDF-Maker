@@ -272,6 +272,7 @@ void CardImage::EnableContextMenu(bool enable,
         static const QIcon s_NoBleedIcon{ QPixmap{ ":/res/no_bleed.png" } };
         static const QIcon s_ResetIcon{ QPixmap{ ":/res/reset.png" } };
         static const QIcon s_ExpandIcon{ QPixmap{ ":/res/expand.png" } };
+        static const QIcon s_CropIcon{ QPixmap{ ":/res/crop.png" } };
         static const QIcon s_StretchIcon{ QPixmap{ ":/res/stretch.png" } };
         static const QIcon s_UntapIcon{ QPixmap{ ":/res/untap.png" } };
         static const QIcon s_TapIcon{ QPixmap{ ":/res/tap.png" } };
@@ -333,6 +334,8 @@ void CardImage::EnableContextMenu(bool enable,
             m_FixRatioIgnoreAction->setIcon(s_ResetIcon);
             m_FixRatioExpandAction = new QAction{ "Fix Aspect Ratio: Expand", this };
             m_FixRatioExpandAction->setIcon(s_ExpandIcon);
+            m_FixRatioCropAction = new QAction{ "Fix Aspect Ratio: Crop", this };
+            m_FixRatioCropAction->setIcon(s_CropIcon);
             m_FixRatioStretchAction = new QAction{ "Fix Aspect Ratio: Stretch", this };
             m_FixRatioStretchAction->setIcon(s_StretchIcon);
 
@@ -344,6 +347,10 @@ void CardImage::EnableContextMenu(bool enable,
                              &QAction::triggered,
                              this,
                              std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Expand));
+            QObject::connect(m_FixRatioCropAction,
+                             &QAction::triggered,
+                             this,
+                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Crop));
             QObject::connect(m_FixRatioStretchAction,
                              &QAction::triggered,
                              this,
@@ -611,10 +618,12 @@ void CardImage::ContextMenuRequested(QPoint pos)
 
             menu->addAction(m_FixRatioIgnoreAction);
             menu->addAction(m_FixRatioExpandAction);
+            menu->addAction(m_FixRatioCropAction);
             menu->addAction(m_FixRatioStretchAction);
 
             m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
             m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
+            m_FixRatioCropAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Crop);
             m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
         }
     }

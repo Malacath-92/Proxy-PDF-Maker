@@ -147,6 +147,7 @@ class CardImage : public CardSizedLabel
 
     QAction* m_FixRatioIgnoreAction{ nullptr };
     QAction* m_FixRatioExpandAction{ nullptr };
+    QAction* m_FixRatioCropAction{ nullptr };
     QAction* m_FixRatioStretchAction{ nullptr };
 
     QAction* m_RotateLeftAction{ nullptr };

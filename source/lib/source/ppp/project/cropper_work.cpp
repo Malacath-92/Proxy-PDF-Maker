@@ -55,17 +55,6 @@ static Image FixImageAspectRatio(Image source_image,
     const Pixel width{ source_image.Width() };
     const Pixel height{ source_image.Height() };
 
-    const Pixel target_width{
-        aspect_ratio > target_aspect_ratio
-            ? width
-            : height * target_aspect_ratio
-    };
-    const Pixel target_height{
-        aspect_ratio < target_aspect_ratio
-            ? height
-            : width / target_aspect_ratio
-    };
-
     switch (ratio_handling)
     {
     case BadAspectRatioHandling::Ignore:
@@ -73,6 +62,7 @@ static Image FixImageAspectRatio(Image source_image,
     case BadAspectRatioHandling::Expand:
         if (aspect_ratio < target_aspect_ratio)
         {
+            const Pixel target_width{ height * target_aspect_ratio };
             const auto width_diff{ target_width - width };
             const auto width_diff_half{ dla::math::round(width_diff / 2) };
             return source_image.AddReflectBorder(
@@ -83,6 +73,7 @@ static Image FixImageAspectRatio(Image source_image,
         }
         else
         {
+            const Pixel target_height{ width / target_aspect_ratio };
             const auto height_diff{ target_height - height };
             const auto height_diff_half{ height_diff / 2 };
             return source_image.AddReflectBorder(
@@ -92,10 +83,45 @@ static Image FixImageAspectRatio(Image source_image,
                 dla::math::ceil(height_diff_half));
         }
     case BadAspectRatioHandling::Stretch:
+    {
+        const Pixel target_width{
+            aspect_ratio > target_aspect_ratio
+                ? width
+                : height * target_aspect_ratio
+        };
+        const Pixel target_height{
+            aspect_ratio < target_aspect_ratio
+                ? height
+                : width / target_aspect_ratio
+        };
         return source_image.Resize({
             target_width,
             target_height,
         });
+    }
+    case BadAspectRatioHandling::Crop:
+        if (aspect_ratio > target_aspect_ratio)
+        {
+            const Pixel target_width{ height * target_aspect_ratio };
+            const auto width_diff{ width - target_width };
+            const auto width_diff_half{ dla::math::round(width_diff / 2) };
+            return source_image.Crop(
+                dla::math::floor(width_diff_half),
+                0_pix,
+                dla::math::floor(width_diff_half),
+                0_pix);
+        }
+        else
+        {
+            const Pixel target_height{ width / target_aspect_ratio };
+            const auto height_diff{ height - target_height };
+            const auto height_diff_half{ height_diff / 2 };
+            return source_image.Crop(
+                0_pix,
+                dla::math::floor(height_diff_half),
+                0_pix,
+                dla::math::ceil(height_diff_half));
+        }
     }
 
     std::unreachable();

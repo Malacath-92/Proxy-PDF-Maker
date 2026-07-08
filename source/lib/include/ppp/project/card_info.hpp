@@ -13,6 +13,7 @@ enum class BadAspectRatioHandling
     Ignore,
     Expand,
     Stretch,
+    Crop,
 
     Default = Ignore,
 };

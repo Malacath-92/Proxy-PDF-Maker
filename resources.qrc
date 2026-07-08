@@ -10,6 +10,7 @@
         <file>res/no_bleed.png</file>
         <file>res/reset.png</file>
         <file>res/expand.png</file>
+        <file>res/crop.png</file>
         <file>res/stretch.png</file>
         <file>res/tap.png</file>
         <file>res/untap.png</file>
