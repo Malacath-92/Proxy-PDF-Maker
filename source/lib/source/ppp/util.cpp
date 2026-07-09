@@ -1,13 +1,15 @@
 #include <ppp/util.hpp>
 
-#include <ppp/qt_util.hpp>
-
 #include <charconv>
 #include <ranges>
 
 #include <QDesktopServices>
 #include <QString>
 #include <QUrl>
+
+#include <whereami.h>
+
+#include <ppp/qt_util.hpp>
 
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions)
 {
@@ -77,11 +79,11 @@ fs::path GetNextVersionedPath(const fs::path& base_path)
 
     if (versions.empty())
     {
-        return fmt::format("{}1{}", base_name.string(), base_ext.string());
+        return parent_path / fmt::format("{}1{}", base_name.string(), base_ext.string());
     }
     else
     {
-        return fmt::format("{}{}{}", base_name.string(), versions.back() + 1, base_ext.string());
+        return parent_path / fmt::format("{}{}{}", base_name.string(), versions.back() + 1, base_ext.string());
     }
 }
 
@@ -98,4 +100,17 @@ bool OpenFile(const fs::path& path)
 bool OpenPath(const fs::path& path)
 {
     return QDesktopServices::openUrl(QUrl("file:///" + ToQString(path), QUrl::TolerantMode));
+}
+
+fs::path GetExePath()
+{
+    static const auto s_ExePath{
+        []
+        {
+            char exe_path[2048]{};
+            wai_getExecutablePath(exe_path, sizeof(exe_path), nullptr);
+            return fs::path{ exe_path };
+        }()
+    };
+    return s_ExePath;
 }

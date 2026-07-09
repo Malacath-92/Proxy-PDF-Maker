@@ -501,3 +501,6 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
 
     return backside_pages;
 }
+
+const fs::path g_ExeDir{ GetExePath().parent_path() };
+const fs::path g_ExeName{ GetExePath().filename() };

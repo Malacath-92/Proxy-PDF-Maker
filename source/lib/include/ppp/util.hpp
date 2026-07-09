@@ -130,5 +130,10 @@ bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
 
+fs::path GetExePath();
+
 template<class T>
 concept Enum = std::is_enum_v<T>;
+
+extern const fs::path g_ExeDir;
+extern const fs::path g_ExeName;

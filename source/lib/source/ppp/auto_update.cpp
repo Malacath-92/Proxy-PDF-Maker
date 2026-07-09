@@ -28,8 +28,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#include <whereami.h>
-
 #include <ppp/github_request.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
@@ -38,22 +36,6 @@
 
 namespace fs = std::filesystem;
 
-const auto c_GetExePath{
-    []()
-    {
-        static const auto exe_path{
-            []
-            {
-                char exe_path[2048]{};
-                wai_getExecutablePath(exe_path, sizeof(exe_path), nullptr);
-                return fs::path{ exe_path };
-            }()
-        };
-        return exe_path;
-    }
-};
-const auto c_ExeDir{ c_GetExePath().parent_path() };
-const auto c_ExeName{ c_GetExePath().filename() };
 const char c_InstallManifestBundled[]{ ":/install_manifest.txt" };
 const char c_InstallManifestExtracted[]{ "./install_manifest.txt" };
 
@@ -403,28 +385,28 @@ bool ExtractInstallManifest(const fs::path& dir)
 AutoUpdateConclusion AutoUpdateTryInitialize(std::span<char*> argv)
 {
     // Trigger auto-update if the library wrote the update files
-    const auto update_folder{ c_ExeDir / c_UpdateFolder };
+    const auto update_folder{ g_ExeDir / c_UpdateFolder };
     if (fs::exists(update_folder) && std::filesystem::is_directory(update_folder))
     {
-        if (fs::exists(c_ExeDir / c_BackupFolder))
+        if (fs::exists(g_ExeDir / c_BackupFolder))
         {
-            fs::remove_all(c_ExeDir / c_BackupFolder);
+            fs::remove_all(g_ExeDir / c_BackupFolder);
         }
 
         // Write out old version's install manifest
-        if (!ExtractInstallManifest(c_ExeDir))
+        if (!ExtractInstallManifest(g_ExeDir))
         {
             return AutoUpdateConclusion::Error;
         }
 
         // Execute the new executable to backup the old version
         Execute(
-            ToQString(update_folder / c_ExeName),
+            ToQString(update_folder / g_ExeName),
             argv | std::views::drop(1),
             {
                 c_AutoUpdateBackupOldVersion,                     // move
-                ToQString(c_ExeDir),                              // path
-                ToQString(c_ExeDir / c_InstallManifestExtracted), // manifest
+                ToQString(g_ExeDir),                              // path
+                ToQString(g_ExeDir / c_InstallManifestExtracted), // manifest
             });
 
         return AutoUpdateConclusion::Initiated;
@@ -520,7 +502,7 @@ bool AutoUpdateBackupOldVersion(std::span<char*> argv)
     }
 
     // Execute the backed-up executable to move the new executable
-    Execute(ToQString(c_BackupFolder / c_ExeName),
+    Execute(ToQString(c_BackupFolder / g_ExeName),
             argv | std::views::drop(4),
             {
                 c_AutoUpdateCopyNewVersion,                   // move
@@ -554,7 +536,7 @@ bool AutoUpdateUpdateCopyNewVersion(std::span<char*> argv)
     fs::remove(manifest);
 
     // Execute the cleanup, deleting the update folder
-    Execute(ToQString(to / c_ExeName),
+    Execute(ToQString(to / g_ExeName),
             argv | std::views::drop(5),
             {
                 c_AutoUpdateCleanup,

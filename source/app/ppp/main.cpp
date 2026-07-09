@@ -179,7 +179,18 @@ int main(int argc, char** argv)
 #endif
 
     Project project{};
-    project.Load(app.GetProjectPath());
+    const bool project_load_success{ project.Load(app.GetProjectPath()) };
+
+    const auto project_backup_folder{ g_ExeDir / "_project_backup" };
+    if (!project_load_success && fs::exists(app.GetProjectPath()))
+    {
+        if (!fs::exists(project_backup_folder))
+        {
+            fs::create_directories(project_backup_folder);
+        }
+        const auto backup_path{ GetNextVersionedPath(project_backup_folder / "proj.json") };
+        fs::copy_file(app.GetProjectPath(), backup_path);
+    }
 
     Cropper cropper{ [](std::string_view cube_name)
                      { return GetCubeImage(cube_name); },
@@ -549,6 +560,31 @@ int main(int argc, char** argv)
 
         app.SetMainWindow(main_window);
         main_window->show();
+    }
+
+    if (!project_load_success)
+    {
+        if (!fs::exists(app.GetProjectPath()))
+        {
+            main_window->Toast(
+                ToastType::Warning,
+                "Failed loading project",
+                "The file didn't exist.");
+        }
+        else
+        {
+            main_window->Toast(
+                ToastType::Warning,
+                "Failed loading project",
+                QString{ "Your project has been backed up <a style=\"color:CornflowerBlue\" href=\"file:///%1\">"
+                         "here"
+                         "</a>, please attach it if you report this bug. Press F1 to find the issues page." }
+                    .arg(ToQString(project_backup_folder).replace(' ', "%20")),
+                [&](const QString&)
+                {
+                    OpenFolder(project_backup_folder);
+                });
+        }
     }
 
     {
