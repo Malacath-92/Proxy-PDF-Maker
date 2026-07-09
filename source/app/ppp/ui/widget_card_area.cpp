@@ -459,8 +459,6 @@ class CardGrid : public QWidget
         {
             card_widget->RefreshSize(m_Project);
         }
-
-        adjustSize();
     }
 
     void FullRefresh()
@@ -1036,6 +1034,19 @@ void CardArea::CardSizeChanged()
 {
     auto& grid{ m_ScrollArea->GetGrid() };
     grid.CardSizeChanged();
+
+    // This is the stupidest code I have ever written...
+    // Nothing that should usually be working to make sure widget's size
+    // changes trickled down to this scroll area will work here (or I am
+    // just stupid) so we just wiggle the window as that at least forces
+    // the recalculation of the grid
+    auto* window{ this->window() };
+    if (window)
+    {
+        const auto current_size{ window->size() };
+        window->resize(current_size.width(), current_size.height() - 1);
+        window->resize(current_size);
+    }
 }
 
 void CardArea::DisplayColumnsChanged()
