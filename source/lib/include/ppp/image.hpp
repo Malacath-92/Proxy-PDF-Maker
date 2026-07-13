@@ -41,14 +41,11 @@ class [[nodiscard]] Image
     explicit operator bool() const;
     bool Valid() const;
 
-    enum class Rotation
-    {
-        None,
-        Degree90,
-        Degree180,
-        Degree270,
-    };
+    using Rotation = ::Rotation;
     Image Rotate(Rotation rotation) const;
+    Image RotateInverse(Rotation rotation) const;
+
+    Image Mirror(bool vertical, bool horizontal) const;
 
     Image Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const;
     Image AddBlackBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const;

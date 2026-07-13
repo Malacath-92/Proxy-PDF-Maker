@@ -70,12 +70,83 @@ void DrawSvgToPainterPath(QPainterPath& path,
                           const Svg& svg,
                           Position offset,
                           Size size,
+                          bool mirror_vertical,
+                          bool mirror_horizontal,
+                          Rotation rotation,
                           Size pixel_scaling)
 {
-    const auto scale{ size / svg.m_Size };
+    const auto rot_size{
+        [&]()
+        {
+            switch (rotation)
+            {
+            case Rotation::None:
+            case Rotation::Degree180:
+                return svg.m_Size;
+            case Rotation::Degree90:
+            case Rotation::Degree270:
+                return dla::rotl(svg.m_Size);
+            }
+            std::unreachable();
+        }()
+    };
+    const auto scale{ size / rot_size };
     auto to_qpoint{
         [&](auto pt)
         {
+            if (mirror_vertical)
+            {
+                pt.y = svg.m_Size.y - pt.y;
+            }
+            if (mirror_horizontal)
+            {
+                pt.x = svg.m_Size.x - pt.x;
+            }
+
+            const auto relative{
+                [&]()
+                {
+                    return pt - svg.m_Size / 2;
+                }
+            };
+
+            const auto absolute{
+                [&](const auto& rel)
+                {
+                    return rel + rot_size / 2;
+                }
+            };
+
+            switch (rotation)
+            {
+            case Rotation::None:
+                break;
+            case Rotation::Degree90:
+            {
+                auto rel{ relative() };
+                std::swap(rel.x, rel.y);
+                rel.x *= -1;
+                pt = absolute(rel);
+                break;
+            }
+            case Rotation::Degree180:
+            {
+                auto rel{ relative() };
+                rel.x *= -1;
+                rel.y *= -1;
+                pt = absolute(rel);
+                break;
+            }
+            case Rotation::Degree270:
+            {
+                auto rel{ relative() };
+                std::swap(rel.x, rel.y);
+                rel.y *= -1;
+                pt = absolute(rel);
+                break;
+            }
+            }
+
             pt *= scale;
             pt += offset;
             const auto px{ pt / pixel_scaling };
@@ -111,9 +182,33 @@ void DrawSvgToPainterPath(QPainterPath& path,
     DrawSvgToPath(path, move_to, line_to, cubic_to, [](QPainterPath&) {}, svg);
 }
 
-QPainterPath ConvertSvgToPainterPath(const Svg& svg)
+QPainterPath ConvertSvgToPainterPath(const Svg& svg,
+                                     Rotation rotation)
 {
+    const auto rot_size{
+        [&]()
+        {
+            switch (rotation)
+            {
+            case Rotation::None:
+            case Rotation::Degree180:
+                return svg.m_Size;
+            case Rotation::Degree90:
+            case Rotation::Degree270:
+                return dla::rotl(svg.m_Size);
+            }
+            std::unreachable();
+        }()
+    };
+
     QPainterPath path;
-    DrawSvgToPainterPath(path, svg, Position{}, svg.m_Size, Size{ 1_mm, 1_mm });
+    DrawSvgToPainterPath(path,
+                         svg,
+                         Position{},
+                         rot_size,
+                         false,
+                         false,
+                         rotation,
+                         Size{ 1_mm, 1_mm });
     return path;
 }

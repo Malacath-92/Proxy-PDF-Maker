@@ -55,6 +55,9 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
                                  project.CardSvgData(),
                                  transform.m_Card.m_Position - cards_origin,
                                  transform.m_Card.m_Size,
+                                 false,
+                                 false,
+                                 transform.m_Rotation,
                                  1.0f / pixel_ratio);
         }
         else
@@ -228,7 +231,7 @@ ENTITIES
     };
 
     using Curve = std::vector<dla::vec2>;
-    std::optional<std::vector<Curve>> card_curves;
+    std::unordered_map<Rotation, std::vector<Curve>> card_curves;
 
     for (const auto& transform : transforms)
     {
@@ -280,10 +283,10 @@ ENTITIES
         }
         else
         {
-            if (!card_curves.has_value())
+            if (!card_curves.contains(transform.m_Rotation))
             {
-                card_curves.emplace();
-                const auto card_path{ ConvertSvgToPainterPath(project.CardSvgData()) };
+                const auto card_path{ ConvertSvgToPainterPath(project.CardSvgData(),
+                                                              transform.m_Rotation) };
 
                 Curve current_curve;
 
@@ -329,7 +332,7 @@ ENTITIES
                         if (!current_curve.empty())
                         {
                             set_pos(current_curve.front());
-                            card_curves->push_back(std::move(current_curve));
+                            card_curves[transform.m_Rotation].push_back(std::move(current_curve));
                             current_curve.clear();
                         }
                     }
@@ -370,7 +373,7 @@ ENTITIES
                 push_current_curve();
             }
 
-            for (const auto& curve : card_curves.value())
+            for (const auto& curve : card_curves[transform.m_Rotation])
             {
                 auto poly_line{ start_poly_line() };
                 for (const auto& pt : curve)

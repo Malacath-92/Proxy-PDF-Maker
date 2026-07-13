@@ -54,8 +54,12 @@ void DrawSvgToPainterPath(QPainterPath& path,
                           const Svg& svg,
                           Position offset,
                           Size size,
+                          bool mirror_vertical,
+                          bool mirror_horizontal,
+                          Rotation rotation,
                           Size pixel_scaling);
-QPainterPath ConvertSvgToPainterPath(const Svg& svg);
+QPainterPath ConvertSvgToPainterPath(const Svg& svg,
+                                     Rotation rotation = Rotation::None);
 
 template<class PathT,
          class MoveToT,

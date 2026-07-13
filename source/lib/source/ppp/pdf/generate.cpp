@@ -461,7 +461,7 @@ PdfResults GeneratePdf(const Project& project)
             const PageImage& image,
             const PageImageTransform& transform,
             const Length corner_size,
-            const Svg* custom_card_shape,
+            const std::optional<PdfPage::ShapeData> custom_card_shape,
             std::function<const fs::path(const fs::path&)> get_image_file)
         {
             if (image.m_Image.has_value())
@@ -566,11 +566,19 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
+
+                    std::optional<PdfPage::ShapeData> custom_shape_opt;
+                    if (frontside_svg != nullptr)
+                    {
+                        auto& custom_shape{ custom_shape_opt.emplace() };
+                        custom_shape.m_Svg = frontside_svg;
+                    }
+
                     draw_image(front_page,
                                card,
                                transform,
                                frontside_corner_size,
-                               frontside_svg,
+                               custom_shape_opt,
                                get_frontside_file);
                 }
             }
@@ -643,11 +651,20 @@ PdfResults GeneratePdf(const Project& project)
                             page_index + 1,
                             i + 1,
                             card.m_Image.value().get().string());
+
+                    std::optional<PdfPage::ShapeData> custom_shape_opt;
+                    if (backside_svg != nullptr)
+                    {
+                        auto& custom_shape{ custom_shape_opt.emplace() };
+                        custom_shape.m_Svg = backside_svg;
+                        custom_shape.m_MirrorHorizontal = true;
+                    }
+
                     draw_image(back_page,
                                card,
                                transform,
                                backside_corner_size,
-                               backside_svg,
+                               custom_shape_opt,
                                get_backside_file);
                 }
             }

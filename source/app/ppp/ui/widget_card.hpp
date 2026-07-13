@@ -32,6 +32,7 @@ ENABLE_BITFIELD_OPERATORS(CardContextMenuFeatures);
 struct CardImageWidgetParams
 {
     bool m_RoundedCorners{ true };
+    bool m_Backside{ false };
     Image::Rotation m_Rotation{ Image::Rotation::None };
     Length m_BleedEdge{ 0_mm };
     Pixel m_MinimumWidth{ 0_pix };

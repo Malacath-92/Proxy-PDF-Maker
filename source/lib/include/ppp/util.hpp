@@ -42,6 +42,15 @@ using Offset = dla::tvec2<Length>;
 using PixelSize = dla::tvec2<Pixel>;
 using PixelDensity = decltype(Pixel{} / Length{});
 
+enum class Rotation
+{
+    None,
+    Degree0 = None,
+    Degree90,
+    Degree180,
+    Degree270,
+};
+
 // clang-format off
 using namespace dla::literals;
 using namespace dla::int_literals;

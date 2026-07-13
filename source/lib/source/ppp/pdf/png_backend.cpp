@@ -160,10 +160,16 @@ void PngPage::DrawImage(ImageData data)
             target_mat = TargetImage()(target_rect);
         }
 
-        if (data.m_CustomShape != nullptr)
+        if (data.m_CustomShape.has_value())
         {
             source_mat = Image{ source_mat }
-                             .ClipSvg(*data.m_CustomShape)
+                             .Mirror(data.m_CustomShape->m_MirrorVertical,
+                                     data.m_CustomShape->m_MirrorHorizontal)
+                             .RotateInverse(data.m_Rotation)
+                             .ClipSvg(*data.m_CustomShape->m_Svg)
+                             .Rotate(data.m_Rotation)
+                             .Mirror(data.m_CustomShape->m_MirrorVertical,
+                                     data.m_CustomShape->m_MirrorHorizontal)
                              .GetUnderlying();
         }
         else if (data.m_CornerSize > 0_mm)

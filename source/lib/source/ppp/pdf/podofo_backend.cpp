@@ -246,13 +246,70 @@ void PoDoFoPage::DrawImage(ImageData data)
 
     static constexpr auto make_custom_path{
         [](PoDoFo::PdfPainterPath& custom_path,
-           const Svg& svg,
-           const Position& offset)
+           const ShapeData& shape,
+           const Position& offset,
+           Image::Rotation rotation)
         {
+            const auto& svg{ *shape.m_Svg };
             auto to_podofo{
                 [&](auto pt)
                 {
-                    pt.y = svg.m_Size.y - pt.y;
+                    if (!shape.m_MirrorVertical)
+                    {
+                        pt.y = svg.m_Size.y - pt.y;
+                    }
+                    if (shape.m_MirrorHorizontal)
+                    {
+                        pt.x = svg.m_Size.x - pt.x;
+                    }
+
+                    const auto relative{
+                        [&]()
+                        {
+                            return pt - svg.m_Size / 2;
+                        }
+                    };
+
+                    auto size{ svg.m_Size };
+                    const auto absolute{
+                        [&](const auto& rel)
+                        {
+                            return rel + size / 2;
+                        }
+                    };
+
+                    switch (rotation)
+                    {
+                    case Image::Rotation::None:
+                        break;
+                    case Image::Rotation::Degree90:
+                    {
+                        auto rel{ relative() };
+                        std::swap(rel.x, rel.y);
+                        std::swap(size.x, size.y);
+                        rel.y *= -1;
+                        pt = absolute(rel);
+                        break;
+                    }
+                    case Image::Rotation::Degree180:
+                    {
+                        auto rel{ relative() };
+                        rel.x *= -1;
+                        rel.y *= -1;
+                        pt = absolute(rel);
+                        break;
+                    }
+                    case Image::Rotation::Degree270:
+                    {
+                        auto rel{ relative() };
+                        std::swap(rel.x, rel.y);
+                        std::swap(size.x, size.y);
+                        rel.x *= -1;
+                        pt = absolute(rel);
+                        break;
+                    }
+                    }
+
                     return ToPoDoFoPoints(pt + offset);
                 }
             };
@@ -307,10 +364,13 @@ void PoDoFoPage::DrawImage(ImageData data)
         const auto real_cw{ ToPoDoFoPoints(cw) };
         const auto real_ch{ ToPoDoFoPoints(ch) };
 
-        if (data.m_CustomShape != nullptr)
+        if (data.m_CustomShape.has_value())
         {
             PoDoFo::PdfPainterPath custom_path;
-            make_custom_path(custom_path, *data.m_CustomShape, data.m_ClipRect.value().m_Position);
+            make_custom_path(custom_path,
+                             *data.m_CustomShape,
+                             data.m_ClipRect.value().m_Position,
+                             data.m_Rotation);
             m_Painter->ClipPath(custom_path);
         }
         else
@@ -334,10 +394,13 @@ void PoDoFoPage::DrawImage(ImageData data)
             }
         }
     }
-    else if (data.m_CustomShape != nullptr)
+    else if (data.m_CustomShape.has_value())
     {
         PoDoFo::PdfPainterPath custom_path;
-        make_custom_path(custom_path, *data.m_CustomShape, data.m_Pos);
+        make_custom_path(custom_path,
+                         *data.m_CustomShape,
+                         data.m_Pos,
+                         data.m_Rotation);
         m_Painter->ClipPath(custom_path);
     }
     else if (data.m_CornerSize > 0_mm)

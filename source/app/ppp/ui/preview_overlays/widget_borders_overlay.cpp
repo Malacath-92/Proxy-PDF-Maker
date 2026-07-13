@@ -91,6 +91,9 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
                                  m_Project.CardSvgData(),
                                  transform.m_Card.m_Position,
                                  transform.m_Card.m_Size,
+                                 false,
+                                 m_IsBackside,
+                                 transform.m_Rotation,
                                  1.0f / pixel_ratio);
         }
         else

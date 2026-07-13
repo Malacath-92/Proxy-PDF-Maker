@@ -477,7 +477,9 @@ Image CardImage::GetImage(const ImagePreview& preview) const
             {
                 return finalize_image(
                     preview.m_CroppedImage
-                        .ClipSvg(m_Project.CardSvgData()));
+                        .Mirror(false, m_OriginalParams.m_Backside)
+                        .ClipSvg(m_Project.CardSvgData())
+                        .Mirror(false, m_OriginalParams.m_Backside));
             }
         }
         return CropImage(preview.m_UncroppedImage,
@@ -503,7 +505,9 @@ Image CardImage::GetImage(const ImagePreview& preview) const
             {
                 return preview
                     .m_CroppedImage
+                    .Mirror(false, m_OriginalParams.m_Backside)
                     .ClipSvg(m_Project.CardSvgData())
+                    .Mirror(false, m_OriginalParams.m_Backside)
                     .Rotate(m_OriginalParams.m_Rotation);
             }
         }
@@ -731,7 +735,7 @@ BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width,
     : CardImage{
         backside_name,
         project,
-        CardImageWidgetParams{ .m_MinimumWidth{ minimum_width } }
+        CardImageWidgetParams{ .m_Backside = true, .m_MinimumWidth{ minimum_width } }
     }
 {
     TRACY_AUTO_SCOPE();
@@ -747,7 +751,7 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
     CardImage::Refresh(
         backside_name,
         project,
-        CardImageWidgetParams{ .m_MinimumWidth{ minimum_width } });
+        CardImageWidgetParams{ .m_Backside = true, .m_MinimumWidth{ minimum_width } });
 }
 
 StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)

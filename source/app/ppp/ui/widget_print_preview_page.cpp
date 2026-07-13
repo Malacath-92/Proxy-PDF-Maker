@@ -101,6 +101,7 @@ PagePreview::PagePreview(Project& project,
                 project,
                 CardImageWidgetParams{
                     .m_RoundedCorners = rounded_corners,
+                    .m_Backside = params.m_IsBackside,
                     .m_Rotation = rotation,
                     .m_BleedEdge{ bleed_edge },
                 },

@@ -58,13 +58,20 @@ class PdfPage
         CrossSegment m_Segment;
     };
 
+    struct ShapeData
+    {
+        const Svg* m_Svg{ nullptr };
+        bool m_MirrorVertical{ false };
+        bool m_MirrorHorizontal{ false };
+    };
+
     struct ImageData
     {
         const fs::path& m_Path;
         Position m_Pos;
         Size m_Size;
         Length m_CornerSize;
-        const Svg* m_CustomShape;
+        std::optional<ShapeData> m_CustomShape;
         Image::Rotation m_Rotation;
         std::optional<ClipRect> m_ClipRect{ std::nullopt };
     };

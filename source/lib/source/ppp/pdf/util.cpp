@@ -277,17 +277,35 @@ PageImageTransforms ComputeBacksideTransforms(
     auto get_backside_rotation{
         [flip_on_left](Image::Rotation frontside_rotation) -> Image::Rotation
         {
-            switch (frontside_rotation)
+            if (flip_on_left)
             {
-            default:
-            case Image::Rotation::None:
-                return flip_on_left ? Image::Rotation::None : Image::Rotation::Degree180;
-            case Image::Rotation::Degree90:
-                return flip_on_left ? Image::Rotation::Degree270 : Image::Rotation::Degree90;
-            case Image::Rotation::Degree180:
-                return flip_on_left ? Image::Rotation::Degree180 : Image::Rotation::None;
-            case Image::Rotation::Degree270:
-                return flip_on_left ? Image::Rotation::Degree90 : Image::Rotation::Degree270;
+                switch (frontside_rotation)
+                {
+                default:
+                case Image::Rotation::None:
+                    return Image::Rotation::None;
+                case Image::Rotation::Degree90:
+                    return Image::Rotation::Degree270;
+                case Image::Rotation::Degree180:
+                    return Image::Rotation::Degree180;
+                case Image::Rotation::Degree270:
+                    return Image::Rotation::Degree90;
+                }
+            }
+            else
+            {
+                switch (frontside_rotation)
+                {
+                default:
+                case Image::Rotation::None:
+                    return Image::Rotation::Degree180;
+                case Image::Rotation::Degree90:
+                    return Image::Rotation::Degree90;
+                case Image::Rotation::Degree180:
+                    return Image::Rotation::None;
+                case Image::Rotation::Degree270:
+                    return Image::Rotation::Degree270;
+                }
             }
         }
     };

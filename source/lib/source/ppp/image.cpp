@@ -423,6 +423,48 @@ Image Image::Rotate(Rotation rotation) const
     return img;
 }
 
+Image Image::RotateInverse(Rotation rotation) const
+{
+    TRACY_AUTO_SCOPE();
+
+    Image img{};
+    switch (rotation)
+    {
+    case Rotation::Degree90:
+        cv::rotate(m_Impl, img.m_Impl, cv::ROTATE_90_COUNTERCLOCKWISE);
+        break;
+    case Rotation::Degree180:
+        cv::rotate(m_Impl, img.m_Impl, cv::ROTATE_180);
+        break;
+    case Rotation::Degree270:
+        cv::rotate(m_Impl, img.m_Impl, cv::ROTATE_90_CLOCKWISE);
+        break;
+    default:
+        img = *this;
+    }
+    return img;
+}
+
+Image Image::Mirror(bool vertical, bool horizontal) const
+{
+    TRACY_AUTO_SCOPE();
+
+    Image img{ *this };
+    if (vertical && horizontal)
+    {
+        cv::flip(img.m_Impl, img.m_Impl, -1);
+    }
+    else if (vertical)
+    {
+        cv::flip(img.m_Impl, img.m_Impl, 0);
+    }
+    else if (horizontal)
+    {
+        cv::flip(img.m_Impl, img.m_Impl, 1);
+    }
+    return img;
+}
+
 Image Image::Crop(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
     TRACY_AUTO_SCOPE();
