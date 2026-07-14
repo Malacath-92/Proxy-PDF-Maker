@@ -19,13 +19,13 @@ namespace dla::unit_name
 // NOLINTBEGIN
 struct pixel
 {
-    static constexpr const char* id = "pixels";
-    static constexpr const char* symbol = "pixels";
+    static constexpr const char id[]{ "pixels" };
+    static constexpr const char symbol[]{ "pixels" };
 };
 struct angle
 {
-    static constexpr const char* id = "degrees";
-    static constexpr const char* symbol = "deg";
+    static constexpr const char id[]{ "degrees" };
+    static constexpr const char symbol[]{ "deg" };
 };
 // NOLINTEND
 } // namespace dla::unit_name
