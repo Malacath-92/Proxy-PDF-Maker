@@ -98,11 +98,6 @@ PopupBase::PopupBase(QWidget* parent)
 {
     setWindowFlags(Qt::WindowType::FramelessWindowHint |
                    Qt::WindowType::WindowStaysOnTopHint);
-
-    QPalette old_palette{ palette() };
-    old_palette.setColor(backgroundRole(), 0x111111);
-    setPalette(old_palette);
-    setAutoFillBackground(true);
 }
 
 void PopupBase::Show()
