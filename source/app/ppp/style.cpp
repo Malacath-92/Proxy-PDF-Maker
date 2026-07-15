@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QDirIterator>
 #include <QFile>
+#include <QImageReader>
 #include <QStyleFactory>
 
 #include <ppp/util.hpp>
@@ -25,6 +26,9 @@ std::vector<std::string> GetStyles()
     }
 
     Q_INIT_RESOURCE(resources);
+    Q_INIT_RESOURCE(breeze);
+    Q_INIT_RESOURCE(breeze_styles);
+
     for (const auto style_dir : { ":/res/styles", "./res/styles" })
     {
         QDirIterator it(style_dir);

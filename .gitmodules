@@ -7,3 +7,6 @@
 [submodule "submodules/nanosvg"]
 	path = submodules/nanosvg
 	url = https://github.com/memononen/nanosvg.git
+[submodule "submodules/BreezeStyleSheets"]
+	path = submodules/BreezeStyleSheets
+	url = https://github.com/Alexhuszagh/BreezeStyleSheets.git

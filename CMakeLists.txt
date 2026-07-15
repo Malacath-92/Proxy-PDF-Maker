@@ -228,6 +228,7 @@ target_link_libraries(proxy_pdf_dependencies INTERFACE
 	Qt6::Core
 	Qt6::Gui
 	Qt6::Svg
+	Qt6::QSvgIconPlugin
 	Qt6::Network
 	Qt6::TlsBackendOpenSSLPlugin
 	Qt6::Widgets
@@ -329,6 +330,10 @@ target_compile_definitions(qt_toast_lib PRIVATE QT_TOAST_PACKAGED_RESOURCES=qt-t
 target_include_directories(qt_toast_lib PUBLIC "submodules/qt-toast/src")
 
 # --------------------------------------------------
+# Generate Breeze styles
+include(cmake/breeze.cmake)
+
+# --------------------------------------------------
 # Create GUI executable
 if (WIN32)
 	set(proxy_pdf_resources "resources.qrc;res/proxy_pdf.rc")
@@ -343,6 +348,7 @@ else()
 	qt_add_executable(proxy_pdf ${proxy_pdf_sources} ${proxy_pdf_headers} ${proxy_pdf_resources})
 endif()
 target_link_libraries(proxy_pdf PRIVATE
+	breeze
 	qt_toast_lib
 	onnxruntime::onnxruntime
 	proxy_pdf_lib

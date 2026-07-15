@@ -18,6 +18,8 @@ Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
 
 Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 
+Q_IMPORT_PLUGIN(QSvgIconPlugin)
+
 #include <fmt/chrono.h>
 
 #include <nlohmann/json.hpp>
@@ -70,6 +72,8 @@ int main(int argc, char** argv)
 {
     TRACY_WAIT_CONNECT();
     TRACY_AUTO_SCOPE();
+
+    qputenv("QT_LOGGING_RULES", "qt.text.stylesheets.warning=true;qt.svg=true");
 
 #ifdef WIN32
     {
