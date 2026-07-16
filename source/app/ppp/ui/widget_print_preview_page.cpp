@@ -17,10 +17,8 @@ PagePreview::PagePreview(Project& project,
                          Params params)
     : m_Transforms{ transforms }
 {
-    QPalette pal = palette();
-    pal.setColor(QPalette::ColorRole::Window, Qt::white);
-    setAutoFillBackground(true);
-    setPalette(pal);
+    setProperty("isPageCanvas", true);
+    setStyleSheet("background-color: #ffffff; border: none;");
 
     const auto total_bleed_edge{
         params.m_IsBackside
