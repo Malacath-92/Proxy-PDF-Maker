@@ -22,9 +22,14 @@ set(TEMP_QRC_PATH "${CMAKE_CURRENT_BINARY_DIR}/breeze_styles.qrc.tmp")
 file(WRITE "${TEMP_QRC_PATH}" "${STYLES_QRC_CONTENT}")
 configure_file("${TEMP_QRC_PATH}" "${BREEZE_STYLES_QRC}" COPYONLY)
 
+set(BREEZE_CONFIGURE_OUTPUTS "${BREEZE_QRC}")
+foreach(STYLE_NAME IN LISTS BREEZE_STYLES)
+    set(BREEZE_CONFIGURE_OUTPUTS "${BREEZE_CONFIGURE_OUTPUTS};${BREEZE_OUTPUT_DIR}/${STYLE_NAME}/stylesheet.qss")
+endforeach()
+
 string(REPLACE ";" "," BREEZE_STYLES "${BREEZE_STYLES}")
 add_custom_command(
-    OUTPUT "${BREEZE_QRC}"
+    OUTPUT "${BREEZE_CONFIGURE_OUTPUTS}"
     COMMAND ${Python_EXECUTABLE} ${BREEZE_CONFIGURE}
             --styles=${BREEZE_STYLES} --resource=breeze.qrc
             --output-dir="${BREEZE_OUTPUT_DIR}"
