@@ -3,8 +3,8 @@ find_package(Python COMPONENTS Interpreter)
 set(BREEZE_STYLES "dark-blue;light-blue;dark-pink;light-pink")
 set(BREEZE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/submodules/BreezeStyleSheets")
 set(BREEZE_CONFIGURE "${BREEZE_SOURCE_DIR}/configure.py")
-set(BREEZE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/breeze_resources")
 
+set(BREEZE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/breeze_resources")
 set(BREEZE_QRC "${BREEZE_OUTPUT_DIR}/breeze.qrc")
 set(BREEZE_STYLES_QRC "${BREEZE_OUTPUT_DIR}/breeze_styles.qrc")
 
@@ -29,7 +29,7 @@ endforeach()
 
 string(REPLACE ";" "," BREEZE_STYLES "${BREEZE_STYLES}")
 add_custom_command(
-    OUTPUT "${BREEZE_CONFIGURE_OUTPUTS}"
+    OUTPUT ${BREEZE_CONFIGURE_OUTPUTS}
     COMMAND ${Python_EXECUTABLE} ${BREEZE_CONFIGURE}
             --styles=${BREEZE_STYLES} --resource=breeze.qrc
             --output-dir="${BREEZE_OUTPUT_DIR}"
