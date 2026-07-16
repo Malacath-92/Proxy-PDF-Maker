@@ -94,7 +94,7 @@ void PrintPreviewCardImage::dragLeaveEvent(QDragLeaveEvent* event)
 
 void PrintPreviewCardImage::paintEvent(QPaintEvent* event)
 {
-    if (m_ClipRect.has_value() && false)
+    if (m_ClipRect.has_value())
     {
         const auto clipped_rect{ event->rect().intersected(GetClippedRect()) };
         const auto scaled_pixmap{
