@@ -37,14 +37,7 @@ add_custom_command(
     DEPENDS ${BREEZE_CONFIGURE} ${BREEZE_STYLES_QRC}
     COMMENT "Generating Breeze themes (if modified)")
 
-add_custom_target(
-    run_python_breeze ALL
-    DEPENDS "${BREEZE_QRC}" "${BREEZE_STYLES_QRC}")
-
 add_library(breeze STATIC "${BREEZE_QRC}" "${BREEZE_STYLES_QRC}")
-add_dependencies(breeze run_python_breeze)
 
 set_target_properties(breeze PROPERTIES
-	FOLDER 3rdparty)
-set_target_properties(run_python_breeze PROPERTIES
 	FOLDER 3rdparty)
