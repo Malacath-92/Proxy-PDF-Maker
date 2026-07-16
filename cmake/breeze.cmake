@@ -1,6 +1,6 @@
 find_package(Python COMPONENTS Interpreter)
 
-set(BREEZE_STYLES "dark-blue;light-blue;dark-pink;light-pink")
+set(BREEZE_STYLES "dark-blue;light-blue;dark-pink-alt;light-pink")
 set(BREEZE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/submodules/BreezeStyleSheets")
 set(BREEZE_CONFIGURE "${BREEZE_SOURCE_DIR}/configure.py")
 

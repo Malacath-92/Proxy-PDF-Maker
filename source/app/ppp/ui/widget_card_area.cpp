@@ -47,9 +47,11 @@ class CardWidget : public QFrame
 
         auto* decrement_button{ new QPushButton{ "-" } };
         decrement_button->setToolTip("Remove one");
+        decrement_button->setMinimumWidth(20);
 
         auto* increment_button{ new QPushButton{ "+" } };
         increment_button->setToolTip("Add one");
+        increment_button->setMinimumWidth(20);
 
         auto* number_layout{ new QHBoxLayout };
         number_layout->addStretch();
@@ -57,11 +59,15 @@ class CardWidget : public QFrame
         number_layout->addWidget(number_edit);
         number_layout->addWidget(increment_button);
         number_layout->addStretch();
-        number_layout->setContentsMargins(0, 0, 0, 0);
+        {
+            QMargins margins{ number_layout->contentsMargins() };
+            margins.setLeft(0);
+            margins.setRight(0);
+            number_layout->setContentsMargins(margins);
+        }
 
         auto* number_area{ new QWidget };
         number_area->setLayout(number_layout);
-        number_area->setFixedHeight(20);
 
         QWidget* card_widget{ MakeCardWidget(project) };
         m_ExtraOptions = MakeExtraOptions(project);
@@ -326,11 +332,9 @@ class CardWidget : public QFrame
             extra_options_layout->addWidget(option);
         }
         extra_options_layout->addStretch();
-        extra_options_layout->setContentsMargins(0, 0, 0, 0);
 
         auto* extra_options_area{ new QWidget };
         extra_options_area->setLayout(extra_options_layout);
-        extra_options_area->setFixedHeight(20);
 
         return extra_options_area;
     }
@@ -826,6 +830,9 @@ CardArea::CardArea(Project& project)
         m_Filter = new QLineEdit;
         m_Filter->setPlaceholderText("Filter");
         m_RemoveExternalCards = new QPushButton{ "Remove All External Cards" };
+
+        global_decrement_button->setMinimumWidth(20);
+        global_increment_button->setMinimumWidth(20);
 
         global_decrement_button->setToolTip("Remove one from all");
         global_increment_button->setToolTip("Add one to all");

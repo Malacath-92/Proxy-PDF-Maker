@@ -37,8 +37,10 @@ class PluginsPopup : public PopupBase
 
         m_AutoCenter = false;
         setWindowFlags(Qt::WindowType::Dialog);
+        setWindowTitle("Plugins");
 
         auto* plugins{ new QGroupBox{} };
+        plugins->setTitle("Plugins");
         {
             auto* layout{ new QVBoxLayout };
             for (const auto& plugin_name : GetPluginNames())
