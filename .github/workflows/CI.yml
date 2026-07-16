@@ -153,6 +153,16 @@ jobs:
             ./proxy_pdf_cli --help
             ./proxy_pdf_cli --update
 
+      - name: Wait for Update
+        if: ${{ inputs.os != 'Windows' }}
+        run: |
+            wait 5
+
+      - name: Wait for Update (Windows)
+        if: ${{ inputs.os == 'Windows' }}
+        run: |
+            Start-Sleep -Seconds 5
+
       - name: Run Update
         run: |
             cd publish
