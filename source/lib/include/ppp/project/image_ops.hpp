@@ -43,6 +43,7 @@ enum class UncropMode
     Transparent,
 };
 
+size_t CountImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path);
 std::vector<fs::path> ListImageFiles(const fs::path& path_one, const fs::path& path_two);
 

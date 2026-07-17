@@ -11,6 +11,19 @@
 
 #include <ppp/qt_util.hpp>
 
+size_t CountFiles(const fs::path& path, const std::span<const fs::path> extensions)
+{
+    size_t num_files{ 0 };
+    ForEachFile(
+        path,
+        [&num_files](const fs::path& /*path*/)
+        {
+            ++num_files;
+        },
+        extensions);
+    return num_files;
+}
+
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions)
 {
     std::vector<fs::path> files;

@@ -3,6 +3,7 @@
 #include <ranges>
 
 #include <QGridLayout>
+#include <QMessageBox>
 #include <QProgressBar>
 #include <QPushButton>
 
@@ -19,6 +20,7 @@
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/new_project_popup.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -130,24 +132,78 @@ ActionsWidget::ActionsWidget(Project& project)
         {
             TRACY_AUTO_SCOPE();
 
-            GenericPopup reload_window{ window(), "Resetting project..." };
+            auto* main_window{ window() };
+            main_window->setEnabled(false);
+            AtScopeExit reenable_window{
+                [=]()
+                { main_window->setEnabled(true); }
+            };
+
+            NewProjectPopup new_project_wizard{ nullptr };
+            new_project_wizard.Show();
+
+            if (!new_project_wizard.CreateNewProject())
+            {
+                return;
+            }
+
+            const fs::path new_image_folde{
+                new_project_wizard.NewImageFolder().toStdString()
+            };
+            if (new_project_wizard.ClearImages())
+            {
+                const auto num_images{ CountImageFiles(new_image_folde) };
+                if (num_images > 0)
+                {
+                    const auto response{
+                        QMessageBox::question(
+                            main_window,
+                            "Clear Images",
+                            QString{ "This will delete %1 image files. Are you sure you want to continue?" }
+                                .arg(num_images))
+                    };
+                    if (response == QMessageBox::StandardButton::No)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        for (const auto& entry : std::filesystem::directory_iterator(new_image_folde))
+                        {
+                            std::filesystem::remove_all(entry.path());
+                        }
+                    }
+                }
+            }
 
             const auto old_project_data{ std::move(project.m_Data) };
             const auto reset_project_work{
-                [&project]()
+                [&]()
                 {
                     TRACY_AUTO_SCOPE();
                     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
-                    application.SetProjectPath("proj.json");
-                    project.LoadFromJson(Project{}.DumpToJson(), &application);
+                    application.SetProjectPath(QString{ "%1.json" }
+                                                   .arg(new_project_wizard.NewProjectName())
+                                                   .toStdString());
+
+                    Project new_project{};
+                    project.m_Data.m_FileName = new_project_wizard.NewProjectName().toStdString();
+                    project.m_Data.m_ImageDir = new_image_folde;
+                    project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
+                    project.m_Data.m_UncropDir = project.m_Data.m_ImageDir / "uncrop";
+                    project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
+                    project.m_Data.m_CardSizeChoice = new_project_wizard.NewCardSize().toStdString();
+                    project.m_Data.m_PageSize = new_project_wizard.NewPaperSize().toStdString();
+                    project.LoadFromJson(new_project.DumpToJson(), &application);
                 }
             };
 
-            auto* main_window{ window() };
-            main_window->setEnabled(false);
-            reload_window.ShowDuringWork(reset_project_work);
+            {
+                GenericPopup reload_window{ window(), "Resetting project..." };
+                reload_window.ShowDuringWork(reset_project_work);
+            }
+
             NewProjectOpened(old_project_data, project.m_Data);
-            main_window->setEnabled(true);
         }
     };
 

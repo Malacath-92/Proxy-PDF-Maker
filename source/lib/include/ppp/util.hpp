@@ -130,6 +130,7 @@ void ForEachFolder(const fs::path& path, FunT&& fun)
     }
 }
 
+size_t CountFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
 std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
 std::vector<fs::path> ListFolders(const fs::path& path);
 

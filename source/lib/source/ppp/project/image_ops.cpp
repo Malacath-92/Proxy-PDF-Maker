@@ -22,6 +22,12 @@
 
 #include <ppp/profile/profile.hpp>
 
+size_t CountImageFiles(const fs::path& path)
+{
+    TRACY_AUTO_SCOPE();
+    return CountFiles(path, g_ValidImageExtensions);
+}
+
 std::vector<fs::path> ListImageFiles(const fs::path& path)
 {
     TRACY_AUTO_SCOPE();
