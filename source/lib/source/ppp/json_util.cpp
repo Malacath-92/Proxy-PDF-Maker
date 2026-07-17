@@ -71,9 +71,8 @@ nlohmann::json& SetJsonValue(nlohmann::json& root,
         }
         else if (!target_json.get().contains(path_part))
         {
-            target_json.get()[path_part] = nlohmann::json{
-                nlohmann::json::value_t::object
-            };
+            target_json.get()[path_part] = nlohmann::json(
+                nlohmann::json::value_t::object);
         }
 
         target_json = target_json.get()[path_part];
