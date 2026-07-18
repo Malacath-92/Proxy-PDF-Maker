@@ -334,6 +334,7 @@ class CardWidget : public QFrame
             extra_options_layout->addWidget(option);
         }
         extra_options_layout->addStretch();
+        extra_options_layout->setContentsMargins(0, 0, 0, 0);
 
         auto* extra_options_area{ new QWidget };
         extra_options_area->setLayout(extra_options_layout);
