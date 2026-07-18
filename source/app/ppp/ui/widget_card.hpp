@@ -56,6 +56,9 @@ class CardSizedLabel : public QLabel
     virtual int heightForWidth(int width) const override;
 
   protected:
+    bool FixSize(int width, int height);
+
+  protected:
     bool m_Rotated;
     Size m_CardSize;
     float m_CardRatio;
@@ -66,6 +69,8 @@ class BlankCardImage : public CardSizedLabel
 {
   public:
     BlankCardImage(const Project& project, CardImageWidgetParams params = CardImageWidgetParams{});
+
+    virtual void resizeEvent(QResizeEvent* event) override;
 };
 
 class CardImage : public CardSizedLabel
@@ -86,6 +91,8 @@ class CardImage : public CardSizedLabel
     {
         return m_CardName;
     }
+
+    virtual void resizeEvent(QResizeEvent* event) override;
 
   private slots:
     void PreviewRemoved(const fs::path& card_name);

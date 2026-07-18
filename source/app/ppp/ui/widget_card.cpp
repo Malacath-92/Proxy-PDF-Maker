@@ -110,6 +110,20 @@ int CardSizedLabel::heightForWidth(int width) const
     }
 }
 
+bool CardSizedLabel::FixSize(int width, int height)
+{
+    const auto wanted_height{ heightForWidth(width) };
+    if (height != wanted_height)
+    {
+        resize(width, wanted_height);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams params)
     : CardSizedLabel{ project, params }
 {
@@ -147,6 +161,16 @@ BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams par
     setScaledContents(true);
 
     setMinimumWidth(params.m_MinimumWidth.value);
+}
+
+void BlankCardImage::resizeEvent(QResizeEvent* event)
+{
+    const auto width{ event->size().width() };
+    const auto height{ event->size().height() };
+    if (!FixSize(width, height))
+    {
+        QLabel::resizeEvent(event);
+    }
 }
 
 CardImage::CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
@@ -411,6 +435,16 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
         layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
 
         m_Spinner = spinner;
+    }
+}
+
+void CardImage::resizeEvent(QResizeEvent* event)
+{
+    const auto width{ event->size().width() };
+    const auto height{ event->size().height() };
+    if (!FixSize(width, height))
+    {
+        QLabel::resizeEvent(event);
     }
 }
 
@@ -842,9 +876,17 @@ void StackedCardBacksideView::RefreshSizes(QSize size)
 
 void StackedCardBacksideView::resizeEvent(QResizeEvent* event)
 {
-    QStackedWidget::resizeEvent(event);
-
-    RefreshSizes(event->size());
+    const auto width{ event->size().width() };
+    const auto height{ heightForWidth(width) };
+    if (event->size().height() != height)
+    {
+        resize(width, height);
+    }
+    else
+    {
+        QStackedWidget::resizeEvent(event);
+        RefreshSizes(event->size());
+    }
 }
 
 void StackedCardBacksideView::mouseMoveEvent(QMouseEvent* event)
