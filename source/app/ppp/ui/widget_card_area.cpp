@@ -68,8 +68,8 @@ class CardWidget : public QFrame
 
         auto* number_area{ new QWidget };
         number_area->setLayout(number_layout);
-        number_area->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-        number_area->setMaximumSize(number_area->sizeHint());
+        number_area->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+        number_area->setMaximumHeight(number_area->sizeHint().height());
 
         QWidget* card_widget{ MakeCardWidget(project) };
         m_ExtraOptions = MakeExtraOptions(project);
@@ -338,8 +338,8 @@ class CardWidget : public QFrame
 
         auto* extra_options_area{ new QWidget };
         extra_options_area->setLayout(extra_options_layout);
-        extra_options_area->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
-        extra_options_area->setMaximumSize(extra_options_area->sizeHint());
+        extra_options_area->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+        extra_options_area->setMaximumHeight(extra_options_area->sizeHint().height());
 
         return extra_options_area;
     }
