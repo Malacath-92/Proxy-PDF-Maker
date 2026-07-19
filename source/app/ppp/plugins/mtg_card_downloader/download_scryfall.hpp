@@ -40,7 +40,7 @@ class ScryfallDownloader : public CardArtDownloader
     virtual bool ProvidesBleedEdge() const override;
 
   private slots:
-    void OnError() {};
+    void OnError(){};
 
   private:
     static bool HasBackside(const QJsonDocument& card_info);

@@ -68,7 +68,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent)
         auto* card_size{
             new WidgetWithLabel{
                 "Card Size",
-                 m_CardSize }
+                m_CardSize }
         };
 
         const auto default_page_size{

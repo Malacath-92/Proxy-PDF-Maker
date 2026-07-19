@@ -179,7 +179,8 @@ void DrawSvgToPainterPath(QPainterPath& path,
         }
     };
 
-    DrawSvgToPath(path, move_to, line_to, cubic_to, [](QPainterPath&) {}, svg);
+    DrawSvgToPath(
+        path, move_to, line_to, cubic_to, [](QPainterPath&) {}, svg);
 }
 
 QPainterPath ConvertSvgToPainterPath(const Svg& svg,
