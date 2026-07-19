@@ -640,6 +640,14 @@ class CardGrid : public QWidget
         setFixedHeight(heightForWidth(size().width()));
     }
 
+    int MaximumColumnsFromAvailableWidth(int available_width) const
+    {
+        const auto image_minimum_size{
+            m_FirstItem->minimumWidth()
+        };
+        return available_width / image_minimum_size;
+    }
+
     bool SetCardCount(const fs::path& card_name, uint32_t card_count) const
     {
         auto it{ m_Cards.find(card_name) };
@@ -692,6 +700,8 @@ class CardScrollArea : public QScrollArea
     void FullRefresh();
     void RefreshGridSize();
 
+    int MaximumColumnsFromAvailableWidth(int available_width) const;
+
     void ApplyFilter(const QString& filter);
 
   private:
@@ -721,6 +731,16 @@ void CardScrollArea::FullRefresh()
     m_Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
     RefreshGridSize();
+}
+
+int CardScrollArea::MaximumColumnsFromAvailableWidth(int available_width) const
+{
+    const auto margins{ contentsMargins() };
+    const auto scrollbar_width{ verticalScrollBar()->isVisible() ? verticalScrollBar()->width() : 0 };
+    available_width -= margins.left() +
+                       margins.right() +
+                       scrollbar_width;
+    return m_Grid->MaximumColumnsFromAvailableWidth(available_width);
 }
 
 void CardScrollArea::RefreshGridSize()
@@ -1129,6 +1149,15 @@ void CardArea::CardVisibilityChanged(const fs::path& card_name, bool visible)
 void CardArea::FullRefresh()
 {
     m_RefreshTimer.start();
+}
+
+int CardArea::MaximumColumnsFromAvailableWidth(int available_width) const
+{
+    const auto margins{ contentsMargins() };
+    available_width -= layout()->spacing() +
+                       margins.left() +
+                       margins.right();
+    return m_ScrollArea->MaximumColumnsFromAvailableWidth(available_width);
 }
 
 #include <widget_card_area.moc>

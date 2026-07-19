@@ -2,8 +2,9 @@
 
 #include <QWidget>
 
-class Project;
+class QDoubleSpinBox;
 
+class Project;
 class ComboBoxWithLabel;
 
 class GlobalOptionsWidget : public QWidget
@@ -38,12 +39,15 @@ class GlobalOptionsWidget : public QWidget
     void PageSizesChanged();
     void CardSizesChanged();
 
+    void MaximumDisplayColumnsChanged(uint32_t maximum_display_columns);
+
     void ColorCubeAdded();
     void StyleAdded();
 
   private:
     void OpenPluginsWindow();
 
+    QDoubleSpinBox* m_DisplayColumns{ nullptr };
     ComboBoxWithLabel* m_ColorCube{ nullptr };
     ComboBoxWithLabel* m_Style{ nullptr };
 };

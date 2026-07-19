@@ -36,6 +36,8 @@ class CardArea : public QWidget
 
     void FullRefresh();
 
+    int MaximumColumnsFromAvailableWidth(int available_width) const;
+
   signals:
     void RequestOpenPluginsWindow();
 

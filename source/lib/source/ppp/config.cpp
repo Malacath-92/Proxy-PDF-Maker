@@ -274,6 +274,7 @@ Config LoadConfig()
 
             config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
             config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
+            config.m_MaxDisplayColumns = settings.value("Display.Columns.Max", 5).toInt();
             if (settings.contains("Page.Size"))
             {
                 config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
@@ -521,6 +522,7 @@ void SaveConfig(Config config)
 
             settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
             settings.setValue("Display.Columns", config.m_DisplayColumns);
+            settings.setValue("Display.Columns.Max", config.m_MaxDisplayColumns);
             settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
             settings.setValue("Version.Output", config.m_VersionOutput);
 

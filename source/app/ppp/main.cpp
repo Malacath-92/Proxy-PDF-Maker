@@ -4,6 +4,7 @@
 
 #include <QApplication>
 #include <QDesktopServices>
+#include <QLayout>
 #include <QMessageBox>
 #include <QThreadPool>
 
@@ -281,6 +282,46 @@ int main(int argc, char** argv)
             options_area,
         },
     };
+
+    {
+        auto update_max_display_columns{
+            [&]()
+            {
+                TRACY_AUTO_SCOPE();
+                TRACY_SCOPE_NAME(find_maximum_number_columns);
+
+                const auto* primary_screen{ qApp->primaryScreen() };
+                const auto geometry{ primary_screen->availableGeometry() };
+                const auto available_width{ geometry.width() };
+
+                const auto options_width{ options_area->width() };
+                const auto window_width_margins{
+                    main_window->contentsMargins().left() +
+                    main_window->contentsMargins().right()
+                };
+                const auto window_spacing{ main_window->layout()->spacing() };
+                const auto tabs_leftover_width{
+                    available_width -
+                    options_width -
+                    window_width_margins -
+                    window_spacing
+                };
+                const auto maximum_columns{
+                    tabs->MaximumColumnsFromAvailableWidth(tabs_leftover_width)
+                };
+
+                global_options->MaximumDisplayColumnsChanged(maximum_columns);
+            }
+        };
+
+        QTimer::singleShot(100,
+                           main_window,
+                           update_max_display_columns);
+        QObject::connect(&app,
+                         &QApplication::primaryScreenChanged,
+                         main_window,
+                         update_max_display_columns);
+    }
 
     {
         TRACY_AUTO_SCOPE();

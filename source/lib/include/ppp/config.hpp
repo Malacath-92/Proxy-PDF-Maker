@@ -58,6 +58,7 @@ struct Config
     CardOrderDirection m_CardOrderDirection{ CardOrderDirection::Ascending };
     uint32_t m_MaxWorkerThreads{ 16 };
     uint32_t m_DisplayColumns{ 5 };
+    uint32_t m_MaxDisplayColumns{ 5 };
     std::optional<std::string> m_DefaultCardSize{};
     std::optional<std::string> m_DefaultPageSize{};
     std::string m_ColorCube{ "None" };

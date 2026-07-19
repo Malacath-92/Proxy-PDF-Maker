@@ -121,12 +121,12 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         base_unit_name } };
     base_unit->GetWidget()->setToolTip("Determines in which units measurements are given.");
 
-    auto* display_columns_spin_box{ MakeDoubleSpinBox() };
-    display_columns_spin_box->setDecimals(0);
-    display_columns_spin_box->setRange(2, 10);
-    display_columns_spin_box->setSingleStep(1);
-    display_columns_spin_box->setValue(g_Cfg.m_DisplayColumns);
-    auto* display_columns{ new WidgetWithLabel{ "Display &Columns", display_columns_spin_box } };
+    m_DisplayColumns = MakeDoubleSpinBox();
+    m_DisplayColumns->setDecimals(0);
+    m_DisplayColumns->setRange(2, g_Cfg.m_MaxDisplayColumns);
+    m_DisplayColumns->setSingleStep(1);
+    m_DisplayColumns->setValue(g_Cfg.m_DisplayColumns);
+    auto* display_columns{ new WidgetWithLabel{ "Display &Columns", m_DisplayColumns } };
     display_columns->setToolTip("Number columns in card view");
 
     auto* version_output{ new QCheckBox{ "&Version Output" } };
@@ -413,7 +413,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
                      &QComboBox::currentTextChanged,
                      this,
                      change_base_units);
-    QObject::connect(display_columns_spin_box,
+    QObject::connect(m_DisplayColumns,
                      &QDoubleSpinBox::valueChanged,
                      this,
                      change_display_columns);
@@ -491,6 +491,13 @@ void GlobalOptionsWidget::PageSizesChanged()
 
 void GlobalOptionsWidget::CardSizesChanged()
 {
+    SaveConfig(g_Cfg);
+}
+
+void GlobalOptionsWidget::MaximumDisplayColumnsChanged(uint32_t maximum_display_columns)
+{
+    g_Cfg.m_MaxDisplayColumns = maximum_display_columns;
+    m_DisplayColumns->setRange(2, g_Cfg.m_MaxDisplayColumns);
     SaveConfig(g_Cfg);
 }
 
