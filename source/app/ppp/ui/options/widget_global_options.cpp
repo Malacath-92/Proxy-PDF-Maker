@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_global_options.hpp>
+#include <ppp/ui/options/widget_global_options.hpp>
 
 #include <ranges>
 
@@ -18,10 +18,10 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/style.hpp>
 
-#include <ppp/ui/popups.hpp>
-#include <ppp/ui/widget_combo_box.hpp>
-#include <ppp/ui/widget_double_spin_box.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/popups/popups.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -123,7 +123,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
 
     m_DisplayColumns = MakeDoubleSpinBox();
     m_DisplayColumns->setDecimals(0);
-    m_DisplayColumns->setRange(2, g_Cfg.m_MaxDisplayColumns);
+    m_DisplayColumns->setRange(1, g_Cfg.m_MaxDisplayColumns);
     m_DisplayColumns->setSingleStep(1);
     m_DisplayColumns->setValue(g_Cfg.m_DisplayColumns);
     auto* display_columns{ new WidgetWithLabel{ "Display &Columns", m_DisplayColumns } };
@@ -497,7 +497,7 @@ void GlobalOptionsWidget::CardSizesChanged()
 void GlobalOptionsWidget::MaximumDisplayColumnsChanged(uint32_t maximum_display_columns)
 {
     g_Cfg.m_MaxDisplayColumns = maximum_display_columns;
-    m_DisplayColumns->setRange(2, g_Cfg.m_MaxDisplayColumns);
+    m_DisplayColumns->setRange(1, g_Cfg.m_MaxDisplayColumns);
     SaveConfig(g_Cfg);
 }
 

@@ -1,14 +1,14 @@
-#include <ppp/ui/widget_print_preview_page.hpp>
+#include <ppp/ui/preview/widget_print_preview_page.hpp>
 
 #include <QResizeEvent>
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_print_preview_card.hpp>
+#include <ppp/ui/preview/widget_print_preview_card.hpp>
 
-#include <ppp/ui/preview_overlays/widget_borders_overlay.hpp>
-#include <ppp/ui/preview_overlays/widget_guides_overlay.hpp>
-#include <ppp/ui/preview_overlays/widget_margins_overlay.hpp>
+#include <ppp/ui/preview/overlays/widget_borders_overlay.hpp>
+#include <ppp/ui/preview/overlays/widget_guides_overlay.hpp>
+#include <ppp/ui/preview/overlays/widget_margins_overlay.hpp>
 
 PagePreview::PagePreview(Project& project,
                          QObject* event_filter,

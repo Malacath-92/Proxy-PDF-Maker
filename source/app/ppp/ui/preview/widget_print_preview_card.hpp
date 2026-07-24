@@ -4,7 +4,7 @@
 
 #include <ppp/pdf/util.hpp>
 
-#include <ppp/ui/widget_card.hpp>
+#include <ppp/ui/widget_util/widget_card.hpp>
 
 class PrintPreviewCardImage : public CardImage
 {

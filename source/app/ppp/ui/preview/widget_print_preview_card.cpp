@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_print_preview_card.hpp>
+#include <ppp/ui/preview/widget_print_preview_card.hpp>
 
 #include <QDrag>
 #include <QMimeData>

@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_card_options.hpp>
+#include <ppp/ui/options/widget_card_options.hpp>
 
 #include <QCheckBox>
 #include <QMainWindow>
@@ -17,12 +17,12 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
-#include <ppp/ui/linked_spin_boxes.hpp>
-#include <ppp/ui/widget_card.hpp>
-#include <ppp/ui/widget_double_spin_box.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/linked_spin_boxes.hpp>
+#include <ppp/ui/widget_util/widget_card.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
 #include <ppp/profile/profile.hpp>

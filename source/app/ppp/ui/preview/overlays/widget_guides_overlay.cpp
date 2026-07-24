@@ -1,4 +1,4 @@
-#include <ppp/ui/preview_overlays/widget_guides_overlay.hpp>
+#include <ppp/ui/preview/overlays/widget_guides_overlay.hpp>
 
 #include <QResizeEvent>
 

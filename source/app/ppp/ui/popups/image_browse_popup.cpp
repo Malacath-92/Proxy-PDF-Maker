@@ -16,7 +16,7 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_card.hpp>
+#include <ppp/ui/widget_util/widget_card.hpp>
 
 class SelectableCard : public QFrame
 {

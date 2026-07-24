@@ -13,7 +13,7 @@
 
 #include <ppp/app.hpp>
 
-#include <ppp/ui/widget_double_spin_box.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
 
 void ResetImpl(LengthSpinBox* widget, const nlohmann::json& value)
 {

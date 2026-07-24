@@ -19,7 +19,7 @@
 
 #include <ppp/qt_util.hpp>
 
-#include <ppp/ui/widget_combo_box.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
 
 PaperSizePopup::PaperSizePopup(QWidget* parent,
                                const Config& config)

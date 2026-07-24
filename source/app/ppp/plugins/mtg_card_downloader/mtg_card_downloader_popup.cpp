@@ -8,7 +8,7 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/plugins/decklist_textbox.hpp>
 #include <ppp/plugins/mtg_card_downloader/decklist_parser.hpp>

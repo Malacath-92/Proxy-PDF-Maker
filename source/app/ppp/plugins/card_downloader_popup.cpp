@@ -26,7 +26,7 @@
 #include <ppp/upscale_models.hpp>
 
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/plugins/decklist_textbox.hpp>
 #include <ppp/plugins/plugin_interface.hpp>

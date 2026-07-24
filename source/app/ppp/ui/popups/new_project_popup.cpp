@@ -18,8 +18,8 @@
 
 #include <ppp/app.hpp>
 #include <ppp/project/project.hpp>
-#include <ppp/ui/widget_combo_box.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/profile/profile.hpp>
 

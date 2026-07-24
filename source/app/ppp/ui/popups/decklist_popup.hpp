@@ -2,7 +2,7 @@
 
 #include <QTextEdit>
 
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 
 class QTextEdit;
 class QCompleter;

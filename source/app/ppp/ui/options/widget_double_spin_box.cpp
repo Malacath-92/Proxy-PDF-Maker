@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_double_spin_box.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
 
 #include <QWheelEvent>
 

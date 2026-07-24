@@ -5,7 +5,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/widget_card_area.hpp>
-#include <ppp/ui/widget_print_preview.hpp>
+#include <ppp/ui/preview/widget_print_preview.hpp>
 
 #include <ppp/profile/profile.hpp>
 

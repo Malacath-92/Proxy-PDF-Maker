@@ -1,10 +1,10 @@
-#include <ppp/ui/linked_spin_boxes.hpp>
+#include <ppp/ui/widget_util/linked_spin_boxes.hpp>
 
 #include <QHBoxLayout>
 #include <QToolButton>
 #include <QVBoxLayout>
 
-#include <ppp/ui/widget_double_spin_box.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
 
 LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
 {

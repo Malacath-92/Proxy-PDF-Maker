@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_options_area.hpp>
+#include <ppp/ui/options/widget_options_area.hpp>
 
 #include <QParallelAnimationGroup>
 #include <QPropertyAnimation>
@@ -12,7 +12,7 @@
 #include <ppp/plugins/plugin_interface.hpp>
 #include <ppp/qt_util.hpp>
 
-#include <ppp/ui/collapse_button.hpp>
+#include <ppp/ui/widget_util/collapse_button.hpp>
 
 #include <ppp/profile/profile.hpp>
 

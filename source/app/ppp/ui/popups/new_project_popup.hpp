@@ -2,7 +2,7 @@
 
 #include <QLineEdit>
 
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 
 class QCheckBox;
 class QComboBox;

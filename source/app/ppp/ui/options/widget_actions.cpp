@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_actions.hpp>
+#include <ppp/ui/options/widget_actions.hpp>
 
 #include <ranges>
 
@@ -19,7 +19,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/popups/new_project_popup.hpp>
 
 #include <ppp/profile/profile.hpp>

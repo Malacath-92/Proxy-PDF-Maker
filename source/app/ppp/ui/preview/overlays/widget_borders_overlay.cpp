@@ -1,4 +1,4 @@
-#include <ppp/ui/preview_overlays/widget_borders_overlay.hpp>
+#include <ppp/ui/preview/overlays/widget_borders_overlay.hpp>
 
 #include <QPainter>
 #include <QResizeEvent>

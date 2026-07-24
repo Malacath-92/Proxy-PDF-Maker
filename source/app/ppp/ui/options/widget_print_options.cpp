@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_print_options.hpp>
+#include <ppp/ui/options/widget_print_options.hpp>
 
 #include <ranges>
 
@@ -18,9 +18,9 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
-#include <ppp/ui/widget_combo_box.hpp>
-#include <ppp/ui/widget_double_spin_box.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
+#include <ppp/ui/options/widget_double_spin_box.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/ui/popups/card_size_popup.hpp>
 #include <ppp/ui/popups/paper_size_popup.hpp>

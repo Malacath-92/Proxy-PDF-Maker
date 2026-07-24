@@ -23,7 +23,7 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/units.hpp>
 
-#include <ppp/ui/widget_combo_box.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
 
 CardSizePopup::CardSizePopup(QWidget* parent,
                              const Config& config)

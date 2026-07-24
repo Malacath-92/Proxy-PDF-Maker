@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_print_preview.hpp>
+#include <ppp/ui/preview/widget_print_preview.hpp>
 
 #include <ranges>
 
@@ -17,8 +17,8 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/widget_print_preview_card.hpp>
-#include <ppp/ui/widget_print_preview_page.hpp>
+#include <ppp/ui/preview/widget_print_preview_card.hpp>
+#include <ppp/ui/preview/widget_print_preview_page.hpp>
 
 #include <ppp/profile/profile.hpp>
 

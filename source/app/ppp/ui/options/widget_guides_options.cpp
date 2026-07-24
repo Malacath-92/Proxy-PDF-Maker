@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_guides_options.hpp>
+#include <ppp/ui/options/widget_guides_options.hpp>
 
 #include <charconv>
 
@@ -16,7 +16,7 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
-#include <ppp/ui/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/profile/profile.hpp>
 

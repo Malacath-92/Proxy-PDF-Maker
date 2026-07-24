@@ -18,8 +18,8 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/popups.hpp>
-#include <ppp/ui/widget_card.hpp>
+#include <ppp/ui/popups/popups.hpp>
+#include <ppp/ui/widget_util/widget_card.hpp>
 
 #include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>

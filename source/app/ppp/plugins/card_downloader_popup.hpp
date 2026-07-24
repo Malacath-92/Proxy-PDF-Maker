@@ -6,7 +6,7 @@
 #include <QRunnable>
 #include <QTemporaryDir>
 
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 #include <ppp/util.hpp>
 
 #include <ppp/plugins/download_interface.hpp>

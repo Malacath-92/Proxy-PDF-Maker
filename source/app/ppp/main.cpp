@@ -39,15 +39,15 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/popups.hpp>
-#include <ppp/ui/widget_actions.hpp>
+#include <ppp/ui/popups/popups.hpp>
+#include <ppp/ui/options/widget_actions.hpp>
 #include <ppp/ui/widget_card_area.hpp>
-#include <ppp/ui/widget_card_options.hpp>
-#include <ppp/ui/widget_global_options.hpp>
-#include <ppp/ui/widget_guides_options.hpp>
-#include <ppp/ui/widget_options_area.hpp>
-#include <ppp/ui/widget_print_options.hpp>
-#include <ppp/ui/widget_print_preview.hpp>
+#include <ppp/ui/options/widget_card_options.hpp>
+#include <ppp/ui/options/widget_global_options.hpp>
+#include <ppp/ui/options/widget_guides_options.hpp>
+#include <ppp/ui/options/widget_options_area.hpp>
+#include <ppp/ui/options/widget_print_options.hpp>
+#include <ppp/ui/preview/widget_print_preview.hpp>
 
 #include <ppp/plugins/plugin_interface.hpp>
 
@@ -638,7 +638,7 @@ int main(int argc, char** argv)
 
         // Write preview to project and forward to widgets
         // clang-format off
-        QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, 
+        QObject::connect(&cropper, &Cropper::PreviewUpdated, &project,
                          [&project](const fs::path& card_name, ImagePreview* preview, Image::Rotation rotation) {
                              project.SetPreview(card_name, std::move(*preview), rotation);
                              delete preview;

@@ -14,7 +14,7 @@
 #include <ppp/qt_util.hpp>
 
 #include <ppp/app.hpp>
-#include <ppp/ui/popups.hpp>
+#include <ppp/ui/popups/popups.hpp>
 
 #include <ppp/profile/profile.hpp>
 
