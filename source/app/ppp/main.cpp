@@ -42,6 +42,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/options/widget_actions.hpp>
 #include <ppp/ui/widget_card_area.hpp>
+#include <ppp/ui/options/widget_project_options.hpp>
 #include <ppp/ui/options/widget_card_options.hpp>
 #include <ppp/ui/options/widget_global_options.hpp>
 #include <ppp/ui/options/widget_guides_options.hpp>
@@ -216,11 +217,12 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
+    auto* actions{ new ActionsWidget{ project } };
     auto* card_area{ new CardArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
-    auto* tabs{ new MainTabs{ card_area, print_preview } };
+    auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
 
-    auto* actions{ new ActionsWidget{ project } };
+    auto* project_options{ new ProjectOptionsWidget{ project } };
     auto* print_options{ new PrintOptionsWidget{ project } };
     auto* guides_options{ new GuidesOptionsWidget{ project } };
     auto* card_options{ new CardOptionsWidget{ project } };
@@ -268,7 +270,7 @@ int main(int argc, char** argv)
         new OptionsAreaWidget{
             project,
             plugin_router,
-            actions,
+            project_options,
             print_options,
             guides_options,
             card_options,
@@ -347,15 +349,15 @@ int main(int argc, char** argv)
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_main_window);
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
     }
 
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_project);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &project, &Project::EnsureOutputFolder);
@@ -370,8 +372,8 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_cropper);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
     }
 
     {
@@ -379,8 +381,8 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_card_provider);
 
         // Sequence refreshing of cards after cleanup of cropper
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &card_provider, &CardProvider::BleedChanged);
@@ -401,8 +403,8 @@ int main(int argc, char** argv)
 
         QObject::connect(&project, &Project::CardVisibilityChanged, card_area, &CardArea::CardVisibilityChanged);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
         QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, card_area, &CardArea::FullRefresh);
@@ -417,8 +419,9 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_preview);
 
         // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
+
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
 
         QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::RequestRefresh);
@@ -467,7 +470,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_print_options);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_options, &PrintOptionsWidget::SpacingChanged);
@@ -479,7 +482,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_guides_options);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
@@ -491,8 +494,8 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_card_options);
 
-        QObject::connect(actions, &ActionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
     }
 

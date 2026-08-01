@@ -4,13 +4,16 @@
 
 class Project;
 
+class ActionsWidget;
 class CardArea;
 class PrintPreview;
 
 class MainTabs : public QTabWidget
 {
   public:
-    MainTabs(CardArea* card_area, PrintPreview* print_preview);
+    MainTabs(ActionsWidget* actions,
+             CardArea* card_area,
+             PrintPreview* print_preview);
 
     int MaximumColumnsFromAvailableWidth(int available_width) const;
 

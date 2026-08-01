@@ -18,7 +18,7 @@
 
 OptionsAreaWidget::OptionsAreaWidget(Project& project,
                                      PluginInterface& plugin_router,
-                                     QWidget* actions,
+                                     QWidget* project_options,
                                      QWidget* print_options,
                                      QWidget* guides_options,
                                      QWidget* card_options,
@@ -29,8 +29,7 @@ OptionsAreaWidget::OptionsAreaWidget(Project& project,
     TRACY_AUTO_SCOPE();
 
     auto* layout{ new QVBoxLayout };
-    layout->addWidget(actions);
-    layout->addStretch();
+    AddCollapsible(layout, project_options);
     AddCollapsible(layout, print_options);
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);

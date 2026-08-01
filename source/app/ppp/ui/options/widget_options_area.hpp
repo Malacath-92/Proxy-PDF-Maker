@@ -14,7 +14,7 @@ class OptionsAreaWidget : public QScrollArea
   public:
     OptionsAreaWidget(Project& project,
                       PluginInterface& plugin_router,
-                      QWidget* actions,
+                      QWidget* project_options,
                       QWidget* print_options,
                       QWidget* guides_options,
                       QWidget* card_options,
