@@ -1776,6 +1776,23 @@ const Svg& Project::CardSvgData() const
     return m_Data.CardSvgData(g_Cfg);
 }
 
+void Project::SetImageDir(fs::path new_image_dir)
+{
+    if (new_image_dir != m_Data.m_ImageDir)
+    {
+        const auto old_image_dir{ std::move(m_Data.m_ImageDir) };
+        SetImageDir(std::move(new_image_dir));
+        m_Data.m_ImageDir = std::move(new_image_dir);
+        m_Data.m_CropDir = m_Data.m_ImageDir / "crop";
+        m_Data.m_UncropDir = m_Data.m_ImageDir / "uncrop";
+        m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
+
+        Init();
+
+        ImageDirChanged(old_image_dir, m_Data.m_ImageDir);
+    }
+}
+
 void Project::EnsureOutputFolder() const
 {
     static constexpr auto c_CreateDirectories{

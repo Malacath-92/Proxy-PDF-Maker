@@ -1,7 +1,5 @@
 #include <ppp/ui/options/widget_actions.hpp>
 
-#include <ranges>
-
 #include <QHBoxLayout>
 #include <QProgressBar>
 #include <QPushButton>
@@ -12,24 +10,23 @@
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
 
-#include <ppp/pdf/generate.hpp>
-#include <ppp/pdf/util.hpp>
-#include <ppp/svg/generate.hpp>
-
 #include <ppp/project/image_ops.hpp>
-#include <ppp/project/project.hpp>
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/popups/new_project_popup.hpp>
 #include <ppp/ui/popups/popups.hpp>
 
+#include <ppp/ui/view_models/options/view_model_actions.hpp>
+
 #include <ppp/profile/profile.hpp>
 
-ActionsWidget::ActionsWidget(Project& project)
+ActionsWidget::ActionsWidget(ActionsViewModel* view_model)
+    : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
     setObjectName("Actions");
+    view_model->setParent(this);
 
     auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
     auto* open_images_button{ new QPushButton{ "Open Images" } };
@@ -70,104 +67,35 @@ ActionsWidget::ActionsWidget(Project& project)
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
-    const auto render{
-        [=, this, &project]()
-        {
-            TRACY_AUTO_SCOPE();
-
-            auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-            GenericPopup render_window{ main_window, "Rendering PDF..." };
-
-            bool do_error_toast{ false };
-            const auto render_work{
-                [=, &project, &render_window, &do_error_toast]()
-                {
-                    TRACY_AUTO_SCOPE();
-
-                    const auto uninstall_log_hook{ render_window.InstallLogHook() };
-
-                    try
-                    {
-                        const auto [frontside_path, backside_path]{ GeneratePdf(project) };
-                        OpenFile(frontside_path);
-                        if (backside_path.has_value())
-                        {
-                            OpenFile(backside_path.value());
-                        }
-
-                        if (project.m_Data.m_ExportExactGuides)
-                        {
-                            GenerateCardsSvg(project);
-                            GenerateCardsDxf(project);
-                        }
-                    }
-                    catch (const std::exception& e)
-                    {
-                        LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
-                        do_error_toast = !main_window->hasFocus();
-                        if (!do_error_toast)
-                        {
-                            render_window.Sleep(3_s);
-                        }
-                    }
-                }
-            };
-
-            main_window->setEnabled(false);
-            render_window.ShowDuringWork(render_work);
-            main_window->setEnabled(true);
-
-            if (do_error_toast && !main_window->hasFocus())
-            {
-                main_window->Toast(ToastType::Error,
-                                   "PDF Rendering Error",
-                                   "Failure while creating pdf, please check logs for details.");
-            }
-        }
-    };
-
-    const auto set_images_folder{
-        [=, this, &project]()
-        {
-            TRACY_AUTO_SCOPE();
-            if (const auto new_image_dir{ OpenFolderDialog(".") })
-            {
-                if (new_image_dir != project.m_Data.m_ImageDir)
-                {
-                    const auto old_image_dir{ std::move(project.m_Data.m_ImageDir) };
-
-                    project.m_Data.m_ImageDir = std::move(new_image_dir).value();
-                    project.m_Data.m_CropDir = project.m_Data.m_ImageDir / "crop";
-                    project.m_Data.m_UncropDir = project.m_Data.m_ImageDir / "uncrop";
-                    project.m_Data.m_ImageCache = project.m_Data.m_CropDir / "preview.cache";
-
-                    project.Init();
-
-                    ImageDirChanged(old_image_dir, project.m_Data.m_ImageDir);
-                }
-            }
-        }
-    };
-
-    const auto open_images_folder{
-        [=, &project]()
-        {
-            OpenFolder(project.m_Data.m_ImageDir);
-        }
-    };
-
     QObject::connect(render_button,
                      &QPushButton::clicked,
                      this,
-                     render);
+                     &ActionsWidget::RenderButtonPressed);
     QObject::connect(set_images_button,
                      &QPushButton::clicked,
                      this,
-                     set_images_folder);
+                     &ActionsWidget::SetImagesButtonPressed);
     QObject::connect(open_images_button,
                      &QPushButton::clicked,
+                     view_model,
+                     &ActionsViewModel::OpenImagesFolder);
+
+    QObject::connect(view_model,
+                     &ActionsViewModel::CropperWorking,
                      this,
-                     open_images_folder);
+                     &ActionsWidget::CropperWorking);
+    QObject::connect(view_model,
+                     &ActionsViewModel::CropperDone,
+                     this,
+                     &ActionsWidget::CropperDone);
+    QObject::connect(view_model,
+                     &ActionsViewModel::CropperProgress,
+                     this,
+                     &ActionsWidget::CropperProgress);
+    QObject::connect(view_model,
+                     &ActionsViewModel::RenderBackendChanged,
+                     this,
+                     &ActionsWidget::RenderBackendChanged);
 
     m_RenderCropperContainer = render_cropper_container;
     m_CropperProgressBar = cropper_progress_bar;
@@ -203,5 +131,57 @@ void ActionsWidget::RenderBackendChanged()
         break;
     case PdfBackend::Png:
         m_RenderButton->setText("Render PNG");
+    }
+}
+
+void ActionsWidget::RenderButtonPressed() const
+{
+    TRACY_AUTO_SCOPE();
+
+    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+    GenericPopup render_window{ main_window, "Rendering PDF..." };
+
+    bool do_error_toast{ false };
+    const auto render_work{
+        [this, main_window, &render_window, &do_error_toast]()
+        {
+            TRACY_AUTO_SCOPE();
+
+            const auto uninstall_log_hook{ render_window.InstallLogHook() };
+
+            try
+            {
+                m_ViewModel.RenderDocument();
+            }
+            catch (const std::exception& e)
+            {
+                LogError("Failure while creating pdf: {}\nPlease make sure the file is not opened in another program.", e.what());
+                do_error_toast = !main_window->hasFocus();
+                if (!do_error_toast)
+                {
+                    render_window.Sleep(3_s);
+                }
+            }
+        }
+    };
+
+    main_window->setEnabled(false);
+    render_window.ShowDuringWork(render_work);
+    main_window->setEnabled(true);
+
+    if (do_error_toast && !main_window->hasFocus())
+    {
+        main_window->Toast(ToastType::Error,
+                           "PDF Rendering Error",
+                           "Failure while creating pdf, please check logs for details.");
+    }
+}
+
+void ActionsWidget::SetImagesButtonPressed() const
+{
+    TRACY_AUTO_SCOPE();
+    if (const auto new_image_dir{ OpenFolderDialog(".") })
+    {
+        m_ViewModel.SetImagesFolder(std::move(new_image_dir).value());
     }
 }

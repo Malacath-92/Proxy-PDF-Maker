@@ -324,6 +324,7 @@ class Project : public QObject
     bool IsCardSvg() const;
     const Svg& CardSvgData() const;
 
+    void SetImageDir(fs::path new_image_dir);
     void EnsureOutputFolder() const;
 
     const auto& GetCards() const
@@ -365,6 +366,8 @@ class Project : public QObject
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
     void CardBleedTypeChanged(const fs::path& card_name, BleedType bleed_type);
     void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);
+
+    void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
   public:
     ProjectData m_Data;

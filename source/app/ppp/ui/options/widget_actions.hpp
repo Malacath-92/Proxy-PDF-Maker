@@ -8,19 +8,16 @@ class QPushButton;
 class QProgressBar;
 class QStackedWidget;
 
-class Project;
+class ActionsViewModel;
 
 class ActionsWidget : public QWidget
 {
     Q_OBJECT
 
   public:
-    ActionsWidget(Project& project);
+    ActionsWidget(ActionsViewModel* view_model);
 
-  signals:
-    void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
-
-  public slots:
+  private slots:
     void CropperWorking();
     void CropperDone();
     void CropperProgress(float progress);
@@ -28,7 +25,12 @@ class ActionsWidget : public QWidget
     void RenderBackendChanged();
 
   private:
+    void RenderButtonPressed() const;
+    void SetImagesButtonPressed() const;
+
     static inline constexpr int c_ProgressBarResolution{ 250 };
+
+    ActionsViewModel& m_ViewModel;
 
     QStackedWidget* m_RenderCropperContainer{ nullptr };
     QProgressBar* m_CropperProgressBar{ nullptr };

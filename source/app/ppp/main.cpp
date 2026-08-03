@@ -38,17 +38,19 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 
+#include <ppp/ui/view_models/options/view_model_actions.hpp>
+
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/options/widget_actions.hpp>
-#include <ppp/ui/widget_card_area.hpp>
-#include <ppp/ui/options/widget_project_options.hpp>
 #include <ppp/ui/options/widget_card_options.hpp>
 #include <ppp/ui/options/widget_global_options.hpp>
 #include <ppp/ui/options/widget_guides_options.hpp>
 #include <ppp/ui/options/widget_options_area.hpp>
 #include <ppp/ui/options/widget_print_options.hpp>
+#include <ppp/ui/options/widget_project_options.hpp>
+#include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/preview/widget_print_preview.hpp>
+#include <ppp/ui/widget_card_area.hpp>
 
 #include <ppp/plugins/plugin_interface.hpp>
 
@@ -217,7 +219,9 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
-    auto* actions{ new ActionsWidget{ project } };
+    auto* actions_view_model{ new ActionsViewModel{ project } };
+
+    auto* actions{ new ActionsWidget{ actions_view_model } };
     auto* card_area{ new CardArea{ project } };
     auto* print_preview{ new PrintPreview{ project } };
     auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
@@ -356,7 +360,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_project);
 
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &project, &Project::EnsureOutputFolder);
+        QObject::connect(&project, &Project::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
@@ -372,7 +376,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_cropper);
 
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
+        QObject::connect(&project, &Project::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
     }
 
@@ -381,7 +385,7 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_card_provider);
 
         // Sequence refreshing of cards after cleanup of cropper
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
+        QObject::connect(&project, &Project::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
@@ -403,7 +407,7 @@ int main(int argc, char** argv)
 
         QObject::connect(&project, &Project::CardVisibilityChanged, card_area, &CardArea::CardVisibilityChanged);
 
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
+        QObject::connect(&project, &Project::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
         QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
         QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
@@ -419,7 +423,7 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_preview);
 
         // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, print_preview, &PrintPreview::Refresh);
+        QObject::connect(&project, &Project::ImageDirChanged, print_preview, &PrintPreview::Refresh);
 
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
 
@@ -463,7 +467,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_actions);
 
-        QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, actions, &ActionsWidget::RenderBackendChanged);
+        QObject::connect(global_options, &GlobalOptionsWidget::RenderBackendChanged, actions_view_model, &ActionsViewModel::RenderBackendChanged);
     }
 
     {
@@ -494,7 +498,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_card_options);
 
-        QObject::connect(actions, &ActionsWidget::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
+        QObject::connect(&project, &Project::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
         QObject::connect(global_options, &GlobalOptionsWidget::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
     }
@@ -649,9 +653,9 @@ int main(int argc, char** argv)
         // clang-format on
 
         // Enable and disable Render button
-        QObject::connect(&cropper, &Cropper::CropWorkStart, actions, &ActionsWidget::CropperWorking);
-        QObject::connect(&cropper, &Cropper::CropWorkDone, actions, &ActionsWidget::CropperDone);
-        QObject::connect(&cropper, &Cropper::CropProgress, actions, &ActionsWidget::CropperProgress);
+        QObject::connect(&cropper, &Cropper::CropWorkStart, actions_view_model, &ActionsViewModel::CropperWorking);
+        QObject::connect(&cropper, &Cropper::CropWorkDone, actions_view_model, &ActionsViewModel::CropperDone);
+        QObject::connect(&cropper, &Cropper::CropProgress, actions_view_model, &ActionsViewModel::CropperProgress);
 
         // Write preview cache to file
         QObject::connect(&cropper, &Cropper::PreviewWorkDone, &project, &Project::CropperDone);
