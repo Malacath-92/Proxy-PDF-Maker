@@ -3,8 +3,8 @@
 #include <QHBoxLayout>
 #include <QLabel>
 
-#include <ppp/ui/widget_util/widget_combo_box.hpp>
 #include <ppp/ui/options/widget_double_spin_box.hpp>
+#include <ppp/ui/widget_util/widget_combo_box.hpp>
 
 WidgetWithLabel::WidgetWithLabel(std::string_view label_text, QWidget* widget)
     : QWidget{ nullptr }

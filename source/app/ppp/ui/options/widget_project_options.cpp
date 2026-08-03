@@ -19,8 +19,8 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/popups/new_project_popup.hpp>
+#include <ppp/ui/popups/popups.hpp>
 
 #include <ppp/profile/profile.hpp>
 
