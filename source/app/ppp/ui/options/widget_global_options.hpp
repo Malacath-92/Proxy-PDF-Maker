@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include <ppp/config.hpp>
+
 class QDoubleSpinBox;
 
 class Project;
@@ -12,14 +14,14 @@ class GlobalOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    GlobalOptionsWidget();
+    GlobalOptionsWidget(Config& config);
 
   signals:
-    void AdvancedModeChanged();
+    void AdvancedModeChanged(bool advanced_mode);
 
-    void BaseUnitChanged();
-    void DisplayColumnsChanged();
-    void RenderBackendChanged();
+    void BaseUnitChanged(Unit base_unit);
+    void DisplayColumnsChanged(uint32_t display_columns);
+    void RenderBackendChanged(PdfBackend backend);
     void ImageCompressionChanged();
     void JpgQualityChanged();
     void ColorCubeChanged();
@@ -46,6 +48,8 @@ class GlobalOptionsWidget : public QWidget
 
   private:
     void OpenPluginsWindow();
+
+    Config& m_Cfg;
 
     QDoubleSpinBox* m_DisplayColumns{ nullptr };
     ComboBoxWithLabel* m_ColorCube{ nullptr };

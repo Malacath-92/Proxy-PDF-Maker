@@ -101,6 +101,8 @@ int main(int argc, char** argv)
 
     Log main_log{ log_flags, Log::c_MainLogName };
 
+    Config config{ LoadConfig() };
+
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app.GetTheme());
 
@@ -153,17 +155,17 @@ int main(int argc, char** argv)
 
     {
         // Backwards compatiblity of saving card/page size default in Config
-        if (g_Cfg.m_DefaultCardSize.value_or("Standard") != "Standard")
+        if (config.m_DefaultCardSize.value_or("Standard") != "Standard")
         {
-            app.SetProjectDefault("card_size", g_Cfg.m_DefaultCardSize.value());
+            app.SetProjectDefault("card_size", config.m_DefaultCardSize.value());
         }
-        if (g_Cfg.m_DefaultPageSize.value_or("Letter") != "Letter")
+        if (config.m_DefaultPageSize.value_or("Letter") != "Letter")
         {
-            app.SetProjectDefault("page_size", g_Cfg.m_DefaultPageSize.value());
+            app.SetProjectDefault("page_size", config.m_DefaultPageSize.value());
         }
     }
 
-    SaveConfig(g_Cfg);
+    SaveConfig(config);
 
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
@@ -186,7 +188,7 @@ int main(int argc, char** argv)
     app.installEventFilter(&filter);
 #endif
 
-    Project project{};
+    Project project{ config };
     const bool project_load_success{ project.Load(app.GetProjectPath()) };
 
     const auto project_backup_folder{ g_ExeDir / "_project_backup" };
@@ -202,7 +204,8 @@ int main(int argc, char** argv)
 
     Cropper cropper{ [](std::string_view cube_name)
                      { return GetCubeImage(cube_name); },
-                     project };
+                     project,
+                     config };
     CardProvider card_provider{ project };
 
     QObject::connect(&card_provider, &CardProvider::CardAdded, &project, &Project::CardAdded);
@@ -219,18 +222,18 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
-    auto* actions_view_model{ new ActionsViewModel{ project } };
+    auto* actions_view_model{ new ActionsViewModel{ project, config } };
 
-    auto* actions{ new ActionsWidget{ actions_view_model } };
-    auto* card_area{ new CardArea{ project } };
-    auto* print_preview{ new PrintPreview{ project } };
+    auto* actions{ new ActionsWidget{ actions_view_model, config.m_Backend } };
+    auto* card_area{ new CardArea{ project, config.m_DisplayColumns } };
+    auto* print_preview{ new PrintPreview{ project, config } };
     auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
 
-    auto* project_options{ new ProjectOptionsWidget{ project } };
-    auto* print_options{ new PrintOptionsWidget{ project } };
-    auto* guides_options{ new GuidesOptionsWidget{ project } };
-    auto* card_options{ new CardOptionsWidget{ project } };
-    auto* global_options{ new GlobalOptionsWidget{} };
+    auto* project_options{ new ProjectOptionsWidget{ project, config } };
+    auto* print_options{ new PrintOptionsWidget{ project, config } };
+    auto* guides_options{ new GuidesOptionsWidget{ project, config } };
+    auto* card_options{ new CardOptionsWidget{ project, config } };
+    auto* global_options{ new GlobalOptionsWidget{ config } };
 
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
@@ -244,7 +247,7 @@ int main(int argc, char** argv)
         &PluginRouter::SetCardSizeChoice,
         [&](const std::string& card_size_choice)
         {
-            if (g_Cfg.m_CardSizes.contains(card_size_choice) && card_size_choice != project.m_Data.m_CardSizeChoice)
+            if (config.m_CardSizes.contains(card_size_choice) && card_size_choice != project.m_Data.m_CardSizeChoice)
             {
                 project.m_Data.m_CardSizeChoice = card_size_choice;
                 print_options->ExternalCardSizeChanged();
@@ -273,6 +276,7 @@ int main(int argc, char** argv)
     auto* options_area{
         new OptionsAreaWidget{
             project,
+            config,
             plugin_router,
             project_options,
             print_options,
@@ -286,6 +290,7 @@ int main(int argc, char** argv)
         new PrintProxyPrepMainWindow{
             tabs,
             options_area,
+            config,
         },
     };
 
@@ -543,7 +548,7 @@ int main(int argc, char** argv)
         QObject::connect(main_window,
                          &PrintProxyPrepMainWindow::SvgDropped,
                          &project,
-                         [](const auto& path)
+                         [&config](const auto& path)
                          {
                              if (fs::absolute(path.parent_path()) != fs::absolute("res/card_svgs"))
                              {
@@ -551,7 +556,7 @@ int main(int argc, char** argv)
                              }
 
                              // Add a new card size
-                             g_Cfg.SvgCardSizeAdded("res/card_svgs" / path.filename());
+                             config.SvgCardSizeAdded("res/card_svgs" / path.filename());
                          });
 
         // Refresh corresponding widgets
@@ -702,9 +707,9 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(set_max_worker_threads);
 
         auto apply_max_worker_threads{
-            []()
+            [&config]()
             {
-                QThreadPool::globalInstance()->setMaxThreadCount(g_Cfg.m_MaxWorkerThreads);
+                QThreadPool::globalInstance()->setMaxThreadCount(config.m_MaxWorkerThreads);
             }
         };
         apply_max_worker_threads();
@@ -719,7 +724,7 @@ int main(int argc, char** argv)
         card_provider.Start();
     }
 
-    if (g_Cfg.m_CheckVersionOnStartup)
+    if (config.m_CheckVersionOnStartup)
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(check_version);

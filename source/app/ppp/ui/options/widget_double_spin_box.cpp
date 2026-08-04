@@ -4,10 +4,10 @@
 
 #include <ppp/qt_util.hpp>
 
-LengthSpinBox::LengthSpinBox()
-    : m_Unit{ g_Cfg.m_BaseUnit }
+LengthSpinBox::LengthSpinBox(Unit base_unit)
+    : m_Unit{ base_unit }
 {
-    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
+    const auto base_unit_name{ ToQString(UnitShortName(m_Unit)) };
     setSuffix(base_unit_name);
 
     QObject::connect(this,
@@ -15,33 +15,33 @@ LengthSpinBox::LengthSpinBox()
                      this,
                      [this](double v)
                      {
-                         const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+                         const auto base_unit{ UnitValue(m_Unit) };
                          ValueChanged(static_cast<float>(v) * base_unit);
                      });
 }
 
 void LengthSpinBox::SetRange(Length min, Length max)
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit{ UnitValue(m_Unit) };
     setRange(min / base_unit, max / base_unit);
 }
 
 void LengthSpinBox::SetValue(Length v)
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit{ UnitValue(m_Unit) };
     setValue(v / base_unit);
 }
 
 Length LengthSpinBox::Value() const
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit{ UnitValue(m_Unit) };
     return value() * base_unit;
 }
 
-void LengthSpinBox::BaseUnitChanged()
+void LengthSpinBox::BaseUnitChanged(Unit new_base_unit)
 {
     const auto prev_base_unit{ UnitValue(m_Unit) };
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
+    const auto base_unit{ UnitValue(new_base_unit) };
     const auto ratio{ prev_base_unit / base_unit };
 
     const auto new_minimum{ minimum() * ratio };
@@ -53,10 +53,10 @@ void LengthSpinBox::BaseUnitChanged()
     setValue(new_value);
     blockSignals(false);
 
-    const auto base_unit_name{ ToQString(UnitShortName(g_Cfg.m_BaseUnit)) };
+    const auto base_unit_name{ ToQString(UnitShortName(new_base_unit)) };
     setSuffix(base_unit_name);
 
-    m_Unit = g_Cfg.m_BaseUnit;
+    m_Unit = new_base_unit;
 }
 
 template<class SpinBoxBase>
@@ -78,9 +78,11 @@ class WheelOnFocusOnlyDoubleSpinBox : public SpinBoxBase
     }
 };
 
-LengthSpinBox* MakeLengthSpinBox()
+LengthSpinBox* MakeLengthSpinBox(Unit base_unit)
 {
-    auto* double_spin_box{ new WheelOnFocusOnlyDoubleSpinBox<LengthSpinBox> };
+    auto* double_spin_box{
+        new WheelOnFocusOnlyDoubleSpinBox<LengthSpinBox>{ base_unit }
+    };
     double_spin_box->setFocusPolicy(Qt::StrongFocus);
     return double_spin_box;
 }

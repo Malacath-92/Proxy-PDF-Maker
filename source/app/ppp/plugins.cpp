@@ -27,13 +27,15 @@ std::vector<std::string_view> GetPluginNames()
            std::ranges::to<std::vector>();
 }
 
-PluginInterface* InitPlugin(std::string_view plugin_name, Project& project)
+PluginInterface* InitPlugin(std::string_view plugin_name,
+                            Project& project,
+                            const Config& config)
 {
     for (auto& [name, init, destroy] : c_Plugins)
     {
         if (name == plugin_name)
         {
-            return init(project);
+            return init(project, config);
         }
     }
     return nullptr;

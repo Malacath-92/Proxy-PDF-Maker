@@ -20,7 +20,8 @@
 
 #include <ppp/profile/profile.hpp>
 
-GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
+GuidesOptionsWidget::GuidesOptionsWidget(Project& project,
+                                         const Config& config)
     : m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
@@ -29,48 +30,51 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
 
     m_ExportExactGuidesCheckbox = new QCheckBox{ "Export Exact Guides" };
     m_ExportExactGuidesCheckbox->setToolTip("Decides whether a .svg file will be generated that contains the exact guides for the current layout");
-    EnableOptionWidgetForDefaults(m_ExportExactGuidesCheckbox, "export_exact_guides");
+    EnableOptionWidgetForDefaults(m_ExportExactGuidesCheckbox, config, "export_exact_guides");
 
     m_EnableGuidesCheckbox = new QCheckBox{ "Enable Guides" };
     m_EnableGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on the output");
-    EnableOptionWidgetForDefaults(m_EnableGuidesCheckbox, "enable_guides");
+    EnableOptionWidgetForDefaults(m_EnableGuidesCheckbox, config, "enable_guides");
 
     m_EnableBacksideGuidesCheckbox = new QCheckBox{ "Enable Backside Guides" };
     m_EnableBacksideGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered on backside pages");
-    EnableOptionWidgetForDefaults(m_EnableBacksideGuidesCheckbox, "enable_backside_guides");
+    EnableOptionWidgetForDefaults(m_EnableBacksideGuidesCheckbox, config, "enable_backside_guides");
 
     m_CornerGuidesCheckbox = new QCheckBox{ "Enable Corner Guides" };
     m_CornerGuidesCheckbox->setToolTip("Decides whether cutting guides are rendered in the corner of each card");
-    EnableOptionWidgetForDefaults(m_CornerGuidesCheckbox, "corner_guides");
+    EnableOptionWidgetForDefaults(m_CornerGuidesCheckbox, config, "corner_guides");
 
     m_CrossGuidesCheckbox = new QCheckBox{ "Cross Guides" };
     m_CrossGuidesCheckbox->setToolTip("Decides whether cutting guides are crosses or just corners");
-    EnableOptionWidgetForDefaults(m_CrossGuidesCheckbox, "cross_guides");
+    EnableOptionWidgetForDefaults(m_CrossGuidesCheckbox, config, "cross_guides");
 
-    auto* guides_offset{ new LengthSpinBoxWithLabel{ "Guides O&ffset" } };
+    const Unit base_unit{ config.m_BaseUnit };
+
+    auto* guides_offset{ new LengthSpinBoxWithLabel{ "Guides O&ffset", base_unit } };
     m_GuidesOffsetSpin = guides_offset->GetWidget();
     m_GuidesOffsetSpin->ConnectUnitSignals(this);
     m_GuidesOffsetSpin->setDecimals(3);
     m_GuidesOffsetSpin->setSingleStep(0.1);
     m_GuidesOffsetSpin->setToolTip("Decides where to place the guides, at 0 the guides' center will align with the card corner");
-    EnableOptionWidgetForDefaults(m_GuidesOffsetSpin, "guides_offset_cm");
+    EnableOptionWidgetForDefaults(m_GuidesOffsetSpin, config, "guides_offset_cm");
 
-    auto* guides_length{ new LengthSpinBoxWithLabel{ "Guides &Length" } };
+    auto* guides_length{ new LengthSpinBoxWithLabel{ "Guides &Length", base_unit } };
     m_GuidesLengthSpin = guides_length->GetWidget();
     m_GuidesLengthSpin->ConnectUnitSignals(this);
     m_GuidesLengthSpin->setDecimals(2);
     m_GuidesLengthSpin->setSingleStep(0.1);
     m_GuidesLengthSpin->setToolTip("Decides how long the guides are");
-    EnableOptionWidgetForDefaults(m_GuidesLengthSpin, "guides_length_cm");
+    EnableOptionWidgetForDefaults(m_GuidesLengthSpin, config, "guides_length_cm");
 
     m_ExtendedGuidesCheckbox = new QCheckBox{ "Extended Guides" };
     m_ExtendedGuidesCheckbox->setToolTip("Decides whether cutting guides extend to the edge of the page");
-    EnableOptionWidgetForDefaults(m_ExtendedGuidesCheckbox, "extended_guides");
+    EnableOptionWidgetForDefaults(m_ExtendedGuidesCheckbox, config, "extended_guides");
 
     auto* guides_color_a_button{ new QPushButton };
     m_GuidesColorA = new WidgetWithLabel{ "Guides Color A", guides_color_a_button };
     EnableOptionWidgetForDefaults(
         m_GuidesColorA,
+        config,
         "guides_color_a",
         [this, guides_color_a_button, &project](nlohmann::json default_value)
         {
@@ -93,6 +97,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     m_GuidesColorB = new WidgetWithLabel{ "Guides Color B", guides_color_b_button };
     EnableOptionWidgetForDefaults(
         m_GuidesColorB,
+        config,
         "guides_color_b",
         [this, guides_color_b_button, &project](nlohmann::json default_value)
         {
@@ -111,13 +116,13 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
             };
         });
 
-    auto* guides_thickness{ new LengthSpinBoxWithLabel{ "Guides Thic&kness" } };
+    auto* guides_thickness{ new LengthSpinBoxWithLabel{ "Guides Thic&kness", base_unit } };
     m_GuidesThicknessSpin = guides_thickness->GetWidget();
     m_GuidesThicknessSpin->ConnectUnitSignals(this);
     m_GuidesThicknessSpin->setDecimals(4);
     m_GuidesThicknessSpin->setSingleStep(0.01);
     m_GuidesThicknessSpin->setToolTip("Decides how thick the guides are");
-    EnableOptionWidgetForDefaults(m_GuidesThicknessSpin, "guides_thickness_cm");
+    EnableOptionWidgetForDefaults(m_GuidesThicknessSpin, config, "guides_thickness_cm");
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_ExportExactGuidesCheckbox);
@@ -134,6 +139,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(Project& project)
     setLayout(layout);
 
     SetDefaults();
+    SetAdvancedWidgetsVisibility(config.m_AdvancedMode);
 
     auto change_export_exact_guides{
         [this](Qt::CheckState s)
@@ -346,9 +352,9 @@ void GuidesOptionsWidget::BacksideEnabledChanged()
     m_EnableBacksideGuidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
 }
 
-void GuidesOptionsWidget::AdvancedModeChanged()
+void GuidesOptionsWidget::AdvancedModeChanged(bool advanced_mode)
 {
-    SetAdvancedWidgetsVisibility();
+    SetAdvancedWidgetsVisibility(advanced_mode);
 }
 
 void GuidesOptionsWidget::SetDefaults()
@@ -390,19 +396,17 @@ void GuidesOptionsWidget::SetDefaults()
     m_GuidesThicknessSpin->SetRange(0_mm, 5_mm);
     m_GuidesThicknessSpin->SetValue(m_Project.m_Data.m_GuidesThickness);
     m_GuidesThicknessSpin->setEnabled(m_Project.m_Data.m_EnableGuides);
-
-    SetAdvancedWidgetsVisibility();
 }
 
-void GuidesOptionsWidget::SetAdvancedWidgetsVisibility()
+void GuidesOptionsWidget::SetAdvancedWidgetsVisibility(bool advanced_mode)
 {
     // Always enabled: m_EnableGuidesCheckbox, m_CornerGuidesCheckbox, m_ExtendedGuidesCheckbox, m_GuidesColorA, m_GuidesColorB
-    m_ExportExactGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    m_EnableBacksideGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    m_CrossGuidesCheckbox->setVisible(g_Cfg.m_AdvancedMode);
-    m_GuidesOffsetSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_GuidesLengthSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_GuidesThicknessSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_ExportExactGuidesCheckbox->setVisible(advanced_mode);
+    m_EnableBacksideGuidesCheckbox->setVisible(advanced_mode);
+    m_CrossGuidesCheckbox->setVisible(advanced_mode);
+    m_GuidesOffsetSpin->parentWidget()->setVisible(advanced_mode);
+    m_GuidesLengthSpin->parentWidget()->setVisible(advanced_mode);
+    m_GuidesThicknessSpin->parentWidget()->setVisible(advanced_mode);
 }
 
 QString GuidesOptionsWidget::ColorToBackgroundStyle(ColorRGB8 color)

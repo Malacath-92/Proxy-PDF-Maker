@@ -46,10 +46,12 @@ struct Page
 
 std::optional<Size> LoadPdfSize(const fs::path& pdf_path);
 
-PageImageTransforms ComputeTransforms(const Project& project);
+PageImageTransforms ComputeTransforms(const Project& project,
+                                      bool no_crop_mode);
 PageImageTransforms ComputeBacksideTransforms(
     const Project& project,
-    const PageImageTransforms& frontside_transforms);
+    const PageImageTransforms& frontside_transforms,
+    bool no_crop_mode);
 
 std::vector<Page> DistributeCardsToPages(const Project& project);
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);

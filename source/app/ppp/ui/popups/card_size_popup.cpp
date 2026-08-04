@@ -72,25 +72,25 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         }()
     };
 
-    static constexpr auto c_MakeSvgCardSizeRefresh{
-        [](QLabel* card_size_label)
+    const auto make_svg_card_size_refresh{
+        [&config](QLabel* card_size_label)
         {
-            return [card_size_label](const QString& svg)
+            return [&config, card_size_label](const QString& svg)
             {
                 const auto loaded_svg{ LoadSvg("res/card_svgs/" + svg.toStdString() + ".svg") };
                 const auto card_size{ loaded_svg.m_Size };
-                const auto [card_width, card_height]{ (card_size / UnitValue(g_Cfg.m_BaseUnit)).pod() };
+                const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
                 const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                  .arg(card_width, 0, 'g', 2)
                                                  .arg(card_height, 0, 'g', 2)
-                                                 .arg(ToQString(UnitShortName(g_Cfg.m_BaseUnit))) };
+                                                 .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
                 card_size_label->setText(card_size_string);
             };
         }
     };
 
     auto build_tables{
-        [this, svg_files](const auto& card_sizes)
+        [this, &config, make_svg_card_size_refresh, svg_files](const auto& card_sizes)
         {
             m_RectTable->clearContents();
             m_RectTable->setRowCount(0);
@@ -147,11 +147,11 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                 else
                 {
                     const auto card_size{ card_size_info.m_SvgInfo->m_Svg.m_Size };
-                    const auto [card_width, card_height]{ (card_size / UnitValue(g_Cfg.m_BaseUnit)).pod() };
+                    const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
                     const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                      .arg(card_width, 0, 'g', 2)
                                                      .arg(card_height, 0, 'g', 2)
-                                                     .arg(ToQString(UnitShortName(g_Cfg.m_BaseUnit))) };
+                                                     .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
 
                     int i{ m_SvgTable->rowCount() };
                     m_SvgTable->insertRow(i);
@@ -170,7 +170,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                     QObject::connect(svg_combo,
                                      &QComboBox::currentTextChanged,
                                      this,
-                                     c_MakeSvgCardSizeRefresh(card_size_label));
+                                     make_svg_card_size_refresh(card_size_label));
 
                     // input bleed
                     m_SvgTable->setCellWidget(i, 3, c_MakeNumberEdit(bleed_size_string));
@@ -325,7 +325,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 
     QObject::connect(new_button,
                      &QPushButton::clicked,
-                     [this, svg_files, filter]()
+                     [this, &config, make_svg_card_size_refresh, svg_files, filter]()
                      {
                          static constexpr auto c_MakeNumberEditFromNumber{
                              [](double number)
@@ -341,11 +341,11 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              const auto default_svg{ LoadSvg("res/card_svgs/" + default_svg_name + ".svg") };
 
                              const auto card_size{ default_svg.m_Size };
-                             const auto [card_width, card_height]{ (card_size / UnitValue(g_Cfg.m_BaseUnit)).pod() };
+                             const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
                              const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                               .arg(card_width, 0, 'g', 2)
                                                               .arg(card_height, 0, 'g', 2)
-                                                              .arg(ToQString(UnitShortName(g_Cfg.m_BaseUnit))) };
+                                                              .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
 
                              int i{ m_SvgTable->rowCount() };
                              m_SvgTable->insertRow(i);
@@ -364,7 +364,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              QObject::connect(svg_combo,
                                               &QComboBox::currentTextChanged,
                                               this,
-                                              c_MakeSvgCardSizeRefresh(card_size_label));
+                                              make_svg_card_size_refresh(card_size_label));
 
                              // input bleed
                              m_SvgTable->setCellWidget(i, 3, c_MakeNumberEditFromNumber(0.1));

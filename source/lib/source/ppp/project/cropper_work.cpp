@@ -9,27 +9,27 @@
 #include <ppp/project/image_database.hpp>
 #include <ppp/project/image_ops.hpp>
 
-static ProjectData CopyRelevant(const ProjectData& data, bool backside)
+static ProjectData CopyRelevant(const ProjectData& data, const Config& config, bool backside)
 {
     TRACY_AUTO_SCOPE();
-    return ProjectData{
-        .m_ImageDir{ data.m_ImageDir },
-        .m_CropDir{ data.m_CropDir },
-        .m_UncropDir{ data.m_UncropDir },
-        .m_ImageCache{ data.m_ImageCache },
-        .m_BleedEdge{
-            backside
-                ? data.m_BleedEdge + data.m_EnvelopeBleedEdge + data.m_BacksideExtraBleedEdge
-                : data.m_BleedEdge + data.m_EnvelopeBleedEdge,
-        },
-        .m_CardSizeChoice{ data.m_CardSizeChoice },
-    };
+    ProjectData copy_data{ config };
+    copy_data.m_ImageDir = data.m_ImageDir;
+    copy_data.m_CropDir = data.m_CropDir;
+    copy_data.m_UncropDir = data.m_UncropDir;
+    copy_data.m_ImageCache = data.m_ImageCache;
+    copy_data.m_BleedEdge =
+        backside
+            ? data.m_BleedEdge + data.m_EnvelopeBleedEdge + data.m_BacksideExtraBleedEdge
+            : data.m_BleedEdge + data.m_EnvelopeBleedEdge;
+    copy_data.m_CardSizeChoice = data.m_CardSizeChoice;
+    return copy_data;
 }
 
 static Config CopyRelevant(const Config& config)
 {
     TRACY_AUTO_SCOPE();
     return Config{
+        .m_NoCropMode = config.m_NoCropMode,
         .m_BasePreviewWidth{ config.m_BasePreviewWidth },
         .m_MaxDPI{ config.m_MaxDPI },
         .m_ColorCube{ config.m_ColorCube },
@@ -212,7 +212,8 @@ CropperCropWork::CropperCropWork(
     bool backside_bleed,
     std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
-    const Project& project)
+    const Project& project,
+    const Config& config)
     : CropperWork{ alive_cropper_work }
     , m_RunningCropperWork{ running_crop_work }
     , m_CardName{ std::move(card_name) }
@@ -222,8 +223,8 @@ CropperCropWork::CropperCropWork(
     , m_BadAspectRatioHandling{ project.GetCardBadAspectRatioHandling(m_CardName) }
     , m_GetColorCube{ get_color_cube }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(project.m_Data, backside_bleed) }
-    , m_Cfg{ CopyRelevant(g_Cfg) }
+    , m_Data{ CopyRelevant(project.m_Data, config, backside_bleed) }
+    , m_Cfg{ CopyRelevant(config) }
 {
 }
 
@@ -336,7 +337,7 @@ void CropperCropWork::run()
             // empty hash indicates that the source has not changed
             if (uncrop_input_file_hash.isEmpty())
             {
-                if (g_Cfg.m_NoCropMode)
+                if (m_Cfg.m_NoCropMode)
                 {
                     Finished(Conclusion::Skipped);
                     return;
@@ -360,7 +361,7 @@ void CropperCropWork::run()
                 uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
                 m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
 
-                if (g_Cfg.m_NoCropMode)
+                if (m_Cfg.m_NoCropMode)
                 {
                     Finished(Conclusion::Success);
                     return;
@@ -370,7 +371,7 @@ void CropperCropWork::run()
         }
         else
         {
-            if (g_Cfg.m_NoCropMode)
+            if (m_Cfg.m_NoCropMode)
             {
                 Finished(Conclusion::Skipped);
                 return;
@@ -453,7 +454,8 @@ CropperPreviewWork::CropperPreviewWork(
     bool force,
     std::function<const cv::Mat*(std::string_view)> get_color_cube,
     ImageDataBase& image_db,
-    const Project& project)
+    const Project& project,
+    const Config& config)
     : CropperWork{ alive_cropper_work }
     , m_CardName{ std::move(card_name) }
     , m_ImagePath{ std::move(image_path) }
@@ -463,8 +465,8 @@ CropperPreviewWork::CropperPreviewWork(
     , m_Force{ force }
     , m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ image_db }
-    , m_Data{ CopyRelevant(project.m_Data, false) }
-    , m_Cfg{ CopyRelevant(g_Cfg) }
+    , m_Data{ CopyRelevant(project.m_Data, config, false) }
+    , m_Cfg{ CopyRelevant(config) }
 {
     m_Priorty = 1;
 }

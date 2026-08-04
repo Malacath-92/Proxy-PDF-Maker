@@ -19,6 +19,7 @@ class PagePreview : public QWidget
     {
         Size m_PageSize;
         bool m_IsBackside;
+        bool m_NoCropMode;
     };
     PagePreview(Project& project,
                 QObject* event_filter,

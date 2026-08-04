@@ -21,18 +21,18 @@ class YuGiOhDownloaderPlugin : public PluginInterface
     QPushButton* m_Button;
 };
 
-PluginInterface* InitYuGiOhCardDownloaderPlugin(Project& project)
+PluginInterface* InitYuGiOhCardDownloaderPlugin(Project& project, const Config& config)
 {
     auto* plugin{ new YuGiOhDownloaderPlugin{ "Open" } };
     auto* widget{ static_cast<QPushButton*>(plugin->Widget()) };
     widget->setObjectName("YuGiOh Card Downloader");
 
     const auto open_downloader_popup{
-        [plugin, widget, &project]()
+        [plugin, widget, &project, &config]()
         {
             widget->window()->setEnabled(false);
             {
-                YuGiOhDownloaderPopup downloader{ nullptr, project, *plugin };
+                YuGiOhDownloaderPopup downloader{ nullptr, project, config, *plugin };
                 downloader.Show();
             }
             widget->window()->setEnabled(true);

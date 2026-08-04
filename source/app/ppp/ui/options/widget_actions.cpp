@@ -20,7 +20,8 @@
 
 #include <ppp/profile/profile.hpp>
 
-ActionsWidget::ActionsWidget(ActionsViewModel* view_model)
+ActionsWidget::ActionsWidget(ActionsViewModel* view_model,
+                             PdfBackend backend)
     : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
@@ -102,7 +103,7 @@ ActionsWidget::ActionsWidget(ActionsViewModel* view_model)
     m_RenderButton = render_button;
 
     // Just to set the right default text
-    RenderBackendChanged();
+    RenderBackendChanged(backend);
 }
 
 void ActionsWidget::CropperWorking()
@@ -122,9 +123,9 @@ void ActionsWidget::CropperProgress(float progress)
     m_CropperProgressBar->setValue(progress_whole);
 }
 
-void ActionsWidget::RenderBackendChanged()
+void ActionsWidget::RenderBackendChanged(PdfBackend backend)
 {
-    switch (g_Cfg.m_Backend)
+    switch (backend)
     {
     case PdfBackend::PoDoFo:
         m_RenderButton->setText("Render PDF");

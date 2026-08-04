@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+#include <ppp/config.hpp>
 #include <ppp/util.hpp>
 
 class QPushButton;
@@ -15,14 +16,15 @@ class ActionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    ActionsWidget(ActionsViewModel* view_model);
+    ActionsWidget(ActionsViewModel* view_model,
+                  PdfBackend backend);
 
   private slots:
     void CropperWorking();
     void CropperDone();
     void CropperProgress(float progress);
 
-    void RenderBackendChanged();
+    void RenderBackendChanged(PdfBackend backend);
 
   private:
     void RenderButtonPressed() const;

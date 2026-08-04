@@ -9,12 +9,15 @@ class QComboBox;
 class QLineEdit;
 class QPushButton;
 
+struct Config;
+
 class NewProjectPopup : public PopupBase
 {
     Q_OBJECT
 
   public:
-    NewProjectPopup(QWidget* parent);
+    NewProjectPopup(QWidget* parent,
+                    const Config& config);
 
     bool CreateNewProject() const;
 

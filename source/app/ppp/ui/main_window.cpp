@@ -42,7 +42,10 @@ std::array g_ValidDropExtensions{
     }()
 };
 
-PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options)
+PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs,
+                                                   QWidget* options,
+                                                   const Config& config)
+    : m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
@@ -84,7 +87,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
                                      QString message,
                                      OnLinkFn on_link)
 {
-    if (g_Cfg.m_ToastTimeoutMS == 0)
+    if (m_Cfg.m_ToastTimeoutMS == 0)
     {
         return;
     }
@@ -94,7 +97,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
     Q_INIT_RESOURCE(toast_resources);
 
     auto* toast{ new ::Toast };
-    toast->setDuration(g_Cfg.m_ToastTimeoutMS);
+    toast->setDuration(m_Cfg.m_ToastTimeoutMS);
     toast->setTitle(std::move(title));
     toast->setRichText(std::move(message));
     toast->setPosition(ToastPosition::BOTTOM_LEFT);
@@ -123,7 +126,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
 }
 void PrintProxyPrepMainWindow::ImageDropRejected(const fs::path& absolute_image_path)
 {
-    if (g_Cfg.m_ToastTimeoutMS == 0)
+    if (m_Cfg.m_ToastTimeoutMS == 0)
     {
         return;
     }

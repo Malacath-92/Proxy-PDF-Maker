@@ -285,7 +285,7 @@ void GenericPopup::UpdateTextImpl(std::string_view text)
     }
     else
     {
-        m_TextLabel->setStyleSheet("border: 0px solid red;");
+        m_TextLabel->setStyleSheet("");
     }
     adjustSize();
     Recenter();

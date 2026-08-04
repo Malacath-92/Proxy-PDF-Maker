@@ -519,9 +519,12 @@ void PoDoFoPage::Finish()
     m_Painter->FinishDrawing();
 }
 
-PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document, const Project& project)
+PoDoFoImageCache::PoDoFoImageCache(PoDoFoDocument& document,
+                                   const Project& project,
+                                   const Config& config)
     : m_Document{ document }
     , m_Project{ project }
+    , m_Cfg{ config }
 {
 }
 
@@ -554,19 +557,23 @@ void PoDoFoImageCache::CacheImage(fs::path image_path,
     TRACY_AUTO_SCOPE();
 
     const auto use_jpg{
-        g_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
-        (g_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
+        m_Cfg.m_PdfImageCompression == ImageCompression::Lossy ||
+        (m_Cfg.m_PdfImageCompression == ImageCompression::AsIs &&
          std::ranges::contains(g_LossyImageExtensions, image_path.extension()))
     };
     const auto use_png{ !use_jpg };
-    // clang-format off
-    const std::function<std::vector<std::byte>(const Image&)> encoder{
-        use_png         ? [](const Image& image)
-                          { return image.EncodePng(std::optional{ 0 }); } 
-                        : [](const Image& image)
-                          { return image.EncodeJpg(g_Cfg.m_JpgQuality); }
+    const auto encoder{
+        [=, this]() -> std::function<std::vector<std::byte>(const Image&)>
+        {
+            if (use_png)
+            {
+                return [this](const Image& image)
+                { return image.EncodePng(m_Cfg.m_PngCompression); };
+            }
+            return [this](const Image& image)
+            { return image.EncodeJpg(m_Cfg.m_JpgQuality); };
+        }()
     };
-    // clang-format on
 
     const auto card_size{ m_Project.CardSize() };
     const Image loaded_image{
@@ -596,12 +603,14 @@ void PoDoFoImageCache::CacheImage(fs::path image_path,
     });
 }
 
-PoDoFoDocument::PoDoFoDocument(const Project& project)
+PoDoFoDocument::PoDoFoDocument(const Project& project,
+                               const Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
-    m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project);
+    m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project, config);
 
     if (project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf"))
     {
@@ -755,7 +764,7 @@ fs::path PoDoFoDocument::Write(fs::path path, bool version_output)
         const auto pdf_path_string{ pdf_path.string() };
         LogInfo("Saving to {}...", pdf_path_string);
 
-        if (g_Cfg.m_DeterminsticPdfOutput)
+        if (m_Cfg.m_DeterminsticPdfOutput)
         {
             auto& trailer{ m_Document.GetTrailer() };
             const auto& ref = trailer.GetDictionary().GetKey("Info")->GetReference();

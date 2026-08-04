@@ -224,5 +224,3 @@ struct Config
 
 Config LoadConfig();
 void SaveConfig(Config config);
-
-extern Config g_Cfg;

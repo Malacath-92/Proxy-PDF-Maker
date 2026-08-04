@@ -61,7 +61,7 @@ Image UncropImage(const Image& image,
 
 fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::string& color_cube_name);
 
-ImgDict ReadPreviews(const fs::path& img_cache_file);
+ImgDict ReadPreviews(const fs::path& img_cache_file, const fs::path& fallback_name);
 void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict);
 
 cv::Mat LoadColorCube(const fs::path& file_path);

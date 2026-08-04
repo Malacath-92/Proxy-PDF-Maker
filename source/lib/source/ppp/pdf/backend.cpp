@@ -3,17 +3,18 @@
 
 #include <ppp/project/project.hpp>
 
-std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project)
+std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend,
+                                               const Project& project,
+                                               const Config& config)
 {
     switch (backend)
     {
     case PdfBackend::PoDoFo:
-        return std::make_unique<PoDoFoDocument>(project);
+        return std::make_unique<PoDoFoDocument>(project, config);
     case PdfBackend::Png:
-        return std::make_unique<PngDocument>(project);
-    default:
-        return nullptr;
+        return std::make_unique<PngDocument>(project, config);
     }
+    std::unreachable();
 }
 
 bool IsPageWriteThreadSafe(PdfBackend backend)

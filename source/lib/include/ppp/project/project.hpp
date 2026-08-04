@@ -96,6 +96,8 @@ enum CardOrientation
 
 struct ProjectData
 {
+    ProjectData(const Config& config);
+
     // Project options
     fs::path m_ImageDir{ "images" };
     fs::path m_CropDir{ "images/crop" };
@@ -128,8 +130,8 @@ struct ProjectData
     std::string m_BacksideAutoPattern{ "__back_$" };
 
     // PDF generation options
-    std::string m_CardSizeChoice{ g_Cfg.GetFirstValidCardSize() };
-    std::string m_PageSize{ g_Cfg.GetFirstValidPageSize() };
+    std::string m_CardSizeChoice;
+    std::string m_PageSize;
     std::string m_BasePdf{ "None" };
 
     // Margin mode is the user-selected edit-mode of margins
@@ -208,7 +210,7 @@ class Project : public QObject
     Q_OBJECT
 
   public:
-    Project() = default;
+    Project(const Config& config);
     ~Project();
 
     bool Load(const fs::path& json_path);
@@ -371,6 +373,7 @@ class Project : public QObject
 
   public:
     ProjectData m_Data;
+    const Config& m_Cfg;
 
   private:
     Project(const Project&) = delete;

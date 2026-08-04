@@ -20,7 +20,9 @@ class Cropper : public QObject
     Q_OBJECT
 
   public:
-    Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube, const Project& project);
+    Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
+            const Project& project,
+            const Config& config);
     ~Cropper();
 
     void SetGeneratePreviews(bool generate_previews);
@@ -67,6 +69,7 @@ class Cropper : public QObject
     void RemoveWork(const fs::path& card_name);
 
     const Project& m_Project;
+    const Config& m_Cfg;
 
     bool m_GeneratePreviews{ true };
 

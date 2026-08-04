@@ -19,12 +19,12 @@
 
 #include <ppp/profile/profile.hpp>
 
-static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
+static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction(const Config& config)
 {
-    switch (g_Cfg.m_CardOrder)
+    switch (config.m_CardOrder)
     {
     case CardOrder::Alphabetical:
-        switch (g_Cfg.m_CardOrderDirection)
+        switch (config.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
@@ -39,7 +39,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
         }
         std::unreachable();
     case CardOrder::Backside:
-        switch (g_Cfg.m_CardOrderDirection)
+        switch (config.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
@@ -54,7 +54,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
         }
         std::unreachable();
     case CardOrder::LastModified:
-        switch (g_Cfg.m_CardOrderDirection)
+        switch (config.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
@@ -69,7 +69,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction()
         }
         std::unreachable();
     case CardOrder::LastAdded:
-        switch (g_Cfg.m_CardOrderDirection)
+        switch (config.m_CardOrderDirection)
         {
         case CardOrderDirection::Ascending:
             return [](const CardInfo& lhs, const CardInfo& rhs)
@@ -97,6 +97,18 @@ fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
         LogError("Failed getting last write time: {}", e.what());
         return {};
     }
+}
+
+ProjectData::ProjectData(const Config& config)
+    : m_CardSizeChoice{ config.GetFirstValidCardSize() }
+    , m_PageSize{ config.GetFirstValidPageSize() }
+{
+}
+
+Project::Project(const Config& config)
+    : m_Data{ config }
+    , m_Cfg{ config }
+{
 }
 
 Project::~Project()
@@ -130,7 +142,7 @@ bool Project::Load(const fs::path& json_path,
 bool Project::LoadFromJson(const std::string& json_blob,
                            const JsonProvider* overrides)
 {
-    m_Data = ProjectData{};
+    m_Data = ProjectData{ m_Cfg };
 
     LogInfo("Initializing project...");
 
@@ -417,15 +429,15 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         m_Data.m_CardSizeChoice = get_value("card_size");
-        if (!g_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
+        if (!m_Cfg.m_CardSizes.contains(m_Data.m_CardSizeChoice))
         {
-            m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
+            m_Data.m_CardSizeChoice = m_Cfg.GetFirstValidCardSize();
         }
 
         m_Data.m_PageSize = get_value("page_size");
-        if (!g_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
+        if (!m_Cfg.m_PageSizes.contains(m_Data.m_PageSize))
         {
-            m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
+            m_Data.m_PageSize = m_Cfg.GetFirstValidPageSize();
         }
 
         m_Data.m_BasePdf = get_value("base_pdf");
@@ -774,8 +786,8 @@ void Project::Init()
     TRACY_AUTO_SCOPE();
 
     LogInfo("Loading preview cache...");
-    m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache);
-    m_Data.m_FallbackPreview = m_Data.m_Previews.at(g_Cfg.m_FallbackName);
+    m_Data.m_Previews = ReadPreviews(m_Data.m_ImageCache, m_Cfg.m_FallbackName);
+    m_Data.m_FallbackPreview = m_Data.m_Previews.at(m_Cfg.m_FallbackName);
 
     InitProperties();
     EnsureOutputFolder();
@@ -796,7 +808,7 @@ void Project::InitProperties()
     for (const auto& img : img_list)
     {
         auto* card{ FindCard(img) };
-        if (card == nullptr && img != g_Cfg.m_FallbackName)
+        if (card == nullptr && img != m_Cfg.m_FallbackName)
         {
             CardAdded(img);
         }
@@ -823,12 +835,12 @@ void Project::InitProperties()
 
 fs::path Project::GetOutputFolder() const
 {
-    return m_Data.GetOutputFolder(g_Cfg);
+    return m_Data.GetOutputFolder(m_Cfg);
 }
 
 fs::path Project::GetBacksideOutputFolder() const
 {
-    return m_Data.GetBacksideOutputFolder(g_Cfg);
+    return m_Data.GetBacksideOutputFolder(m_Cfg);
 }
 
 bool Project::HasExternalCards() const
@@ -1039,12 +1051,12 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
 
 void Project::CardOrderChanged()
 {
-    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
 }
 
 void Project::CardOrderDirectionChanged()
 {
-    std::ranges::sort(m_Data.m_Cards, GetSortFunction());
+    std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
 }
 
 void Project::RestoreCardsOrder()
@@ -1262,7 +1274,7 @@ CardInfo& Project::PutCard(const fs::path& card_name)
 
     auto insert_at{ std::ranges::upper_bound(m_Data.m_Cards,
                                              new_card,
-                                             GetSortFunction()) };
+                                             GetSortFunction(m_Cfg)) };
     auto new_card_it{
         m_Data.m_Cards
             .insert(insert_at, std::move(new_card))
@@ -1538,7 +1550,7 @@ bool Project::CacheCardLayout()
     const auto previous_layout_vertical{ m_Data.m_CardLayoutVertical };
     const auto previous_layout_horizontal{ m_Data.m_CardLayoutHorizontal };
 
-    const auto auto_layout{ m_Data.ComputeAutoCardLayout(g_Cfg, available_space) };
+    const auto auto_layout{ m_Data.ComputeAutoCardLayout(m_Cfg, available_space) };
     m_Data.m_CardLayoutVertical = auto_layout.m_CardLayoutVertical;
     m_Data.m_CardLayoutHorizontal = auto_layout.m_CardLayoutHorizontal;
 
@@ -1566,11 +1578,15 @@ Size Project::ComputePageSize() const
     else if (infer_size)
     {
         return LoadPdfSize(m_Data.m_BasePdf + ".pdf")
-            .value_or(g_Cfg.GetFirstValidPageSizeInfo().m_Dimensions);
+            .value_or(m_Cfg.GetFirstValidPageSizeInfo().m_Dimensions);
     }
     else
     {
-        auto page_size{ g_Cfg.m_PageSizes[m_Data.m_PageSize].m_Dimensions };
+        auto page_size{
+            m_Cfg.m_PageSizes.contains(m_Data.m_PageSize)
+                ? m_Cfg.m_PageSizes.at(m_Data.m_PageSize).m_Dimensions
+                : m_Cfg.GetFirstValidPageSizeInfo().m_Dimensions
+        };
         if (m_Data.m_Orientation == PageOrientation::Landscape)
         {
             std::swap(page_size.x, page_size.y);
@@ -1581,12 +1597,12 @@ Size Project::ComputePageSize() const
 
 Size Project::ComputeExactBordersSize() const
 {
-    return m_Data.ComputeExactBordersSize(g_Cfg);
+    return m_Data.ComputeExactBordersSize(m_Cfg);
 }
 
 Size Project::ComputeCardsSize() const
 {
-    return m_Data.ComputeCardsSize(g_Cfg);
+    return m_Data.ComputeCardsSize(m_Cfg);
 }
 
 Size Project::ComputeCardsSizeVertical() const
@@ -1613,17 +1629,17 @@ Size Project::ComputeCardsSizeHorizontal() const
 
 Margins Project::ComputeMargins() const
 {
-    return m_Data.ComputeMargins(g_Cfg);
+    return m_Data.ComputeMargins(m_Cfg);
 }
 
 Size Project::ComputeMaxMargins() const
 {
-    return m_Data.ComputeMaxMargins(g_Cfg);
+    return m_Data.ComputeMaxMargins(m_Cfg);
 }
 
 Size Project::ComputeDefaultMargins() const
 {
-    return m_Data.ComputeMaxMargins(g_Cfg);
+    return m_Data.ComputeMaxMargins(m_Cfg);
 }
 
 void Project::SetMarginsMode(MarginsMode margins_mode)
@@ -1637,7 +1653,7 @@ void Project::SetMarginsMode(MarginsMode margins_mode)
     case MarginsMode::Simple:
     {
         const auto current_margins{ ComputeMargins() };
-        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
 
         // Initialize with computed top-left margin defaults to provide a reasonable starting point
         m_Data.m_CustomMargins = CustomMargins{
@@ -1651,7 +1667,7 @@ void Project::SetMarginsMode(MarginsMode margins_mode)
     case MarginsMode::Full:
     {
         const auto current_margins{ ComputeMargins() };
-        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
 
         // Initialize with computed four-margin defaults to provide a reasonable starting point
         m_Data.m_CustomMargins = CustomMargins{
@@ -1668,7 +1684,7 @@ void Project::SetMarginsMode(MarginsMode margins_mode)
     break;
     case MarginsMode::Linked:
     {
-        const auto max_margins{ m_Data.ComputeMaxMargins(g_Cfg, margins_mode) };
+        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
         const auto current_margins{ ComputeMargins() };
         const auto min_margins_vertical{
             dla::math::min(
@@ -1733,47 +1749,47 @@ bool Project::SetBacksideEnabled(bool backside_enabled)
 
 float Project::CardRatio() const
 {
-    return m_Data.CardRatio(g_Cfg);
+    return m_Data.CardRatio(m_Cfg);
 }
 
 Size Project::CardSize() const
 {
-    return m_Data.CardSize(g_Cfg);
+    return m_Data.CardSize(m_Cfg);
 }
 
 Size Project::CardSizeWithBleed() const
 {
-    return m_Data.CardSizeWithBleed(g_Cfg);
+    return m_Data.CardSizeWithBleed(m_Cfg);
 }
 
 Size Project::CardSizeWithFullBleed() const
 {
-    return m_Data.CardSizeWithFullBleed(g_Cfg);
+    return m_Data.CardSizeWithFullBleed(m_Cfg);
 }
 
 Length Project::CardFullBleed() const
 {
-    return m_Data.CardFullBleed(g_Cfg);
+    return m_Data.CardFullBleed(m_Cfg);
 }
 
 bool Project::IsCardRoundedRect() const
 {
-    return m_Data.IsCardRoundedRect(g_Cfg);
+    return m_Data.IsCardRoundedRect(m_Cfg);
 }
 
 Length Project::CardCornerRadius() const
 {
-    return m_Data.CardCornerRadius(g_Cfg);
+    return m_Data.CardCornerRadius(m_Cfg);
 }
 
 bool Project::IsCardSvg() const
 {
-    return m_Data.IsCardSvg(g_Cfg);
+    return m_Data.IsCardSvg(m_Cfg);
 }
 
 const Svg& Project::CardSvgData() const
 {
-    return m_Data.CardSvgData(g_Cfg);
+    return m_Data.CardSvgData(m_Cfg);
 }
 
 void Project::SetImageDir(fs::path new_image_dir)

@@ -136,7 +136,8 @@ void MaximizeTransforms(std::span<PageImageTransform> transforms,
     }
 }
 
-PageImageTransforms ComputeTransforms(const Project& project)
+PageImageTransforms ComputeTransforms(const Project& project,
+                                      bool no_crop_mode)
 {
     const auto layout_vertical{ project.m_Data.m_CardLayoutVertical };
     const auto layout_horizontal{ project.m_Data.m_CardLayoutHorizontal };
@@ -250,7 +251,7 @@ PageImageTransforms ComputeTransforms(const Project& project)
             project.m_Data.m_EnvelopeBleedEdge);
     }
 
-    if (g_Cfg.m_NoCropMode)
+    if (no_crop_mode)
     {
         const auto total_bleed{ project.m_Data.m_BleedEdge +
                                 project.m_Data.m_EnvelopeBleedEdge };
@@ -264,7 +265,8 @@ PageImageTransforms ComputeTransforms(const Project& project)
 
 PageImageTransforms ComputeBacksideTransforms(
     const Project& project,
-    const PageImageTransforms& frontside_transforms)
+    const PageImageTransforms& frontside_transforms,
+    bool no_crop_mode)
 {
     if (frontside_transforms.empty())
     {
@@ -318,13 +320,13 @@ PageImageTransforms ComputeBacksideTransforms(
 
     for (const PageImageTransform& transform : frontside_transforms)
     {
-        const auto& frontside_size{ g_Cfg.m_NoCropMode
+        const auto& frontside_size{ no_crop_mode
                                         ? transform.m_ClipRect.value().m_Size
                                         : transform.m_Size - envelope_size * 2 };
         const auto backside_position{
             [&]
             {
-                const auto& frontside_position{ g_Cfg.m_NoCropMode
+                const auto& frontside_position{ no_crop_mode
                                                     ? transform.m_ClipRect.value().m_Position
                                                     : transform.m_Position + envelope_size };
 
@@ -394,7 +396,7 @@ PageImageTransforms ComputeBacksideTransforms(
             full_envelope_size);
     }
 
-    if (g_Cfg.m_NoCropMode)
+    if (no_crop_mode)
     {
         const auto total_bleed{ project.m_Data.m_BleedEdge +
                                 project.m_Data.m_EnvelopeBleedEdge };

@@ -16,7 +16,8 @@ class CardArea : public QWidget
     Q_OBJECT
 
   public:
-    CardArea(Project& project);
+    CardArea(Project& project,
+             uint32_t display_columns);
 
   public slots:
     void NewProjectOpened();
@@ -24,7 +25,7 @@ class CardArea : public QWidget
     void BacksideEnabledChanged();
     void BacksideDefaultChanged();
     void CardSizeChanged();
-    void DisplayColumnsChanged();
+    void DisplayColumnsChanged(uint32_t display_columns);
     void CardOrderChanged();
     void CardOrderDirectionChanged();
 
@@ -43,6 +44,8 @@ class CardArea : public QWidget
 
   private:
     const Project& m_Project;
+    uint32_t m_DisplayColumns;
+
     QWidget* m_OnboardingHint;
 
     QWidget* m_Header;

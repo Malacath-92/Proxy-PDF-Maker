@@ -4,10 +4,12 @@
 #include <QWidget>
 
 #include <ppp/color.hpp>
+#include <ppp/units.hpp>
 
 class QCheckBox;
 
 class Project;
+struct Config;
 class WidgetWithLabel;
 class LengthSpinBox;
 
@@ -16,7 +18,8 @@ class GuidesOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    GuidesOptionsWidget(Project& project);
+    GuidesOptionsWidget(Project& project,
+                        const Config& config);
 
   signals:
     void ExactGuidesEnabledChanged();
@@ -30,7 +33,7 @@ class GuidesOptionsWidget : public QWidget
     void GuidesColorChanged();
     void GuidesThicknessChanged();
 
-    void BaseUnitChanged();
+    void BaseUnitChanged(Unit new_base_unit);
 
   public slots:
     void NewProjectOpened();
@@ -38,11 +41,11 @@ class GuidesOptionsWidget : public QWidget
     void BleedChanged();
     void BacksideEnabledChanged();
 
-    void AdvancedModeChanged();
+    void AdvancedModeChanged(bool advanced_mode);
 
   private:
     void SetDefaults();
-    void SetAdvancedWidgetsVisibility();
+    void SetAdvancedWidgetsVisibility(bool advanced_mode);
 
     static QString ColorToBackgroundStyle(ColorRGB8 color);
 

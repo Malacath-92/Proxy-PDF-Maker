@@ -78,7 +78,8 @@ class CropperCropWork : public CropperWork
         bool backside_bleed,
         std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
-        const Project& project);
+        const Project& project,
+        const Config& config);
 
     virtual void run() override;
 
@@ -111,7 +112,8 @@ class CropperPreviewWork : public CropperWork
         bool force,
         std::function<const cv::Mat*(std::string_view)> get_color_cube,
         ImageDataBase& image_db,
-        const Project& project);
+        const Project& project,
+        const Config& config);
 
     virtual void run() override;
 

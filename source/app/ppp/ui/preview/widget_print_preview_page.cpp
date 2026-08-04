@@ -88,7 +88,7 @@ PagePreview::PagePreview(Project& project,
         image_companion->setParent(m_ImageContainer);
 
         const auto bleed_edge{
-            g_Cfg.m_NoCropMode
+            params.m_NoCropMode
                 ? project.CardFullBleed()
                 : total_bleed_edge,
         };

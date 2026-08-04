@@ -18,8 +18,6 @@
 
 #include <ppp/profile/profile.hpp>
 
-Config g_Cfg{ LoadConfig() };
-
 void Config::SetPdfBackend(PdfBackend backend)
 {
     m_Backend = backend;

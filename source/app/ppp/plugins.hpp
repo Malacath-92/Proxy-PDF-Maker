@@ -5,8 +5,11 @@
 #include <vector>
 
 class Project;
+struct Config;
 class PluginInterface;
 
 std::vector<std::string_view> GetPluginNames();
-PluginInterface* InitPlugin(std::string_view plugin_name, Project& project);
+PluginInterface* InitPlugin(std::string_view plugin_name,
+                            Project& project,
+                            const Config& config);
 void DestroyPlugin(std::string_view plugin_name, PluginInterface* plugin);

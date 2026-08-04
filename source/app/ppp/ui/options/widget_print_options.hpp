@@ -4,6 +4,7 @@
 #include <QWheelEvent>
 #include <QWidget>
 
+#include <ppp/config.hpp>
 #include <ppp/util.hpp>
 
 class QCheckBox;
@@ -22,7 +23,8 @@ class PrintOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    PrintOptionsWidget(Project& project);
+    PrintOptionsWidget(Project& project,
+                       Config& config);
 
   signals:
     void PageSizeChanged();
@@ -35,7 +37,7 @@ class PrintOptionsWidget : public QWidget
     void OrientationChanged();
     void FlipOnChanged();
 
-    void BaseUnitChanged();
+    void BaseUnitChanged(Unit base_unit);
 
   public slots:
     void NewProjectOpened();
@@ -59,9 +61,10 @@ class PrintOptionsWidget : public QWidget
     void RefreshCardLayout();
 
     static std::vector<std::string> GetBasePdfNames();
-    static std::string SizeToString(Size size);
+    static std::string SizeToString(Size size, Unit base_unit);
 
     Project& m_Project;
+    Config& m_Cfg;
 
     QLineEdit* m_PrintOutput{ nullptr };
     QCheckBox* m_RenderHeader{ nullptr };

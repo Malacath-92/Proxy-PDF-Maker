@@ -58,7 +58,10 @@ class CardDownloaderPopup : public PopupBase
     Q_OBJECT
 
   public:
-    CardDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
+    CardDownloaderPopup(QWidget* parent,
+                        Project& project,
+                        PixelDensity max_density,
+                        PluginInterface& router);
     virtual ~CardDownloaderPopup();
 
   protected slots:
@@ -101,6 +104,8 @@ class CardDownloaderPopup : public PopupBase
     QPushButton* m_CancelButton{ nullptr };
 
     Project& m_Project;
+
+    PixelDensity m_MaxDensity;
 
     PluginInterface& m_Router;
 

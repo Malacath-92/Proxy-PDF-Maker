@@ -418,10 +418,11 @@ class CardGrid : public QWidget
     Q_OBJECT
 
   public:
-    CardGrid(Project& project)
+    CardGrid(Project& project,
+             uint32_t display_columns)
         : m_Project{ project }
     {
-        FullRefresh();
+        FullRefresh(display_columns);
     }
 
     int TotalWidthFromItemWidth(int item_width) const
@@ -451,7 +452,7 @@ class CardGrid : public QWidget
 
     void BacksideEnabledChanged()
     {
-        FullRefresh();
+        FullRefresh(m_Columns);
     }
 
     void BacksideDefaultChanged()
@@ -470,11 +471,11 @@ class CardGrid : public QWidget
         }
     }
 
-    void FullRefresh()
+    void FullRefresh(uint32_t display_columns)
     {
         TRACY_AUTO_SCOPE();
 
-        const auto cols{ g_Cfg.m_DisplayColumns };
+        const auto cols{ display_columns };
         for (size_t j = m_Dummies.size(); j < cols; j++)
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
@@ -523,10 +524,10 @@ class CardGrid : public QWidget
             }
         }
 
-        ApplyFilter(m_CurrentFilter);
+        ApplyFilter(m_CurrentFilter, display_columns);
     }
 
-    void ApplyFilter(const QString& filter)
+    void ApplyFilter(const QString& filter, uint32_t display_columns)
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_INFO_FMT("Filter: \"{}\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
@@ -558,7 +559,7 @@ class CardGrid : public QWidget
         this_layout->setContentsMargins(9, 9, 9, 9);
         setLayout(this_layout);
 
-        const auto cols{ g_Cfg.m_DisplayColumns };
+        const auto cols{ display_columns };
 
         const QString filter_lower{ filter.toLower() };
         size_t i{ 0 };
@@ -690,19 +691,19 @@ class CardGrid : public QWidget
 class CardScrollArea : public QScrollArea
 {
   public:
-    CardScrollArea(Project& project);
+    CardScrollArea(Project& project, uint32_t display_columns);
 
     CardGrid& GetGrid()
     {
         return *m_Grid;
     }
 
-    void FullRefresh();
+    void FullRefresh(uint32_t display_columns);
     void RefreshGridSize();
 
     int MaximumColumnsFromAvailableWidth(int available_width) const;
 
-    void ApplyFilter(const QString& filter);
+    void ApplyFilter(const QString& filter, uint32_t display_columns);
 
   private:
     int ComputeMinimumWidth() const;
@@ -713,11 +714,12 @@ class CardScrollArea : public QScrollArea
     CardGrid* m_Grid;
 };
 
-CardScrollArea::CardScrollArea(Project& project)
+CardScrollArea::CardScrollArea(Project& project,
+                               uint32_t display_columns)
 {
     TRACY_AUTO_SCOPE();
 
-    m_Grid = new CardGrid{ project };
+    m_Grid = new CardGrid{ project, display_columns };
 
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
@@ -726,9 +728,9 @@ CardScrollArea::CardScrollArea(Project& project)
     setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
 }
 
-void CardScrollArea::FullRefresh()
+void CardScrollArea::FullRefresh(uint32_t display_columns)
 {
-    m_Grid->FullRefresh();
+    m_Grid->FullRefresh(display_columns);
     setMinimumWidth(ComputeMinimumWidth());
     RefreshGridSize();
 }
@@ -752,9 +754,9 @@ void CardScrollArea::RefreshGridSize()
     m_Grid->setFixedHeight(height);
 }
 
-void CardScrollArea::ApplyFilter(const QString& filter)
+void CardScrollArea::ApplyFilter(const QString& filter, uint32_t display_columns)
 {
-    m_Grid->ApplyFilter(filter);
+    m_Grid->ApplyFilter(filter, display_columns);
 }
 
 int CardScrollArea::ComputeMinimumWidth() const
@@ -777,8 +779,10 @@ void CardScrollArea::resizeEvent(QResizeEvent* event)
     RefreshGridSize();
 }
 
-CardArea::CardArea(Project& project)
+CardArea::CardArea(Project& project,
+                   uint32_t display_columns)
     : m_Project{ project }
+    , m_DisplayColumns{ display_columns }
 {
     TRACY_AUTO_SCOPE();
 
@@ -967,7 +971,7 @@ CardArea::CardArea(Project& project)
         auto apply_filter{
             [this](const QString& text)
             {
-                m_ScrollArea->ApplyFilter(text);
+                m_ScrollArea->ApplyFilter(text, m_DisplayColumns);
             }
         };
 
@@ -1010,7 +1014,7 @@ CardArea::CardArea(Project& project)
                          remove_all_external);
     }
 
-    m_ScrollArea = new CardScrollArea{ project };
+    m_ScrollArea = new CardScrollArea{ project, m_DisplayColumns };
 
     auto* card_area_layout{ new QVBoxLayout };
     card_area_layout->addWidget(m_OnboardingHint);
@@ -1031,7 +1035,7 @@ CardArea::CardArea(Project& project)
                      this,
                      [this]()
                      {
-                         m_ScrollArea->FullRefresh();
+                         m_ScrollArea->FullRefresh(m_DisplayColumns);
 
                          const auto& grid{ m_ScrollArea->GetGrid() };
                          m_OnboardingHint->setVisible(!grid.HasCards());
@@ -1081,9 +1085,13 @@ void CardArea::CardSizeChanged()
     }
 }
 
-void CardArea::DisplayColumnsChanged()
+void CardArea::DisplayColumnsChanged(uint32_t display_columns)
 {
-    FullRefresh();
+    if (m_DisplayColumns != display_columns)
+    {
+        m_DisplayColumns = display_columns;
+        FullRefresh();
+    }
 }
 
 void CardArea::CardOrderChanged()

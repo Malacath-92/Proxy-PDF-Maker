@@ -27,8 +27,10 @@
 
 #include <ppp/profile/profile.hpp>
 
-PrintOptionsWidget::PrintOptionsWidget(Project& project)
+PrintOptionsWidget::PrintOptionsWidget(Project& project,
+                                       Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
@@ -43,17 +45,17 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
 
     m_RenderHeader = new QCheckBox{ "Render Header" };
     m_RenderHeader->setToolTip("Determines whether the header of each page will be rendered or not.");
-    EnableOptionWidgetForDefaults(m_RenderHeader, "render_header");
+    EnableOptionWidgetForDefaults(m_RenderHeader, m_Cfg, "render_header");
 
     WidgetWithLabel* card_size;
     {
         m_CardSize = MakeComboBox(
             std::span<const std::string>{
-                g_Cfg.m_CardSizes |
+                m_Cfg.m_CardSizes |
                 std::views::keys |
                 std::ranges::to<std::vector>() },
             std::span<const std::string>{
-                g_Cfg.m_CardSizes |
+                m_Cfg.m_CardSizes |
                 std::views::values |
                 std::views::transform(&Config::CardSizeInfo::m_Hint) |
                 std::ranges::to<std::vector>() },
@@ -71,7 +73,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                          {
                              window()->setEnabled(false);
                              {
-                                 CardSizePopup card_size_popup{ nullptr, g_Cfg };
+                                 CardSizePopup card_size_popup{ nullptr, m_Cfg };
 
                                  QObject::connect(
                                      &card_size_popup,
@@ -155,10 +157,10 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                          const bool need_card_size_update{
                                              card_sizes.contains(m_Project.m_Data.m_CardSizeChoice) &&
                                              not_equal(card_sizes.at(m_Project.m_Data.m_CardSizeChoice),
-                                                       g_Cfg.m_CardSizes.at(m_Project.m_Data.m_CardSizeChoice))
+                                                       m_Cfg.m_CardSizes.at(m_Project.m_Data.m_CardSizeChoice))
                                          };
 
-                                         g_Cfg.m_CardSizes = card_sizes;
+                                         m_Cfg.m_CardSizes = card_sizes;
                                          ExternalCardSizesChanged();
                                          CardSizesChanged();
 
@@ -187,12 +189,12 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         };
         card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
     }
-    EnableOptionWidgetForDefaults(m_CardSize, "card_size");
+    EnableOptionWidgetForDefaults(m_CardSize, m_Cfg, "card_size");
 
     WidgetWithLabel* paper_size;
     {
         m_PaperSize = MakeComboBox(
-            std::span<const std::string>{ std::views::keys(g_Cfg.m_PageSizes) |
+            std::span<const std::string>{ std::views::keys(m_Cfg.m_PageSizes) |
                                           std::ranges::to<std::vector>() },
             {},
             project.m_Data.m_PageSize);
@@ -209,7 +211,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                          {
                              window()->setEnabled(false);
                              {
-                                 PaperSizePopup paper_size_popup{ nullptr, g_Cfg };
+                                 PaperSizePopup paper_size_popup{ nullptr, m_Cfg };
 
                                  QObject::connect(
                                      &paper_size_popup,
@@ -222,17 +224,17 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                                              return;
                                          }
 
-                                         g_Cfg.m_PageSizes = page_sizes;
-                                         if (!g_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
+                                         m_Cfg.m_PageSizes = page_sizes;
+                                         if (!m_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
                                          {
-                                             m_Project.m_Data.m_PageSize = g_Cfg.GetFirstValidPageSize();
+                                             m_Project.m_Data.m_PageSize = m_Cfg.GetFirstValidPageSize();
                                              PageSizeChanged();
                                          }
 
                                          UpdateComboBox(
                                              m_PaperSize,
                                              std::span<const std::string>{
-                                                 std::views::keys(g_Cfg.m_PageSizes) |
+                                                 std::views::keys(m_Cfg.m_PageSizes) |
                                                  std::ranges::to<std::vector>() },
                                              {},
                                              m_Project.m_Data.m_PageSize);
@@ -258,44 +260,44 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         };
         paper_size->setToolTip("Additional card sizes can be defined in config.ini");
     }
-    EnableOptionWidgetForDefaults(m_PaperSize, "page_size");
+    EnableOptionWidgetForDefaults(m_PaperSize, m_Cfg, "page_size");
 
     m_BasePdf = new ComboBoxWithLabel{
         "&Base Pdf", GetBasePdfNames(), project.m_Data.m_BasePdf
     };
-    EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), "base_pdf");
+    EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), m_Cfg, "base_pdf");
 
     m_Orientation = new ComboBoxWithLabel{
         "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.m_Data.m_Orientation)
     };
-    EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), "orientation");
+    EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), m_Cfg, "orientation");
 
-    auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size) } };
+    auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size, m_Cfg.m_BaseUnit) } };
     m_PaperInfo = paper_info->GetWidget();
 
-    auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size) } };
+    auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size, m_Cfg.m_BaseUnit) } };
     m_CardsInfo = cards_info->GetWidget();
     m_CardsInfo->setToolTip("Size of the cards area in the final rendered PDF (excluding margins)");
 
-    auto* left_margin{ new WidgetWithLabel{ "&Left Margin", MakeLengthSpinBox() } };
+    auto* left_margin{ new LengthSpinBoxWithLabel{ "&Left Margin", config.m_BaseUnit } };
     m_LeftMarginSpin = static_cast<LengthSpinBox*>(left_margin->GetWidget());
     m_LeftMarginSpin->ConnectUnitSignals(this);
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
 
-    auto* top_margin{ new WidgetWithLabel{ "&Top Margin", MakeLengthSpinBox() } };
+    auto* top_margin{ new LengthSpinBoxWithLabel{ "&Top Margin", config.m_BaseUnit } };
     m_TopMarginSpin = static_cast<LengthSpinBox*>(top_margin->GetWidget());
     m_TopMarginSpin->ConnectUnitSignals(this);
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
 
-    auto* right_margin{ new WidgetWithLabel{ "&Right Margin", MakeLengthSpinBox() } };
+    auto* right_margin{ new LengthSpinBoxWithLabel{ "&Right Margin", config.m_BaseUnit } };
     m_RightMarginSpin = static_cast<LengthSpinBox*>(right_margin->GetWidget());
     m_RightMarginSpin->ConnectUnitSignals(this);
     m_RightMarginSpin->setDecimals(2);
     m_RightMarginSpin->setSingleStep(0.1);
 
-    auto* bottom_margin{ new WidgetWithLabel{ "&Bottom Margin", MakeLengthSpinBox() } };
+    auto* bottom_margin{ new LengthSpinBoxWithLabel{ "&Bottom Margin", config.m_BaseUnit } };
     m_BottomMarginSpin = static_cast<LengthSpinBox*>(bottom_margin->GetWidget());
     m_BottomMarginSpin->ConnectUnitSignals(this);
     m_BottomMarginSpin->setDecimals(2);
@@ -306,9 +308,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_names<MarginsMode>(),
         magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
     m_MarginsMode = margins_mode->GetWidget();
-    EnableOptionWidgetForDefaults(m_MarginsMode, "margins_mode");
+    EnableOptionWidgetForDefaults(m_MarginsMode, m_Cfg, "margins_mode");
 
-    auto* all_margins{ new WidgetWithLabel{ "&All Margins", MakeLengthSpinBox() } };
+    auto* all_margins{ new LengthSpinBoxWithLabel{ "&All Margins", config.m_BaseUnit } };
     m_AllMarginsSpin = static_cast<LengthSpinBox*>(all_margins->GetWidget());
     m_AllMarginsSpin->ConnectUnitSignals(this);
     m_AllMarginsSpin->setDecimals(2);
@@ -319,7 +321,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         magic_enum::enum_names<CardOrientation>(),
         magic_enum::enum_name(project.m_Data.m_CardOrientation) } };
     m_CardOrientation = card_orientation->GetWidget();
-    EnableOptionWidgetForDefaults(m_CardOrientation, "card_orientation");
+    EnableOptionWidgetForDefaults(m_CardOrientation, m_Cfg, "card_orientation");
 
     {
         m_CardsWidthVertical = MakeDoubleSpinBox();
@@ -338,8 +340,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         cards_layout_vertical_container->setLayout(cards_layout_vertical_layout);
         m_CardsLayoutVertical = new WidgetWithLabel("&Vertical Layout", cards_layout_vertical_container);
 
-        EnableOptionWidgetForDefaults(m_CardsWidthVertical, "card_layout_vertical.width");
-        EnableOptionWidgetForDefaults(m_CardsHeightVertical, "card_layout_vertical.height");
+        EnableOptionWidgetForDefaults(m_CardsWidthVertical, m_Cfg, "card_layout_vertical.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightVertical, m_Cfg, "card_layout_vertical.height");
     }
 
     {
@@ -359,14 +361,14 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
         cards_layout_horizontal_container->setLayout(cards_layout_horizontal_layout);
         m_CardsLayoutHorizontal = new WidgetWithLabel("&Horizontal Layout", cards_layout_horizontal_container);
 
-        EnableOptionWidgetForDefaults(m_CardsWidthHorizontal, "card_layout_horizontal.width");
-        EnableOptionWidgetForDefaults(m_CardsHeightHorizontal, "card_layout_horizontal.height");
+        EnableOptionWidgetForDefaults(m_CardsWidthHorizontal, m_Cfg, "card_layout_horizontal.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightHorizontal, m_Cfg, "card_layout_horizontal.height");
     }
 
     auto* flip_on{ new ComboBoxWithLabel{
         "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
     m_FlipOn = flip_on->GetWidget();
-    EnableOptionWidgetForDefaults(m_FlipOn, "flip_page_on");
+    EnableOptionWidgetForDefaults(m_FlipOn, m_Cfg, "flip_page_on");
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);
@@ -786,8 +788,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project)
                      this,
                      [this]()
                      {
-                         m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
-                         m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
+                         m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize(), m_Cfg.m_BaseUnit)));
+                         m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize(), m_Cfg.m_BaseUnit)));
                      });
 }
 
@@ -831,7 +833,7 @@ void PrintOptionsWidget::RenderBackendChanged()
         }()
     };
     const bool has_base_pdf_option{ base_pdf_size_idx >= 0 };
-    const bool has_base_pdf_confg{ g_Cfg.m_PageSizes.contains(std::string{ Config::c_BasePDFSize }) };
+    const bool has_base_pdf_confg{ m_Cfg.m_PageSizes.contains(std::string{ Config::c_BasePDFSize }) };
     const bool need_add_base_pdf_option{ !has_base_pdf_option && has_base_pdf_confg };
     const bool need_remove_base_pdf_option{ has_base_pdf_option && !has_base_pdf_confg };
 
@@ -848,9 +850,9 @@ void PrintOptionsWidget::RenderBackendChanged()
         m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
     }
 
-    if (g_Cfg.m_Backend != PdfBackend::PoDoFo && m_Project.m_Data.m_PageSize == Config::c_BasePDFSize)
+    if (m_Cfg.m_Backend != PdfBackend::PoDoFo && m_Project.m_Data.m_PageSize == Config::c_BasePDFSize)
     {
-        const auto default_page_size{ g_Cfg.GetFirstValidPageSize() };
+        const auto default_page_size{ m_Cfg.GetFirstValidPageSize() };
         m_PaperSize->setCurrentText(ToQString(default_page_size));
         m_Project.m_Data.m_PageSize = default_page_size;
         PageSizeChanged();
@@ -902,18 +904,18 @@ void PrintOptionsWidget::ExternalCardSizesChanged()
     UpdateComboBox(
         m_CardSize,
         std::span<const std::string>{
-            std::views::keys(g_Cfg.m_CardSizes) |
+            std::views::keys(m_Cfg.m_CardSizes) |
             std::ranges::to<std::vector>() },
         std::span<const std::string>{
-            g_Cfg.m_CardSizes |
+            m_Cfg.m_CardSizes |
             std::views::values |
             std::views::transform(&Config::CardSizeInfo::m_Hint) |
             std::ranges::to<std::vector>() },
         m_Project.m_Data.m_CardSizeChoice);
 
-    if (!g_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
+    if (!m_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
     {
-        m_Project.m_Data.m_CardSizeChoice = g_Cfg.GetFirstValidCardSize();
+        m_Project.m_Data.m_CardSizeChoice = m_Cfg.GetFirstValidCardSize();
         ExternalCardSizeChanged();
     }
 }
@@ -995,14 +997,14 @@ void PrintOptionsWidget::SetDefaults()
 void PrintOptionsWidget::SetAdvancedWidgetsVisibility()
 {
     // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
-    m_LeftMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_TopMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_RightMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_BottomMarginSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_MarginsMode->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_AllMarginsSpin->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_CardOrientation->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
-    m_FlipOn->parentWidget()->setVisible(g_Cfg.m_AdvancedMode);
+    m_LeftMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_TopMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_RightMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_BottomMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_MarginsMode->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_AllMarginsSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_CardOrientation->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_FlipOn->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
 }
 
 void PrintOptionsWidget::RefreshSizes()
@@ -1011,8 +1013,8 @@ void PrintOptionsWidget::RefreshSizes()
 
     RefreshCardLayout();
 
-    m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize())));
-    m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize())));
+    m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize(), m_Cfg.m_BaseUnit)));
+    m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize(), m_Cfg.m_BaseUnit)));
 }
 
 void PrintOptionsWidget::RefreshMargins(bool reset_margins)
@@ -1158,9 +1160,9 @@ std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()
     return base_pdf_names;
 }
 
-std::string PrintOptionsWidget::SizeToString(Size size)
+std::string PrintOptionsWidget::SizeToString(Size size, Unit unit)
 {
-    const auto base_unit{ UnitValue(g_Cfg.m_BaseUnit) };
-    const auto base_unit_name{ UnitName(g_Cfg.m_BaseUnit) };
+    const auto base_unit{ UnitValue(unit) };
+    const auto base_unit_name{ UnitName(unit) };
     return fmt::format("{:.1f} x {:.1f} {}", size.x / base_unit, size.y / base_unit, base_unit_name);
 }

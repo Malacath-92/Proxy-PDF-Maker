@@ -5,6 +5,7 @@
 class QVBoxLayout;
 
 class Project;
+struct Config;
 class PluginInterface;
 
 class OptionsAreaWidget : public QScrollArea
@@ -12,13 +13,15 @@ class OptionsAreaWidget : public QScrollArea
     Q_OBJECT
 
   public:
-    OptionsAreaWidget(Project& project,
-                      PluginInterface& plugin_router,
-                      QWidget* project_options,
-                      QWidget* print_options,
-                      QWidget* guides_options,
-                      QWidget* card_options,
-                      QWidget* global_options);
+    OptionsAreaWidget(
+        Project& project,
+        const Config& config,
+        PluginInterface& plugin_router,
+        QWidget* project_options,
+        QWidget* print_options,
+        QWidget* guides_options,
+        QWidget* card_options,
+        QWidget* global_options);
 
   public slots:
     void PluginEnabled(std::string_view plugin_name);
@@ -31,6 +34,7 @@ class OptionsAreaWidget : public QScrollArea
     void AddCollapsible(QVBoxLayout* layout, QWidget* widget);
 
     Project& m_Project;
+    const Config& m_Cfg;
 
     PluginInterface& m_PluginRouter;
     std::unordered_map<std::string_view, PluginInterface*> m_Plugins;

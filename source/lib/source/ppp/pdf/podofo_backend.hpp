@@ -50,7 +50,9 @@ class PoDoFoPage final : public PdfPage
 class PoDoFoImageCache
 {
   public:
-    PoDoFoImageCache(PoDoFoDocument& document, const Project& project);
+    PoDoFoImageCache(PoDoFoDocument& document,
+                     const Project& project,
+                     const Config& config);
 
     PoDoFo::PdfImage* GetImage(const fs::path& image_path,
                                Image::Rotation rotation) const;
@@ -65,6 +67,7 @@ class PoDoFoImageCache
 
     PoDoFoDocument& m_Document;
     const Project& m_Project;
+    const Config& m_Cfg;
 
     struct ImageCacheEntry
     {
@@ -78,7 +81,8 @@ class PoDoFoImageCache
 class PoDoFoDocument final : public PdfDocument
 {
   public:
-    PoDoFoDocument(const Project& project);
+    PoDoFoDocument(const Project& project,
+                   const Config& config);
     virtual ~PoDoFoDocument() override = default;
 
     virtual void ReservePages(size_t pages) override;
@@ -103,6 +107,7 @@ class PoDoFoDocument final : public PdfDocument
 
   private:
     const Project& m_Project;
+    const Config& m_Cfg;
 
     std::unique_ptr<PoDoFo::PdfMemDocument> m_BaseDocument;
 

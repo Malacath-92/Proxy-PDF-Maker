@@ -139,7 +139,7 @@ fs::path GetOutputDir(const fs::path& crop_dir, Length bleed_edge, const std::st
     return crop_dir;
 }
 
-ImgDict ReadPreviews(const fs::path& img_cache_file)
+ImgDict ReadPreviews(const fs::path& img_cache_file, const fs::path& fallback_name)
 {
     TRACY_AUTO_SCOPE();
 
@@ -209,12 +209,12 @@ ImgDict ReadPreviews(const fs::path& img_cache_file)
         img_dict.clear();
     }
 
-    if (!img_dict.contains(g_Cfg.m_FallbackName))
+    if (!img_dict.contains(fallback_name))
     {
         ImagePreview img{};
-        img.m_CroppedImage = Image::Read(g_Cfg.m_FallbackName);
+        img.m_CroppedImage = Image::Read(fallback_name);
         img.m_UncroppedImage = img.m_CroppedImage;
-        img_dict[g_Cfg.m_FallbackName] = std::move(img);
+        img_dict[fallback_name] = std::move(img);
     }
 
     return img_dict;

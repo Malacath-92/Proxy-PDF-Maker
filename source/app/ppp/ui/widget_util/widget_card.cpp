@@ -131,7 +131,7 @@ BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams par
 
     setStyleSheet("QLabel{ background-color: transparent; }");
 
-    const auto width{ g_Cfg.m_BasePreviewWidth };
+    const auto width{ 512_pix };
     const auto height{ width / m_CardRatio };
     const auto img{
         [&](const Image& img)
@@ -556,7 +556,7 @@ Image CardImage::GetEmptyImage() const
 {
     TRACY_AUTO_SCOPE();
 
-    const auto width{ g_Cfg.m_BasePreviewWidth };
+    const auto width{ 512_pix };
     const auto height{ width / m_CardRatio };
     return Image::PlainColor({ width, height }, ColorRGBA8{ 0x80, 0x80, 0x80, 0xff });
 }

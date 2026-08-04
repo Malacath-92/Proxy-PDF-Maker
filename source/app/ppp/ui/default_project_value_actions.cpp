@@ -72,7 +72,7 @@ nlohmann::json GetValueImpl(QLineEdit* widget)
     return widget->text().toStdString();
 }
 
-nlohmann::json GetDefault(std::string_view path)
+nlohmann::json GetDefault(std::string_view path, const Config& config)
 {
     const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
     const auto user_default_value{ app->GetProjectDefault(path) };
@@ -83,7 +83,7 @@ nlohmann::json GetDefault(std::string_view path)
     else
     {
         // TODO: Get json-value of app-default per-value rather than the whole project
-        const auto app_default_json{ nlohmann::json::parse(Project{}.DumpToJson()) };
+        const auto app_default_json{ nlohmann::json::parse(Project{ config }.DumpToJson()) };
         const auto app_default_value{ GetJsonValue(app_default_json, path) };
         return app_default_value;
     }
@@ -96,6 +96,7 @@ void SetAsDefault(std::string_view path, nlohmann::json value)
 
 void EnableOptionWidgetForDefaults(
     QWidget* widget,
+    const Config& config,
     std::string_view path,
     std::function<void(nlohmann::json)> set_value,
     std::function<nlohmann::json()> get_value)
@@ -152,9 +153,10 @@ void EnableOptionWidgetForDefaults(
                      &QAction::triggered,
                      widget,
                      [set_value = std::move(set_value),
-                      path = std::string{ path }]()
+                      path = std::string{ path },
+                      &config]()
                      {
-                         set_value(GetDefault(path));
+                         set_value(GetDefault(path, config));
                      });
     QObject::connect(set_as_default_action,
                      &QAction::triggered,

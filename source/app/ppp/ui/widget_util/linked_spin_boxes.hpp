@@ -3,6 +3,8 @@
 #include <QIcon>
 #include <QWidget>
 
+#include <ppp/units.hpp>
+
 class LengthSpinBox;
 class QToolButton;
 
@@ -11,7 +13,8 @@ class LinkedSpinBoxes : public QWidget
     Q_OBJECT
 
   public:
-    LinkedSpinBoxes(bool initially_linked);
+    LinkedSpinBoxes(bool initially_linked,
+                    Unit base_unit);
 
     LengthSpinBox* First();
     LengthSpinBox* Second();

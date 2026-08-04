@@ -266,8 +266,9 @@ int main(int argc, char** raw_argv)
     Log main_log{ log_flags, Log::c_MainLogName };
 
     QCoreApplication app{ argc, raw_argv };
+    Config config;
 
-    QThreadPool::globalInstance()->setMaxThreadCount(g_Cfg.m_MaxWorkerThreads);
+    QThreadPool::globalInstance()->setMaxThreadCount(config.m_MaxWorkerThreads);
 
     std::span argv{ raw_argv, static_cast<size_t>(argc) };
     CommandLineOptions cli{ ParseCommandLine(argv) };
@@ -342,7 +343,7 @@ int main(int argc, char** raw_argv)
 
     if (cli.m_Deterministic)
     {
-        g_Cfg.m_DeterminsticPdfOutput = true;
+        config.m_DeterminsticPdfOutput = true;
     }
 
     OverridesProvider overrides_provider{
@@ -350,7 +351,7 @@ int main(int argc, char** raw_argv)
         cli.m_ProjectOverrides
     };
 
-    Project project{};
+    Project project{ config };
     if (cli.m_ProjectFile.has_value())
     {
         project.Load(cli.m_ProjectFile.value(),
@@ -393,7 +394,7 @@ int main(int argc, char** raw_argv)
                              return &color_cubes.at(cube_name_str);
                          } };
 
-    Cropper cropper{ get_color_cube, project };
+    Cropper cropper{ get_color_cube, project, config };
     cropper.SetGeneratePreviews(false);
     CardProvider card_provider{ project };
 
@@ -430,7 +431,7 @@ int main(int argc, char** raw_argv)
                          &project,
                          [&]
                          {
-                             GeneratePdf(project);
+                             GeneratePdf(project, config);
                              app.quit();
                          });
     }
@@ -451,7 +452,7 @@ int main(int argc, char** raw_argv)
 
         if (cli.m_Render)
         {
-            GeneratePdf(project);
+            GeneratePdf(project, config);
         }
 
         return 0;

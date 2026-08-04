@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include <ppp/units.hpp>
+
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
@@ -11,6 +13,7 @@ class QLineEdit;
 
 class DefaultBacksidePreview;
 class Project;
+struct Config;
 class LengthSpinBox;
 
 class CardOptionsWidget : public QWidget
@@ -18,7 +21,8 @@ class CardOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    CardOptionsWidget(Project& project);
+    CardOptionsWidget(Project& project,
+                      const Config& config);
 
   signals:
     void BleedChanged();
@@ -33,7 +37,7 @@ class CardOptionsWidget : public QWidget
     void BacksideRotationChanged();
     void CardBacksideChanged();
 
-    void BaseUnitChanged();
+    void BaseUnitChanged(Unit base_unit);
 
   public slots:
     void NewProjectOpened();
@@ -50,6 +54,7 @@ class CardOptionsWidget : public QWidget
     void SetBacksideAutoPatternTooltip();
 
     Project& m_Project;
+    const Config& m_Cfg;
 
     LengthSpinBox* m_BleedEdgeSpin{ nullptr };
     LengthSpinBox* m_EnvelopeSpin{ nullptr };

@@ -100,8 +100,9 @@ QDoubleSpinBox* DoubleSpinBoxWithLabel::GetWidget() const
     return static_cast<QDoubleSpinBox*>(WidgetWithLabel::GetWidget());
 }
 
-LengthSpinBoxWithLabel::LengthSpinBoxWithLabel(std::string_view label_text)
-    : WidgetWithLabel(label_text, MakeLengthSpinBox())
+LengthSpinBoxWithLabel::LengthSpinBoxWithLabel(std::string_view label_text,
+                                               Unit base_unit)
+    : WidgetWithLabel(label_text, MakeLengthSpinBox(base_unit))
 {
 }
 

@@ -18,8 +18,10 @@
 
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
+                                       const Config& config,
                                        PluginInterface& router)
-    : CardDownloaderPopup{ parent, project, router }
+    : CardDownloaderPopup{ parent, project, config.m_MaxDPI, router }
+    , m_Cfg{ config }
 {
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
@@ -34,7 +36,7 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_ArtCropCheckbox = new QCheckBox{ "Art Crops" };
     m_ArtCropCheckbox->setChecked(false);
     m_ArtCropCheckbox->setToolTip("If ticked, only the art crop will be downloaded from Scryfall.");
-    m_ArtCropCheckbox->setVisible(g_Cfg.m_CardSizes.contains("Scryfall Art Crop"));
+    m_ArtCropCheckbox->setVisible(m_Cfg.m_CardSizes.contains("Scryfall Art Crop"));
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
     m_ClearCheckbox->setChecked(true);

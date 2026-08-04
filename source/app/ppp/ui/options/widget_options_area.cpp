@@ -16,14 +16,17 @@
 
 #include <ppp/profile/profile.hpp>
 
-OptionsAreaWidget::OptionsAreaWidget(Project& project,
-                                     PluginInterface& plugin_router,
-                                     QWidget* project_options,
-                                     QWidget* print_options,
-                                     QWidget* guides_options,
-                                     QWidget* card_options,
-                                     QWidget* global_options)
+OptionsAreaWidget::OptionsAreaWidget(
+    Project& project,
+    const Config& config,
+    PluginInterface& plugin_router,
+    QWidget* project_options,
+    QWidget* print_options,
+    QWidget* guides_options,
+    QWidget* card_options,
+    QWidget* global_options)
     : m_Project{ project }
+    , m_Cfg{ config }
     , m_PluginRouter{ plugin_router }
 {
     TRACY_AUTO_SCOPE();
@@ -49,7 +52,8 @@ OptionsAreaWidget::OptionsAreaWidget(Project& project,
 
     for (const auto& plugin_name : GetPluginNames())
     {
-        if (g_Cfg.m_PluginsState[std::string{ plugin_name }])
+        const auto it{ m_Cfg.m_PluginsState.find(std::string{ plugin_name }) };
+        if (it != m_Cfg.m_PluginsState.end() && it->second)
         {
             PluginEnabled(plugin_name);
         }
@@ -62,7 +66,7 @@ void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 
     if (!m_Plugins.contains(plugin_name))
     {
-        auto* plugin{ InitPlugin(plugin_name, m_Project) };
+        auto* plugin{ InitPlugin(plugin_name, m_Project, m_Cfg) };
         m_Plugins[plugin_name] = plugin;
 
         auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };

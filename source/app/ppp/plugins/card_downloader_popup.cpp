@@ -101,9 +101,11 @@ void CardDownloaderImageWorker::run()
 
 CardDownloaderPopup::CardDownloaderPopup(QWidget* parent,
                                          Project& project,
+                                         PixelDensity max_density,
                                          PluginInterface& router)
     : PopupBase{ parent }
     , m_Project{ project }
+    , m_MaxDensity{ max_density }
     , m_Router{ router }
 {
     m_AutoCenter = false;
@@ -230,7 +232,7 @@ void CardDownloaderPopup::ImageAvailable(const QByteArray& image_data, const QSt
         fill_corners,
         std::move(upscale_model),
         m_Project.CardSize(),
-        g_Cfg.m_MaxDPI,
+        m_MaxDensity,
         std::move(out_files),
     } };
     QObject::connect(worker,

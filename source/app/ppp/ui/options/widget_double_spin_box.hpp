@@ -2,14 +2,14 @@
 
 #include <QDoubleSpinBox>
 
-#include <ppp/config.hpp>
+#include <ppp/units.hpp>
 
 class LengthSpinBox : public QDoubleSpinBox
 {
     Q_OBJECT
 
   public:
-    LengthSpinBox();
+    LengthSpinBox(Unit base_unit);
 
     using QDoubleSpinBox::QDoubleSpinBox;
 
@@ -31,7 +31,7 @@ class LengthSpinBox : public QDoubleSpinBox
     void ValueChanged(Length v);
 
   public slots:
-    void BaseUnitChanged();
+    void BaseUnitChanged(Unit new_base_unit);
 
   private:
     using QDoubleSpinBox::setRange;
@@ -41,5 +41,5 @@ class LengthSpinBox : public QDoubleSpinBox
     Unit m_Unit;
 };
 
-LengthSpinBox* MakeLengthSpinBox();
+LengthSpinBox* MakeLengthSpinBox(Unit base_unit);
 QDoubleSpinBox* MakeDoubleSpinBox();

@@ -30,7 +30,8 @@ class PluginsPopup : public PopupBase
     Q_OBJECT
 
   public:
-    PluginsPopup(QWidget* parent)
+    PluginsPopup(QWidget* parent,
+                 Config& config)
         : PopupBase{ parent }
     {
         TRACY_AUTO_SCOPE();
@@ -46,15 +47,15 @@ class PluginsPopup : public PopupBase
             for (const auto& plugin_name : GetPluginNames())
             {
                 auto* plugin_checkbox{ new QCheckBox{ ToQString(plugin_name) } };
-                plugin_checkbox->setChecked(g_Cfg.m_PluginsState[std::string{ plugin_name }]);
+                plugin_checkbox->setChecked(config.m_PluginsState[std::string{ plugin_name }]);
                 layout->addWidget(plugin_checkbox);
 
                 auto change_plugin_enabled{
-                    [this, plugin_name](Qt::CheckState s)
+                    [this, &config, plugin_name](Qt::CheckState s)
                     {
                         const bool enabled{ s == Qt::CheckState::Checked };
-                        g_Cfg.m_PluginsState[std::string{ plugin_name }] = enabled;
-                        SaveConfig(g_Cfg);
+                        config.m_PluginsState[std::string{ plugin_name }] = enabled;
+                        SaveConfig(config);
 
                         if (enabled)
                         {
@@ -104,17 +105,18 @@ class PluginsPopup : public PopupBase
     void PluginDisabled(std::string_view plugin_name);
 };
 
-GlobalOptionsWidget::GlobalOptionsWidget()
+GlobalOptionsWidget::GlobalOptionsWidget(Config& config)
+    : m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
     setObjectName("Global Config");
 
     auto* advanced_checkbox{ new QCheckBox{ "Advanced Mode" } };
-    advanced_checkbox->setChecked(g_Cfg.m_AdvancedMode);
+    advanced_checkbox->setChecked(m_Cfg.m_AdvancedMode);
     advanced_checkbox->setToolTip("Enables advanced features such as custom margins, guides controls, and card orientation.");
 
-    const auto base_unit_name{ UnitName(g_Cfg.m_BaseUnit) };
+    const auto base_unit_name{ UnitName(m_Cfg.m_BaseUnit) };
     auto* base_unit{ new ComboBoxWithLabel{
         "&Units",
         magic_enum::enum_values<Unit>() | std::views::transform(&UnitName) | std::ranges::to<std::vector>(),
@@ -123,34 +125,34 @@ GlobalOptionsWidget::GlobalOptionsWidget()
 
     m_DisplayColumns = MakeDoubleSpinBox();
     m_DisplayColumns->setDecimals(0);
-    m_DisplayColumns->setRange(1, g_Cfg.m_MaxDisplayColumns);
+    m_DisplayColumns->setRange(1, m_Cfg.m_MaxDisplayColumns);
     m_DisplayColumns->setSingleStep(1);
-    m_DisplayColumns->setValue(g_Cfg.m_DisplayColumns);
+    m_DisplayColumns->setValue(m_Cfg.m_DisplayColumns);
     auto* display_columns{ new WidgetWithLabel{ "Display &Columns", m_DisplayColumns } };
     display_columns->setToolTip("Number columns in card view");
 
     auto* version_output{ new QCheckBox{ "&Version Output" } };
     version_output->setToolTip("If checked, output will not be overwritten, but instead versioned. I.e. _printme.pdf -> _printme_1.pdf -> ....");
-    version_output->setChecked(g_Cfg.m_VersionOutput);
+    version_output->setChecked(m_Cfg.m_VersionOutput);
 
     auto* backend{ new QCheckBox{ "&Render to Png" } };
     backend->setToolTip("If checked, will render final document to a set of .png files instead of a .pdf file.");
-    backend->setChecked(g_Cfg.m_Backend == PdfBackend::Png);
+    backend->setChecked(m_Cfg.m_Backend == PdfBackend::Png);
 
     auto* image_format{ new ComboBoxWithLabel{
-        "Image Compress&ion", magic_enum::enum_names<ImageCompression>(), magic_enum::enum_name(g_Cfg.m_PdfImageCompression) } };
+        "Image Compress&ion", magic_enum::enum_names<ImageCompression>(), magic_enum::enum_name(m_Cfg.m_PdfImageCompression) } };
     image_format->GetWidget()->setToolTip("Determines how images are saved inside the pdf. Use Lossy to reduce output size.");
 
     auto* jpg_quality_spin_box{ MakeDoubleSpinBox() };
     jpg_quality_spin_box->setDecimals(0);
     jpg_quality_spin_box->setRange(1, 100);
     jpg_quality_spin_box->setSingleStep(1);
-    jpg_quality_spin_box->setValue(g_Cfg.m_JpgQuality.value_or(100));
+    jpg_quality_spin_box->setValue(m_Cfg.m_JpgQuality.value_or(100));
     auto* jpg_quality{ new WidgetWithLabel{ "Jpg &Quality", jpg_quality_spin_box } };
     jpg_quality->setToolTip("Quality of the jpg files embedded in the pdf.");
 
     m_ColorCube = new ComboBoxWithLabel{
-        "Color C&ube", GetCubeNames(), g_Cfg.m_ColorCube
+        "Color C&ube", GetCubeNames(), m_Cfg.m_ColorCube
     };
 
     auto* preview_width_spin_box{ MakeDoubleSpinBox() };
@@ -158,42 +160,42 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     preview_width_spin_box->setRange(120, 1000);
     preview_width_spin_box->setSingleStep(60);
     preview_width_spin_box->setSuffix("pixels");
-    preview_width_spin_box->setValue(g_Cfg.m_BasePreviewWidth / 1_pix);
+    preview_width_spin_box->setValue(m_Cfg.m_BasePreviewWidth / 1_pix);
     auto* preview_width{ new WidgetWithLabel{ "&Preview Width", preview_width_spin_box } };
     preview_width->setToolTip("Width of each card in pixels in the preview.");
 
     auto* no_crop{ new QCheckBox{ "No &Crop Mode" } };
     no_crop->setToolTip("If checked, images won't be cropped. Speeds up work while making pdfs slightly bigger.");
-    no_crop->setChecked(g_Cfg.m_NoCropMode);
+    no_crop->setChecked(m_Cfg.m_NoCropMode);
 
     auto* max_dpi_spin_box{ MakeDoubleSpinBox() };
     max_dpi_spin_box->setDecimals(0);
     max_dpi_spin_box->setRange(300, 1200);
     max_dpi_spin_box->setSingleStep(100);
-    max_dpi_spin_box->setValue(g_Cfg.m_MaxDPI / 1_dpi);
+    max_dpi_spin_box->setValue(m_Cfg.m_MaxDPI / 1_dpi);
     auto* max_dpi{ new WidgetWithLabel{ "&Max DPI", max_dpi_spin_box } };
 
     auto* card_order{ new ComboBoxWithLabel{
         "&Card Sorting",
-        g_Cfg.m_CardOrder } };
+        m_Cfg.m_CardOrder } };
     card_order->GetWidget()->setToolTip("Determines how cards are sorted in the pdf and card grid.");
 
     auto* card_order_direction{ new ComboBoxWithLabel{
         "&Sort Direction",
-        g_Cfg.m_CardOrderDirection } };
+        m_Cfg.m_CardOrderDirection } };
 
     const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
-    if (g_Cfg.m_MaxWorkerThreads >= ideal_thread_count)
+    if (m_Cfg.m_MaxWorkerThreads >= ideal_thread_count)
     {
-        g_Cfg.m_MaxWorkerThreads = ideal_thread_count - 2;
-        SaveConfig(g_Cfg);
+        m_Cfg.m_MaxWorkerThreads = ideal_thread_count - 2;
+        SaveConfig(m_Cfg);
     }
 
     auto* max_worker_threads_spin_box{ MakeDoubleSpinBox() };
     max_worker_threads_spin_box->setDecimals(0);
     max_worker_threads_spin_box->setRange(1, ideal_thread_count - 1);
     max_worker_threads_spin_box->setSingleStep(1);
-    max_worker_threads_spin_box->setValue(g_Cfg.m_MaxWorkerThreads);
+    max_worker_threads_spin_box->setValue(m_Cfg.m_MaxWorkerThreads);
     auto* max_worker_threads{ new WidgetWithLabel{ "Max &Worker Threads", max_worker_threads_spin_box } };
     max_worker_threads->setToolTip("Higher numbers speed up cropping and pdf generation, but cost more system resources");
 
@@ -203,7 +205,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto* update_check_checkbox{ new QCheckBox{ "Check for Updates" } };
-    update_check_checkbox->setChecked(g_Cfg.m_CheckVersionOnStartup);
+    update_check_checkbox->setChecked(m_Cfg.m_CheckVersionOnStartup);
     update_check_checkbox->setToolTip("Determine whether to check for updates at startup.");
 
     auto* toast_timeout_spin_box{ MakeDoubleSpinBox() };
@@ -211,7 +213,7 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     toast_timeout_spin_box->setRange(0, 10);
     toast_timeout_spin_box->setSingleStep(0.5);
     toast_timeout_spin_box->setSuffix("s");
-    toast_timeout_spin_box->setValue(static_cast<float>(g_Cfg.m_ToastTimeoutMS) / 1000);
+    toast_timeout_spin_box->setValue(static_cast<float>(m_Cfg.m_ToastTimeoutMS) / 1000);
     auto* toast_duration{ new WidgetWithLabel{ "Toast Duration", toast_timeout_spin_box } };
     toast_duration->setToolTip("Determines the length of time a toast notification stays on screen, disables toast at 0s");
 
@@ -238,15 +240,15 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     layout->addWidget(plugins);
     setLayout(layout);
 
-    image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
-    jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
+    image_format->setVisible(m_Cfg.m_Backend != PdfBackend::Png);
+    jpg_quality->setVisible(m_Cfg.m_Backend != PdfBackend::Png && m_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
 
     auto change_advanced_mode{
         [this](Qt::CheckState s)
         {
-            g_Cfg.m_AdvancedMode = s == Qt::CheckState::Checked;
-            SaveConfig(g_Cfg);
-            AdvancedModeChanged();
+            m_Cfg.m_AdvancedMode = s == Qt::CheckState::Checked;
+            SaveConfig(m_Cfg);
+            AdvancedModeChanged(m_Cfg.m_AdvancedMode);
         }
     };
 
@@ -255,26 +257,26 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         {
             const auto base_unit{ UnitFromName(t.toStdString())
                                       .value_or(Unit::Inches) };
-            g_Cfg.m_BaseUnit = base_unit;
-            SaveConfig(g_Cfg);
-            BaseUnitChanged();
+            m_Cfg.m_BaseUnit = base_unit;
+            SaveConfig(m_Cfg);
+            BaseUnitChanged(base_unit);
         }
     };
 
     auto change_display_columns{
         [this](double v)
         {
-            g_Cfg.m_DisplayColumns = static_cast<int>(v);
-            SaveConfig(g_Cfg);
-            DisplayColumnsChanged();
+            m_Cfg.m_DisplayColumns = static_cast<int>(v);
+            SaveConfig(m_Cfg);
+            DisplayColumnsChanged(m_Cfg.m_DisplayColumns);
         }
     };
 
     auto change_version_output{
-        [](const Qt::CheckState& s)
+        [this](const Qt::CheckState& s)
         {
-            g_Cfg.m_VersionOutput = s == Qt::CheckState::Checked;
-            SaveConfig(g_Cfg);
+            m_Cfg.m_VersionOutput = s == Qt::CheckState::Checked;
+            SaveConfig(m_Cfg);
         }
     };
 
@@ -282,33 +284,33 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         [this, image_format, jpg_quality](const Qt::CheckState& s)
         {
             const bool render_to_png{ s == Qt::CheckState::Checked };
-            g_Cfg.SetPdfBackend(render_to_png ? PdfBackend::Png
+            m_Cfg.SetPdfBackend(render_to_png ? PdfBackend::Png
                                               : PdfBackend::PoDoFo);
-            SaveConfig(g_Cfg);
-            RenderBackendChanged();
+            SaveConfig(m_Cfg);
+            RenderBackendChanged(m_Cfg.m_Backend);
 
-            image_format->setVisible(g_Cfg.m_Backend != PdfBackend::Png);
-            jpg_quality->setVisible(g_Cfg.m_Backend != PdfBackend::Png && g_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
+            image_format->setVisible(m_Cfg.m_Backend != PdfBackend::Png);
+            jpg_quality->setVisible(m_Cfg.m_Backend != PdfBackend::Png && m_Cfg.m_PdfImageCompression == ImageCompression::Lossy);
         }
     };
 
     auto change_image_format{
         [this, jpg_quality](const QString& t)
         {
-            g_Cfg.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(t.toStdString())
+            m_Cfg.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(t.toStdString())
                                               .value_or(ImageCompression::Lossy);
-            SaveConfig(g_Cfg);
+            SaveConfig(m_Cfg);
             ImageCompressionChanged();
 
-            jpg_quality->setVisible(g_Cfg.m_PdfImageCompression != ImageCompression::Lossless);
+            jpg_quality->setVisible(m_Cfg.m_PdfImageCompression != ImageCompression::Lossless);
         }
     };
 
     auto change_jpg_quality{
         [this](double v)
         {
-            g_Cfg.m_JpgQuality = static_cast<int>(v);
-            SaveConfig(g_Cfg);
+            m_Cfg.m_JpgQuality = static_cast<int>(v);
+            SaveConfig(m_Cfg);
             JpgQualityChanged();
         }
     };
@@ -316,9 +318,9 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_color_cube{
         [this](const QString& t)
         {
-            g_Cfg.m_ColorCube = t.toStdString();
-            SaveConfig(g_Cfg);
-            PreloadCube(g_Cfg.m_ColorCube);
+            m_Cfg.m_ColorCube = t.toStdString();
+            SaveConfig(m_Cfg);
+            PreloadCube(m_Cfg.m_ColorCube);
             ColorCubeChanged();
         }
     };
@@ -327,8 +329,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
         [this](const Qt::CheckState& s)
         {
             const bool no_crop_mode{ s == Qt::CheckState::Checked };
-            g_Cfg.m_NoCropMode = no_crop_mode;
-            SaveConfig(g_Cfg);
+            m_Cfg.m_NoCropMode = no_crop_mode;
+            SaveConfig(m_Cfg);
             NoCropModeChanged();
         }
     };
@@ -336,8 +338,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_preview_width{
         [this](double v)
         {
-            g_Cfg.m_BasePreviewWidth = static_cast<float>(v) * 1_pix;
-            SaveConfig(g_Cfg);
+            m_Cfg.m_BasePreviewWidth = static_cast<float>(v) * 1_pix;
+            SaveConfig(m_Cfg);
             BasePreviewWidthChanged();
         }
     };
@@ -345,8 +347,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_max_dpi{
         [this](double v)
         {
-            g_Cfg.m_MaxDPI = static_cast<float>(v) * 1_dpi;
-            SaveConfig(g_Cfg);
+            m_Cfg.m_MaxDPI = static_cast<float>(v) * 1_dpi;
+            SaveConfig(m_Cfg);
             MaxDPIChanged();
         }
     };
@@ -354,9 +356,9 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_card_order{
         [this](const QString& t)
         {
-            g_Cfg.m_CardOrder = magic_enum::enum_cast<CardOrder>(t.toStdString())
+            m_Cfg.m_CardOrder = magic_enum::enum_cast<CardOrder>(t.toStdString())
                                     .value_or(CardOrder::Alphabetical);
-            SaveConfig(g_Cfg);
+            SaveConfig(m_Cfg);
             CardOrderChanged();
         }
     };
@@ -364,9 +366,9 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_card_order_direction{
         [this](const QString& t)
         {
-            g_Cfg.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(t.toStdString())
+            m_Cfg.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(t.toStdString())
                                              .value_or(CardOrderDirection::Ascending);
-            SaveConfig(g_Cfg);
+            SaveConfig(m_Cfg);
             CardOrderDirectionChanged();
         }
     };
@@ -374,8 +376,8 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     auto change_max_worker_threads{
         [this](double v)
         {
-            g_Cfg.m_MaxWorkerThreads = static_cast<uint32_t>(v);
-            SaveConfig(g_Cfg);
+            m_Cfg.m_MaxWorkerThreads = static_cast<uint32_t>(v);
+            SaveConfig(m_Cfg);
             MaxWorkerThreadsChanged();
         }
     };
@@ -390,18 +392,18 @@ GlobalOptionsWidget::GlobalOptionsWidget()
     };
 
     auto change_update_check{
-        [](Qt::CheckState s)
+        [this](Qt::CheckState s)
         {
-            g_Cfg.m_CheckVersionOnStartup = s == Qt::CheckState::Checked;
-            SaveConfig(g_Cfg);
+            m_Cfg.m_CheckVersionOnStartup = s == Qt::CheckState::Checked;
+            SaveConfig(m_Cfg);
         }
     };
 
     auto change_toast_timeout{
-        [](double v)
+        [this](double v)
         {
-            g_Cfg.m_ToastTimeoutMS = static_cast<int>(v * 1000);
-            SaveConfig(g_Cfg);
+            m_Cfg.m_ToastTimeoutMS = static_cast<int>(v * 1000);
+            SaveConfig(m_Cfg);
         }
     };
 
@@ -486,19 +488,19 @@ void GlobalOptionsWidget::RequestOpenPluginsWindow()
 
 void GlobalOptionsWidget::PageSizesChanged()
 {
-    SaveConfig(g_Cfg);
+    SaveConfig(m_Cfg);
 }
 
 void GlobalOptionsWidget::CardSizesChanged()
 {
-    SaveConfig(g_Cfg);
+    SaveConfig(m_Cfg);
 }
 
 void GlobalOptionsWidget::MaximumDisplayColumnsChanged(uint32_t maximum_display_columns)
 {
-    g_Cfg.m_MaxDisplayColumns = maximum_display_columns;
-    m_DisplayColumns->setRange(1, g_Cfg.m_MaxDisplayColumns);
-    SaveConfig(g_Cfg);
+    m_Cfg.m_MaxDisplayColumns = maximum_display_columns;
+    m_DisplayColumns->setRange(1, m_Cfg.m_MaxDisplayColumns);
+    SaveConfig(m_Cfg);
 }
 
 void GlobalOptionsWidget::ColorCubeAdded()
@@ -559,7 +561,7 @@ void GlobalOptionsWidget::StyleAdded()
 
 void GlobalOptionsWidget::OpenPluginsWindow()
 {
-    PluginsPopup plugins{ nullptr };
+    PluginsPopup plugins{ nullptr, m_Cfg };
 
     QObject::connect(&plugins,
                      &PluginsPopup::PluginEnabled,

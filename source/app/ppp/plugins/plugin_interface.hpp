@@ -7,6 +7,7 @@
 class QWidget;
 
 class Project;
+struct Config;
 
 class PluginInterface : public QObject
 {
@@ -42,7 +43,7 @@ class PluginInterface : public QObject
     void SetBacksideAutoPattern(const std::string& pattern);
 };
 
-using PluginInit = PluginInterface*(Project& project);
+using PluginInit = PluginInterface*(Project& project, const Config& config);
 using PluginDestroy = void(PluginInterface* plugin_widget);
 
 struct Plugin

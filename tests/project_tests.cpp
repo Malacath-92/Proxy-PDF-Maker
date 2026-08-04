@@ -23,7 +23,8 @@ TEST_CASE("Setup folders for tests", "[project_setup_fs]")
 
 TEST_CASE("Empty project", "[project_empty]")
 {
-    Project empty_project{};
+    const Config& config{};
+    Project empty_project{ config };
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
     empty_project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -41,7 +42,8 @@ TEST_CASE("Empty project", "[project_empty]")
 
 TEST_CASE("Empty project can be saved", "[project_save_empty]")
 {
-    Project empty_project{};
+    const Config& config{};
+    Project empty_project{ config };
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
     empty_project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -59,13 +61,15 @@ TEST_CASE("Empty project can be saved", "[project_save_empty]")
 
 TEST_CASE("Empty project can be loaded", "[project_load_empty]")
 {
-    Project empty_project{};
+    const Config& config{};
+    Project empty_project{ config };
     REQUIRE_NOTHROW(empty_project.Load("empty_project.json"));
 }
 
 TEST_CASE("Non-empty project", "[project_non_empty]")
 {
-    Project project{};
+    const Config& config{};
+    Project project{ config };
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
     project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -82,7 +86,8 @@ TEST_CASE("Non-empty project", "[project_non_empty]")
 
 TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 {
-    Project project{};
+    const Config& config{};
+    Project project{ config };
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
     project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -102,6 +107,7 @@ TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 
 TEST_CASE("Non-empty project can be loaded", "[project_load_non_empty]")
 {
-    Project project{};
+    const Config& config{};
+    Project project{ config };
     REQUIRE_NOTHROW(project.Load("non_empty_project.json"));
 }

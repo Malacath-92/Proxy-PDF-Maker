@@ -6,14 +6,15 @@
 
 #include <ppp/ui/options/widget_double_spin_box.hpp>
 
-LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked)
+LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked,
+                                 Unit base_unit)
 {
     m_LinkedIcon = QIcon{ QPixmap{ ":/res/linked.png" } };
     m_UnLinkedIcon = QIcon{ QPixmap{ ":/res/unlinked.png" } };
 
-    m_First = MakeLengthSpinBox();
+    m_First = MakeLengthSpinBox(base_unit);
 
-    m_Second = MakeLengthSpinBox();
+    m_Second = MakeLengthSpinBox(base_unit);
     m_Second->setEnabled(!initially_linked);
 
     auto* inner_layout{ new QVBoxLayout };

@@ -27,12 +27,13 @@ void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color)
 
 QPainterPath GenerateCardsPath(dla::vec2 origin,
                                dla::vec2 pixel_size,
-                               const Project& project)
+                               const Project& project,
+                               bool no_crop_mode)
 {
     const auto cards_size{ project.ComputeExactBordersSize() };
     const auto pixel_ratio{ pixel_size / cards_size };
 
-    const auto transforms{ ComputeTransforms(project) };
+    const auto transforms{ ComputeTransforms(project, no_crop_mode) };
     const auto corner_radius{ project.CardCornerRadius() * pixel_ratio };
     const auto margins{ project.ComputeMargins() };
 
@@ -87,15 +88,16 @@ QPainterPath GenerateCardsPath(dla::vec2 origin,
     return card_border;
 }
 
-QPainterPath GenerateCardsPath(const Project& project)
+QPainterPath GenerateCardsPath(const Project& project, bool no_crop_mode)
 {
     const auto svg_size{ project.ComputeExactBordersSize() / 1_mm };
     return GenerateCardsPath(dla::vec2{ 0.0f, 0.0f },
                              svg_size,
-                             project);
+                             project,
+                             no_crop_mode);
 }
 
-void GenerateCardsSvg(const Project& project)
+void GenerateCardsSvg(const Project& project, bool no_crop_mode)
 {
     const auto svg_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
 
@@ -115,7 +117,7 @@ void GenerateCardsSvg(const Project& project)
     };
 
     LogInfo("Generating card path...");
-    const QPainterPath path{ GenerateCardsPath(offset, cards_size, project) };
+    const QPainterPath path{ GenerateCardsPath(offset, cards_size, project, no_crop_mode) };
     const QSize svg_size{ static_cast<int>(page_size.x), static_cast<int>(page_size.y) };
     const QSizeF viewbox_size{ page_size.x, page_size.y };
 
@@ -134,7 +136,7 @@ void GenerateCardsSvg(const Project& project)
     painter.end();
 }
 
-void GenerateCardsDxf(const Project& project)
+void GenerateCardsDxf(const Project& project, bool no_crop_mode)
 {
     /*
      * Tbh, .dxf files kinda suck, but some tools will require subscriptions for importiong .svg files, so here we are
@@ -216,7 +218,7 @@ ENTITIES
 
     const auto cards_size{ project.ComputeExactBordersSize() / 1_mm };
 
-    const auto transforms{ ComputeTransforms(project) };
+    const auto transforms{ ComputeTransforms(project, no_crop_mode) };
     const auto radius{ project.CardCornerRadius() / 1_mm };
     const auto margins{ project.ComputeMargins() / 1_mm };
 

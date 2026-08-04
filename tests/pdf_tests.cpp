@@ -5,9 +5,10 @@
 
 TEST_CASE("Generate empty pdf", "[pdf_empty]")
 {
-    Project empty_project{};
+    const Config config{};
+    Project empty_project{ config };
     empty_project.m_Data.m_FileName = "empty.pdf";
-    (void)GeneratePdf(empty_project);
+    (void)GeneratePdf(empty_project, config);
     REQUIRE(fs::exists("empty.pdf"));
 
     std::atexit(

@@ -2,6 +2,7 @@
 
 #include <QObject>
 
+#include <ppp/config.hpp>
 #include <ppp/util.hpp>
 
 class Project;
@@ -13,14 +14,15 @@ class ActionsViewModel : public QObject
     friend class ActionsWidget;
 
   public:
-    ActionsViewModel(Project& project);
+    ActionsViewModel(Project& project,
+                     const Config& config);
 
   signals:
     void CropperWorking();
     void CropperDone();
     void CropperProgress(float progress);
 
-    void RenderBackendChanged();
+    void RenderBackendChanged(PdfBackend backend);
 
   private slots:
     void RenderDocument() const;
@@ -29,4 +31,5 @@ class ActionsViewModel : public QObject
 
   private:
     Project& m_Project;
+    const Config& m_Cfg;
 };

@@ -84,7 +84,8 @@ class DoubleSpinBoxWithLabel : public WidgetWithLabel
 class LengthSpinBoxWithLabel : public WidgetWithLabel
 {
   public:
-    LengthSpinBoxWithLabel(std::string_view label_text);
+    LengthSpinBoxWithLabel(std::string_view label_text,
+                           Unit base_unit);
 
     virtual LengthSpinBox* GetWidget() const override;
 };

@@ -6,14 +6,14 @@
 
 #include <ppp/project/project.hpp>
 
-inline int32_t ToPixels(Length l)
+inline int32_t ToPixels(Length l, const Config& config)
 {
-    return static_cast<int32_t>(std::ceil(l * g_Cfg.m_MaxDPI / 1_pix));
+    return static_cast<int32_t>(std::ceil(l * config.m_MaxDPI / 1_pix));
 }
 
-inline Length FromPixels(int p)
+inline Length FromPixels(int p, const Config& config)
 {
-    return p * 1_pix / g_Cfg.m_MaxDPI;
+    return p * 1_pix / config.m_MaxDPI;
 }
 
 void PngPage::SetPageName(std::string_view page_name)
@@ -258,6 +258,16 @@ void PngPage::Finish()
     }
 }
 
+int32_t PngPage::ToPixels(Length l)
+{
+    return ::ToPixels(l, *m_Cfg);
+}
+
+Length PngPage::FromPixels(int p)
+{
+    return ::FromPixels(p, *m_Cfg);
+}
+
 cv::Mat& PngPage::TargetImage()
 {
     return m_RotatedImages.empty() ? m_Page
@@ -317,13 +327,14 @@ void PngImageCache::CacheImage(fs::path image_path, int32_t w, int32_t h, Image:
     });
 }
 
-PngDocument::PngDocument(const Project& project)
+PngDocument::PngDocument(const Project& project, const Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
 {
     const auto card_size_with_bleed{ project.CardSizeWithBleed() };
     const dla::ivec2 card_size_pixels{
-        static_cast<int32_t>(card_size_with_bleed.x * g_Cfg.m_MaxDPI / 1_pix),
-        static_cast<int32_t>(card_size_with_bleed.y * g_Cfg.m_MaxDPI / 1_pix),
+        static_cast<int32_t>(card_size_with_bleed.x * m_Cfg.m_MaxDPI / 1_pix),
+        static_cast<int32_t>(card_size_with_bleed.y * m_Cfg.m_MaxDPI / 1_pix),
     };
     m_PrecomputedCardSize = PixelSize{
         static_cast<float>(card_size_pixels.x) * 1_pix,
@@ -342,8 +353,8 @@ PngDocument::PngDocument(const Project& project)
     else
     {
         const dla::ivec2 page_size_pixels{
-            static_cast<int32_t>(m_PageSize.x * g_Cfg.m_MaxDPI / 1_pix),
-            static_cast<int32_t>(m_PageSize.y * g_Cfg.m_MaxDPI / 1_pix),
+            static_cast<int32_t>(m_PageSize.x * m_Cfg.m_MaxDPI / 1_pix),
+            static_cast<int32_t>(m_PageSize.y * m_Cfg.m_MaxDPI / 1_pix),
         };
         m_PrecomputedPageSize = PixelSize{
             static_cast<float>(page_size_pixels.x) * 1_pix,
@@ -368,6 +379,7 @@ PngPage* PngDocument::NextPage(bool /*is_backside*/)
     std::lock_guard lock{ m_Mutex };
     auto& new_page{ m_Pages.emplace_back() };
     new_page.m_Project = &m_Project;
+    new_page.m_Cfg = &m_Cfg;
     new_page.m_PageName = std::to_string(m_Pages.size());
     new_page.m_PerfectFit = m_Project.m_Data.m_PageSize == Config::c_FitSize;
     new_page.m_CardSize = m_PrecomputedCardSize;
@@ -427,7 +439,7 @@ fs::path PngDocument::Write(fs::path path, bool version_output)
             fs::remove(png_path);
         }
 
-        Image{ std::move(page.m_Page) }.Write(png_path, g_Cfg.m_PngCompression.value_or(5), std::nullopt, m_PageSize);
+        Image{ std::move(page.m_Page) }.Write(png_path, m_Cfg.m_PngCompression.value_or(5), std::nullopt, m_PageSize);
     }
 
     return png_folder;
@@ -451,8 +463,8 @@ void PngDocument::PreCacheImage(ImageCacheData data)
     }
     else
     {
-        const auto real_w{ ToPixels(data.m_Size.x) };
-        const auto real_h{ ToPixels(data.m_Size.y) };
+        const auto real_w{ ToPixels(data.m_Size.x, m_Cfg) };
+        const auto real_h{ ToPixels(data.m_Size.y, m_Cfg) };
         m_ImageCache->CacheImage(image_path, real_w, real_h, rotation);
     }
 }

@@ -18,8 +18,10 @@
 #include <ppp/project/cropper_work.hpp>
 
 Cropper::Cropper(std::function<const cv::Mat*(std::string_view)> get_color_cube,
-                 const Project& project)
+                 const Project& project,
+                 const Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
     , m_GetColorCube{ std::move(get_color_cube) }
     , m_ImageDB{ ImageDataBase::FromFile(project.m_Data.m_CropDir / ".image.db") }
 {
@@ -252,7 +254,8 @@ void Cropper::PushWorkImpl(const fs::path& key,
                     backside_bleed,
                     m_GetColorCube,
                     m_ImageDB,
-                    m_Project }
+                    m_Project,
+                    m_Cfg }
             };
 
             QObject::connect(this,
@@ -342,7 +345,8 @@ void Cropper::PushWorkImpl(const fs::path& key,
                     !m_Project.m_Data.m_Previews.contains(card_name),
                     m_GetColorCube,
                     m_ImageDB,
-                    m_Project }
+                    m_Project,
+                    m_Cfg }
             };
 
             QObject::connect(this,

@@ -5,6 +5,8 @@
 class QCheckBox;
 class QNetworkAccessManager;
 
+struct Config;
+
 enum class InputType
 {
     Decklist,
@@ -18,7 +20,10 @@ class MtgDownloaderPopup : public CardDownloaderPopup
     Q_OBJECT
 
   public:
-    MtgDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
+    MtgDownloaderPopup(QWidget* parent,
+                       Project& project,
+                       const Config& config,
+                       PluginInterface& router);
 
   private:
     virtual bool ClearImageFolder() const override;
@@ -37,6 +42,8 @@ class MtgDownloaderPopup : public CardDownloaderPopup
     virtual void ValidateSettings() override;
 
     static InputType StupidInferSource(const QString& text);
+
+    const Config& m_Cfg;
 
     InputType m_InputType{ InputType::None };
 

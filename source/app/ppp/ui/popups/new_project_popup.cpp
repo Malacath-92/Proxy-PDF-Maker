@@ -23,7 +23,8 @@
 
 #include <ppp/profile/profile.hpp>
 
-NewProjectPopup::NewProjectPopup(QWidget* parent)
+NewProjectPopup::NewProjectPopup(QWidget* parent,
+                                 const Config& config)
     : PopupBase{ parent }
 {
     m_AutoCenter = false;
@@ -42,7 +43,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent)
         auto* image_folder{ new WidgetWithLabel{ "Image Folder", m_ImageFolder } };
 
         const auto default_card_size{
-            []() -> std::string
+            [&config]() -> std::string
             {
                 auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
                 auto user_default{ app->GetProjectDefault("card_size") };
@@ -52,15 +53,15 @@ NewProjectPopup::NewProjectPopup(QWidget* parent)
                 }
                 else
                 {
-                    return ProjectData{}.m_CardSizeChoice;
+                    return ProjectData{ config }.m_CardSizeChoice;
                 }
             }()
         };
         m_CardSize =
             MakeComboBox(
-                std::span<const std::string>{ std::views::keys(g_Cfg.m_CardSizes) |
+                std::span<const std::string>{ std::views::keys(config.m_CardSizes) |
                                               std::ranges::to<std::vector>() },
-                std::span<const std::string>{ g_Cfg.m_CardSizes |
+                std::span<const std::string>{ config.m_CardSizes |
                                               std::views::values |
                                               std::views::transform(&Config::CardSizeInfo::m_Hint) |
                                               std::ranges::to<std::vector>() },
@@ -72,7 +73,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent)
         };
 
         const auto default_page_size{
-            []() -> std::string
+            [&config]() -> std::string
             {
                 auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
                 auto user_default{ app->GetProjectDefault("page_size") };
@@ -82,13 +83,13 @@ NewProjectPopup::NewProjectPopup(QWidget* parent)
                 }
                 else
                 {
-                    return ProjectData{}.m_PageSize;
+                    return ProjectData{ config }.m_PageSize;
                 }
             }()
         };
         m_PaperSize =
             MakeComboBox(
-                std::span<const std::string>{ std::views::keys(g_Cfg.m_PageSizes) |
+                std::span<const std::string>{ std::views::keys(config.m_PageSizes) |
                                               std::ranges::to<std::vector>() },
                 {},
                 default_page_size);

@@ -21,18 +21,18 @@ class DownloaderPlugin : public PluginInterface
     QPushButton* m_Button;
 };
 
-PluginInterface* InitMtGCardDownloaderPlugin(Project& project)
+PluginInterface* InitMtGCardDownloaderPlugin(Project& project, const Config& config)
 {
     auto* plugin{ new DownloaderPlugin{ "Open" } };
     auto* widget{ static_cast<QPushButton*>(plugin->Widget()) };
     widget->setObjectName("MtG Card Downloader");
 
     const auto open_downloader_popup{
-        [plugin, widget, &project]()
+        [plugin, widget, &project, &config]()
         {
             widget->window()->setEnabled(false);
             {
-                MtgDownloaderPopup downloader{ nullptr, project, *plugin };
+                MtgDownloaderPopup downloader{ nullptr, project, config, *plugin };
                 downloader.Show();
             }
             widget->window()->setEnabled(true);

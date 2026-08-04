@@ -11,6 +11,8 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
+const Config g_Cfg{};
+
 std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 {
     for (auto b : value)
@@ -30,7 +32,7 @@ auto SetupImages(
 
     const fs::path proj_json{ folder.string() + ".json" };
     {
-        Project some_images{};
+        Project some_images{ g_Cfg };
         some_images.m_Data.m_ImageDir = folder;
         some_images.m_Data.m_CropDir = folder / "crop";
         project_mod(some_images);

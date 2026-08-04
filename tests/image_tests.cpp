@@ -5,6 +5,7 @@
 #include <ppp/project/image_ops.hpp>
 
 Image g_BaseImage{};
+const Config g_Cfg{};
 
 TEST_CASE("Empty image is empty", "[image_empty]")
 {

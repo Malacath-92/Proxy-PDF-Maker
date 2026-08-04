@@ -12,10 +12,13 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
+struct Config;
 class PdfDocument;
 struct Svg;
 
-std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend, const Project& project);
+std::unique_ptr<PdfDocument> CreatePdfDocument(PdfBackend backend,
+                                               const Project& project,
+                                               const Config& config);
 bool IsPageWriteThreadSafe(PdfBackend backend);
 bool IsImageCacheThreadSafe(PdfBackend backend);
 

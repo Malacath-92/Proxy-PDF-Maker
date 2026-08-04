@@ -102,11 +102,11 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
                              const std::vector<ImageCacheData>& backside_images,
                              std::function<const fs::path(const fs::path&)> get_frontside_file,
                              std::function<const fs::path(const fs::path&)> get_backside_file,
+                             PixelDensity max_density,
+                             bool threaded_image_pre_cache,
                              std::atomic_uint32_t& work_signal)
 {
     TRACY_AUTO_SCOPE();
-
-    const PixelDensity max_density{ g_Cfg.m_MaxDPI };
 
     std::vector<std::function<void()>> image_cache_work;
     for (const auto [img, size, rot] : frontside_images)
@@ -142,8 +142,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
             });
     };
 
-    const bool threaded_image_pre_cache{ IsImageCacheThreadSafe(g_Cfg.m_Backend) };
-    if (!threaded_image_pre_cache || g_Cfg.m_DeterminsticPdfOutput)
+    if (!threaded_image_pre_cache)
     {
         for (const auto& work : image_cache_work)
         {
@@ -163,7 +162,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
     return static_cast<uint32_t>(image_cache_work.size());
 }
 
-PdfResults GeneratePdf(const Project& project)
+PdfResults GeneratePdf(const Project& project, const Config& config)
 {
     TRACY_AUTO_SCOPE();
 
@@ -182,9 +181,9 @@ PdfResults GeneratePdf(const Project& project)
     const auto output_dir{ project.GetOutputFolder() };
     const auto backside_output_dir{ project.GetBacksideOutputFolder() };
     const auto get_frontside_file{
-        [&project, &output_dir](const fs::path& card_name)
+        [&project, &config, &output_dir](const fs::path& card_name)
         {
-            if (g_Cfg.m_NoCropMode)
+            if (config.m_NoCropMode)
             {
                 if (fs::exists(project.m_Data.m_UncropDir / card_name))
                 {
@@ -196,9 +195,9 @@ PdfResults GeneratePdf(const Project& project)
         }
     };
     const auto get_backside_file{
-        [&project, &backside_output_dir](const fs::path& card_name)
+        [&project, &config, &backside_output_dir](const fs::path& card_name)
         {
-            if (g_Cfg.m_NoCropMode)
+            if (config.m_NoCropMode)
             {
                 if (fs::exists(project.m_Data.m_UncropDir / card_name))
                 {
@@ -272,14 +271,16 @@ PdfResults GeneratePdf(const Project& project)
     };
 
     const auto pages{ DistributeCardsToPages(project) };
-    const auto transforms{ ComputeTransforms(project) };
+    const auto transforms{ ComputeTransforms(project, config.m_NoCropMode) };
 
     const auto backside_pages{
         project.m_Data.m_BacksideEnabled ? MakeBacksidePages(project, pages)
                                          : std::vector<Page>{}
     };
     const auto backside_transforms{
-        project.m_Data.m_BacksideEnabled ? ComputeBacksideTransforms(project, transforms)
+        project.m_Data.m_BacksideEnabled ? ComputeBacksideTransforms(project,
+                                                                     transforms,
+                                                                     config.m_NoCropMode)
                                          : PageImageTransforms{}
     };
 
@@ -404,11 +405,11 @@ PdfResults GeneratePdf(const Project& project)
         project.m_Data.m_BacksideEnabled && project.m_Data.m_SeparateBacksides
     };
 
-    auto frontside_pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
+    auto frontside_pdf{ CreatePdfDocument(config.m_Backend, project, config) };
 
     auto unique_backside_pdf{
         backsides_on_separate_pdf
-            ? CreatePdfDocument(g_Cfg.m_Backend, project)
+            ? CreatePdfDocument(config.m_Backend, project, config)
             : nullptr
     };
     const auto& backside_pdf{
@@ -421,6 +422,10 @@ PdfResults GeneratePdf(const Project& project)
     const auto backside_images{ CollectUniqueImages(backside_pages, backside_transforms) };
 
     std::atomic_uint32_t cache_work_done{ 0 };
+    const bool threaded_image_pre_cache{
+        !config.m_DeterminsticPdfOutput &&
+        IsImageCacheThreadSafe(config.m_Backend)
+    };
     const auto amount_of_work{
         QueueImageCacheWork(frontside_pdf.get(),
                             frontside_images,
@@ -428,6 +433,8 @@ PdfResults GeneratePdf(const Project& project)
                             backside_images,
                             get_frontside_file,
                             get_backside_file,
+                            config.m_MaxDPI,
+                            threaded_image_pre_cache,
                             cache_work_done)
     };
     auto wait_for_cache_work{
@@ -617,7 +624,7 @@ PdfResults GeneratePdf(const Project& project)
             };
             front_page->SetPageName(page_name);
 
-            if (!g_Cfg.m_DeterminsticPdfOutput && do_render_header)
+            if (!config.m_DeterminsticPdfOutput && do_render_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
@@ -703,7 +710,7 @@ PdfResults GeneratePdf(const Project& project)
             };
             back_page->SetPageName(page_name);
 
-            if (!g_Cfg.m_DeterminsticPdfOutput && do_render_header)
+            if (!config.m_DeterminsticPdfOutput && do_render_header)
             {
                 const Size text_top_left{ 0_mm, page_height - header_top };
                 const Size text_bottom_right{ page_width, page_height - header_top - header_size };
@@ -744,8 +751,8 @@ PdfResults GeneratePdf(const Project& project)
 
     wait_for_cache_work();
 
-    const bool threaded_page_write{ IsPageWriteThreadSafe(g_Cfg.m_Backend) };
-    if (!threaded_page_write || g_Cfg.m_DeterminsticPdfOutput || generate_work.size() < 4)
+    const bool threaded_page_write{ IsPageWriteThreadSafe(config.m_Backend) };
+    if (!threaded_page_write || config.m_DeterminsticPdfOutput || generate_work.size() < 4)
     {
         for (const auto& work : generate_work)
         {
@@ -767,7 +774,7 @@ PdfResults GeneratePdf(const Project& project)
         }
     }
 
-    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name, g_Cfg.m_VersionOutput) };
+    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name, config.m_VersionOutput) };
 
     const auto actual_backside_pdf_name{ frontside_pdf_path.stem().string() + "_backside" };
     auto backside_pdf_path{
@@ -782,7 +789,7 @@ PdfResults GeneratePdf(const Project& project)
     };
 }
 
-fs::path GenerateTestPdf(const Project& project)
+fs::path GenerateTestPdf(const Project& project, const Config& config)
 {
     const auto page_size{ project.ComputePageSize() };
     const auto [page_width, page_height]{ page_size.pod() };
@@ -794,7 +801,7 @@ fs::path GenerateTestPdf(const Project& project)
 
     auto top_alignment_line_y{ 0_mm };
 
-    auto pdf{ CreatePdfDocument(g_Cfg.m_Backend, project) };
+    auto pdf{ CreatePdfDocument(config.m_Backend, project, config) };
 
     PdfPage::LineStyle line_style{
         .m_Thickness = 0.2_mm,
@@ -812,8 +819,8 @@ fs::path GenerateTestPdf(const Project& project)
             const auto text_bb{ front_page->DrawText({ "This is a test page, follow instructions to verify your settings will work fine for proxies.",
                                                        { text_top_left, text_bottom_right } }) };
 
-            const auto backside_offset{ project.m_Data.m_BacksideOffset / UnitValue(g_Cfg.m_BaseUnit) };
-            const auto unit_name{ UnitShortName(g_Cfg.m_BaseUnit) };
+            const auto backside_offset{ project.m_Data.m_BacksideOffset / UnitValue(config.m_BaseUnit) };
+            const auto unit_name{ UnitShortName(config.m_BaseUnit) };
             const auto settings{
                 fmt::format("Settings:\nHorizontal Backside Offset: {:.2f} {}\nVertical Backside Offset: {:.2f} {}\nBackside Rotation: {:.2f} degrees\nFlip On: {}",
                             backside_offset.x,

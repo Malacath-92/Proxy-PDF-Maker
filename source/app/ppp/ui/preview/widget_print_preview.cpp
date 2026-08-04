@@ -65,8 +65,10 @@ class PreviewScrollBar : public QScrollBar
     }
 };
 
-PrintPreview::PrintPreview(Project& project)
+PrintPreview::PrintPreview(Project& project,
+                           const Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
@@ -156,6 +158,7 @@ void PrintPreview::Refresh()
             PagePreview::Params{
                 .m_PageSize{ page_size },
                 .m_IsBackside = false,
+                .m_NoCropMode = m_Cfg.m_NoCropMode,
             },
         });
 
@@ -169,7 +172,7 @@ void PrintPreview::Refresh()
         return;
     }
 
-    m_FrontsideTransforms = ComputeTransforms(m_Project);
+    m_FrontsideTransforms = ComputeTransforms(m_Project, m_Cfg.m_NoCropMode);
 
     struct TempPage
     {
@@ -188,7 +191,9 @@ void PrintPreview::Refresh()
 
     if (m_Project.m_Data.m_BacksideEnabled)
     {
-        m_BacksideTransforms = ComputeBacksideTransforms(m_Project, m_FrontsideTransforms);
+        m_BacksideTransforms = ComputeBacksideTransforms(m_Project,
+                                                         m_FrontsideTransforms,
+                                                         m_Cfg.m_NoCropMode);
 
         const auto raw_backside_pages{ MakeBacksidePages(m_Project, raw_pages) };
         const auto backside_pages{ raw_backside_pages |
@@ -209,7 +214,7 @@ void PrintPreview::Refresh()
     auto page_widgets{
         pages |
         std::views::transform(
-            [&](const TempPage& page)
+            [&, this](const TempPage& page)
             {
                 return new PagePreview{
                     m_Project,
@@ -217,8 +222,9 @@ void PrintPreview::Refresh()
                     page.m_Page,
                     page.m_Transforms.get(),
                     PagePreview::Params{
-                        page_size,
-                        page.m_Backside,
+                        .m_PageSize{ page_size },
+                        .m_IsBackside = page.m_Backside,
+                        .m_NoCropMode = m_Cfg.m_NoCropMode,
                     }
                 };
             }) |

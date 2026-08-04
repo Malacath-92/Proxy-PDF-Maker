@@ -33,9 +33,13 @@ class PngPage final : public PdfPage
     virtual void Finish() override;
 
   private:
+    int32_t ToPixels(Length l);
+    Length FromPixels(int p);
+
     cv::Mat& TargetImage();
 
     const Project* m_Project;
+    const Config* m_Cfg;
 
     std::string m_PageName;
 
@@ -84,7 +88,7 @@ class PngImageCache
 class PngDocument final : public PdfDocument
 {
   public:
-    PngDocument(const Project& project);
+    PngDocument(const Project& project, const Config& config);
     virtual ~PngDocument() override;
 
     virtual void ReservePages(size_t pages) override;
@@ -108,6 +112,7 @@ class PngDocument final : public PdfDocument
     mutable std::mutex m_Mutex;
 
     const Project& m_Project;
+    const Config& m_Cfg;
 
     PixelSize m_PrecomputedCardSize;
 

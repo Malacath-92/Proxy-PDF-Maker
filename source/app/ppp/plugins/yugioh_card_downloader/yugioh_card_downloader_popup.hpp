@@ -6,12 +6,17 @@
 class QCheckBox;
 class QNetworkAccessManager;
 
+struct Config;
+
 class YuGiOhDownloaderPopup : public CardDownloaderPopup
 {
     Q_OBJECT
 
   public:
-    YuGiOhDownloaderPopup(QWidget* parent, Project& project, PluginInterface& router);
+    YuGiOhDownloaderPopup(QWidget* parent,
+                          Project& project,
+                          const Config& config,
+                          PluginInterface& router);
 
   private:
     virtual bool ClearImageFolder() const override;

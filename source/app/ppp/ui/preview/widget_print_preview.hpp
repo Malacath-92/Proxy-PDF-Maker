@@ -8,6 +8,7 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
+struct Config;
 class PagePreview;
 
 class PrintPreview : public QScrollArea
@@ -15,7 +16,8 @@ class PrintPreview : public QScrollArea
     Q_OBJECT
 
   public:
-    PrintPreview(Project& project);
+    PrintPreview(Project& project,
+                 const Config& config);
 
     void Refresh();
     void RequestRefresh();
@@ -43,6 +45,7 @@ class PrintPreview : public QScrollArea
     int ComputeDragScrollDiff() const;
 
     Project& m_Project;
+    const Config& m_Cfg;
 
     bool m_Dragging{ false };
     bool m_DraggingStarted{ false };

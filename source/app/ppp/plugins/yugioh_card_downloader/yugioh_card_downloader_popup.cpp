@@ -14,8 +14,9 @@
 
 YuGiOhDownloaderPopup::YuGiOhDownloaderPopup(QWidget* parent,
                                              Project& project,
+                                             const Config& config,
                                              PluginInterface& router)
-    : CardDownloaderPopup{ parent, project, router }
+    : CardDownloaderPopup{ parent, project, config.m_MaxDPI, router }
 {
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);

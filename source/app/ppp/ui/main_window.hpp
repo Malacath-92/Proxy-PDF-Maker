@@ -20,7 +20,9 @@ class PrintProxyPrepMainWindow : public QMainWindow
     Q_OBJECT
 
   public:
-    PrintProxyPrepMainWindow(QWidget* tabs, QWidget* options);
+    PrintProxyPrepMainWindow(QWidget* tabs,
+                             QWidget* options,
+                             const Config& config);
 
     void OpenAboutPopup();
 
@@ -45,4 +47,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     void StyleDropped(const fs::path& absolute_qss_path) const;
     void ImageDropped(const fs::path& absolute_image_path) const;
     void SvgDropped(const fs::path& absolute_svg_path) const;
+
+  private:
+    const Config& m_Cfg;
 };

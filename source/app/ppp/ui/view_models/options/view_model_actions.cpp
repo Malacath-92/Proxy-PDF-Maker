@@ -11,8 +11,10 @@
 
 #include <ppp/profile/profile.hpp>
 
-ActionsViewModel::ActionsViewModel(Project& project)
+ActionsViewModel::ActionsViewModel(Project& project,
+                                   const Config& config)
     : m_Project{ project }
+    , m_Cfg{ config }
 {
 }
 
@@ -20,7 +22,7 @@ void ActionsViewModel::RenderDocument() const
 {
     TRACY_AUTO_SCOPE();
 
-    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project) };
+    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project, m_Cfg) };
     OpenFile(frontside_path);
     if (backside_path.has_value())
     {
@@ -29,8 +31,8 @@ void ActionsViewModel::RenderDocument() const
 
     if (m_Project.m_Data.m_ExportExactGuides)
     {
-        GenerateCardsSvg(m_Project);
-        GenerateCardsDxf(m_Project);
+        GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode);
+        GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode);
     }
 }
 
