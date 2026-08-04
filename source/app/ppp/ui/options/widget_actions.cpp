@@ -140,7 +140,7 @@ void ActionsWidget::RenderButtonPressed() const
     TRACY_AUTO_SCOPE();
 
     auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-    GenericPopup render_window{ main_window, "Rendering PDF..." };
+    GenericPopup render_window{ nullptr, "Rendering PDF..." };
 
     bool do_error_toast{ false };
     const auto render_work{

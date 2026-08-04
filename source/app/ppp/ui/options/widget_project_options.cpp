@@ -128,7 +128,7 @@ ProjectOptionsWidget::ProjectOptionsWidget(Project& project,
             };
 
             {
-                GenericPopup reload_window{ window(), "Resetting project..." };
+                GenericPopup reload_window{ nullptr, "Resetting project..." };
                 reload_window.ShowDuringWork(reset_project_work);
             }
 
@@ -159,7 +159,7 @@ ProjectOptionsWidget::ProjectOptionsWidget(Project& project,
                 if (new_project_json != application.GetProjectPath())
                 {
                     application.SetProjectPath(new_project_json.value());
-                    GenericPopup reload_window{ window(), "Reloading project..." };
+                    GenericPopup reload_window{ nullptr, "Reloading project..." };
 
                     const auto old_project_data{ std::move(project.m_Data) };
                     const auto load_project_work{
@@ -185,7 +185,7 @@ ProjectOptionsWidget::ProjectOptionsWidget(Project& project,
         {
             TRACY_AUTO_SCOPE();
             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-            GenericPopup render_align_window{ main_window, "Rendering alignment PDF..." };
+            GenericPopup render_align_window{ nullptr, "Rendering alignment PDF..." };
 
             bool do_error_toast{ false };
             const auto render_work{
