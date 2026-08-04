@@ -37,6 +37,7 @@ OptionsAreaWidget::OptionsAreaWidget(
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);
     AddCollapsible(layout, global_options);
+    layout->addStretch();
     layout->setContentsMargins(0, 0, 0, 0);
 
     auto* widget{ new QWidget };
@@ -111,8 +112,8 @@ void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
         widget,
         !application.GetObjectVisibility(widget->objectName()),
     } };
-    layout->insertWidget(layout->count() - 1, collapse_button);
-    layout->insertWidget(layout->count() - 1, widget);
+    layout->addWidget(collapse_button);
+    layout->addWidget(widget);
 
     QObject::connect(collapse_button,
                      &CollapseButton::SetObjectVisibility,
