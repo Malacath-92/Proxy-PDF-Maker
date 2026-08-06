@@ -5,7 +5,7 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
-class PrintPreviewCardImage;
+class PageImageContainer;
 class GuidesOverlay;
 class BordersOverlay;
 class MarginsOverlay;
@@ -27,10 +27,6 @@ class PagePreview : public QWidget
                 const PageImageTransforms& transforms,
                 Params params);
 
-    virtual bool hasHeightForWidth() const override;
-
-    virtual int heightForWidth(int width) const override;
-
     virtual void resizeEvent(QResizeEvent* event) override;
 
   signals:
@@ -40,14 +36,7 @@ class PagePreview : public QWidget
     void RequestRefresh();
 
   private:
-    const PageImageTransforms& m_Transforms;
-
-    Size m_PageSize;
-    float m_PageRatio;
-
-    QWidget* m_ImageContainer{ nullptr };
-    std::vector<PrintPreviewCardImage*> m_Images;
-
+    PageImageContainer* m_ImageContainer{ nullptr };
     GuidesOverlay* m_Guides{ nullptr };
     BordersOverlay* m_Borders{ nullptr };
     MarginsOverlay* m_Margins{ nullptr };

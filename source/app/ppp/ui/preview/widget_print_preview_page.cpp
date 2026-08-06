@@ -1,6 +1,9 @@
 #include <ppp/ui/preview/widget_print_preview_page.hpp>
 
+#include <QPainter>
 #include <QResizeEvent>
+#include <QStyleOption>
+#include <QVBoxLayout>
 
 #include <ppp/project/project.hpp>
 
@@ -10,15 +13,113 @@
 #include <ppp/ui/preview/overlays/widget_guides_overlay.hpp>
 #include <ppp/ui/preview/overlays/widget_margins_overlay.hpp>
 
+class PageBackground : public QWidget
+{
+  public:
+    PageBackground(Size page_size)
+        : m_PageRatio{ page_size.x / page_size.y }
+    {
+        QSizePolicy policy = sizePolicy();
+        policy.setHeightForWidth(true);
+        setSizePolicy(policy);
+    }
+
+    virtual bool hasHeightForWidth() const override
+    {
+        return true;
+    }
+
+    virtual int heightForWidth(int width) const override
+    {
+        return static_cast<int>(static_cast<float>(width) / m_PageRatio);
+    }
+
+    virtual void paintEvent(QPaintEvent* /*event*/) override
+    {
+        QPainter painter{ this };
+        painter.fillRect(rect(), Qt::white);
+    }
+
+  private:
+    float m_PageRatio;
+};
+
+class PageImageContainer : public QWidget
+{
+  public:
+    PageImageContainer(const PageImageTransforms& transforms,
+                       Size page_size)
+        : m_Transforms{ transforms }
+        , m_PageSize{ page_size }
+    {
+        setAttribute(Qt::WA_NoSystemBackground);
+        setAttribute(Qt::WA_TranslucentBackground);
+    }
+
+    void AddImage(PrintPreviewCardImage* image,
+                  QWidget* companion)
+    {
+        image->setParent(this);
+        companion->setParent(this);
+        m_Images.push_back(image);
+    }
+
+    virtual void resizeEvent(QResizeEvent* event) override
+    {
+        QWidget::resizeEvent(event);
+
+        const auto width{ event->size().width() };
+        const auto height{ event->size().height() };
+
+        const dla::ivec2 size{ width, height };
+        const auto pixel_ratio{ size / m_PageSize };
+
+        for (size_t i = 0; i < m_Images.size(); ++i)
+        {
+            const auto& transform{ m_Transforms[i] };
+            const auto card_position{ transform.m_Position * pixel_ratio };
+            const auto card_size{ transform.m_Size * pixel_ratio };
+            const auto card_far_corner{ card_position + card_size };
+
+            const dla::ivec2 card_position_pixels{
+                static_cast<int>(std::floor(card_position.x)),
+                static_cast<int>(std::floor(card_position.y)),
+            };
+            const dla::ivec2 card_far_corner_pixels{
+                static_cast<int>(std::ceil(card_far_corner.x)),
+                static_cast<int>(std::ceil(card_far_corner.y)),
+            };
+
+            auto* card_image{ m_Images[i] };
+            card_image->move(card_position_pixels.x, card_position_pixels.y);
+            card_image->resize(card_far_corner_pixels.x - card_position_pixels.x,
+                               card_far_corner_pixels.y - card_position_pixels.y);
+        }
+    }
+
+  private:
+    const PageImageTransforms& m_Transforms;
+    const Size m_PageSize;
+
+    std::vector<PrintPreviewCardImage*> m_Images;
+};
+
 PagePreview::PagePreview(Project& project,
                          QObject* event_filter,
                          const Page& page,
                          const PageImageTransforms& transforms,
                          Params params)
-    : m_Transforms{ transforms }
 {
-    setProperty("isPageCanvas", true);
-    setStyleSheet("background-color: #ffffff; border: none;");
+    {
+        auto* bg_widget{ new PageBackground{ params.m_PageSize } };
+
+        auto* bg_layout{ new QVBoxLayout };
+        bg_layout->setContentsMargins(0, 0, 0, 0);
+        bg_layout->setSpacing(0);
+        bg_layout->addWidget(bg_widget);
+
+        setLayout(bg_layout);
+    }
 
     const auto total_bleed_edge{
         params.m_IsBackside
@@ -33,7 +134,7 @@ PagePreview::PagePreview(Project& project,
         total_bleed_edge == 0_mm
     };
 
-    m_ImageContainer = new QWidget;
+    m_ImageContainer = new PageImageContainer{ transforms, params.m_PageSize };
     m_ImageContainer->setParent(this);
 
     for (size_t i = 0; i < page.m_Images.size(); ++i)
@@ -85,7 +186,6 @@ PagePreview::PagePreview(Project& project,
         auto* image_companion{ new QWidget };
         image_companion->setVisible(false);
         image_companion->setStyleSheet("background-color: purple;");
-        image_companion->setParent(m_ImageContainer);
 
         const auto bleed_edge{
             params.m_NoCropMode
@@ -112,7 +212,6 @@ PagePreview::PagePreview(Project& project,
         image_widget->EnableContextMenu(true,
                                         project,
                                         CardContextMenuFeatures::Default | CardContextMenuFeatures::SkipSlot);
-        image_widget->setParent(m_ImageContainer);
         image_widget->installEventFilter(event_filter);
 
         QObject::connect(image_widget,
@@ -136,7 +235,7 @@ PagePreview::PagePreview(Project& project,
                              RequestRefresh();
                          });
 
-        m_Images.push_back(image_widget);
+        m_ImageContainer->AddImage(image_widget, image_companion);
     }
 
     if (project.m_Data.m_EnableGuides && (!params.m_IsBackside || project.m_Data.m_BacksideEnableGuides))
@@ -156,54 +255,11 @@ PagePreview::PagePreview(Project& project,
         m_Margins = new MarginsOverlay{ project, params.m_IsBackside };
         m_Margins->setParent(this);
     }
-
-    const auto& [page_width, page_height]{ params.m_PageSize.pod() };
-    m_PageSize = params.m_PageSize;
-    m_PageRatio = page_width / page_height;
-}
-
-bool PagePreview::hasHeightForWidth() const
-{
-    return true;
-}
-
-int PagePreview::heightForWidth(int width) const
-{
-    return static_cast<int>(static_cast<float>(width) / m_PageRatio);
 }
 
 void PagePreview::resizeEvent(QResizeEvent* event)
 {
-    QWidget::resizeEvent(event);
     m_ImageContainer->resize(event->size());
-
-    const auto width{ event->size().width() };
-    const auto height{ event->size().height() };
-
-    const dla::ivec2 size{ width, height };
-    const auto pixel_ratio{ size / m_PageSize };
-
-    for (size_t i = 0; i < m_Images.size(); ++i)
-    {
-        const auto& transform{ m_Transforms[i] };
-        const auto card_position{ transform.m_Position * pixel_ratio };
-        const auto card_size{ transform.m_Size * pixel_ratio };
-        const auto card_far_corner{ card_position + card_size };
-
-        const dla::ivec2 card_position_pixels{
-            static_cast<int>(std::floor(card_position.x)),
-            static_cast<int>(std::floor(card_position.y)),
-        };
-        const dla::ivec2 card_far_corner_pixels{
-            static_cast<int>(std::ceil(card_far_corner.x)),
-            static_cast<int>(std::ceil(card_far_corner.y)),
-        };
-
-        auto* card_image{ m_Images[i] };
-        card_image->move(card_position_pixels.x, card_position_pixels.y);
-        card_image->resize(card_far_corner_pixels.x - card_position_pixels.x,
-                           card_far_corner_pixels.y - card_position_pixels.y);
-    }
 
     if (m_Guides != nullptr)
     {
