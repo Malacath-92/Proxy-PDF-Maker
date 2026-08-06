@@ -149,6 +149,11 @@ void PopupBase::resizeEvent(QResizeEvent* event)
     }
 }
 
+PrintProxyPrepMainWindow* PopupBase::GetMainWindow() const
+{
+    return static_cast<PrintProxyPrepApplication*>(qApp)->GetMainWindow();
+}
+
 void PopupBase::Recenter()
 {
     const QWidget* parent{ parentWidget() };

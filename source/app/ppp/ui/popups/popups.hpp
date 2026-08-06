@@ -12,6 +12,8 @@
 
 class QLabel;
 
+class PrintProxyPrepMainWindow;
+
 enum class FileDialogType
 {
     Open,
@@ -39,6 +41,8 @@ class PopupBase : public QDialog
     virtual void resizeEvent(QResizeEvent* event) override;
 
   protected:
+    PrintProxyPrepMainWindow* GetMainWindow() const;
+
     void Recenter();
 
     virtual QByteArray GetGeometry();

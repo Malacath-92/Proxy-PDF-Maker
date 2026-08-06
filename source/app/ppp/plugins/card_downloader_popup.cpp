@@ -489,10 +489,9 @@ void CardDownloaderPopup::FinalizeDownload()
 
     m_CancelButton->setText("Close");
 
-    auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
-    main_window->Toast(ToastType::Info,
-                       "Download done",
-                       "All files have been downloaded, you can now close the plugin.");
+    GetMainWindow()->Toast(ToastType::Info,
+                           "Download done",
+                           "All files have been downloaded, you can now close the plugin.");
 }
 
 void CardDownloaderPopup::InstallLogHook()

@@ -41,7 +41,7 @@ PrintProxyPrepApplication::~PrintProxyPrepApplication()
     Save();
 }
 
-void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
+void PrintProxyPrepApplication::SetMainWindow(PrintProxyPrepMainWindow* main_window)
 {
     TRACY_AUTO_SCOPE();
 
@@ -59,7 +59,7 @@ void PrintProxyPrepApplication::SetMainWindow(QMainWindow* main_window)
         m_WindowState.reset();
     }
 }
-QMainWindow* PrintProxyPrepApplication::GetMainWindow() const
+PrintProxyPrepMainWindow* PrintProxyPrepApplication::GetMainWindow() const
 {
     return m_MainWindow;
 }
