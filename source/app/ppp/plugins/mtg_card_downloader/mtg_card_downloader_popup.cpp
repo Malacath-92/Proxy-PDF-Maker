@@ -68,7 +68,8 @@ bool MtgDownloaderPopup::DownloadBacksides() const
 }
 bool MtgDownloaderPopup::FillCorners() const
 {
-    return m_FillCornersCheckbox->isChecked();
+    return m_FillCornersCheckbox->isEnabled() &&
+           m_FillCornersCheckbox->isChecked();
 }
 QString MtgDownloaderPopup::UpscaleModel() const
 {
