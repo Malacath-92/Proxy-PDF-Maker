@@ -77,8 +77,6 @@ int main(int argc, char** argv)
     TRACY_WAIT_CONNECT();
     TRACY_AUTO_SCOPE();
 
-    qputenv("QT_LOGGING_RULES", "qt.text.stylesheets.warning=true;qt.svg=true");
-
 #ifdef WIN32
     {
         static constexpr char c_LocaleName[]{ ".utf-8" };
