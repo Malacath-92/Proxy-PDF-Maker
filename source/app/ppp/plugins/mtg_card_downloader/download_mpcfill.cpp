@@ -206,10 +206,10 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
                 return;
             }
 
-            static constexpr const char c_DownloadScript[]{
-                "https://script.google.com/macros/s/AKfycbw8laScKBfxda2Wb0g63gkYDBdy8NWNxINoC4xDOwnCQ3JMFdruam1MdmNmN4wI5k4/exec"
+            static constexpr const char c_DirectDownload[]{
+                "https://cdn.mpcautofill.com/images/google_drive/full/%1.jpg?dpi=1500&jpgQuality=100"
             };
-            auto request_uri{ QString("%1?id=%2").arg(c_DownloadScript).arg(id) };
+            auto request_uri{ QString(c_DirectDownload).arg(id) };
             m_PendingRequests.push_back({
                 name,
                 request_uri,
@@ -228,7 +228,7 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
     }
     if (m_Set.m_BacksideId.has_value())
     {
-        queue_download("__back.png", m_Set.m_BacksideId.value());
+        queue_download("__back.jpg", m_Set.m_BacksideId.value());
     }
 
     m_TotalRequests = m_PendingRequests.size();
@@ -262,11 +262,11 @@ void MPCFillDownloader::HandleReply(QNetworkReply* reply)
                 }
             }
 
-            return QString{ "__back.png" };
+            return QString{ "__back.jpg" };
         }()
     };
 
-    ImageAvailable(QByteArray::fromBase64(reply->readAll()), file_name);
+    ImageAvailable(reply->readAll(), file_name);
 
     ++m_FinishedRequests;
     Progress(static_cast<int>(m_FinishedRequests),
@@ -292,7 +292,7 @@ std::vector<QString> MPCFillDownloader::GetFiles() const
                               { return back.value().m_Name; })
     };
     std::vector<QString> files{
-        "__back.png"
+        "__back.jpg"
     };
     files.insert(files.end(), frontsides.begin(), frontsides.end());
     files.insert(files.end(), backsides.begin(), backsides.end());
@@ -329,6 +329,11 @@ std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) 
     return {};
 }
 
+QString MPCFillDownloader::DefaultBackside() const
+{
+    return "__back.jpg";
+}
+
 bool MPCFillDownloader::ProvidesBleedEdge() const
 {
     return true;
@@ -336,13 +341,24 @@ bool MPCFillDownloader::ProvidesBleedEdge() const
 
 QString MPCFillDownloader::MPCFillIdFromUrl(const QString& url)
 {
-    return url.split("id=").back();
+    return url.split("full/").back().split(".jpg?").front();
 }
 
 MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDomElement& element)
 {
     auto name{ element.firstChildElement("name").text() };
     name.replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_");
+
+    const auto period{ name.lastIndexOf(".") };
+    if (period != -1)
+    {
+        name = name.first(period) + ".jpg";
+    }
+    else
+    {
+        name += ".jpg";
+    }
+
     auto id{ element.firstChildElement("id").text() };
     auto slots_str{ element.firstChildElement("slots").text().split(",") };
     auto amount{ slots_str.size() };

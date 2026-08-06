@@ -132,6 +132,11 @@ std::vector<QString> ScryfallDownloader::GetDuplicates(const QString& /*file_nam
     return {};
 }
 
+QString ScryfallDownloader::DefaultBackside() const
+{
+    return "__back.png";
+}
+
 bool ScryfallDownloader::ProvidesBleedEdge() const
 {
     return false;

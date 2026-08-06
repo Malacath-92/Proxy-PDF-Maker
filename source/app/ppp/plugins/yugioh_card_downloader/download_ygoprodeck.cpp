@@ -133,6 +133,11 @@ std::vector<QString> YGOProDeckDownloader::GetDuplicates(const QString& /*file_n
     return {};
 }
 
+QString YGOProDeckDownloader::DefaultBackside() const
+{
+    return "__back.png";
+}
+
 bool YGOProDeckDownloader::ProvidesBleedEdge() const
 {
     return false;

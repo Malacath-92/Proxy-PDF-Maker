@@ -36,6 +36,8 @@ class YGOProDeckDownloader : public CardArtDownloader
     virtual std::optional<QString> GetBackside(const QString& file_name) const override;
     virtual std::vector<QString> GetDuplicates(const QString& file_name) const override;
 
+    virtual QString DefaultBackside() const override;
+
     virtual bool ProvidesBleedEdge() const override;
 
   private slots:
