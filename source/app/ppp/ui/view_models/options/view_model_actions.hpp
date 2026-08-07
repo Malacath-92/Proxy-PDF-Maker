@@ -18,6 +18,7 @@ class ActionsViewModel : public QObject
                      const Config& config);
 
   signals:
+    // forward
     void CropperWorking();
     void CropperDone();
     void CropperProgress(float progress);
@@ -30,6 +31,8 @@ class ActionsViewModel : public QObject
     void OpenImagesFolder() const;
 
   private:
+    void EmitDefaults();
+
     Project& m_Project;
     const Config& m_Cfg;
 };

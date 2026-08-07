@@ -20,55 +20,54 @@
 
 #include <ppp/profile/profile.hpp>
 
-ActionsWidget::ActionsWidget(ActionsViewModel* view_model,
-                             PdfBackend backend)
+ActionsWidget::ActionsWidget(ActionsViewModel* view_model)
     : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
     setObjectName("Actions");
-    view_model->setParent(this);
+    m_ViewModel.setParent(this);
 
     auto* set_images_button{ new QPushButton{ "Set Image Folder" } };
     auto* open_images_button{ new QPushButton{ "Open Images" } };
-    auto* render_button{ new QPushButton{ "Render PDF" } };
+    m_RenderButton = new QPushButton{ "Render PDF" };
 
-    auto* cropper_progress_bar{ new QProgressBar };
-    cropper_progress_bar->setAlignment(Qt::AlignCenter);
-    cropper_progress_bar->setFormat("Processing...");
-    cropper_progress_bar->setToolTip("Wait for processing to finish to render your project.");
-    cropper_progress_bar->setVisible(false);
-    cropper_progress_bar->setRange(0, c_ProgressBarResolution);
+    m_CropperProgressBar = new QProgressBar;
+    m_CropperProgressBar->setAlignment(Qt::AlignCenter);
+    m_CropperProgressBar->setFormat("Processing...");
+    m_CropperProgressBar->setToolTip("Wait for processing to finish to render your project.");
+    m_CropperProgressBar->setVisible(false);
+    m_CropperProgressBar->setRange(0, c_ProgressBarResolution);
 
     {
-        auto policy{ render_button->sizePolicy() };
+        auto policy{ m_RenderButton->sizePolicy() };
         policy.setRetainSizeWhenHidden(true);
         policy.setVerticalPolicy(QSizePolicy::Preferred);
         policy.setHorizontalPolicy(QSizePolicy::Ignored);
-        render_button->setSizePolicy(policy);
+        m_RenderButton->setSizePolicy(policy);
     }
 
     {
-        auto policy{ cropper_progress_bar->sizePolicy() };
+        auto policy{ m_CropperProgressBar->sizePolicy() };
         policy.setRetainSizeWhenHidden(true);
         policy.setVerticalPolicy(QSizePolicy::Ignored);
         policy.setHorizontalPolicy(QSizePolicy::Preferred);
-        cropper_progress_bar->setSizePolicy(policy);
+        m_CropperProgressBar->setSizePolicy(policy);
     }
 
-    auto* render_cropper_container{ new QStackedWidget };
-    render_cropper_container->addWidget(render_button);
-    render_cropper_container->addWidget(cropper_progress_bar);
-    render_cropper_container->setCurrentWidget(render_button);
+    m_RenderCropperContainer = new QStackedWidget;
+    m_RenderCropperContainer->addWidget(m_RenderButton);
+    m_RenderCropperContainer->addWidget(m_CropperProgressBar);
+    m_RenderCropperContainer->setCurrentWidget(m_RenderButton);
 
     auto* layout{ new QHBoxLayout };
     layout->addWidget(open_images_button);
     layout->addWidget(set_images_button);
-    layout->addWidget(render_cropper_container);
+    layout->addWidget(m_RenderCropperContainer);
     layout->setContentsMargins(0, 0, 0, 0);
     setLayout(layout);
 
-    QObject::connect(render_button,
+    QObject::connect(m_RenderButton,
                      &QPushButton::clicked,
                      this,
                      &ActionsWidget::RenderButtonPressed);
@@ -78,32 +77,27 @@ ActionsWidget::ActionsWidget(ActionsViewModel* view_model,
                      &ActionsWidget::SetImagesButtonPressed);
     QObject::connect(open_images_button,
                      &QPushButton::clicked,
-                     view_model,
+                     &m_ViewModel,
                      &ActionsViewModel::OpenImagesFolder);
 
-    QObject::connect(view_model,
+    QObject::connect(&m_ViewModel,
                      &ActionsViewModel::CropperWorking,
                      this,
                      &ActionsWidget::CropperWorking);
-    QObject::connect(view_model,
+    QObject::connect(&m_ViewModel,
                      &ActionsViewModel::CropperDone,
                      this,
                      &ActionsWidget::CropperDone);
-    QObject::connect(view_model,
+    QObject::connect(&m_ViewModel,
                      &ActionsViewModel::CropperProgress,
                      this,
                      &ActionsWidget::CropperProgress);
-    QObject::connect(view_model,
+    QObject::connect(&m_ViewModel,
                      &ActionsViewModel::RenderBackendChanged,
                      this,
                      &ActionsWidget::RenderBackendChanged);
 
-    m_RenderCropperContainer = render_cropper_container;
-    m_CropperProgressBar = cropper_progress_bar;
-    m_RenderButton = render_button;
-
-    // Just to set the right default text
-    RenderBackendChanged(backend);
+    m_ViewModel.EmitDefaults();
 }
 
 void ActionsWidget::CropperWorking()

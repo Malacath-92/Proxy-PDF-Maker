@@ -16,8 +16,7 @@ class ActionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    ActionsWidget(ActionsViewModel* view_model,
-                  PdfBackend backend);
+    ActionsWidget(ActionsViewModel* view_model);
 
   private slots:
     void CropperWorking();

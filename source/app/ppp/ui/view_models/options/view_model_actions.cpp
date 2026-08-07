@@ -46,3 +46,8 @@ void ActionsViewModel::OpenImagesFolder() const
 {
     OpenFolder(m_Project.m_Data.m_ImageDir);
 }
+
+void ActionsViewModel::EmitDefaults()
+{
+    RenderBackendChanged(m_Cfg.m_Backend);
+}
