@@ -134,6 +134,13 @@ std::vector<QString> ScryfallDownloader::GetDuplicates(const QString& /*file_nam
 
 QString ScryfallDownloader::DefaultBackside() const
 {
+    for (const auto& card : m_Cards)
+    {
+        if (const auto backside{ GetBackside(card.m_FileName) })
+        {
+            return backside.value();
+        }
+    }
     return "__back.png";
 }
 
