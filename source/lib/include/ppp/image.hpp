@@ -59,6 +59,7 @@ class [[nodiscard]] Image
     Image ClipSvg(const struct Svg& svg) const;
 
     Image FillCorners(::Size real_size, ::Length corner_radius) const;
+    Image FillHoles() const;
 
     Image ApplyColorCube(const cv::Mat& color_cube) const;
 

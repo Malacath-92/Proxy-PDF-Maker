@@ -739,61 +739,81 @@ Image Image::ClipSvg(const Svg& svg) const
 Image Image::FillCorners(::Size real_size, ::Length corner_radius) const
 {
     TRACY_AUTO_SCOPE();
-
     Image rounded{ RoundCorners(real_size, corner_radius) };
-    cv::Mat img{ rounded.m_Impl };
+    return rounded.FillHoles();
+}
 
-    std::vector<cv::Mat> channels{};
-    cv::split(img, channels);
+Image Image::FillHoles() const
+{
+    TRACY_AUTO_SCOPE();
 
-    // Threshold alpha so we only have those pixels left that were completely opaque
-    cv::threshold(channels[3], channels[3], 254, 255, cv::THRESH_BINARY);
-
-    // Convert to float image so we can use channels in cv::multiply
-    for (size_t i = 0; i < 4; ++i)
+    if (m_Impl.channels() != 4)
     {
-        channels[i].convertTo(channels[i], CV_32FC1, 1.0f / 255);
+        return Image{ m_Impl };
     }
 
-    // Cut off anything from the source image that isn't part of the threshold area
-    for (size_t i = 0; i < 3; ++i)
-    {
-        cv::multiply(channels[i], channels[3], channels[i]);
-    }
-
-    // Repeatedly dilate all channels and merge with current iteration until corners
-    // are fully filled
-    for (int radius = 1; channels[3].at<float>(0, 0) < 1.0f; radius *= 2)
-    {
-        cv::Mat kernel{
-            cv::getStructuringElement(cv::MORPH_RECT,
-                                      cv::Size(2 * radius + 1, 2 * radius + 1),
-                                      cv::Point(radius, radius)),
-        };
-
-        for (size_t i = 0; i < 3; ++i)
+    const auto channels{
+        [this]()
         {
-            cv::Mat blurred{};
-            cv::dilate(channels[i], blurred, kernel);
+            std::vector<cv::Mat> split;
+            cv::split(m_Impl, split);
+            return split;
+        }()
+    };
 
-            cv::multiply(channels[i], channels[3], channels[i]);
-            cv::multiply(blurred, cv::Scalar::all(1.0f) - channels[3], blurred);
-            cv::add(blurred, channels[i], channels[i]);
+    const auto& a{ channels[3] };
+
+    cv::Mat mask;
+    cv::threshold(a, mask, 254, 255, cv::THRESH_BINARY_INV);
+
+    const auto& b{ channels[0] };
+    const auto& g{ channels[1] };
+    const auto& r{ channels[2] };
+    cv::Mat bgr;
+    std::vector<cv::Mat> bgr_channels{ b, g, r };
+    cv::merge(bgr_channels, bgr);
+
+    static constexpr auto c_FillHolesImpl{
+        [](cv::Mat& bgr, const cv::Mat& mask)
+        {
+            std::vector<std::vector<cv::Point>> contours;
+            cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+            for (const auto& contour : contours)
+            {
+                const cv::Rect roi{ cv::boundingRect(contour) };
+
+                // Add a 2-pixel padding for context to inpaint
+                static constexpr int c_Padding{ 2 };
+                const auto x{ std::max(0, roi.x - c_Padding) };
+                const auto y{ std::max(0, roi.y - c_Padding) };
+                const auto w{ std::min(bgr.cols - x, roi.width + (c_Padding * 2)) };
+                const auto h{ std::min(bgr.rows - y, roi.height + (c_Padding * 2)) };
+                const cv::Rect roi_padded{ x, y, w, h };
+
+                cv::Mat bgr_local{ bgr(roi_padded) };
+                cv::Mat mask_local{ mask(roi_padded) };
+
+                static constexpr auto c_InpaintRadius{ 1.0 };
+
+                cv::Mat inpainted_local;
+                cv::inpaint(bgr_local, mask_local, inpainted_local, c_InpaintRadius, cv::INPAINT_TELEA);
+                inpainted_local.copyTo(bgr_local);
+            }
         }
+    };
+    c_FillHolesImpl(bgr, mask);
 
-        cv::dilate(channels[3], channels[3], kernel);
-    }
+    const auto a_opaque{ cv::Mat::ones(a.size(), a.type()) * 255 };
 
-    // Convert back to a uchar image
-    for (size_t i = 0; i < 4; ++i)
-    {
-        channels[i].convertTo(channels[i], CV_8UC1, 255.0f);
-    }
+    std::vector<cv::Mat> channels_filled;
+    cv::split(bgr, channels_filled);
+    channels_filled.push_back(a_opaque);
 
-    // Merge channels back and return
-    Image corners_filled{};
-    cv::merge(channels, corners_filled.m_Impl);
-    return corners_filled;
+    cv::Mat img_filled;
+    cv::merge(channels_filled, img_filled);
+
+    return Image{ img_filled };
 }
 
 template<int Channels>
