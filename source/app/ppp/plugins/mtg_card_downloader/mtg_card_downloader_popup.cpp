@@ -68,7 +68,7 @@ bool MtgDownloaderPopup::DownloadBacksides() const
 }
 bool MtgDownloaderPopup::FillCorners() const
 {
-    return m_FillCornersCheckbox->isEnabled() &&
+    return m_InputType != InputType::MPCAutofill &&
            m_FillCornersCheckbox->isChecked();
 }
 QString MtgDownloaderPopup::UpscaleModel() const
