@@ -5,7 +5,7 @@
 #include <vector>
 
 class Project;
-struct Config;
+class Config;
 class PluginInterface;
 
 std::vector<std::string_view> GetPluginNames();

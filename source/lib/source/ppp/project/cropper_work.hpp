@@ -97,7 +97,7 @@ class CropperCropWork : public CropperWork
     ImageDataBase& m_ImageDB;
 
     ProjectData m_Data;
-    Config m_Cfg;
+    ConfigData m_Cfg;
 };
 
 class CropperPreviewWork : public CropperWork
@@ -135,5 +135,5 @@ class CropperPreviewWork : public CropperWork
     ImageDataBase& m_ImageDB;
 
     ProjectData m_Data;
-    Config m_Cfg;
+    ConfigData m_Cfg;
 };

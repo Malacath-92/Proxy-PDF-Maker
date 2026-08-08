@@ -2,56 +2,90 @@
 
 #include <QWidget>
 
-#include <ppp/config.hpp>
+#include <ppp/config_types.hpp>
+#include <ppp/units.hpp>
+#include <ppp/util.hpp>
 
+class QCheckBox;
+class QComboBox;
 class QDoubleSpinBox;
 
-class Project;
-class ComboBoxWithLabel;
+class GlobalOptionsViewModel;
 
 class GlobalOptionsWidget : public QWidget
 {
     Q_OBJECT
 
-  public:
-    GlobalOptionsWidget(Config& config);
+    friend class GlobalOptionsViewModel;
 
-  signals:
+  public:
+    GlobalOptionsWidget(GlobalOptionsViewModel* view_model);
+
+  private slots:
     void AdvancedModeChanged(bool advanced_mode);
 
-    void BaseUnitChanged(Unit base_unit);
+    void NoCropModeChanged(bool no_crop_mode);
+
+    void CheckVersionOnStartupChanged(bool check_version);
+    void ToastTimeoutMSChanged(uint32_t toast_timeout_ms);
+
+    void BasePreviewWidthChanged(Pixel base_preview_width);
+    void MaxDPIChanged(PixelDensity max_dpi);
+
+    void CardOrderChanged(CardOrder card_order);
+    void CardOrderDirectionChanged(CardOrderDirection card_order_direction);
+
+    void MaxWorkerThreadsChanged(uint32_t max_worker_threads);
+
     void DisplayColumnsChanged(uint32_t display_columns);
-    void RenderBackendChanged(PdfBackend backend);
-    void ImageCompressionChanged();
-    void JpgQualityChanged();
-    void ColorCubeChanged();
-    void NoCropModeChanged();
-    void BasePreviewWidthChanged();
-    void MaxDPIChanged();
-    void CardOrderChanged();
-    void CardOrderDirectionChanged();
-    void MaxWorkerThreadsChanged();
+    void MaxDisplayColumnsChanged(uint32_t max_display_columns);
 
-    void PluginEnabled(std::string_view plugin_name);
-    void PluginDisabled(std::string_view plugin_name);
+    void ColorCubeChanged(std::string_view color_cube);
 
-  public slots:
-    void RequestOpenPluginsWindow();
+    void VersionOutputChanged(bool version_output);
 
-    void PageSizesChanged();
-    void CardSizesChanged();
+    void PdfBackendChanged(PdfBackend pdf_backend);
+    void ImageCompressionChanged(ImageCompression compression);
+    void PngCompressionChanged(std::optional<int> png_compression);
+    void JpgQualityChanged(std::optional<int> jpg_quality);
 
-    void MaximumDisplayColumnsChanged(uint32_t maximum_display_columns);
+    void BaseUnitChanged(Unit base_unit);
+
+    void OpenPluginsWindow();
 
     void ColorCubeAdded();
     void StyleAdded();
 
   private:
-    void OpenPluginsWindow();
+    GlobalOptionsViewModel& m_ViewModel;
 
-    Config& m_Cfg;
+    QCheckBox* m_AdvancedMode{ nullptr };
+
+    QComboBox* m_BaseUnit{ nullptr };
 
     QDoubleSpinBox* m_DisplayColumns{ nullptr };
-    ComboBoxWithLabel* m_ColorCube{ nullptr };
-    ComboBoxWithLabel* m_Style{ nullptr };
+
+    QCheckBox* m_VersionOutput{ nullptr };
+
+    QCheckBox* m_RenderToPng{ nullptr };
+    QComboBox* m_ImageFormat{ nullptr };
+    QDoubleSpinBox* m_JpgQuality{ nullptr };
+
+    QComboBox* m_ColorCube{ nullptr };
+
+    QDoubleSpinBox* m_PreviewWidth{ nullptr };
+
+    QCheckBox* m_NoCropMode{ nullptr };
+
+    QDoubleSpinBox* m_MaxDPI{ nullptr };
+
+    QComboBox* m_CardOrder{ nullptr };
+    QComboBox* m_CardOrderDirection{ nullptr };
+
+    QDoubleSpinBox* m_MaxWorkerThreads{ nullptr };
+
+    QComboBox* m_Style{ nullptr };
+
+    QCheckBox* m_CheckVersion{ nullptr };
+    QDoubleSpinBox* m_ToastTimeout{ nullptr };
 };

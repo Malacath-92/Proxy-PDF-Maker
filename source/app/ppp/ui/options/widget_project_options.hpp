@@ -8,7 +8,7 @@ class QPushButton;
 class QProgressBar;
 
 class Project;
-struct Config;
+class Config;
 struct ProjectData;
 
 class ProjectOptionsWidget : public QWidget

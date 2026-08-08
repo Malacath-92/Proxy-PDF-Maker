@@ -7,7 +7,7 @@
 class QWidget;
 
 class Project;
-struct Config;
+class Config;
 
 class PluginInterface : public QObject
 {

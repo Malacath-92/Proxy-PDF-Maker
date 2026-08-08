@@ -5,7 +5,7 @@
 class QVBoxLayout;
 
 class Project;
-struct Config;
+class Config;
 class PluginInterface;
 
 class OptionsAreaWidget : public QScrollArea

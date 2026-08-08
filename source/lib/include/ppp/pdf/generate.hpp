@@ -3,7 +3,7 @@
 #include <ppp/util.hpp>
 
 class Project;
-struct Config;
+class Config;
 
 struct PdfResults
 {

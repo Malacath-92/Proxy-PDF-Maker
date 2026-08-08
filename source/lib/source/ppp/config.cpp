@@ -18,20 +18,7 @@
 
 #include <ppp/profile/profile.hpp>
 
-void Config::SetPdfBackend(PdfBackend backend)
-{
-    m_Backend = backend;
-    if (m_Backend != PdfBackend::PoDoFo)
-    {
-        m_PageSizes.erase(std::string{ Config::c_BasePDFSize });
-    }
-    else
-    {
-        m_PageSizes[std::string{ Config::c_BasePDFSize }] = {};
-    }
-}
-
-auto GetFirstValidPageSizeIter(const Config& cfg)
+auto GetFirstValidPageSizeIter(const ConfigData& cfg)
 {
     if (cfg.m_PageSizes.contains("Letter"))
     {
@@ -53,16 +40,16 @@ auto GetFirstValidPageSizeIter(const Config& cfg)
 
     throw std::logic_error{ "No valid page sizes..." };
 }
-const Config::SizeInfo& Config::GetFirstValidPageSizeInfo() const
+const ConfigData::SizeInfo& ConfigData::GetFirstValidPageSizeInfo() const
 {
     return GetFirstValidPageSizeIter(*this)->second;
 }
-std::string_view Config::GetFirstValidPageSize() const
+std::string_view ConfigData::GetFirstValidPageSize() const
 {
     return GetFirstValidPageSizeIter(*this)->first;
 }
 
-auto GetFirstValidCardSizeIter(const Config& cfg)
+auto GetFirstValidCardSizeIter(const ConfigData& cfg)
 {
     if (cfg.m_CardSizes.contains("Standard"))
     {
@@ -76,48 +63,23 @@ auto GetFirstValidCardSizeIter(const Config& cfg)
 
     throw std::logic_error{ "No valid card sizes..." };
 }
-const Config::CardSizeInfo& Config::GetFirstValidCardSizeInfo() const
+const ConfigData::CardSizeInfo& ConfigData::GetFirstValidCardSizeInfo() const
 {
     return GetFirstValidCardSizeIter(*this)->second;
 }
-std::string_view Config::GetFirstValidCardSize() const
+std::string_view ConfigData::GetFirstValidCardSize() const
 {
     return GetFirstValidCardSizeIter(*this)->first;
 }
 
-bool Config::SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed)
+void Config::Load()
 {
     TRACY_AUTO_SCOPE();
 
-    if (!fs::exists(svg_path))
-    {
-        return false;
-    }
-
-    m_CardSizes[svg_path.stem().string()] = CardSizeInfo{
-        .m_InputBleed{ input_bleed },
-        .m_Hint{},
-        .m_CardSizeScale = 1.0f,
-
-        .m_RoundedRect{ std::nullopt },
-
-        .m_SvgInfo{ {
-            .m_SvgName{ svg_path.filename().string() },
-            .m_Svg{ LoadSvg(svg_path) },
-        } }
-    };
-
-    return true;
-}
-
-Config LoadConfig()
-{
-    TRACY_AUTO_SCOPE();
-
-    Config config{};
+    static_cast<ConfigData&>(*this) = ConfigData{};
     if (!QFile::exists("config.ini"))
     {
-        return config;
+        return;
     }
 
     QSettings settings("config.ini", QSettings::IniFormat);
@@ -127,7 +89,7 @@ Config LoadConfig()
             settings.beginGroup("DEFAULT");
             if (!settings.value("Config.Version").isValid())
             {
-                return config;
+                return;
             }
             settings.endGroup();
         }
@@ -246,16 +208,16 @@ Config LoadConfig()
         {
             settings.beginGroup("DEFAULT");
 
-            config.m_CheckVersionOnStartup = settings.value("Startup.Version.Check", true).toBool();
-            config.m_ToastTimeoutMS = settings.value("Toast.Duration", 8000).toUInt();
+            m_CheckVersionOnStartup = settings.value("Startup.Version.Check", true).toBool();
+            m_ToastTimeoutMS = settings.value("Toast.Duration", 8000).toUInt();
 
-            config.m_AdvancedMode = settings.value("Advanced.Mode", false).toBool();
+            m_AdvancedMode = settings.value("Advanced.Mode", false).toBool();
 
-            config.m_NoCropMode = settings.value("No.Crop.Mode", true).toBool();
+            m_NoCropMode = settings.value("No.Crop.Mode", true).toBool();
 
-            config.m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
-            config.m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
-            config.m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
+            m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
+            m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
+            m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
 
             {
                 const auto card_order{
@@ -264,27 +226,27 @@ Config LoadConfig()
                 const auto card_order_direction{
                     settings.value("Card.Order.Direction", "Ascending").toString().toStdString()
                 };
-                config.m_CardOrder = magic_enum::enum_cast<CardOrder>(card_order)
-                                         .value_or(CardOrder::Alphabetical);
-                config.m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(card_order_direction)
-                                                  .value_or(CardOrderDirection::Ascending);
+                m_CardOrder = magic_enum::enum_cast<CardOrder>(card_order)
+                                  .value_or(CardOrder::Alphabetical);
+                m_CardOrderDirection = magic_enum::enum_cast<CardOrderDirection>(card_order_direction)
+                                           .value_or(CardOrderDirection::Ascending);
             }
 
-            config.m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
-            config.m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
-            config.m_MaxDisplayColumns = settings.value("Display.Columns.Max", 5).toInt();
+            m_MaxWorkerThreads = settings.value("Max.Worker.Threads", 6).toUInt();
+            m_DisplayColumns = settings.value("Display.Columns", 5).toInt();
+            m_MaxDisplayColumns = settings.value("Display.Columns.Max", 5).toInt();
             if (settings.contains("Page.Size"))
             {
-                config.m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
+                m_DefaultPageSize = settings.value("Page.Size", "Letter").toString().toStdString();
             }
-            config.m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
+            m_ColorCube = settings.value("Color.Cube", "None").toString().toStdString();
 
-            config.m_VersionOutput = settings.value("Version.Output", false).toBool();
+            m_VersionOutput = settings.value("Version.Output", false).toBool();
 
             {
                 const auto pdf_backend{ settings.value("PDF.Backend", "PoDoFo").toString().toStdString() };
-                config.SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
-                                         .value_or(PdfBackend::PoDoFo));
+                SetPdfBackend(magic_enum::enum_cast<PdfBackend>(pdf_backend)
+                                  .value_or(PdfBackend::PoDoFo));
             }
 
             {
@@ -293,11 +255,11 @@ Config LoadConfig()
                 {
                     if (pdf_image_format.toString() == "Jpg")
                     {
-                        config.m_PdfImageCompression = ImageCompression::Lossy;
+                        m_PdfImageCompression = ImageCompression::Lossy;
                     }
                     else
                     {
-                        config.m_PdfImageCompression = ImageCompression::Lossless;
+                        m_PdfImageCompression = ImageCompression::Lossless;
                     }
                 }
                 else
@@ -305,8 +267,8 @@ Config LoadConfig()
                     auto pdf_image_compression{ settings.value("PDF.Backend.Image.Compression", "Lossy")
                                                     .toString()
                                                     .toStdString() };
-                    config.m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(pdf_image_compression)
-                                                       .value_or(ImageCompression::Lossy);
+                    m_PdfImageCompression = magic_enum::enum_cast<ImageCompression>(pdf_image_compression)
+                                                .value_or(ImageCompression::Lossy);
                 }
             }
 
@@ -314,7 +276,7 @@ Config LoadConfig()
                 auto png_compression{ settings.value("PDF.Backend.Png.Compression") };
                 if (png_compression.isValid())
                 {
-                    config.m_PngCompression = std::clamp(png_compression.toInt(), 0, 9);
+                    m_PngCompression = std::clamp(png_compression.toInt(), 0, 9);
                 }
             }
 
@@ -322,7 +284,7 @@ Config LoadConfig()
                 auto jpg_quality{ settings.value("PDF.Backend.Jpg.Quality") };
                 if (jpg_quality.isValid())
                 {
-                    config.m_JpgQuality = std::clamp(jpg_quality.toInt(), 0, 100);
+                    m_JpgQuality = std::clamp(jpg_quality.toInt(), 0, 100);
                 }
             }
 
@@ -330,12 +292,12 @@ Config LoadConfig()
                 auto base_unit{ settings.value("Base.Unit") };
                 if (base_unit.isValid())
                 {
-                    config.m_BaseUnit = UnitFromName(base_unit.toString().toStdString())
-                                            .value_or(Unit::Millimeter);
+                    m_BaseUnit = UnitFromName(base_unit.toString().toStdString())
+                                     .value_or(Unit::Millimeter);
                 }
             }
 
-            config.m_RenderZeroBleedRoundedEdges = settings.value("Content.Creator.Mode", false).toBool();
+            m_RenderZeroBleedRoundedEdges = settings.value("Content.Creator.Mode", false).toBool();
 
             settings.endGroup();
         }
@@ -345,7 +307,7 @@ Config LoadConfig()
 
             for (const auto& key : settings.allKeys())
             {
-                config.m_PluginsState[key.toStdString()] = true;
+                m_PluginsState[key.toStdString()] = true;
             }
 
             settings.endGroup();
@@ -356,23 +318,23 @@ Config LoadConfig()
 
             if (settings.allKeys().size())
             {
-                config.m_PageSizes.clear();
-                config.m_PageSizes[std::string{ Config::c_FitSize }] =
+                m_PageSizes.clear();
+                m_PageSizes[std::string{ Config::c_FitSize }] =
                     Config::g_DefaultPageSizes.at(std::string{ Config::c_FitSize });
-                config.m_PageSizes[std::string{ Config::c_BasePDFSize }] =
+                m_PageSizes[std::string{ Config::c_BasePDFSize }] =
                     Config::g_DefaultPageSizes.at(std::string{ Config::c_BasePDFSize });
             }
 
             for (const auto& key : settings.allKeys())
             {
-                if (config.m_PageSizes.contains(key.toStdString()))
+                if (m_PageSizes.contains(key.toStdString()))
                 {
                     continue;
                 }
 
                 if (auto info{ c_ParseSize(settings.value(key).toString().toStdString()) })
                 {
-                    config.m_PageSizes[key.toStdString()] = std::move(info).value();
+                    m_PageSizes[key.toStdString()] = std::move(info).value();
                 }
             }
 
@@ -442,7 +404,7 @@ Config LoadConfig()
             }
         };
 
-        config.m_CardSizes.clear();
+        m_CardSizes.clear();
         for (const QString& group : settings.childGroups())
         {
             if (group.startsWith("CARD_SIZE") && group.indexOf("-") != -1)
@@ -454,22 +416,20 @@ Config LoadConfig()
                     const QStringList card_size_name_split{ group_name_split.begin() + 1, group_name_split.end() };
                     const auto card_size_name_start{ card_size_name_split.join("-") };
                     auto card_size_name{ card_size_name_start.trimmed().toStdString() };
-                    config.m_CardSizes[std::move(card_size_name)] = std::move(card_size_info).value();
+                    m_CardSizes[std::move(card_size_name)] = std::move(card_size_info).value();
                 }
                 settings.endGroup();
             }
         }
 
-        if (config.m_CardSizes.empty())
+        if (m_CardSizes.empty())
         {
-            config.m_CardSizes = Config::g_DefaultCardSizes;
+            m_CardSizes = Config::g_DefaultCardSizes;
         }
     }
-
-    return config;
 }
 
-void SaveConfig(Config config)
+void Config::Save() const
 {
     TRACY_AUTO_SCOPE();
 
@@ -503,55 +463,55 @@ void SaveConfig(Config config)
 
             settings.setValue("Config.Version", ToQString(ConfigFormatVersion()));
 
-            settings.setValue("Startup.Version.Check", config.m_CheckVersionOnStartup);
-            settings.setValue("Toast.Duration", config.m_ToastTimeoutMS);
+            settings.setValue("Startup.Version.Check", m_CheckVersionOnStartup);
+            settings.setValue("Toast.Duration", m_ToastTimeoutMS);
 
-            settings.setValue("Advanced.Mode", config.m_AdvancedMode);
+            settings.setValue("Advanced.Mode", m_AdvancedMode);
 
-            settings.setValue("No.Crop.Mode", config.m_NoCropMode);
+            settings.setValue("No.Crop.Mode", m_NoCropMode);
 
-            settings.setValue("Base.Preview.Width", config.m_BasePreviewWidth / 1_pix);
-            settings.setValue("Max.DPI", config.m_MaxDPI / 1_dpi);
+            settings.setValue("Base.Preview.Width", m_BasePreviewWidth / 1_pix);
+            settings.setValue("Max.DPI", m_MaxDPI / 1_dpi);
 
-            const std::string_view card_order{ magic_enum::enum_name(config.m_CardOrder) };
-            const std::string_view card_order_direction{ magic_enum::enum_name(config.m_CardOrderDirection) };
+            const std::string_view card_order{ magic_enum::enum_name(m_CardOrder) };
+            const std::string_view card_order_direction{ magic_enum::enum_name(m_CardOrderDirection) };
             settings.setValue("Card.Order", ToQString(card_order));
             settings.setValue("Card.Order.Direction", ToQString(card_order_direction));
 
-            settings.setValue("Max.Worker.Threads", config.m_MaxWorkerThreads);
-            settings.setValue("Display.Columns", config.m_DisplayColumns);
-            settings.setValue("Display.Columns.Max", config.m_MaxDisplayColumns);
-            settings.setValue("Color.Cube", ToQString(config.m_ColorCube));
-            settings.setValue("Version.Output", config.m_VersionOutput);
+            settings.setValue("Max.Worker.Threads", m_MaxWorkerThreads);
+            settings.setValue("Display.Columns", m_DisplayColumns);
+            settings.setValue("Display.Columns.Max", m_MaxDisplayColumns);
+            settings.setValue("Color.Cube", ToQString(m_ColorCube));
+            settings.setValue("Version.Output", m_VersionOutput);
 
-            const std::string_view pdf_backend{ magic_enum::enum_name(config.m_Backend) };
+            const std::string_view pdf_backend{ magic_enum::enum_name(m_Backend) };
             settings.setValue("PDF.Backend", ToQString(pdf_backend));
             settings.setValue("PDF.Backend.Image.Compression",
-                              ToQString(magic_enum::enum_name(config.m_PdfImageCompression)));
+                              ToQString(magic_enum::enum_name(m_PdfImageCompression)));
 
-            if (config.m_PngCompression.has_value())
+            if (m_PngCompression.has_value())
             {
-                settings.setValue("PDF.Backend.Png.Compression", config.m_PngCompression.value());
+                settings.setValue("PDF.Backend.Png.Compression", m_PngCompression.value());
             }
 
-            if (config.m_JpgQuality.has_value())
+            if (m_JpgQuality.has_value())
             {
-                settings.setValue("PDF.Backend.Jpg.Quality", config.m_JpgQuality.value());
+                settings.setValue("PDF.Backend.Jpg.Quality", m_JpgQuality.value());
             }
 
-            const auto base_unit_name{ UnitName(config.m_BaseUnit) };
+            const auto base_unit_name{ UnitName(m_BaseUnit) };
             settings.setValue("Base.Unit", ToQString(base_unit_name));
 
-            settings.setValue("Content.Creator.Mode", config.m_RenderZeroBleedRoundedEdges);
+            settings.setValue("Content.Creator.Mode", m_RenderZeroBleedRoundedEdges);
 
             settings.endGroup();
         }
 
-        if (std::ranges::contains(config.m_PluginsState | std::views::values, true))
+        if (std::ranges::contains(m_PluginsState | std::views::values, true))
         {
             settings.beginGroup("PLUGINS");
 
-            for (const auto& [plugin_name, plugin_state] : config.m_PluginsState)
+            for (const auto& [plugin_name, plugin_state] : m_PluginsState)
             {
                 if (plugin_state)
                 {
@@ -565,7 +525,7 @@ void SaveConfig(Config config)
         {
             settings.beginGroup("PAGE_SIZES");
 
-            for (const auto& [name, info] : config.m_PageSizes)
+            for (const auto& [name, info] : m_PageSizes)
             {
                 if (name == Config::c_FitSize || name == Config::c_BasePDFSize)
                 {
@@ -603,7 +563,7 @@ void SaveConfig(Config config)
             }
         };
 
-        for (const auto& [card_name, card_size_info] : config.m_CardSizes)
+        for (const auto& [card_name, card_size_info] : m_CardSizes)
         {
             settings.beginGroup("CARD_SIZE - " + card_name);
             c_WriteCardSizeInfo(settings, card_size_info);
@@ -611,4 +571,226 @@ void SaveConfig(Config config)
         }
     }
     settings.sync();
+}
+
+void Config::SetAdvancedMode(bool advanced_mode)
+{
+    if (m_AdvancedMode != advanced_mode)
+    {
+        m_AdvancedMode = advanced_mode;
+        AdvancedModeChanged(advanced_mode);
+    }
+}
+
+void Config::SetNoCropMode(bool no_crop_mode)
+{
+    if (m_NoCropMode != no_crop_mode)
+    {
+        m_NoCropMode = no_crop_mode;
+        NoCropModeChanged(no_crop_mode);
+    }
+}
+
+void Config::SetCheckVersionOnStartup(bool check_version)
+{
+    if (m_CheckVersionOnStartup != check_version)
+    {
+        m_CheckVersionOnStartup = check_version;
+        CheckVersionOnStartupChanged(check_version);
+    }
+}
+void Config::SetToastTimeoutMS(uint32_t toast_timeout_ms)
+{
+    if (m_ToastTimeoutMS != toast_timeout_ms)
+    {
+        m_ToastTimeoutMS = toast_timeout_ms;
+        ToastTimeoutMSChanged(toast_timeout_ms);
+    }
+}
+
+void Config::SetBasePreviewWidth(Pixel base_preview_width)
+{
+    if (m_BasePreviewWidth != base_preview_width)
+    {
+        m_BasePreviewWidth = base_preview_width;
+        BasePreviewWidthChanged(base_preview_width);
+    }
+}
+void Config::SetMaxDPI(PixelDensity max_dpi)
+{
+    if (m_MaxDPI != max_dpi)
+    {
+        m_MaxDPI = max_dpi;
+        MaxDPIChanged(max_dpi);
+    }
+}
+
+void Config::SetCardOrder(CardOrder card_order)
+{
+    if (m_CardOrder != card_order)
+    {
+        m_CardOrder = card_order;
+        CardOrderChanged(card_order);
+    }
+}
+void Config::SetCardOrderDirection(CardOrderDirection card_order_direction)
+{
+    if (m_CardOrderDirection != card_order_direction)
+    {
+        m_CardOrderDirection = card_order_direction;
+        CardOrderDirectionChanged(card_order_direction);
+    }
+}
+
+void Config::SetMaxWorkerThreads(uint32_t max_worker_threads)
+{
+    if (m_MaxWorkerThreads != max_worker_threads)
+    {
+        m_MaxWorkerThreads = max_worker_threads;
+        MaxWorkerThreadsChanged(max_worker_threads);
+    }
+}
+
+void Config::SetDisplayColumns(uint32_t display_columns)
+{
+    if (m_DisplayColumns != display_columns &&
+        display_columns <= m_MaxDisplayColumns)
+    {
+        m_DisplayColumns = display_columns;
+        DisplayColumnsChanged(display_columns);
+    }
+}
+void Config::SetMaxDisplayColumns(uint32_t max_display_columns)
+{
+    if (m_MaxDisplayColumns != max_display_columns)
+    {
+        m_MaxDisplayColumns = max_display_columns;
+        MaxDisplayColumnsChanged(max_display_columns);
+
+        if (max_display_columns < m_DisplayColumns)
+        {
+            SetDisplayColumns(max_display_columns);
+        }
+    }
+}
+
+void Config::SetColorCube(std::string_view color_cube)
+{
+    if (m_ColorCube != color_cube)
+    {
+        m_ColorCube = color_cube;
+        ColorCubeChanged(m_ColorCube);
+    }
+}
+
+void Config::SetVersionOutput(bool version_output)
+{
+    if (m_VersionOutput != version_output)
+    {
+        m_VersionOutput = version_output;
+        VersionOutputChanged(version_output);
+    }
+}
+
+void Config::SetPdfBackend(PdfBackend pdf_backend)
+{
+    if (m_Backend != pdf_backend)
+    {
+        m_Backend = pdf_backend;
+
+        if (m_Backend != PdfBackend::PoDoFo)
+        {
+            m_PageSizes.erase(std::string{ Config::c_BasePDFSize });
+        }
+        else
+        {
+            m_PageSizes[std::string{ Config::c_BasePDFSize }] = {};
+        }
+    }
+}
+void Config::SetImageCompression(ImageCompression compression)
+{
+    if (m_PdfImageCompression != compression)
+    {
+        m_PdfImageCompression = compression;
+        ImageCompressionChanged(compression);
+    }
+}
+void Config::SetPngCompression(std::optional<int> png_compression)
+{
+    if (m_PngCompression != png_compression)
+    {
+        m_PngCompression = png_compression;
+        PngCompressionChanged(png_compression);
+    }
+}
+void Config::SetJpgQuality(std::optional<int> jpg_quality)
+{
+    if (m_JpgQuality != jpg_quality)
+    {
+        m_JpgQuality = jpg_quality;
+        JpgQualityChanged(jpg_quality);
+    }
+}
+
+void Config::SetBaseUnit(Unit base_unit)
+{
+    if (m_BaseUnit != base_unit)
+    {
+        m_BaseUnit = base_unit;
+        BaseUnitChanged(base_unit);
+    }
+}
+
+void Config::EnablePlugin(std::string plugin_name)
+{
+    const auto it{ m_PluginsState.find(plugin_name) };
+    if (it == m_PluginsState.end())
+    {
+        auto [insert_it, _]{
+            m_PluginsState
+                .emplace(std::pair{ std::move(plugin_name), true })
+        };
+        PluginEnabled(insert_it->first);
+    }
+    else if (it->second != true)
+    {
+        it->second = true;
+        PluginEnabled(it->first);
+    }
+}
+void Config::DisablePlugin(std::string plugin_name)
+{
+    const auto it{ m_PluginsState.find(plugin_name) };
+    if (it != m_PluginsState.end() && it->second)
+    {
+        it->second = false;
+        PluginDisabled(it->first);
+    }
+}
+
+bool Config::SvgCardSizeAdded(const fs::path& svg_path,
+                              LengthInfo input_bleed)
+{
+    TRACY_AUTO_SCOPE();
+
+    if (!fs::exists(svg_path))
+    {
+        return false;
+    }
+
+    m_CardSizes[svg_path.stem().string()] = CardSizeInfo{
+        .m_InputBleed{ input_bleed },
+        .m_Hint{},
+        .m_CardSizeScale = 1.0f,
+
+        .m_RoundedRect{ std::nullopt },
+
+        .m_SvgInfo{ {
+            .m_SvgName{ svg_path.filename().string() },
+            .m_Svg{ LoadSvg(svg_path) },
+        } }
+    };
+
+    return true;
 }

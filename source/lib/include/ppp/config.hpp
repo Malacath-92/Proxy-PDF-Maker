@@ -5,44 +5,14 @@
 #include <optional>
 #include <string>
 
+#include <QObject>
+
+#include <ppp/config_types.hpp>
 #include <ppp/svg/util.hpp>
 #include <ppp/units.hpp>
 #include <ppp/util.hpp>
 
-enum class CardOrder
-{
-    Alphabetical,
-    Backside,
-    LastModified,
-    LastAdded,
-};
-
-enum class CardOrderDirection
-{
-    Ascending,
-    Descending,
-};
-
-enum class PdfBackend
-{
-    PoDoFo,
-    Png,
-};
-
-enum class ImageCompression
-{
-    Lossless,
-    Lossy,
-    AsIs,
-};
-
-enum class PageOrientation
-{
-    Portrait,
-    Landscape
-};
-
-struct Config
+struct ConfigData
 {
     bool m_AdvancedMode{ false };
 
@@ -52,22 +22,32 @@ struct Config
     uint32_t m_ToastTimeoutMS{ 8000 };
 
     bool m_EnableFancyUncrop{ true };
+
     Pixel m_BasePreviewWidth{ 512_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };
+
     CardOrder m_CardOrder{ CardOrder::Alphabetical };
     CardOrderDirection m_CardOrderDirection{ CardOrderDirection::Ascending };
+
     uint32_t m_MaxWorkerThreads{ 16 };
+
     uint32_t m_DisplayColumns{ 5 };
     uint32_t m_MaxDisplayColumns{ 5 };
+
     std::optional<std::string> m_DefaultCardSize{};
     std::optional<std::string> m_DefaultPageSize{};
+
     std::string m_ColorCube{ "None" };
+
     fs::path m_FallbackName{ "fallback.png"_p };
+
     bool m_VersionOutput{ false };
+
     PdfBackend m_Backend{ PdfBackend::PoDoFo };
     ImageCompression m_PdfImageCompression{ ImageCompression::Lossy };
     std::optional<int> m_PngCompression{ std::nullopt };
     std::optional<int> m_JpgQuality{ std::nullopt };
+
     Unit m_BaseUnit{ Unit::Inches };
 
     bool m_DeterminsticPdfOutput{ false };
@@ -211,16 +191,90 @@ struct Config
     };
     std::map<std::string, CardSizeInfo> m_CardSizes{ g_DefaultCardSizes };
 
-    void SetPdfBackend(PdfBackend backend);
-
     std::string_view GetFirstValidPageSize() const;
     const SizeInfo& GetFirstValidPageSizeInfo() const;
 
     std::string_view GetFirstValidCardSize() const;
     const CardSizeInfo& GetFirstValidCardSizeInfo() const;
-
-    bool SvgCardSizeAdded(const fs::path& svg_path, LengthInfo input_bleed = { 0.12_in, Unit::Inches, 2u });
 };
 
-Config LoadConfig();
-void SaveConfig(Config config);
+class Config
+    : public QObject,
+      public ConfigData
+{
+    Q_OBJECT
+
+  public:
+    void Load();
+    void Save() const;
+
+    void SetAdvancedMode(bool advanced_mode);
+
+    void SetNoCropMode(bool no_crop_mode);
+
+    void SetCheckVersionOnStartup(bool check_version);
+    void SetToastTimeoutMS(uint32_t toast_timeout_ms);
+
+    void SetBasePreviewWidth(Pixel base_preview_width);
+    void SetMaxDPI(PixelDensity max_dpi);
+
+    void SetCardOrder(CardOrder card_order);
+    void SetCardOrderDirection(CardOrderDirection card_order_direction);
+
+    void SetMaxWorkerThreads(uint32_t max_worker_threads);
+
+    void SetDisplayColumns(uint32_t display_columns);
+    void SetMaxDisplayColumns(uint32_t max_display_columns);
+
+    void SetColorCube(std::string_view color_cube);
+
+    void SetVersionOutput(bool version_output);
+
+    void SetPdfBackend(PdfBackend pdf_backend);
+    void SetImageCompression(ImageCompression compression);
+    void SetPngCompression(std::optional<int> png_compression);
+    void SetJpgQuality(std::optional<int> jpg_quality);
+
+    void SetBaseUnit(Unit base_unit);
+
+    void EnablePlugin(std::string plugin_name);
+    void DisablePlugin(std::string plugin_name);
+
+    bool SvgCardSizeAdded(const fs::path& svg_path,
+                          LengthInfo input_bleed = { 0.12_in, Unit::Inches, 2u });
+
+    // TODO: Setters/Signals for add/remove card/page size
+
+  signals:
+    void AdvancedModeChanged(bool advanced_mode);
+
+    void NoCropModeChanged(bool no_crop_mode);
+
+    void CheckVersionOnStartupChanged(bool check_version);
+    void ToastTimeoutMSChanged(uint32_t toast_timeout_ms);
+
+    void BasePreviewWidthChanged(Pixel base_preview_width);
+    void MaxDPIChanged(PixelDensity max_dpi);
+
+    void CardOrderChanged(CardOrder card_order);
+    void CardOrderDirectionChanged(CardOrderDirection card_order_direction);
+
+    void MaxWorkerThreadsChanged(uint32_t max_worker_threads);
+
+    void DisplayColumnsChanged(uint32_t display_columns);
+    void MaxDisplayColumnsChanged(uint32_t max_display_columns);
+
+    void ColorCubeChanged(std::string_view color_cube);
+
+    void VersionOutputChanged(bool version_output);
+
+    void PdfBackendChanged(PdfBackend pdf_backend);
+    void ImageCompressionChanged(ImageCompression compression);
+    void PngCompressionChanged(std::optional<int> png_compression);
+    void JpgQualityChanged(std::optional<int> jpg_quality);
+
+    void BaseUnitChanged(Unit base_unit);
+
+    void PluginEnabled(std::string_view plugin_name);
+    void PluginDisabled(std::string_view plugin_name);
+};

@@ -167,40 +167,40 @@ struct ProjectData
     Length m_GuidesLength{ 1.5_mm };
 
     // Utility functions
-    fs::path GetOutputFolder(const Config& config) const;
-    fs::path GetBacksideOutputFolder(const Config& config) const;
+    fs::path GetOutputFolder(const ConfigData& config) const;
+    fs::path GetBacksideOutputFolder(const ConfigData& config) const;
 
     struct CardLayout
     {
         dla::uvec2 m_CardLayoutVertical;
         dla::uvec2 m_CardLayoutHorizontal;
     };
-    CardLayout ComputeAutoCardLayout(const Config& config, Size available_space) const;
-    dla::uvec2 ComputeCardLayout(const Config& config,
+    CardLayout ComputeAutoCardLayout(const ConfigData& config, Size available_space) const;
+    dla::uvec2 ComputeCardLayout(const ConfigData& config,
                                  Size available_space,
                                  CardOrientation orientation) const;
 
-    Size ComputePageSize(const Config& config) const;
-    Size ComputeExactBordersSize(const Config& config) const;
-    Size ComputeCardsSize(const Config& config) const;
+    Size ComputePageSize(const ConfigData& config) const;
+    Size ComputeExactBordersSize(const ConfigData& config) const;
+    Size ComputeCardsSize(const ConfigData& config) const;
     Size ComputeCardsSize(const Size& card_size_with_bleed, const dla::uvec2& card_layout) const;
-    Margins ComputeMargins(const Config& config) const;
-    Size ComputeMaxMargins(const Config& config) const;
-    Size ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const;
-    Size ComputeDefaultMargins(const Config& config) const;
+    Margins ComputeMargins(const ConfigData& config) const;
+    Size ComputeMaxMargins(const ConfigData& config) const;
+    Size ComputeMaxMargins(const ConfigData& config, MarginsMode margins_mode) const;
+    Size ComputeDefaultMargins(const ConfigData& config) const;
 
-    const Config::CardSizeInfo& CardSizeInfo(const Config& config) const;
-    float CardRatio(const Config& config) const;
-    Size CardSize(const Config& config) const;
-    Size CardSizeWithBleed(const Config& config) const;
-    Size CardSizeWithFullBleed(const Config& config) const;
-    Length CardFullBleed(const Config& config) const;
+    const Config::CardSizeInfo& CardSizeInfo(const ConfigData& config) const;
+    float CardRatio(const ConfigData& config) const;
+    Size CardSize(const ConfigData& config) const;
+    Size CardSizeWithBleed(const ConfigData& config) const;
+    Size CardSizeWithFullBleed(const ConfigData& config) const;
+    Length CardFullBleed(const ConfigData& config) const;
 
-    bool IsCardRoundedRect(const Config& config) const;
-    Length CardCornerRadius(const Config& config) const;
+    bool IsCardRoundedRect(const ConfigData& config) const;
+    Length CardCornerRadius(const ConfigData& config) const;
 
-    bool IsCardSvg(const Config& config) const;
-    const Svg& CardSvgData(const Config& config) const;
+    bool IsCardSvg(const ConfigData& config) const;
+    const Svg& CardSvgData(const ConfigData& config) const;
 };
 
 class JsonProvider;

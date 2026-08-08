@@ -25,10 +25,10 @@ static ProjectData CopyRelevant(const ProjectData& data, const Config& config, b
     return copy_data;
 }
 
-static Config CopyRelevant(const Config& config)
+static ConfigData CopyRelevant(const Config& config)
 {
     TRACY_AUTO_SCOPE();
-    return Config{
+    return ConfigData{
         .m_NoCropMode = config.m_NoCropMode,
         .m_BasePreviewWidth{ config.m_BasePreviewWidth },
         .m_MaxDPI{ config.m_MaxDPI },

@@ -5,7 +5,7 @@
 class QCheckBox;
 class QNetworkAccessManager;
 
-struct Config;
+class Config;
 
 enum class InputType
 {

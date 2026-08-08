@@ -13,7 +13,7 @@ class QLineEdit;
 
 class DefaultBacksidePreview;
 class Project;
-struct Config;
+class Config;
 class LengthSpinBox;
 
 class CardOptionsWidget : public QWidget

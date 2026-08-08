@@ -8,7 +8,7 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
-struct Config;
+class Config;
 class PagePreview;
 
 class PrintPreview : public QScrollArea

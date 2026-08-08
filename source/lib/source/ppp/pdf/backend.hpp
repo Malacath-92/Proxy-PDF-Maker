@@ -12,7 +12,7 @@
 #include <ppp/pdf/util.hpp>
 
 class Project;
-struct Config;
+class Config;
 class PdfDocument;
 struct Svg;
 

@@ -19,7 +19,7 @@
 
 #include <ppp/profile/profile.hpp>
 
-static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction(const Config& config)
+static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction(const ConfigData& config)
 {
     switch (config.m_CardOrder)
     {
@@ -1844,14 +1844,14 @@ void Project::EnsureOutputFolder() const
     }
 }
 
-fs::path ProjectData::GetOutputFolder(const Config& config) const
+fs::path ProjectData::GetOutputFolder(const ConfigData& config) const
 {
     return GetOutputDir(m_CropDir,
                         m_BleedEdge + m_EnvelopeBleedEdge,
                         config.m_ColorCube);
 }
 
-fs::path ProjectData::GetBacksideOutputFolder(const Config& config) const
+fs::path ProjectData::GetBacksideOutputFolder(const ConfigData& config) const
 {
     return GetOutputDir(m_CropDir,
                         m_BleedEdge + m_EnvelopeBleedEdge + m_BacksideExtraBleedEdge,
@@ -1859,7 +1859,7 @@ fs::path ProjectData::GetBacksideOutputFolder(const Config& config) const
 }
 
 ProjectData::CardLayout ProjectData::ComputeAutoCardLayout(
-    const Config& config,
+    const ConfigData& config,
     Size available_space) const
 {
     switch (m_CardOrientation)
@@ -1887,7 +1887,7 @@ ProjectData::CardLayout ProjectData::ComputeAutoCardLayout(
     }
 }
 
-dla::uvec2 ProjectData::ComputeCardLayout(const Config& config,
+dla::uvec2 ProjectData::ComputeCardLayout(const ConfigData& config,
                                           Size available_space,
                                           CardOrientation orientation) const
 {
@@ -1919,7 +1919,7 @@ dla::uvec2 ProjectData::ComputeCardLayout(const Config& config,
     return layout;
 }
 
-Size ProjectData::ComputePageSize(const Config& config) const
+Size ProjectData::ComputePageSize(const ConfigData& config) const
 {
     const bool fit_size{ m_PageSize == Config::c_FitSize };
     const bool infer_size{ m_PageSize == Config::c_BasePDFSize };
@@ -1944,12 +1944,12 @@ Size ProjectData::ComputePageSize(const Config& config) const
     }
 }
 
-Size ProjectData::ComputeExactBordersSize(const Config& config) const
+Size ProjectData::ComputeExactBordersSize(const ConfigData& config) const
 {
     return ComputeCardsSize(config) - m_EnvelopeBleedEdge * 2 - m_BleedEdge * 2;
 }
 
-Size ProjectData::ComputeCardsSize(const Config& config) const
+Size ProjectData::ComputeCardsSize(const ConfigData& config) const
 {
     const bool has_vertical_layout{ m_CardLayoutVertical.x > 0 && m_CardLayoutVertical.y > 0 };
     const bool has_horizontal_layout{ m_CardLayoutHorizontal.x > 0 && m_CardLayoutHorizontal.y > 0 };
@@ -1991,7 +1991,7 @@ Size ProjectData::ComputeCardsSize(const Size& card_size_with_bleed, const dla::
            (card_layout - 1) * m_Spacing + m_EnvelopeBleedEdge * 2;
 }
 
-Margins ProjectData::ComputeMargins(const Config& config) const
+Margins ProjectData::ComputeMargins(const ConfigData& config) const
 {
     // Custom margins take precedence over computed defaults to allow user-defined layouts
     // for specific printing requirements or aesthetic preferences
@@ -2036,12 +2036,12 @@ Margins ProjectData::ComputeMargins(const Config& config) const
     };
 }
 
-Size ProjectData::ComputeMaxMargins(const Config& config) const
+Size ProjectData::ComputeMaxMargins(const ConfigData& config) const
 {
     return ComputeMaxMargins(config, m_MarginsMode);
 }
 
-Size ProjectData::ComputeMaxMargins(const Config& config, MarginsMode margins_mode) const
+Size ProjectData::ComputeMaxMargins(const ConfigData& config, MarginsMode margins_mode) const
 {
     const Size page_size{ ComputePageSize(config) };
     const auto card_size_with_bleed{ CardSizeWithBleed(config) };
@@ -2112,7 +2112,7 @@ Size ProjectData::ComputeMaxMargins(const Config& config, MarginsMode margins_mo
     std::unreachable();
 }
 
-Size ProjectData::ComputeDefaultMargins(const Config& config) const
+Size ProjectData::ComputeDefaultMargins(const ConfigData& config) const
 {
     switch (m_MarginsMode)
     {
@@ -2136,7 +2136,7 @@ Size ProjectData::ComputeDefaultMargins(const Config& config) const
     std::unreachable();
 }
 
-const Config::CardSizeInfo& ProjectData::CardSizeInfo(const Config& config) const
+const Config::CardSizeInfo& ProjectData::CardSizeInfo(const ConfigData& config) const
 {
     const bool has_valid_card_size{ config.m_CardSizes.contains(m_CardSizeChoice) };
     if (!has_valid_card_size)
@@ -2150,7 +2150,7 @@ const Config::CardSizeInfo& ProjectData::CardSizeInfo(const Config& config) cons
                : config.m_CardSizes.begin()->second;
 }
 
-float ProjectData::CardRatio(const Config& config) const
+float ProjectData::CardRatio(const ConfigData& config) const
 {
     const auto& card_size{ CardSize(config) };
     return card_size.x / card_size.y;
@@ -2173,37 +2173,37 @@ inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
     }
 }
 
-Size ProjectData::CardSize(const Config& config) const
+Size ProjectData::CardSize(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale;
 }
 
-Size ProjectData::CardSizeWithBleed(const Config& config) const
+Size ProjectData::CardSizeWithBleed(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return GetCardSize(card_size_info) * card_size_info.m_CardSizeScale + m_BleedEdge * 2;
 }
 
-Size ProjectData::CardSizeWithFullBleed(const Config& config) const
+Size ProjectData::CardSizeWithFullBleed(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return (GetCardSize(card_size_info) + card_size_info.m_InputBleed.m_Dimension * 2) * card_size_info.m_CardSizeScale;
 }
 
-Length ProjectData::CardFullBleed(const Config& config) const
+Length ProjectData::CardFullBleed(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_InputBleed.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
-bool ProjectData::IsCardRoundedRect(const Config& config) const
+bool ProjectData::IsCardRoundedRect(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_RoundedRect.has_value();
 }
 
-Length ProjectData::CardCornerRadius(const Config& config) const
+Length ProjectData::CardCornerRadius(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     if (!card_size_info.m_RoundedRect.has_value())
@@ -2213,13 +2213,13 @@ Length ProjectData::CardCornerRadius(const Config& config) const
     return card_size_info.m_RoundedRect.value().m_CornerRadius.m_Dimension * card_size_info.m_CardSizeScale;
 }
 
-bool ProjectData::IsCardSvg(const Config& config) const
+bool ProjectData::IsCardSvg(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     return card_size_info.m_SvgInfo.has_value();
 }
 
-const Svg& ProjectData::CardSvgData(const Config& config) const
+const Svg& ProjectData::CardSvgData(const ConfigData& config) const
 {
     const auto& card_size_info{ CardSizeInfo(config) };
     if (!card_size_info.m_SvgInfo.has_value())

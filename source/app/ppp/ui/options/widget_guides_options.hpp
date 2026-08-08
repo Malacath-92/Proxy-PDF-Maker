@@ -9,7 +9,7 @@
 class QCheckBox;
 
 class Project;
-struct Config;
+class Config;
 class WidgetWithLabel;
 class LengthSpinBox;
 

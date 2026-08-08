@@ -7,7 +7,7 @@
 
 class QWidget;
 
-struct Config;
+class Config;
 
 void EnableOptionWidgetForDefaults(
     QWidget* widget,

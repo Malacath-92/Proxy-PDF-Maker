@@ -9,7 +9,7 @@ class QComboBox;
 class QLineEdit;
 class QPushButton;
 
-struct Config;
+class Config;
 
 class NewProjectPopup : public PopupBase
 {

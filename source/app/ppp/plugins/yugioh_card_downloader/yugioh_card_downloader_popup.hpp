@@ -6,7 +6,7 @@
 class QCheckBox;
 class QNetworkAccessManager;
 
-struct Config;
+class Config;
 
 class YuGiOhDownloaderPopup : public CardDownloaderPopup
 {
