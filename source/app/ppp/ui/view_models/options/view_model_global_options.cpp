@@ -148,6 +148,8 @@ const std::unordered_map<std::string, bool>& GlobalOptionsViewModel::GetPluginsS
 
 void GlobalOptionsViewModel::EmitDefaults()
 {
+    TRACY_AUTO_SCOPE();
+
     AdvancedModeChanged(m_Cfg.m_AdvancedMode);
 
     NoCropModeChanged(m_Cfg.m_NoCropMode);

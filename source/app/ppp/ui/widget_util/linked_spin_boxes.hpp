@@ -19,7 +19,10 @@ class LinkedSpinBoxes : public QWidget
     LengthSpinBox* First();
     LengthSpinBox* Second();
 
+    void SetLinked(bool linked);
+
   signals:
+    void LinkChanged(bool linked);
     void Linked();
     void UnLinked();
 

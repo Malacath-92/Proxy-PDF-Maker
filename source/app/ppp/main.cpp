@@ -39,6 +39,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
+#include <ppp/ui/view_models/options/view_model_card_options.hpp>
 #include <ppp/ui/view_models/options/view_model_global_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
 
@@ -229,6 +230,7 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
+    auto* card_options_view_model{ new CardOptionsViewModel{ project, config } };
     auto* global_options_view_model{ new GlobalOptionsViewModel{ config } };
 
     auto* actions{ new ActionsWidget{ actions_view_model } };
@@ -239,14 +241,12 @@ int main(int argc, char** argv)
     auto* project_options{ new ProjectOptionsWidget{ project, config } };
     auto* print_options{ new PrintOptionsWidget{ project, config } };
     auto* guides_options{ new GuidesOptionsWidget{ project, config } };
-    auto* card_options{ new CardOptionsWidget{ project, config } };
+    auto* card_options{ new CardOptionsWidget{ card_options_view_model } };
     auto* global_options{ new GlobalOptionsWidget{ global_options_view_model } };
 
     PluginRouter plugin_router{};
-    QObject::connect(&plugin_router, &PluginRouter::PauseCropper, [&cropper]()
-                     { cropper.PauseWork(); });
-    QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, [&cropper]()
-                     { cropper.RestartWork(); });
+    QObject::connect(&plugin_router, &PluginRouter::PauseCropper, &cropper, &Cropper::PauseWork);
+    QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, &cropper, &Cropper::RestartWork);
     QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area, &CardArea::FullRefresh);
 
     QObject::connect(
@@ -263,22 +263,13 @@ int main(int argc, char** argv)
     QObject::connect(
         &plugin_router,
         &PluginRouter::SetEnableBackside,
-        [&](bool enabled)
-        {
-            if (project.SetBacksideEnabled(enabled))
-            {
-                card_options->BacksideEnabledChangedExternal();
-            }
-        });
-
+        &project,
+        &Project::SetBacksideEnabled);
     QObject::connect(
         &plugin_router,
         &PluginRouter::SetBacksideAutoPattern,
-        [&](const std::string& pattern)
-        {
-            project.SetBacksideAutoPattern(pattern);
-            card_options->BacksideAutoPatternChangedExternal(pattern);
-        });
+        &project,
+        &Project::SetBacksideAutoPattern);
 
     auto* options_area{
         new OptionsAreaWidget{
@@ -370,6 +361,38 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(connect_signals_card_options_view_model);
+
+#define FORWARD_SIGNAL_FROM_PROJECT(sig) \
+    FORWARD_SIGNAL_FROM_TO(project, *card_options_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(SeparateBacksidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideDefaultChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideOffsetChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideRotationChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideExtraBleedEdgeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideAutoPatternChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BleedEdgeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(EnvelopeBleedEdgeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(SpacingChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(SpacingLinkedChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CornersChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(ImageDirChanged);
+
+#undef FORWARD_SIGNAL_FROM_PROJECT
+
+#define FORWARD_SIGNAL_FROM_CONFIG(sig) \
+    FORWARD_SIGNAL_FROM_TO(config, *card_options_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_CONFIG(AdvancedModeChanged);
+        FORWARD_SIGNAL_FROM_CONFIG(BaseUnitChanged);
+
+#undef FORWARD_SIGNAL_FROM_CONFIG
+    }
+
+    {
+        TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_global_options_view_model);
 
 #define FORWARD_SIGNAL_FROM_CONFIG(sig) \
@@ -401,11 +424,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_project);
 
-        QObject::connect(&project, &Project::ImageDirChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &project, &Project::EnsureOutputFolder);
-        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &project, &Project::EnsureOutputFolder);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(&config, &Config::NoCropModeChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(&config, &Config::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
@@ -429,9 +448,9 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, &card_provider, &CardProvider::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, &card_provider, &CardProvider::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, &card_provider, &CardProvider::BacksideExtraBleedChanged);
+        QObject::connect(&project, &Project::BleedEdgeChanged, &card_provider, &CardProvider::BleedChanged);
+        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, &card_provider, &CardProvider::BleedChanged);
+        QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, &card_provider, &CardProvider::BacksideExtraBleedChanged);
         QObject::connect(&config, &Config::ColorCubeChanged, &card_provider, &CardProvider::ColorCubeChanged);
         QObject::connect(&config, &Config::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
         QObject::connect(&config, &Config::NoCropModeChanged, &card_provider, &CardProvider::NoCropModeChanged);
@@ -450,9 +469,9 @@ int main(int argc, char** argv)
 
         QObject::connect(&project, &Project::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
-        QObject::connect(card_options, &CardOptionsWidget::CardBacksideChanged, card_area, &CardArea::FullRefresh);
+        QObject::connect(&project, &Project::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
+        QObject::connect(&project, &Project::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
+        QObject::connect(&project, &Project::CardBacksideChanged, card_area, &CardArea::FullRefresh);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, card_area, &CardArea::CardSizeChanged);
         QObject::connect(&config, &Config::DisplayColumnsChanged, card_area, &CardArea::DisplayColumnsChanged);
         QObject::connect(&config, &Config::CardOrderChanged, card_area, &CardArea::CardOrderChanged);
@@ -490,14 +509,14 @@ int main(int argc, char** argv)
         QObject::connect(guides_options, &GuidesOptionsWidget::GuidesLengthChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(guides_options, &GuidesOptionsWidget::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::CornersChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideExtraBleedChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::SpacingChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::CornersChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
 
         QObject::connect(&config, &Config::ColorCubeChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&config, &Config::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);
@@ -516,9 +535,9 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_print_options);
 
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_options, &PrintOptionsWidget::NewProjectOpened);
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, print_options, &PrintOptionsWidget::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::SpacingChanged, print_options, &PrintOptionsWidget::SpacingChanged);
+        QObject::connect(&project, &Project::BleedEdgeChanged, print_options, &PrintOptionsWidget::BleedChanged);
+        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_options, &PrintOptionsWidget::BleedChanged);
+        QObject::connect(&project, &Project::SpacingChanged, print_options, &PrintOptionsWidget::SpacingChanged);
         QObject::connect(&config, &Config::BaseUnitChanged, print_options, &PrintOptionsWidget::BaseUnitChanged);
         QObject::connect(&config, &Config::PdfBackendChanged, print_options, &PrintOptionsWidget::RenderBackendChanged);
     }
@@ -529,9 +548,9 @@ int main(int argc, char** argv)
 
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
         QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::EnvelopeBleedChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
-        QObject::connect(card_options, &CardOptionsWidget::BacksideEnabledChanged, guides_options, &GuidesOptionsWidget::BacksideEnabledChanged);
+        QObject::connect(&project, &Project::BleedEdgeChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
+        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
+        QObject::connect(&project, &Project::BacksideEnabledChanged, guides_options, &GuidesOptionsWidget::BacksideEnabledChanged);
         QObject::connect(&config, &Config::BaseUnitChanged, guides_options, &GuidesOptionsWidget::BaseUnitChanged);
     }
 
@@ -539,9 +558,7 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_card_options);
 
-        QObject::connect(&project, &Project::ImageDirChanged, card_options, &CardOptionsWidget::ImageDirChanged);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_options, &CardOptionsWidget::NewProjectOpened);
-        QObject::connect(&config, &Config::BaseUnitChanged, card_options, &CardOptionsWidget::BaseUnitChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_options_view_model, &CardOptionsViewModel::NewProjectOpened);
     }
 
     {
@@ -565,7 +582,6 @@ int main(int argc, char** argv)
 
         QObject::connect(&config, &Config::AdvancedModeChanged, print_options, &PrintOptionsWidget::AdvancedModeChanged);
         QObject::connect(&config, &Config::AdvancedModeChanged, guides_options, &GuidesOptionsWidget::AdvancedModeChanged);
-        QObject::connect(&config, &Config::AdvancedModeChanged, card_options, &CardOptionsWidget::AdvancedModeChanged);
     }
 
     {

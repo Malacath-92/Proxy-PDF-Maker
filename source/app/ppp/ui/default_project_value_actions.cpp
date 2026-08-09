@@ -72,7 +72,8 @@ nlohmann::json GetValueImpl(QLineEdit* widget)
     return widget->text().toStdString();
 }
 
-nlohmann::json GetDefault(std::string_view path, const Config& config)
+nlohmann::json GetDefault(std::string_view path,
+                          const DefaultDataRequirements& config_reqs)
 {
     const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
     const auto user_default_value{ app->GetProjectDefault(path) };
@@ -83,7 +84,13 @@ nlohmann::json GetDefault(std::string_view path, const Config& config)
     else
     {
         // TODO: Get json-value of app-default per-value rather than the whole project
-        const auto app_default_json{ nlohmann::json::parse(Project{ config }.DumpToJson()) };
+        const auto app_default_json{
+            nlohmann::json::parse(
+                Project::DumpToJson(ProjectData{
+                    config_reqs.m_DefaultCardSize,
+                    config_reqs.m_DefaultPageSize,
+                }))
+        };
         const auto app_default_value{ GetJsonValue(app_default_json, path) };
         return app_default_value;
     }
@@ -96,7 +103,7 @@ void SetAsDefault(std::string_view path, nlohmann::json value)
 
 void EnableOptionWidgetForDefaults(
     QWidget* widget,
-    const Config& config,
+    DefaultDataRequirements config_reqs,
     std::string_view path,
     std::function<void(nlohmann::json)> set_value,
     std::function<nlohmann::json()> get_value)
@@ -154,9 +161,9 @@ void EnableOptionWidgetForDefaults(
                      widget,
                      [set_value = std::move(set_value),
                       path = std::string{ path },
-                      &config]()
+                      config_reqs = std::move(config_reqs)]()
                      {
-                         set_value(GetDefault(path, config));
+                         set_value(GetDefault(path, config_reqs));
                      });
     QObject::connect(set_as_default_action,
                      &QAction::triggered,
@@ -166,6 +173,23 @@ void EnableOptionWidgetForDefaults(
                      {
                          SetAsDefault(path, get_value());
                      });
+}
+void EnableOptionWidgetForDefaults(
+    QWidget* widget,
+    const Config& config,
+    std::string_view path,
+    std::function<void(nlohmann::json)> set_value,
+    std::function<nlohmann::json()> get_value)
+{
+    EnableOptionWidgetForDefaults(
+        widget,
+        DefaultDataRequirements{
+            std::string{ config.GetFirstValidCardSize() },
+            std::string{ config.GetFirstValidPageSize() },
+        },
+        path,
+        std::move(set_value),
+        std::move(get_value));
 }
 void ResetToDefault(
     QWidget* widget)

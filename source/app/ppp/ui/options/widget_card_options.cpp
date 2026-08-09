@@ -6,12 +6,12 @@
 #include <QSlider>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QResizeEvent>
 
 #include <magic_enum/magic_enum.hpp>
 
 #include <nlohmann/json.hpp>
 
-#include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
 #include <ppp/project/project.hpp>
@@ -25,6 +25,9 @@
 #include <ppp/ui/popups/image_browse_popup.hpp>
 #include <ppp/ui/popups/popups.hpp>
 
+#include <ppp/ui/view_models/options/view_model_card_options.hpp>
+#include <ppp/ui/view_models/util.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 class DefaultBacksidePreview : public QWidget
@@ -35,27 +38,18 @@ class DefaultBacksidePreview : public QWidget
     {
         TRACY_AUTO_SCOPE();
 
-        const auto& backside_name{ project.m_Data.m_BacksideDefault };
-
         auto* backside_default_image{ MakeBacksideImage() };
-
-        auto* backside_default_label{ new QLabel{ ClampName(backside_name.has_value()
-                                                                ? ToQString(backside_name.value())
-                                                                : "<clear>") } };
 
         auto* layout{ new QVBoxLayout };
         layout->addWidget(backside_default_image);
-        layout->addWidget(backside_default_label);
         layout->setAlignment(backside_default_image, Qt::AlignmentFlag::AlignHCenter);
-        layout->setAlignment(backside_default_label, Qt::AlignmentFlag::AlignHCenter);
-        layout->setSpacing(0);
         layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
         setLayout(layout);
 
-        setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
+        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
 
         m_DefaultImage = backside_default_image;
-        m_DefaultLabel = backside_default_label;
     }
 
     void Refresh()
@@ -77,12 +71,8 @@ class DefaultBacksidePreview : public QWidget
         }
         else if (had_backside)
         {
-            backside_image->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
+            backside_image->Refresh(backside_name.value(), c_ImageWidth, m_Project);
         }
-
-        m_DefaultLabel->setText(ClampName(backside_name.has_value()
-                                              ? ToQString(backside_name.value())
-                                              : "<clear>"));
     }
 
   private:
@@ -101,108 +91,103 @@ class DefaultBacksidePreview : public QWidget
 
         QWidget* backside_default_image{
             backside_name.has_value()
-                ? static_cast<QWidget*>(new BacksideImage{ backside_name.value(), c_MinimumWidth, m_Project })
-                : new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } }
+                ? static_cast<QWidget*>(new BacksideImage{ backside_name.value(), c_ImageWidth, m_Project })
+                : new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_ImageWidth } } }
         };
 
-        const auto backside_height{ backside_default_image->heightForWidth(c_MinimumWidth.value) };
-        backside_default_image->setFixedWidth(c_MinimumWidth.value);
-        backside_default_image->setFixedHeight(backside_height);
+        backside_default_image->setFixedWidth(c_ImageWidth.value);
 
         return backside_default_image;
     }
 
-    inline static constexpr auto c_MinimumWidth{ 60_pix };
+    inline static constexpr auto c_ImageWidth{ 60_pix };
 
     const Project& m_Project;
 
     QWidget* m_DefaultImage{ nullptr };
-    QLabel* m_DefaultLabel{ nullptr };
 };
 
-CardOptionsWidget::CardOptionsWidget(Project& project,
-                                     const Config& config)
-    : m_Project{ project }
-    , m_Cfg{ config }
+CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
+    : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
     setObjectName("Card Options");
+    m_ViewModel.setParent(this);
 
-    auto* bleed_edge{ new LengthSpinBoxWithLabel{ "&Bleed Edge", m_Cfg.m_BaseUnit } };
+    const auto config_reqs{ m_ViewModel.GetDefaultDataRequirements() };
+    const auto base_unit{ m_ViewModel.GetBaseUnit() };
+
+    auto* bleed_edge{ new LengthSpinBoxWithLabel{ "&Bleed Edge", base_unit } };
     m_BleedEdgeSpin = bleed_edge->GetWidget();
     m_BleedEdgeSpin->ConnectUnitSignals(this);
     m_BleedEdgeSpin->setDecimals(2);
     m_BleedEdgeSpin->setSingleStep(0.1);
-    EnableOptionWidgetForDefaults(m_BleedEdgeSpin, m_Cfg, "bleed_edge_cm");
+    EnableOptionWidgetForDefaults(m_BleedEdgeSpin, config_reqs, "bleed_edge_cm");
 
-    auto* envelope{ new LengthSpinBoxWithLabel{ "En&velope", m_Cfg.m_BaseUnit } };
+    auto* envelope{ new LengthSpinBoxWithLabel{ "En&velope", base_unit } };
     m_EnvelopeSpin = envelope->GetWidget();
     m_EnvelopeSpin->ConnectUnitSignals(this);
     m_EnvelopeSpin->setDecimals(2);
     m_EnvelopeSpin->setSingleStep(0.1);
     m_EnvelopeSpin->setToolTip("Similar to bleed edge, but doesn't increase space between cards.");
-    EnableOptionWidgetForDefaults(m_EnvelopeSpin, m_Cfg, "envelope_bleed_edge_cm");
+    EnableOptionWidgetForDefaults(m_EnvelopeSpin, config_reqs, "envelope_bleed_edge_cm");
 
-    auto* spacing_spin_boxes{ new LinkedSpinBoxes{ project.m_Data.m_SpacingLinked,
-                                                   m_Cfg.m_BaseUnit } };
+    m_Spacing = new LinkedSpinBoxes{ true, base_unit };
 
-    m_HorizontalSpacingSpin = spacing_spin_boxes->First();
+    m_HorizontalSpacingSpin = m_Spacing->First();
     m_HorizontalSpacingSpin->ConnectUnitSignals(this);
     m_HorizontalSpacingSpin->setDecimals(2);
     m_HorizontalSpacingSpin->setSingleStep(0.1);
-    EnableOptionWidgetForDefaults(m_HorizontalSpacingSpin, m_Cfg, "spacing.horizontal");
+    EnableOptionWidgetForDefaults(m_HorizontalSpacingSpin, config_reqs, "spacing.horizontal");
 
-    m_VerticalSpacingSpin = spacing_spin_boxes->Second();
+    m_VerticalSpacingSpin = m_Spacing->Second();
     m_VerticalSpacingSpin->ConnectUnitSignals(this);
     m_VerticalSpacingSpin->setDecimals(2);
     m_VerticalSpacingSpin->setSingleStep(0.1);
-    EnableOptionWidgetForDefaults(m_VerticalSpacingSpin, m_Cfg, "spacing.vertical");
+    EnableOptionWidgetForDefaults(m_VerticalSpacingSpin, config_reqs, "spacing.vertical");
 
-    auto* spacing{ new WidgetWithLabel{ "Card Spacing", spacing_spin_boxes } };
+    auto* spacing{ new WidgetWithLabel{ "Card Spacing", m_Spacing } };
     spacing->layout()->setAlignment(spacing->GetLabel(), Qt::AlignTop);
 
     auto* corners{ new ComboBoxWithLabel{ "Cor&ners",
                                           magic_enum::enum_names<CardCorners>(),
-                                          magic_enum::enum_name(project.m_Data.m_Corners) } };
-    corners->setEnabled(project.m_Data.m_BleedEdge == 0_mm);
+                                          "Rounded" } };
     m_Corners = corners->GetWidget();
     m_Corners->setToolTip("Determines if corners in the rendered pdf are square or rounded, only available if bleed edge is zero.");
-    EnableOptionWidgetForDefaults(m_Corners, m_Cfg, "corners");
+    EnableOptionWidgetForDefaults(m_Corners, config_reqs, "corners");
 
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
-    EnableOptionWidgetForDefaults(m_BacksideCheckbox, m_Cfg, "backside_enabled");
+    EnableOptionWidgetForDefaults(m_BacksideCheckbox, config_reqs, "backside_enabled");
 
     m_SeparateBacksidesCheckbox = new QCheckBox{ "Separate Backsides-PDF" };
     m_SeparateBacksidesCheckbox->setToolTip("Generate two PDFs, one from the frontsides and one for the backsides.");
-    EnableOptionWidgetForDefaults(m_SeparateBacksidesCheckbox, m_Cfg, "separate_backsides");
+    EnableOptionWidgetForDefaults(m_SeparateBacksidesCheckbox, config_reqs, "separate_backsides");
 
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
-    m_BacksideDefaultPreview = new DefaultBacksidePreview{ project };
+    m_BacksideDefaultPreview = new DefaultBacksidePreview{ m_ViewModel.GetProject() };
     EnableOptionWidgetForDefaults(
         m_BacksideDefaultPreview,
-        m_Cfg,
+        config_reqs,
         "backside_default",
-        [this, &project](nlohmann::json default_value)
+        [this](nlohmann::json default_value)
         {
             if (default_value.is_null())
             {
-                project.ClearBacksideDefault();
+                m_ViewModel.ClearBacksideDefault();
             }
             else
             {
-                const auto& default_backside{ default_value.get_ref<const std::string&>() };
-                project.SetBacksideDefault(fs::path{ default_backside });
+                const auto& backside_default{ default_value.get_ref<const std::string&>() };
+                m_ViewModel.ChangeBacksideDefault(ToQString(backside_default));
             }
-            m_BacksideDefaultPreview->Refresh();
-            BacksideDefaultChanged();
         },
-        [&project]() -> nlohmann::json
+        [this]() -> nlohmann::json
         {
-            if (project.m_Data.m_BacksideDefault.has_value())
+            if (auto backside_default{ m_ViewModel.GetBacksideDefault() })
             {
-                return project.m_Data.m_BacksideDefault.value();
+                return backside_default.value();
             }
             else
             {
@@ -211,17 +196,19 @@ CardOptionsWidget::CardOptionsWidget(Project& project,
         });
 
     {
-        m_BacksideOffsetHorizontalSpin = MakeLengthSpinBox(m_Cfg.m_BaseUnit);
+        m_BacksideOffsetHorizontalSpin = MakeLengthSpinBox(base_unit);
         m_BacksideOffsetHorizontalSpin->ConnectUnitSignals(this);
         m_BacksideOffsetHorizontalSpin->setDecimals(2);
         m_BacksideOffsetHorizontalSpin->setSingleStep(0.1);
-        EnableOptionWidgetForDefaults(m_BacksideOffsetHorizontalSpin, m_Cfg, "backside_offset.horizontal");
+        m_BacksideOffsetHorizontalSpin->SetRange(-0.3_in, 0.3_in);
+        EnableOptionWidgetForDefaults(m_BacksideOffsetHorizontalSpin, config_reqs, "backside_offset.horizontal");
 
-        m_BacksideOffsetVerticalSpin = MakeLengthSpinBox(m_Cfg.m_BaseUnit);
+        m_BacksideOffsetVerticalSpin = MakeLengthSpinBox(base_unit);
         m_BacksideOffsetVerticalSpin->ConnectUnitSignals(this);
         m_BacksideOffsetVerticalSpin->setDecimals(2);
         m_BacksideOffsetVerticalSpin->setSingleStep(0.1);
-        EnableOptionWidgetForDefaults(m_BacksideOffsetVerticalSpin, m_Cfg, "backside_offset.vertical");
+        m_BacksideOffsetVerticalSpin->SetRange(-0.3_in, 0.3_in);
+        EnableOptionWidgetForDefaults(m_BacksideOffsetVerticalSpin, config_reqs, "backside_offset.vertical");
 
         auto* inner_layout{ new QVBoxLayout };
         inner_layout->addWidget(m_BacksideOffsetHorizontalSpin);
@@ -236,12 +223,12 @@ CardOptionsWidget::CardOptionsWidget(Project& project,
         m_BacksideOffset = backside_offset_widget;
     }
 
-    auto* backside_bleed{ new LengthSpinBoxWithLabel{ "Backside Extra Bleed", m_Cfg.m_BaseUnit } };
+    auto* backside_bleed{ new LengthSpinBoxWithLabel{ "Backside Extra Bleed", base_unit } };
     m_BacksideExtraBleedEdgeSpin = backside_bleed->GetWidget();
     m_BacksideExtraBleedEdgeSpin->ConnectUnitSignals(this);
     m_BacksideExtraBleedEdgeSpin->setDecimals(2);
     m_BacksideExtraBleedEdgeSpin->setSingleStep(0.1);
-    EnableOptionWidgetForDefaults(m_BacksideExtraBleedEdgeSpin, m_Cfg, "backside_bleed");
+    EnableOptionWidgetForDefaults(m_BacksideExtraBleedEdgeSpin, config_reqs, "backside_bleed");
 
     m_BacksideExtraBleedEdge = backside_bleed;
 
@@ -251,11 +238,11 @@ CardOptionsWidget::CardOptionsWidget(Project& project,
     m_BacksideRotationSpin->setSingleStep(0.1);
     m_BacksideRotationSpin->setRange(-10, 10);
     m_BacksideRotationSpin->setSuffix("deg");
-    EnableOptionWidgetForDefaults(m_BacksideRotationSpin, m_Cfg, "backside_rotation");
+    EnableOptionWidgetForDefaults(m_BacksideRotationSpin, config_reqs, "backside_rotation");
 
     m_BacksideRotation = backside_rotation;
 
-    m_BacksideAutoPattern = new QLineEdit{ ToQString(project.m_Data.m_BacksideAutoPattern) };
+    m_BacksideAutoPattern = new QLineEdit{ "Auto-Pattern" };
     m_BacksideAuto = new WidgetWithLabel{ "Auto-&Pattern", m_BacksideAutoPattern };
 
     auto* layout{ new QVBoxLayout };
@@ -275,439 +262,289 @@ CardOptionsWidget::CardOptionsWidget(Project& project,
     layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     setLayout(layout);
 
-    SetDefaults();
-
-    auto change_bleed_edge{
-        [this, &project, corners](Length v)
-        {
-            if (dla::math::abs(project.m_Data.m_BleedEdge - v) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_BleedEdge = v;
-            BleedChanged();
-
-            const auto total_bleed{ project.m_Data.m_BleedEdge +
-                                    project.m_Data.m_EnvelopeBleedEdge };
-            const bool has_no_bleed_edge{ total_bleed == 0_mm };
-            if (corners->isEnabled() != has_no_bleed_edge)
-            {
-                corners->setEnabled(has_no_bleed_edge);
-                if (project.m_Data.m_Corners == CardCorners::Rounded)
-                {
-                    CornersChanged();
-                }
-            }
-
-            const auto full_bleed{ m_Project.CardFullBleed() };
-            m_EnvelopeSpin->SetRange(0_mm, full_bleed - v);
-            m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - v - m_Project.m_Data.m_EnvelopeBleedEdge);
-        }
-    };
-
-    auto change_envelope{
-        [this, &project, corners](Length v)
-        {
-            if (dla::math::abs(project.m_Data.m_EnvelopeBleedEdge - v) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_EnvelopeBleedEdge = v;
-            EnvelopeBleedChanged();
-
-            const auto total_bleed{ project.m_Data.m_BleedEdge +
-                                    project.m_Data.m_EnvelopeBleedEdge };
-            const bool has_no_bleed_edge{ total_bleed == 0_mm };
-            if (corners->isEnabled() != has_no_bleed_edge)
-            {
-                corners->setEnabled(has_no_bleed_edge);
-                if (project.m_Data.m_Corners == CardCorners::Rounded)
-                {
-                    CornersChanged();
-                }
-            }
-
-            const auto full_bleed{ m_Project.CardFullBleed() };
-            m_BleedEdgeSpin->SetRange(0_mm, full_bleed - v);
-            m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - v - m_Project.m_Data.m_BleedEdge);
-        }
-    };
-
-    auto link_spacing{
-        [this]()
-        {
-            m_Project.m_Data.m_SpacingLinked = true;
-        }
-    };
-
-    auto unlink_spacing{
-        [this]()
-        {
-            m_Project.m_Data.m_SpacingLinked = false;
-        }
-    };
-
-    auto change_horizontal_spacing{
-        [this, &project](Length v)
-        {
-            if (dla::math::abs(project.m_Data.m_Spacing.x - v) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_Spacing.x = v;
-            SpacingChanged();
-        }
-    };
-
-    auto change_vertical_spacing{
-        [this, &project](Length v)
-        {
-            if (dla::math::abs(project.m_Data.m_Spacing.y - v) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_Spacing.y = v;
-            SpacingChanged();
-        }
-    };
-
-    auto change_corners{
-        [this](const QString& t)
-        {
-            const auto new_corners{ magic_enum::enum_cast<CardCorners>(t.toStdString())
-                                        .value_or(CardCorners::Square) };
-            if (new_corners != m_Project.m_Data.m_Corners)
-            {
-                m_Project.m_Data.m_Corners = new_corners;
-                CornersChanged();
-            }
-        }
-    };
-
-    auto switch_backside_enabled{
-        [this, &project](Qt::CheckState s)
-        {
-            const bool enabled{ s == Qt::CheckState::Checked };
-            if (project.SetBacksideEnabled(enabled))
-            {
-                m_SeparateBacksidesCheckbox->setEnabled(enabled);
-                m_SeparateBacksidesCheckbox->setVisible(enabled);
-                m_BacksideDefaultButton->setEnabled(enabled);
-                m_BacksideDefaultButton->setVisible(enabled);
-                m_BacksideDefaultPreview->setVisible(enabled);
-                m_BacksideOffset->setEnabled(enabled);
-                m_BacksideOffset->setVisible(enabled);
-                m_BacksideExtraBleedEdge->setEnabled(enabled);
-                m_BacksideExtraBleedEdge->setVisible(enabled && m_Cfg.m_AdvancedMode);
-                m_BacksideRotation->setEnabled(enabled);
-                m_BacksideRotation->setVisible(enabled && m_Cfg.m_AdvancedMode);
-                m_BacksideAuto->setEnabled(enabled);
-                m_BacksideAuto->setVisible(enabled);
-                BacksideEnabledChanged();
-            }
-        }
-    };
-
-    auto switch_separate_backsides_enabled{
-        [this, &project](Qt::CheckState s)
-        {
-            const bool enabled{ s == Qt::CheckState::Checked };
-            project.m_Data.m_SeparateBacksides = enabled;
-            SeparateBacksidesEnabledChanged();
-        }
-    };
-
     auto pick_backside{
-        [this, &project]()
+        [this]()
         {
-            ImageBrowsePopup image_browser{ window(), project };
+            ImageBrowsePopup image_browser{ window(), m_ViewModel.GetProject() };
             image_browser.setWindowTitle("Choose default backside");
 
-            auto prev_backside{ project.m_Data.m_BacksideDefault };
             if (const auto default_backside_choice{ image_browser.Show() })
             {
-                project.SetBacksideDefault(default_backside_choice.value());
+                m_ViewModel.ChangeBacksideDefault(ToQString(default_backside_choice.value()));
             }
             else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
             {
-                project.ClearBacksideDefault();
+                m_ViewModel.ClearBacksideDefault();
             }
             else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
             {
                 ResetToDefault(m_BacksideDefaultPreview);
-            }
-
-            if (prev_backside != project.m_Data.m_BacksideDefault)
-            {
-                m_BacksideDefaultPreview->Refresh();
-                BacksideDefaultChanged();
-            }
-        }
-    };
-
-    auto change_backside_offset_width{
-        [this, &project](Length v)
-        {
-            project.m_Data.m_BacksideOffset.x = v;
-            BacksideOffsetChanged();
-        }
-    };
-
-    auto change_backside_offset_height{
-        [this, &project](Length v)
-        {
-            project.m_Data.m_BacksideOffset.y = v;
-            BacksideOffsetChanged();
-        }
-    };
-
-    auto change_backside_extra_bleed{
-        [this, &project](Length v)
-        {
-            if (dla::math::abs(project.m_Data.m_BacksideExtraBleedEdge - v) < 0.001_mm)
-            {
-                return;
-            }
-
-            project.m_Data.m_BacksideExtraBleedEdge = v;
-            BacksideExtraBleedChanged();
-        }
-    };
-
-    auto change_backside_rotation{
-        [this, &project](float v)
-        {
-            project.m_Data.m_BacksideRotation = v * 1_deg;
-            BacksideRotationChanged();
-        }
-    };
-
-    auto change_backside_auto_pattern{
-        [this, &project](const QString& pattern)
-        {
-            static constexpr const char c_WarningStyle[]{
-                "QLineEdit{"
-                "border-style: solid;"
-                "border-width: 2px;"
-                "border-color: red"
-                "}"
-            };
-            if (pattern.count('$') != 1)
-            {
-                m_BacksideAutoPattern->setToolTip("Pattern must include exactly one $");
-                m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
-                return;
-            }
-
-            if (pattern == '$')
-            {
-                m_BacksideAutoPattern->setToolTip("Pattern can't be only $");
-                m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
-                return;
-            }
-
-            SetBacksideAutoPatternTooltip();
-            m_BacksideAutoPattern->setStyleSheet("");
-
-            if (project.SetBacksideAutoPattern(pattern.toStdString()))
-            {
-                CardBacksideChanged();
             }
         }
     };
 
     QObject::connect(m_BleedEdgeSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_bleed_edge);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeBleedEdge);
     QObject::connect(m_EnvelopeSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_envelope);
-    QObject::connect(spacing_spin_boxes,
-                     &LinkedSpinBoxes::Linked,
-                     this,
-                     link_spacing);
-    QObject::connect(spacing_spin_boxes,
-                     &LinkedSpinBoxes::UnLinked,
-                     this,
-                     unlink_spacing);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeEnvelopeBleedEdge);
+    QObject::connect(m_Spacing,
+                     &LinkedSpinBoxes::LinkChanged,
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeSpacingLinked);
     QObject::connect(m_HorizontalSpacingSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_horizontal_spacing);
+                     &m_ViewModel,
+                     [this](Length v)
+                     { m_ViewModel.ChangeSpacing(
+                           { v, m_VerticalSpacingSpin->Value() }); });
     QObject::connect(m_VerticalSpacingSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_vertical_spacing);
+                     &m_ViewModel,
+                     [this](Length v)
+                     { m_ViewModel.ChangeSpacing(
+                           { m_HorizontalSpacingSpin->Value(), v }); });
     QObject::connect(m_Corners,
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_corners);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeCorners);
     QObject::connect(m_BacksideCheckbox,
                      &QCheckBox::checkStateChanged,
-                     this,
-                     switch_backside_enabled);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeBacksideEnabled);
     QObject::connect(m_SeparateBacksidesCheckbox,
                      &QCheckBox::checkStateChanged,
-                     this,
-                     switch_separate_backsides_enabled);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeSeparateBacksidesEnabled);
     QObject::connect(m_BacksideDefaultButton,
                      &QPushButton::clicked,
-                     this,
+                     &m_ViewModel,
                      pick_backside);
     QObject::connect(m_BacksideOffsetHorizontalSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_backside_offset_width);
+                     &m_ViewModel,
+                     [this](Length v)
+                     { m_ViewModel.ChangeBacksideOffset(
+                           { v, m_BacksideOffsetVerticalSpin->Value() }); });
     QObject::connect(m_BacksideOffsetVerticalSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_backside_offset_height);
+                     &m_ViewModel,
+                     [this](Length v)
+                     { m_ViewModel.ChangeBacksideOffset(
+                           { m_BacksideOffsetHorizontalSpin->Value(), v }); });
     QObject::connect(m_BacksideExtraBleedEdgeSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_backside_extra_bleed);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeBacksideExtraBleedEdge);
     QObject::connect(m_BacksideRotationSpin,
                      &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_backside_rotation);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeBacksideRotation);
     QObject::connect(m_BacksideAutoPattern,
                      &QLineEdit::textChanged,
-                     this,
-                     change_backside_auto_pattern);
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeBacksideAutoPattern);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AdvancedModeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BaseUnitChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SeparateBacksidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideDefaultChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideOffsetChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideRotationChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideExtraBleedEdgeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideAutoPatternChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BleedEdgeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(EnvelopeBleedEdgeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SpacingChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SpacingLinkedChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CornersChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(ImageDirChanged);
+
+    m_ViewModel.EmitDefaults();
 }
 
-void CardOptionsWidget::NewProjectOpened()
+void CardOptionsWidget::AdvancedModeChanged(bool advanced_mode)
+{
+    // Note: Everything else currently available in basic mode
+    m_BacksideExtraBleedEdge->setVisible(m_BacksideCheckbox->isChecked() && advanced_mode);
+    m_BacksideRotation->setVisible(m_BacksideCheckbox->isChecked() && advanced_mode);
+}
+
+void CardOptionsWidget::BacksideEnabledChanged(bool backside_enabled)
 {
     TRACY_AUTO_SCOPE();
 
-    SetDefaults();
-    ImageDirChanged();
+    m_BacksideCheckbox->setChecked(backside_enabled);
+
+    m_SeparateBacksidesCheckbox->setEnabled(backside_enabled);
+    m_SeparateBacksidesCheckbox->setVisible(backside_enabled);
+
+    m_BacksideDefaultButton->setEnabled(backside_enabled);
+    m_BacksideDefaultButton->setVisible(backside_enabled);
+
+    m_BacksideDefaultPreview->setVisible(backside_enabled);
+
+    m_BacksideOffset->setEnabled(backside_enabled);
+    m_BacksideOffset->setVisible(backside_enabled);
+
+    m_BacksideAuto->setEnabled(backside_enabled);
+    m_BacksideAuto->setVisible(backside_enabled);
+
+    m_BacksideExtraBleedEdge->setVisible(backside_enabled && m_ViewModel.GetAdvancedMode());
+    m_BacksideRotation->setVisible(backside_enabled && m_ViewModel.GetAdvancedMode());
+
+    m_BacksideCheckbox->blockSignals(true);
+    m_BacksideCheckbox->setChecked(backside_enabled);
+    m_BacksideCheckbox->blockSignals(false);
+}
+void CardOptionsWidget::SeparateBacksidesEnabledChanged(bool separate_backsides)
+{
+    m_SeparateBacksidesCheckbox->blockSignals(true);
+    m_SeparateBacksidesCheckbox->setChecked(separate_backsides);
+    m_SeparateBacksidesCheckbox->blockSignals(false);
 }
 
-void CardOptionsWidget::ImageDirChanged()
+void CardOptionsWidget::BacksideDefaultChanged(OptionalImageRef /*backside_card_name*/)
 {
     m_BacksideDefaultPreview->Refresh();
 }
 
-void CardOptionsWidget::AdvancedModeChanged()
+void CardOptionsWidget::BacksideOffsetChanged(Size offset)
 {
-    SetAdvancedWidgetsVisibility();
+    m_BacksideOffsetVerticalSpin->blockSignals(true);
+    m_BacksideOffsetVerticalSpin->SetValue(offset.x);
+    m_BacksideOffsetVerticalSpin->blockSignals(false);
+
+    m_BacksideOffsetHorizontalSpin->blockSignals(true);
+    m_BacksideOffsetHorizontalSpin->SetValue(offset.y);
+    m_BacksideOffsetHorizontalSpin->blockSignals(false);
+}
+void CardOptionsWidget::BacksideRotationChanged(Angle backside_rotation)
+{
+    m_BacksideRotationSpin->blockSignals(true);
+    m_BacksideRotationSpin->setValue(backside_rotation / 1_deg);
+    m_BacksideRotationSpin->blockSignals(false);
+}
+void CardOptionsWidget::BacksideExtraBleedEdgeChanged(Length backside_extra_bleed_edge)
+{
+    m_BacksideExtraBleedEdgeSpin->blockSignals(true);
+    m_BacksideExtraBleedEdgeSpin->SetValue(backside_extra_bleed_edge);
+    m_BacksideExtraBleedEdgeSpin->blockSignals(false);
 }
 
-void CardOptionsWidget::BacksideEnabledChangedExternal()
+void CardOptionsWidget::BacksideAutoPatternChanged(const std::string& pattern_std)
 {
     TRACY_AUTO_SCOPE();
 
-    m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
+    const auto pattern{ ToQString(pattern_std) };
 
-    m_SeparateBacksidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_SeparateBacksidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideAutoPattern->blockSignals(true);
 
-    m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
+    static constexpr const char c_WarningStyle[]{
+        "QLineEdit{"
+        "border-style: solid;"
+        "border-width: 2px;"
+        "border-color: red"
+        "}"
+    };
+    if (pattern.count('$') != 1)
+    {
+        m_BacksideAutoPattern->setToolTip("Pattern must include exactly one $");
+        m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
+    }
+    else if (pattern == '$')
+    {
+        m_BacksideAutoPattern->setToolTip("Pattern can't be only $");
+        m_BacksideAutoPattern->setStyleSheet(c_WarningStyle);
+    }
+    else
+    {
+        m_BacksideAutoPattern->setStyleSheet("");
+    }
 
-    m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
+    m_BacksideAutoPattern->setText(pattern);
 
-    m_BacksideOffsetHorizontalSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetHorizontalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
-    m_BacksideOffsetVerticalSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetVerticalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
-
-    m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
-
-    m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
-    SetBacksideAutoPatternTooltip();
-
-    m_BacksideAuto->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideAuto->setVisible(m_Project.m_Data.m_BacksideEnabled);
-}
-
-void CardOptionsWidget::BacksideAutoPatternChangedExternal(const std::string& pattern)
-{
-    TRACY_AUTO_SCOPE();
-
-    m_BacksideAutoPattern->setText(ToQString(pattern));
-    SetBacksideAutoPatternTooltip();
-}
-
-void CardOptionsWidget::SetDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto full_bleed{ m_Project.CardFullBleed() };
-
-    m_BleedEdgeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_EnvelopeBleedEdge);
-    m_BleedEdgeSpin->SetValue(m_Project.m_Data.m_BleedEdge);
-
-    m_EnvelopeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_BleedEdge);
-    m_EnvelopeSpin->SetValue(m_Project.m_Data.m_EnvelopeBleedEdge);
-
-    m_HorizontalSpacingSpin->SetRange(0_mm, 1_cm);
-    m_HorizontalSpacingSpin->SetValue(m_Project.m_Data.m_Spacing.x);
-
-    m_VerticalSpacingSpin->SetRange(0_mm, 1_cm);
-    m_VerticalSpacingSpin->SetValue(m_Project.m_Data.m_Spacing.y);
-
-    m_Corners->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Corners)));
-
-    m_BacksideCheckbox->setChecked(m_Project.m_Data.m_BacksideEnabled);
-
-    m_SeparateBacksidesCheckbox->setChecked(m_Project.m_Data.m_SeparateBacksides);
-    m_SeparateBacksidesCheckbox->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_SeparateBacksidesCheckbox->setVisible(m_Project.m_Data.m_BacksideEnabled);
-
-    m_BacksideDefaultButton->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideDefaultButton->setVisible(m_Project.m_Data.m_BacksideEnabled);
-
-    m_BacksideDefaultPreview->setVisible(m_Project.m_Data.m_BacksideEnabled);
-
-    m_BacksideOffsetHorizontalSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetHorizontalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.x);
-
-    m_BacksideOffsetVerticalSpin->SetRange(-0.3_in, 0.3_in);
-    m_BacksideOffsetVerticalSpin->SetValue(m_Project.m_Data.m_BacksideOffset.y);
-
-    m_BacksideOffset->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideOffset->setVisible(m_Project.m_Data.m_BacksideEnabled);
-
-    m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - m_Project.m_Data.m_BleedEdge - m_Project.m_Data.m_EnvelopeBleedEdge);
-    m_BacksideExtraBleedEdgeSpin->SetValue(m_Project.m_Data.m_BacksideExtraBleedEdge);
-
-    m_BacksideExtraBleedEdge->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideExtraBleedEdge->setVisible(m_Project.m_Data.m_BacksideEnabled && m_Cfg.m_AdvancedMode);
-
-    m_BacksideRotationSpin->setValue(m_Project.m_Data.m_BacksideRotation / 1_deg);
-
-    m_BacksideRotation->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideRotation->setVisible(m_Project.m_Data.m_BacksideEnabled && m_Cfg.m_AdvancedMode);
-
-    m_BacksideAutoPattern->setText(ToQString(m_Project.m_Data.m_BacksideAutoPattern));
-    SetBacksideAutoPatternTooltip();
-
-    m_BacksideAuto->setEnabled(m_Project.m_Data.m_BacksideEnabled);
-    m_BacksideAuto->setVisible(m_Project.m_Data.m_BacksideEnabled);
-}
-
-void CardOptionsWidget::SetAdvancedWidgetsVisibility()
-{
-    // Note: Everything else currently available in basic mode
-    m_BacksideExtraBleedEdge->setVisible(m_Project.m_Data.m_BacksideEnabled && m_Cfg.m_AdvancedMode);
-    m_BacksideRotation->setVisible(m_Project.m_Data.m_BacksideEnabled && m_Cfg.m_AdvancedMode);
-}
-
-void CardOptionsWidget::SetBacksideAutoPatternTooltip()
-{
-    QString auto_hint{
+    auto auto_hint{
         QString{ "Matches e.g. Esika.png with %1.png" }
             .arg(m_BacksideAutoPattern->text())
             .replace("$", "Esika"),
     };
     m_BacksideAutoPattern->setToolTip(std::move(auto_hint));
+
+    m_BacksideAutoPattern->blockSignals(true);
+}
+
+void CardOptionsWidget::BleedEdgeChanged(Length bleed_edge)
+{
+    m_BleedEdgeSpin->blockSignals(true);
+    m_BleedEdgeSpin->SetValue(bleed_edge);
+    m_BleedEdgeSpin->blockSignals(false);
+
+    const auto total_bleed{ m_ViewModel.GetTotalBleed() };
+    const bool has_no_bleed_edge{ total_bleed == 0_mm };
+    if (m_Corners->isEnabled() != has_no_bleed_edge)
+    {
+        m_Corners->setEnabled(has_no_bleed_edge);
+    }
+
+    const auto full_bleed{ m_ViewModel.GetFullBleed() };
+    m_EnvelopeSpin->SetRange(0_mm, full_bleed - bleed_edge);
+    m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - total_bleed);
+}
+void CardOptionsWidget::EnvelopeBleedEdgeChanged(Length envelope_bleed_edge)
+{
+    m_EnvelopeSpin->blockSignals(true);
+    m_EnvelopeSpin->SetValue(envelope_bleed_edge);
+    m_EnvelopeSpin->blockSignals(false);
+
+    const auto total_bleed{ m_ViewModel.GetTotalBleed() };
+    const bool has_no_bleed_edge{ total_bleed == 0_mm };
+    if (m_Corners->isEnabled() != has_no_bleed_edge)
+    {
+        m_Corners->setEnabled(has_no_bleed_edge);
+    }
+
+    const auto full_bleed{ m_ViewModel.GetFullBleed() };
+    m_BleedEdgeSpin->SetRange(0_mm, full_bleed - envelope_bleed_edge);
+    m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - total_bleed);
+}
+
+void CardOptionsWidget::SpacingChanged(Size spacing)
+{
+    m_HorizontalSpacingSpin->blockSignals(true);
+    m_HorizontalSpacingSpin->SetValue(spacing.x);
+    m_HorizontalSpacingSpin->blockSignals(false);
+
+    m_VerticalSpacingSpin->blockSignals(true);
+    m_VerticalSpacingSpin->SetValue(spacing.y);
+    m_VerticalSpacingSpin->blockSignals(false);
+}
+void CardOptionsWidget::SpacingLinkedChanged(bool spacing_linked)
+{
+    m_HorizontalSpacingSpin->blockSignals(true);
+    m_VerticalSpacingSpin->blockSignals(true);
+    m_Spacing->blockSignals(true);
+
+    m_Spacing->SetLinked(spacing_linked);
+
+    m_Spacing->blockSignals(false);
+    m_VerticalSpacingSpin->blockSignals(false);
+    m_HorizontalSpacingSpin->blockSignals(false);
+}
+
+void CardOptionsWidget::CornersChanged(CardCorners corners)
+{
+    m_Corners->blockSignals(true);
+    m_Corners->setCurrentText(ToQString(magic_enum::enum_name(corners)));
+    m_Corners->blockSignals(false);
+}
+
+void CardOptionsWidget::ImageDirChanged(const fs::path& /*old_path*/,
+                                        const fs::path& /*new_path*/)
+{
+    m_BacksideDefaultPreview->Refresh();
 }

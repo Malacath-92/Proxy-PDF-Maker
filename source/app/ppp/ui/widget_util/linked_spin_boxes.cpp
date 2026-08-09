@@ -42,24 +42,8 @@ LinkedSpinBoxes::LinkedSpinBoxes(bool initially_linked,
 
     QObject::connect(m_ChainButton,
                      &QToolButton::toggled,
-                     [this](bool checked)
-                     {
-                         m_Second->setEnabled(!checked);
-
-                         if (checked)
-                         {
-                             m_ChainButton->setIcon(m_LinkedIcon);
-                             m_Second->SetValue(m_First->Value());
-
-                             Linked();
-                         }
-                         else
-                         {
-                             m_ChainButton->setIcon(m_UnLinkedIcon);
-
-                             UnLinked();
-                         }
-                     });
+                     this,
+                     &LinkedSpinBoxes::SetLinked);
     QObject::connect(m_First,
                      &LengthSpinBox::ValueChanged,
                      [this](Length value)
@@ -79,4 +63,25 @@ LengthSpinBox* LinkedSpinBoxes::First()
 LengthSpinBox* LinkedSpinBoxes::Second()
 {
     return m_Second;
+}
+
+void LinkedSpinBoxes::SetLinked(bool linked)
+{
+    m_Second->setEnabled(!linked);
+
+    if (linked)
+    {
+        m_ChainButton->setIcon(m_LinkedIcon);
+        m_Second->SetValue(m_First->Value());
+
+        LinkChanged(true);
+        Linked();
+    }
+    else
+    {
+        m_ChainButton->setIcon(m_UnLinkedIcon);
+
+        LinkChanged(false);
+        UnLinked();
+    }
 }

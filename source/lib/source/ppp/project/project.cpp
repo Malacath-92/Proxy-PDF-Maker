@@ -99,12 +99,6 @@ fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
     }
 }
 
-ProjectData::ProjectData(const Config& config)
-    : m_CardSizeChoice{ config.GetFirstValidCardSize() }
-    , m_PageSize{ config.GetFirstValidPageSize() }
-{
-}
-
 Project::Project(const Config& config)
     : m_Data{ config }
     , m_Cfg{ config }
@@ -643,16 +637,20 @@ void Project::Dump(const fs::path& json_path) const
 
 std::string Project::DumpToJson() const
 {
+    return Project::DumpToJson(m_Data);
+}
+std::string Project::DumpToJson(const ProjectData& data)
+{
     TRACY_AUTO_SCOPE();
 
     nlohmann::json json{};
     json["version"] = JsonFormatVersion();
 
-    json["image_dir"] = m_Data.m_ImageDir.string();
-    json["img_cache"] = m_Data.m_ImageCache.string();
+    json["image_dir"] = data.m_ImageDir.string();
+    json["img_cache"] = data.m_ImageCache.string();
 
     std::vector<nlohmann::json> cards;
-    for (const auto& card : m_Data.m_Cards)
+    for (const auto& card : data.m_Cards)
     {
         if (!card.m_Transient)
         {
@@ -681,14 +679,14 @@ std::string Project::DumpToJson() const
     }
     json["cards"] = cards;
 
-    if (!m_Data.m_CardsList.empty() && m_Data.m_CardsList != GenerateDefaultCardsSorting())
+    if (!data.m_CardsList.empty() && data.m_CardsList != data.GenerateDefaultCardsSorting())
     {
         std::vector<size_t> cards_list;
-        cards_list.reserve(m_Data.m_CardsList.size());
-        for (const auto& name : m_Data.m_CardsList)
+        cards_list.reserve(data.m_CardsList.size());
+        for (const auto& name : data.m_CardsList)
         {
             const auto idx{
-                FindCard(name) - &m_Data.m_Cards.front()
+                data.FindCard(name) - &data.m_Cards.front()
             };
             cards_list.push_back(static_cast<size_t>(idx));
         }
@@ -700,50 +698,50 @@ std::string Project::DumpToJson() const
         json["cards_order"] = std::array<int, 0>{};
     }
 
-    json["bleed_edge_cm"] = m_Data.m_BleedEdge / 1_cm;
-    json["envelope_bleed_edge_cm"] = m_Data.m_EnvelopeBleedEdge / 1_cm;
+    json["bleed_edge_cm"] = data.m_BleedEdge / 1_cm;
+    json["envelope_bleed_edge_cm"] = data.m_EnvelopeBleedEdge / 1_cm;
     json["spacing"] = nlohmann::json{
-        { "horizontal", m_Data.m_Spacing.x / 1_cm },
-        { "vertical", m_Data.m_Spacing.y / 1_cm },
+        { "horizontal", data.m_Spacing.x / 1_cm },
+        { "vertical", data.m_Spacing.y / 1_cm },
     };
-    json["spacing_linked"] = m_Data.m_SpacingLinked;
-    json["corners"] = magic_enum::enum_name(m_Data.m_Corners);
+    json["spacing_linked"] = data.m_SpacingLinked;
+    json["corners"] = magic_enum::enum_name(data.m_Corners);
 
-    json["backside_enabled"] = m_Data.m_BacksideEnabled;
-    json["separate_backsides"] = m_Data.m_SeparateBacksides;
+    json["backside_enabled"] = data.m_BacksideEnabled;
+    json["separate_backsides"] = data.m_SeparateBacksides;
 
-    if (m_Data.m_BacksideDefault.has_value())
+    if (data.m_BacksideDefault.has_value())
     {
-        json["backside_default"] = m_Data.m_BacksideDefault.value().string();
+        json["backside_default"] = data.m_BacksideDefault.value().string();
     }
     json["backside_offset"] = nlohmann::json{
-        { "horizontal", m_Data.m_BacksideOffset.x / 1_cm },
-        { "vertical", m_Data.m_BacksideOffset.y / 1_cm },
+        { "horizontal", data.m_BacksideOffset.x / 1_cm },
+        { "vertical", data.m_BacksideOffset.y / 1_cm },
     };
-    json["backside_rotation"] = m_Data.m_BacksideRotation / 1_deg;
-    json["backside_bleed"] = m_Data.m_BacksideExtraBleedEdge / 1_cm;
-    json["backside_auto_pattern"] = m_Data.m_BacksideAutoPattern;
+    json["backside_rotation"] = data.m_BacksideRotation / 1_deg;
+    json["backside_bleed"] = data.m_BacksideExtraBleedEdge / 1_cm;
+    json["backside_auto_pattern"] = data.m_BacksideAutoPattern;
 
-    json["card_size"] = m_Data.m_CardSizeChoice;
-    json["page_size"] = m_Data.m_PageSize;
-    json["base_pdf"] = m_Data.m_BasePdf;
-    json["margins_mode"] = magic_enum::enum_name(m_Data.m_MarginsMode);
-    if (m_Data.m_CustomMargins.has_value())
+    json["card_size"] = data.m_CardSizeChoice;
+    json["page_size"] = data.m_PageSize;
+    json["base_pdf"] = data.m_BasePdf;
+    json["margins_mode"] = magic_enum::enum_name(data.m_MarginsMode);
+    if (data.m_CustomMargins.has_value())
     {
-        if (!m_Data.m_CustomMargins->m_BottomRight.has_value())
+        if (!data.m_CustomMargins->m_BottomRight.has_value())
         {
             json["custom_margins"] = nlohmann::json{
-                { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
-                { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
+                { "left", data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                { "top", data.m_CustomMargins->m_TopLeft.y / 1_cm },
             };
         }
         else
         {
             json["custom_margins"] = nlohmann::json{
-                { "left", m_Data.m_CustomMargins->m_TopLeft.x / 1_cm },
-                { "top", m_Data.m_CustomMargins->m_TopLeft.y / 1_cm },
-                { "right", m_Data.m_CustomMargins->m_BottomRight->x / 1_cm },
-                { "bottom", m_Data.m_CustomMargins->m_BottomRight->y / 1_cm },
+                { "left", data.m_CustomMargins->m_TopLeft.x / 1_cm },
+                { "top", data.m_CustomMargins->m_TopLeft.y / 1_cm },
+                { "right", data.m_CustomMargins->m_BottomRight->x / 1_cm },
+                { "bottom", data.m_CustomMargins->m_BottomRight->y / 1_cm },
             };
         }
     }
@@ -751,32 +749,32 @@ std::string Project::DumpToJson() const
     {
         json["custom_margins"] = nlohmann::json{ nlohmann::json::value_t::object };
     }
-    json["card_orientation"] = magic_enum::enum_name(m_Data.m_CardOrientation);
+    json["card_orientation"] = magic_enum::enum_name(data.m_CardOrientation);
     json["card_layout_vertical"] = nlohmann::json{
-        { "width", m_Data.m_CardLayoutVertical.x },
-        { "height", m_Data.m_CardLayoutVertical.y },
+        { "width", data.m_CardLayoutVertical.x },
+        { "height", data.m_CardLayoutVertical.y },
     };
     json["card_layout_horizontal"] = nlohmann::json{
-        { "width", m_Data.m_CardLayoutHorizontal.x },
-        { "height", m_Data.m_CardLayoutHorizontal.y },
+        { "width", data.m_CardLayoutHorizontal.x },
+        { "height", data.m_CardLayoutHorizontal.y },
     };
-    json["skipped_layout_slots"] = m_Data.m_SkippedLayoutSlots;
-    json["orientation"] = magic_enum::enum_name(m_Data.m_Orientation);
-    json["flip_page_on"] = magic_enum::enum_name(m_Data.m_FlipOn);
-    json["file_name"] = m_Data.m_FileName.string();
-    json["render_header"] = m_Data.m_RenderPageHeader;
+    json["skipped_layout_slots"] = data.m_SkippedLayoutSlots;
+    json["orientation"] = magic_enum::enum_name(data.m_Orientation);
+    json["flip_page_on"] = magic_enum::enum_name(data.m_FlipOn);
+    json["file_name"] = data.m_FileName.string();
+    json["render_header"] = data.m_RenderPageHeader;
 
-    json["export_exact_guides"] = m_Data.m_ExportExactGuides;
-    json["enable_guides"] = m_Data.m_EnableGuides;
-    json["enable_backside_guides"] = m_Data.m_BacksideEnableGuides;
-    json["corner_guides"] = m_Data.m_CornerGuides;
-    json["cross_guides"] = m_Data.m_CrossGuides;
-    json["extended_guides"] = m_Data.m_ExtendedGuides;
-    json["guides_color_a"] = std::array{ m_Data.m_GuidesColorA.r, m_Data.m_GuidesColorA.g, m_Data.m_GuidesColorA.b };
-    json["guides_color_b"] = std::array{ m_Data.m_GuidesColorB.r, m_Data.m_GuidesColorB.g, m_Data.m_GuidesColorB.b };
-    json["guides_offset_cm"] = m_Data.m_GuidesOffset / 1_cm;
-    json["guides_thickness_cm"] = m_Data.m_GuidesThickness / 1_cm;
-    json["guides_length_cm"] = m_Data.m_GuidesLength / 1_cm;
+    json["export_exact_guides"] = data.m_ExportExactGuides;
+    json["enable_guides"] = data.m_EnableGuides;
+    json["enable_backside_guides"] = data.m_BacksideEnableGuides;
+    json["corner_guides"] = data.m_CornerGuides;
+    json["cross_guides"] = data.m_CrossGuides;
+    json["extended_guides"] = data.m_ExtendedGuides;
+    json["guides_color_a"] = std::array{ data.m_GuidesColorA.r, data.m_GuidesColorA.g, data.m_GuidesColorA.b };
+    json["guides_color_b"] = std::array{ data.m_GuidesColorB.r, data.m_GuidesColorB.g, data.m_GuidesColorB.b };
+    json["guides_offset_cm"] = data.m_GuidesOffset / 1_cm;
+    json["guides_thickness_cm"] = data.m_GuidesThickness / 1_cm;
+    json["guides_length_cm"] = data.m_GuidesLength / 1_cm;
 
     return json.dump();
 }
@@ -1069,7 +1067,7 @@ bool Project::ReorderCards(size_t from, size_t to)
     const bool generate_new{ m_Data.m_CardsList.empty() };
     if (generate_new)
     {
-        m_Data.m_CardsList = GenerateDefaultCardsSorting();
+        m_Data.m_CardsList = m_Data.GenerateDefaultCardsSorting();
     }
 
     if (from >= m_Data.m_CardsList.size() ||
@@ -1220,18 +1218,12 @@ bool Project::HasCard(const fs::path& card_name) const
 
 const CardInfo* Project::FindCard(const fs::path& card_name) const
 {
-    auto it{ std::ranges::find(m_Data.m_Cards,
-                               card_name,
-                               &CardInfo::m_Name) };
-    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+    return m_Data.FindCard(card_name);
 }
 
 CardInfo* Project::FindCard(const fs::path& card_name)
 {
-    auto it{ std::ranges::find(m_Data.m_Cards,
-                               card_name,
-                               &CardInfo::m_Name) };
-    return it != m_Data.m_Cards.end() ? &*it : nullptr;
+    return m_Data.FindCard(card_name);
 }
 
 bool Project::HasCardByStem(const fs::path& card_name) const
@@ -1375,6 +1367,42 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
+bool Project::SetBacksideEnabled(bool backside_enabled)
+{
+    if (m_Data.m_BacksideEnabled != backside_enabled)
+    {
+        m_Data.m_BacksideEnabled = backside_enabled;
+
+        for (const auto& card : m_Data.m_Cards)
+        {
+            if (HasNonClearNonDefaultBackside(card))
+            {
+                if (backside_enabled)
+                {
+                    HideCard(card.m_Backside.value());
+                }
+                else
+                {
+                    UnhideCard(card.m_Backside.value());
+                }
+            }
+        }
+
+        BacksideEnabledChanged(backside_enabled);
+        return true;
+    }
+    return false;
+}
+
+void Project::SetSeparateBacksidesEnabled(bool separate_backsides)
+{
+    if (m_Data.m_SeparateBacksides != separate_backsides)
+    {
+        m_Data.m_SeparateBacksides = separate_backsides;
+        SeparateBacksidesEnabledChanged(separate_backsides);
+    }
+}
+
 bool Project::HasValidDefaultBackside() const
 {
     return !m_Data.m_BacksideDefault.has_value() ||
@@ -1383,12 +1411,17 @@ bool Project::HasValidDefaultBackside() const
 
 void Project::SetBacksideDefault(const fs::path& backside_card_name)
 {
-    if (m_Data.m_BacksideDefault.has_value())
+    if (m_Data.m_BacksideDefault != backside_card_name)
     {
-        UnhideCard(m_Data.m_BacksideDefault.value());
+        if (m_Data.m_BacksideDefault.has_value())
+        {
+            UnhideCard(m_Data.m_BacksideDefault.value());
+        }
+        m_Data.m_BacksideDefault = backside_card_name;
+        HideCard(m_Data.m_BacksideDefault.value());
+
+        BacksideDefaultChanged(m_Data.m_BacksideDefault);
     }
-    m_Data.m_BacksideDefault = backside_card_name;
-    HideCard(m_Data.m_BacksideDefault.value());
 }
 
 void Project::ClearBacksideDefault()
@@ -1396,8 +1429,43 @@ void Project::ClearBacksideDefault()
     if (m_Data.m_BacksideDefault.has_value())
     {
         UnhideCard(m_Data.m_BacksideDefault.value());
+        m_Data.m_BacksideDefault.reset();
+
+        BacksideDefaultChanged(std::nullopt);
     }
-    m_Data.m_BacksideDefault.reset();
+}
+
+void Project::SetBacksideOffset(Size offset)
+{
+    if (dla::math::abs(m_Data.m_BacksideOffset.x - offset.x) < 0.001_mm &&
+        dla::math::abs(m_Data.m_BacksideOffset.y - offset.y) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_BacksideOffset = offset;
+    BacksideOffsetChanged(offset);
+}
+void Project::SetBacksideRotation(Angle backside_rotation)
+{
+    if (dla::math::abs(m_Data.m_BacksideRotation - backside_rotation) < 0.001_deg)
+    {
+        return;
+    }
+
+    m_Data.m_BacksideRotation = backside_rotation;
+    BacksideRotationChanged(backside_rotation);
+}
+void Project::SetBacksideExtraBleedEdge(Length backside_extra_bleed_edge)
+{
+    if (dla::math::abs(m_Data.m_BacksideExtraBleedEdge - backside_extra_bleed_edge) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_BacksideExtraBleedEdge = backside_extra_bleed_edge;
+    BacksideExtraBleedEdgeChanged(backside_extra_bleed_edge);
+    EnsureOutputFolder();
 }
 
 bool Project::HasClearBacksideImage(const fs::path& card_name) const
@@ -1515,6 +1583,7 @@ bool Project::SetBacksideAutoPattern(std::string pattern)
     }
 
     m_Data.m_BacksideAutoPattern = std::move(pattern);
+    BacksideAutoPatternChanged(m_Data.m_BacksideAutoPattern);
 
     bool any_backside_change{ false };
     for (auto& card : m_Data.m_Cards)
@@ -1720,33 +1789,6 @@ void Project::SetMarginsMode(MarginsMode margins_mode)
     m_Data.m_MarginsMode = margins_mode;
 }
 
-bool Project::SetBacksideEnabled(bool backside_enabled)
-{
-    if (m_Data.m_BacksideEnabled != backside_enabled)
-    {
-        m_Data.m_BacksideEnabled = backside_enabled;
-
-        for (const auto& card : m_Data.m_Cards)
-        {
-            if (HasNonClearNonDefaultBackside(card))
-            {
-                if (backside_enabled)
-                {
-                    HideCard(card.m_Backside.value());
-                }
-                else
-                {
-                    UnhideCard(card.m_Backside.value());
-                }
-            }
-        }
-
-        BacksideEnabledChanged(backside_enabled);
-        return true;
-    }
-    return false;
-}
-
 float Project::CardRatio() const
 {
     return m_Data.CardRatio(m_Cfg);
@@ -1806,6 +1848,7 @@ void Project::SetImageDir(fs::path new_image_dir)
         Init();
 
         ImageDirChanged(old_image_dir, m_Data.m_ImageDir);
+        EnsureOutputFolder();
     }
 }
 
@@ -1842,6 +1885,75 @@ void Project::EnsureOutputFolder() const
     {
         c_CreateDirectories(m_Data.m_UncropDir);
     }
+}
+
+void Project::SetBleedEdge(Length bleed_edge)
+{
+    if (dla::math::abs(m_Data.m_BleedEdge - bleed_edge) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_BleedEdge = bleed_edge;
+    BleedEdgeChanged(bleed_edge);
+    EnsureOutputFolder();
+}
+void Project::SetEnvelopeBleedEdge(Length envelope_bleed_edge)
+{
+    if (dla::math::abs(m_Data.m_EnvelopeBleedEdge - envelope_bleed_edge) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_EnvelopeBleedEdge = envelope_bleed_edge;
+    EnvelopeBleedEdgeChanged(envelope_bleed_edge);
+    EnsureOutputFolder();
+}
+
+void Project::SetSpacing(Size spacing)
+{
+    if (dla::math::abs(m_Data.m_Spacing.x - spacing.x) < 0.001_mm &&
+        dla::math::abs(m_Data.m_Spacing.y - spacing.y) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_Spacing = spacing;
+    SpacingChanged(spacing);
+}
+void Project::SetSpacingLinked(bool spacing_linked)
+{
+    if (m_Data.m_SpacingLinked != spacing_linked)
+    {
+        m_Data.m_SpacingLinked = spacing_linked;
+        SpacingLinkedChanged(spacing_linked);
+
+        if (spacing_linked)
+        {
+            SetSpacing({ m_Data.m_Spacing.x, m_Data.m_Spacing.x });
+        }
+    }
+}
+
+void Project::SetCorners(CardCorners corners)
+{
+    if (m_Data.m_Corners != corners)
+    {
+        m_Data.m_Corners = corners;
+        CornersChanged(corners);
+    }
+}
+
+ProjectData::ProjectData(const std::string_view default_card_size_choice,
+                         const std::string_view default_page_size_choice)
+    : m_CardSizeChoice{ default_card_size_choice }
+    , m_PageSize{ default_page_size_choice }
+{
+}
+ProjectData::ProjectData(const Config& config)
+    : ProjectData{ config.GetFirstValidCardSize(),
+                   config.GetFirstValidPageSize() }
+{
 }
 
 fs::path ProjectData::GetOutputFolder(const ConfigData& config) const
@@ -2230,6 +2342,38 @@ const Svg& ProjectData::CardSvgData(const ConfigData& config) const
     return card_size_info.m_SvgInfo.value().m_Svg;
 }
 
+const CardInfo* ProjectData::FindCard(const fs::path& card_name) const
+{
+    auto it{ std::ranges::find(m_Cards,
+                               card_name,
+                               &CardInfo::m_Name) };
+    return it != m_Cards.end() ? &*it : nullptr;
+}
+
+CardInfo* ProjectData::FindCard(const fs::path& card_name)
+{
+    auto it{ std::ranges::find(m_Cards,
+                               card_name,
+                               &CardInfo::m_Name) };
+    return it != m_Cards.end() ? &*it : nullptr;
+}
+
+CardSorting ProjectData::GenerateDefaultCardsSorting() const
+{
+    CardSorting default_cards_list;
+    for (const auto& card : m_Cards)
+    {
+        if (card.m_Hidden == 0)
+        {
+            for (uint32_t j = 0; j < card.m_Num; j++)
+            {
+                default_cards_list.push_back(card.m_Name);
+            }
+        }
+    }
+    return default_cards_list;
+}
+
 void Project::SetPreview(const fs::path& card_name,
                          ImagePreview preview,
                          Image::Rotation rotation)
@@ -2290,22 +2434,6 @@ bool Project::RemoveExternalCard(const fs::path& card_name)
         return true;
     }
     return false;
-}
-
-CardSorting Project::GenerateDefaultCardsSorting() const
-{
-    CardSorting default_cards_list;
-    for (const auto& card : m_Data.m_Cards)
-    {
-        if (card.m_Hidden == 0)
-        {
-            for (uint32_t j = 0; j < card.m_Num; j++)
-            {
-                default_cards_list.push_back(card.m_Name);
-            }
-        }
-    }
-    return default_cards_list;
 }
 
 void Project::AppendCardToList(const fs::path& card_name)

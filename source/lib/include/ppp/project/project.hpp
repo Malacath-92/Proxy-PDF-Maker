@@ -13,89 +13,12 @@
 #include <ppp/util.hpp>
 
 #include <ppp/project/card_info.hpp>
-
-using CardContainer = std::vector<CardInfo>;
-using CardSorting = std::vector<fs::path>;
-
-struct ImagePreview
-{
-    Image m_UncroppedImage;
-    Image m_CroppedImage;
-    bool m_BadAspectRatio;
-    bool m_BadRotation;
-};
-using ImgDict = std::unordered_map<fs::path, ImagePreview>;
-
-enum class FlipPageOn
-{
-    LeftEdge,
-    TopEdge,
-};
-
-enum class CardCorners
-{
-    Square,
-    Rounded,
-};
-
-enum class MarginsMode
-{
-    Auto,
-    Simple,
-    Full,
-    Linked,
-};
-
-template<class T>
-struct GenericMargins
-{
-    T m_Left{};
-    T m_Top{};
-    T m_Right{};
-    T m_Bottom{};
-
-    template<class U>
-    auto operator*(const U& rhs)
-    {
-        using ResT = decltype(std::declval<T>() * std::declval<U>());
-        return GenericMargins<ResT>{
-            m_Left * rhs,
-            m_Top * rhs,
-            m_Right * rhs,
-            m_Bottom * rhs,
-        };
-    }
-    template<class U>
-    auto operator/(const U& rhs)
-    {
-        using ResT = decltype(std::declval<T>() / std::declval<U>());
-        return GenericMargins<ResT>{
-            m_Left / rhs,
-            m_Top / rhs,
-            m_Right / rhs,
-            m_Bottom / rhs,
-        };
-    }
-};
-using Margins = GenericMargins<Length>;
-
-// Individual margin controls allow for asymmetric layouts needed in professional printing
-// where different margins are required for binding, cutting, or aesthetic purposes
-struct CustomMargins
-{
-    Size m_TopLeft{ 0_mm, 0_mm };
-    std::optional<Size> m_BottomRight{ std::nullopt };
-};
-
-enum CardOrientation
-{
-    Vertical,
-    Horizontal,
-    Mixed,
-};
+#include <ppp/project/project_types.hpp>
 
 struct ProjectData
 {
+    ProjectData(const std::string_view default_card_size_choice,
+                const std::string_view default_page_size_choice);
     ProjectData(const Config& config);
 
     // Project options
@@ -201,6 +124,11 @@ struct ProjectData
 
     bool IsCardSvg(const ConfigData& config) const;
     const Svg& CardSvgData(const ConfigData& config) const;
+
+    const CardInfo* FindCard(const fs::path& card_name) const;
+    CardInfo* FindCard(const fs::path& card_name);
+
+    CardSorting GenerateDefaultCardsSorting() const;
 };
 
 class JsonProvider;
@@ -221,6 +149,7 @@ class Project : public QObject
 
     void Dump(const fs::path& json_path) const;
     std::string DumpToJson() const;
+    static std::string DumpToJson(const ProjectData& data);
 
     void Init();
     void InitProperties();
@@ -283,9 +212,16 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
+    bool SetBacksideEnabled(bool backside_enabled);
+    void SetSeparateBacksidesEnabled(bool separate_backsides);
+
     bool HasValidDefaultBackside() const;
     void SetBacksideDefault(const fs::path& backside_card_name);
     void ClearBacksideDefault();
+
+    void SetBacksideOffset(Size offset);
+    void SetBacksideRotation(Angle backside_rotation);
+    void SetBacksideExtraBleedEdge(Length backside_extra_bleed_edge);
 
     bool HasClearBacksideImage(const fs::path& card_name) const;
     bool HasNonDefaultBacksideImage(const fs::path& card_name) const;
@@ -312,8 +248,6 @@ class Project : public QObject
 
     void SetMarginsMode(MarginsMode margins_mode);
 
-    bool SetBacksideEnabled(bool backside_enabled);
-
     float CardRatio() const;
     Size CardSize() const;
     Size CardSizeWithBleed() const;
@@ -328,6 +262,14 @@ class Project : public QObject
 
     void SetImageDir(fs::path new_image_dir);
     void EnsureOutputFolder() const;
+
+    void SetBleedEdge(Length bleed_edge);
+    void SetEnvelopeBleedEdge(Length envelope_bleed_edge);
+
+    void SetSpacing(Size spacing);
+    void SetSpacingLinked(bool spacing_linked);
+
+    void SetCorners(CardCorners corners);
 
     const auto& GetCards() const
     {
@@ -359,6 +301,23 @@ class Project : public QObject
     void ExternalCardRemoved(const fs::path& absolute_image_path);
 
     void BacksideEnabledChanged(bool backside_enabled);
+    void SeparateBacksidesEnabledChanged(bool separate_backsides);
+
+    void BacksideDefaultChanged(OptionalImageRef backside_card_name);
+
+    void BacksideOffsetChanged(Size offset);
+    void BacksideRotationChanged(Angle backside_rotation);
+    void BacksideExtraBleedEdgeChanged(Length backside_extra_bleed_edge);
+
+    void BacksideAutoPatternChanged(const std::string& pattern);
+
+    void BleedEdgeChanged(Length bleed_edge);
+    void EnvelopeBleedEdgeChanged(Length envelope_bleed_edge);
+
+    void SpacingChanged(Size spacing);
+    void SpacingLinkedChanged(bool spacing_linked);
+
+    void CornersChanged(CardCorners corners);
 
     void PreviewRemoved(const fs::path& card_name);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
@@ -381,7 +340,6 @@ class Project : public QObject
     Project& operator=(const Project&) = delete;
     Project& operator=(Project&&) = delete;
 
-    CardSorting GenerateDefaultCardsSorting() const;
     void AppendCardToList(const fs::path& card_name);
     void RemoveCardFromList(const fs::path& card_name);
 

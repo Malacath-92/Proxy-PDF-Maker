@@ -1,35 +1,12 @@
 #pragma once
 
-#include <chrono>
 #include <optional>
 
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
+#include <ppp/project/project_types.hpp>
 
 struct ProjectData;
-
-enum class BadAspectRatioHandling
-{
-    Ignore,
-    Expand,
-    Stretch,
-    Crop,
-
-    Default = Ignore,
-};
-
-enum class BleedType
-{
-    Infer,
-    FullBleed,
-    NoBleed,
-
-    Default = Infer,
-};
-
-using CardInfoClock = std::chrono::high_resolution_clock;
-using CardInfoTimePoint = CardInfoClock::time_point;
-using OptionalImageRef = std::optional<std::reference_wrapper<const fs::path>>;
 
 struct CardInfo
 {
