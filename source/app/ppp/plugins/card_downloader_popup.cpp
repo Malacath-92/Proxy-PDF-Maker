@@ -481,7 +481,7 @@ void CardDownloaderPopup::FinalizeDownload()
 
     if (DownloadBacksides())
     {
-        m_Project.m_Data.m_BacksideDefault = m_Downloader->DefaultBackside().toStdString();
+        m_Project.SetBacksideDefault(m_Downloader->DefaultBackside().toStdString());
     }
 
     m_Router.RefreshCardGrid();
