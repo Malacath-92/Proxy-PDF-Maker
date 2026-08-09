@@ -103,6 +103,11 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
         // Consolidate all cards into one set, removing duplicates
         for (const auto& card : temporary_card_list)
         {
+            if (card.m_Amount == 0)
+            {
+                continue;
+            }
+
             const auto card_predicate{
                 [&card](const auto& existing_card)
                 {
@@ -118,6 +123,7 @@ bool MPCFillDownloader::ParseInput(const QString& xml)
                     return card.m_Id == existing_card.m_Id && c_BacksidesEqual(card.m_Backside, existing_card.m_Backside);
                 },
             };
+
             const auto found_card{ std::ranges::find_if(set.m_Frontsides, card_predicate) };
             if (found_card == set.m_Frontsides.end())
             {
