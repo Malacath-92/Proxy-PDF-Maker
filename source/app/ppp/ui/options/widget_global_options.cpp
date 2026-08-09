@@ -488,7 +488,7 @@ void GlobalOptionsWidget::ColorCubeAdded()
     TRACY_AUTO_SCOPE();
 
     const auto has_color_cube{
-        [=](const auto& color_cube_name)
+        [this](const auto& color_cube_name)
         {
             for (int i = 0; i < m_ColorCube->count(); i++)
             {
