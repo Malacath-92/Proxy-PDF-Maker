@@ -18,8 +18,8 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
-#include <ppp/ui/options/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
+#include <ppp/ui/widget_util/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/ui/popups/card_size_popup.hpp>

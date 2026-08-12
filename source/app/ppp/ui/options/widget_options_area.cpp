@@ -12,7 +12,7 @@
 #include <ppp/plugins/plugin_interface.hpp>
 #include <ppp/qt_util.hpp>
 
-#include <ppp/ui/widget_util/collapse_button.hpp>
+#include <ppp/ui/widget_util/widget_collapse_button.hpp>
 
 #include <ppp/profile/profile.hpp>
 

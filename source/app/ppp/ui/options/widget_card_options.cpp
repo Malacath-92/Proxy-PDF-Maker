@@ -3,10 +3,10 @@
 #include <QCheckBox>
 #include <QMainWindow>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QSlider>
 #include <QToolButton>
 #include <QVBoxLayout>
-#include <QResizeEvent>
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -17,10 +17,10 @@
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
-#include <ppp/ui/options/widget_double_spin_box.hpp>
-#include <ppp/ui/widget_util/linked_spin_boxes.hpp>
 #include <ppp/ui/widget_util/widget_card.hpp>
+#include <ppp/ui/widget_util/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_util/widget_label.hpp>
+#include <ppp/ui/widget_util/widget_linked_spin_boxes.hpp>
 
 #include <ppp/ui/popups/image_browse_popup.hpp>
 #include <ppp/ui/popups/popups.hpp>

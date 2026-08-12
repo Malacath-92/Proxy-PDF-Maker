@@ -18,9 +18,9 @@
 #include <ppp/qt_util.hpp>
 #include <ppp/style.hpp>
 
-#include <ppp/ui/options/widget_double_spin_box.hpp>
 #include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
+#include <ppp/ui/widget_util/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/ui/view_models/options/view_model_global_options.hpp>

@@ -1,4 +1,4 @@
-#include <ppp/ui/widget_util/collapse_button.hpp>
+#include <ppp/ui/widget_util/widget_collapse_button.hpp>
 
 #include <QPropertyAnimation>
 

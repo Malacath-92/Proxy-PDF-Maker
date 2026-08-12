@@ -3,8 +3,8 @@
 #include <optional>
 
 #include <ppp/image.hpp>
-#include <ppp/util.hpp>
 #include <ppp/project/project_types.hpp>
+#include <ppp/util.hpp>
 
 struct ProjectData;
 
