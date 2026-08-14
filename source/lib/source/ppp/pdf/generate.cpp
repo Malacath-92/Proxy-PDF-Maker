@@ -423,17 +423,17 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
             return {};
         }
     };
-    QByteArray sRGB_icc_profile{ read_icc_profile("./res/sRGB_v4_ICC_preference.icc") };
-    if (sRGB_icc_profile.isEmpty())
+    QByteArray srgb_icc_profile{ read_icc_profile("./res/sRGB_v4_ICC_preference.icc") };
+    if (srgb_icc_profile.isEmpty())
     {
-        sRGB_icc_profile = read_icc_profile(":/res/sRGB_v4_ICC_preference.icc");
+        srgb_icc_profile = read_icc_profile(":/res/sRGB_v4_ICC_preference.icc");
     }
 
-    if (!sRGB_icc_profile.isEmpty())
+    if (!srgb_icc_profile.isEmpty())
     {
         frontside_pdf->SetColorSpace("sRGB",
-                                     { reinterpret_cast<std::byte*>(sRGB_icc_profile.data()),
-                                       static_cast<size_t>(sRGB_icc_profile.size()) });
+                                     { reinterpret_cast<std::byte*>(srgb_icc_profile.data()),
+                                       static_cast<size_t>(srgb_icc_profile.size()) });
     }
 
     auto unique_backside_pdf{
@@ -447,11 +447,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
             : frontside_pdf.get()
     };
 
-    if (unique_backside_pdf != nullptr && !sRGB_icc_profile.isEmpty())
+    if (unique_backside_pdf != nullptr && !srgb_icc_profile.isEmpty())
     {
         unique_backside_pdf->SetColorSpace("sRGB",
-                                           { reinterpret_cast<std::byte*>(sRGB_icc_profile.data()),
-                                             static_cast<size_t>(sRGB_icc_profile.size()) });
+                                           { reinterpret_cast<std::byte*>(srgb_icc_profile.data()),
+                                             static_cast<size_t>(srgb_icc_profile.size()) });
     }
 
     const auto frontside_images{ CollectUniqueImages(pages, transforms) };
