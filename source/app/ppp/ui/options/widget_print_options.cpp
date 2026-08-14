@@ -461,7 +461,7 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
             }
 
             m_Project.m_Data.m_CardSizeChoice = std::move(new_choice);
-            CardSizeChanged();
+            CardSizeChanged(m_Project.CardSize());
 
             // Refresh anything needed for size change
             RefreshSizes();
@@ -894,7 +894,7 @@ void PrintOptionsWidget::ExternalCardSizeChanged()
     m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
     RefreshSizes();
     RefreshMargins(false);
-    CardSizeChanged();
+    CardSizeChanged(m_Project.CardSize());
 }
 
 void PrintOptionsWidget::ExternalCardSizesChanged()

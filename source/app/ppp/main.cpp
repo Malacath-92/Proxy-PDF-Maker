@@ -39,6 +39,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
+#include <ppp/ui/view_models/options/view_model_guides_options.hpp>
 #include <ppp/ui/view_models/options/view_model_card_options.hpp>
 #include <ppp/ui/view_models/options/view_model_global_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
@@ -230,6 +231,7 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
+    auto* guides_options_view_model{ new GuidesOptionsViewModel{ project, config } };
     auto* card_options_view_model{ new CardOptionsViewModel{ project, config } };
     auto* global_options_view_model{ new GlobalOptionsViewModel{ config } };
 
@@ -240,7 +242,7 @@ int main(int argc, char** argv)
 
     auto* project_options{ new ProjectOptionsWidget{ project, config } };
     auto* print_options{ new PrintOptionsWidget{ project, config } };
-    auto* guides_options{ new GuidesOptionsWidget{ project, config } };
+    auto* guides_options{ new GuidesOptionsWidget{ guides_options_view_model } };
     auto* card_options{ new CardOptionsWidget{ card_options_view_model } };
     auto* global_options{ new GlobalOptionsWidget{ global_options_view_model } };
 
@@ -357,6 +359,40 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_main_window);
         QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
+    }
+
+    {
+        TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(connect_signals_guides_options_view_model);
+
+#define FORWARD_SIGNAL_FROM_PROJECT(sig) \
+    FORWARD_SIGNAL_FROM_TO(project, *guides_options_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_PROJECT(ExportExactGuidesChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideGuidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CornerGuidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CrossGuidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(ExtendedGuidesEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesColorAChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesColorBChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesOffsetChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesLengthChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(GuidesThicknessChanged);
+
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BleedEdgeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
+
+#undef FORWARD_SIGNAL_FROM_PROJECT
+
+#define FORWARD_SIGNAL_FROM_CONFIG(sig) \
+    FORWARD_SIGNAL_FROM_TO(config, *guides_options_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_CONFIG(AdvancedModeChanged);
+        FORWARD_SIGNAL_FROM_CONFIG(BaseUnitChanged);
+
+#undef FORWARD_SIGNAL_FROM_CONFIG
     }
 
     {
@@ -498,16 +534,17 @@ int main(int argc, char** argv)
         QObject::connect(print_options, &PrintOptionsWidget::OrientationChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(print_options, &PrintOptionsWidget::FlipOnChanged, print_preview, &PrintPreview::RequestRefresh);
 
-        QObject::connect(guides_options, &GuidesOptionsWidget::ExactGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::CornerGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::CrossGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::ExtendedGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesColorChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesLengthChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(guides_options, &GuidesOptionsWidget::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::ExportExactGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::CornerGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::CrossGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::ExtendedGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesColorAChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesColorBChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesLengthChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
 
         QObject::connect(&project, &Project::BleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
@@ -546,12 +583,8 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_guides_options);
 
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, guides_options, &GuidesOptionsWidget::NewProjectOpened);
-        QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options, &GuidesOptionsWidget::CardSizeChanged);
-        QObject::connect(&project, &Project::BleedEdgeChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
-        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, guides_options, &GuidesOptionsWidget::BleedChanged);
-        QObject::connect(&project, &Project::BacksideEnabledChanged, guides_options, &GuidesOptionsWidget::BacksideEnabledChanged);
-        QObject::connect(&config, &Config::BaseUnitChanged, guides_options, &GuidesOptionsWidget::BaseUnitChanged);
+        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, guides_options_view_model, &GuidesOptionsViewModel::NewProjectOpened);
+        QObject::connect(print_options, &PrintOptionsWidget::CardSizeChanged, guides_options_view_model, &GuidesOptionsViewModel::CardSizeChanged);
     }
 
     {
@@ -581,7 +614,6 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_advanced_mode);
 
         QObject::connect(&config, &Config::AdvancedModeChanged, print_options, &PrintOptionsWidget::AdvancedModeChanged);
-        QObject::connect(&config, &Config::AdvancedModeChanged, guides_options, &GuidesOptionsWidget::AdvancedModeChanged);
     }
 
     {

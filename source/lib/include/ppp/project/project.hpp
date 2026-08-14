@@ -212,6 +212,18 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
+    void SetExportExactGuides(bool export_exact_guides);
+    void SetGuidesEnabled(bool guides_enabled);
+    void SetBacksideGuidesEnabled(bool backside_guides_enabled);
+    void SetCornerGuidesEnabled(bool corner_guides_enabled);
+    void SetCrossGuidesEnabled(bool cross_guides_enabled);
+    void SetExtendedGuidesEnabled(bool extended_guides_enabled);
+    void SetGuidesColorA(ColorRGB8 guides_color);
+    void SetGuidesColorB(ColorRGB8 guides_color);
+    void SetGuidesOffset(Length guides_offset);
+    void SetGuidesLength(Length guides_length);
+    void SetGuidesThickness(Length guides_thickness);
+
     bool SetBacksideEnabled(bool backside_enabled);
     void SetSeparateBacksidesEnabled(bool separate_backsides);
 
@@ -299,6 +311,18 @@ class Project : public QObject
     void FailedAddingExternalCard(const fs::path& absolute_image_path);
     void ExternalCardAdded(const fs::path& absolute_image_path);
     void ExternalCardRemoved(const fs::path& absolute_image_path);
+    
+    void ExportExactGuidesChanged(bool export_exact_guides);
+    void GuidesEnabledChanged(bool guides_enabled);
+    void BacksideGuidesEnabledChanged(bool backside_guides_enabled);
+    void CornerGuidesEnabledChanged(bool corner_guides_enabled);
+    void CrossGuidesEnabledChanged(bool cross_guides_enabled);
+    void ExtendedGuidesEnabledChanged(bool extended_guides_enabled);
+    void GuidesColorAChanged(ColorRGB8 guides_color);
+    void GuidesColorBChanged(ColorRGB8 guides_color);
+    void GuidesOffsetChanged(Length guides_offset);
+    void GuidesLengthChanged(Length guides_length);
+    void GuidesThicknessChanged(Length guides_thickness);
 
     void BacksideEnabledChanged(bool backside_enabled);
     void SeparateBacksidesEnabledChanged(bool separate_backsides);

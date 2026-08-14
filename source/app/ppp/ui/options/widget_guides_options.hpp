@@ -8,8 +8,7 @@
 
 class QCheckBox;
 
-class Project;
-class Config;
+class GuidesOptionsViewModel;
 class WidgetWithLabel;
 class LengthSpinBox;
 
@@ -17,39 +16,40 @@ class GuidesOptionsWidget : public QWidget
 {
     Q_OBJECT
 
+    friend class GuidesOptionsViewModel;
+
   public:
-    GuidesOptionsWidget(Project& project,
-                        const Config& config);
+    GuidesOptionsWidget(GuidesOptionsViewModel* view_model);
 
   signals:
-    void ExactGuidesEnabledChanged();
-    void GuidesEnabledChanged();
-    void BacksideGuidesEnabledChanged();
-    void CornerGuidesChanged();
-    void CrossGuidesChanged();
-    void GuidesOffsetChanged();
-    void GuidesLengthChanged();
-    void ExtendedGuidesChanged();
-    void GuidesColorChanged();
-    void GuidesThicknessChanged();
+    // forward
 
-    void BaseUnitChanged(Unit new_base_unit);
+    void BaseUnitChanged(Unit base_unit);
 
-  public slots:
-    void NewProjectOpened();
-    void CardSizeChanged();
-    void BleedChanged();
-    void BacksideEnabledChanged();
-
+  private slots:
     void AdvancedModeChanged(bool advanced_mode);
 
-  private:
-    void SetDefaults();
-    void SetAdvancedWidgetsVisibility(bool advanced_mode);
+    void ExportExactGuidesChanged(bool export_exact_guides);
+    void GuidesEnabledChanged(bool guides_enabled);
+    void BacksideGuidesEnabledChanged(bool backside_guides_enabled);
+    void CornerGuidesEnabledChanged(bool corner_guides_enabled);
+    void CrossGuidesEnabledChanged(bool cross_guides_enabled);
+    void ExtendedGuidesEnabledChanged(bool extended_guides_enabled);
+    void GuidesColorAChanged(ColorRGB8 guides_color);
+    void GuidesColorBChanged(ColorRGB8 guides_color);
+    void GuidesOffsetChanged(Length guides_offset);
+    void GuidesLengthChanged(Length guides_length);
+    void GuidesThicknessChanged(Length guides_thickness);
 
+    void CardSizeChanged(Size card_size);
+    void BleedEdgeChanged(Length bleed_edge);
+    void BacksideEnabledChanged(bool backside_enabled);
+
+  private:
+    static ColorRGB8 ColorFromBackgroundStyle(const QString& style);
     static QString ColorToBackgroundStyle(ColorRGB8 color);
 
-    Project& m_Project;
+    GuidesOptionsViewModel& m_ViewModel;
 
     QCheckBox* m_ExportExactGuidesCheckbox{ nullptr };
     QCheckBox* m_EnableGuidesCheckbox{ nullptr };

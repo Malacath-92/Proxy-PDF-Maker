@@ -1367,6 +1367,101 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
+void Project::SetExportExactGuides(bool export_exact_guides)
+{
+    if (m_Data.m_ExportExactGuides != export_exact_guides)
+    {
+        m_Data.m_ExportExactGuides = export_exact_guides;
+        ExportExactGuidesChanged(export_exact_guides);
+    }
+}
+void Project::SetGuidesEnabled(bool guides_enabled)
+{
+    if (m_Data.m_EnableGuides != guides_enabled)
+    {
+        m_Data.m_EnableGuides = guides_enabled;
+        GuidesEnabledChanged(guides_enabled);
+    }
+}
+void Project::SetBacksideGuidesEnabled(bool backside_guides_enabled)
+{
+    if (m_Data.m_BacksideEnableGuides != backside_guides_enabled)
+    {
+        m_Data.m_BacksideEnableGuides = backside_guides_enabled;
+        BacksideGuidesEnabledChanged(backside_guides_enabled);
+    }
+}
+void Project::SetCornerGuidesEnabled(bool corner_guides_enabled)
+{
+    if (m_Data.m_CornerGuides != corner_guides_enabled)
+    {
+        m_Data.m_CornerGuides = corner_guides_enabled;
+        CornerGuidesEnabledChanged(corner_guides_enabled);
+    }
+}
+void Project::SetCrossGuidesEnabled(bool cross_guides_enabled)
+{
+    if (m_Data.m_CrossGuides != cross_guides_enabled)
+    {
+        m_Data.m_CrossGuides = cross_guides_enabled;
+        CrossGuidesEnabledChanged(cross_guides_enabled);
+    }
+}
+void Project::SetExtendedGuidesEnabled(bool extended_guides_enabled)
+{
+    if (m_Data.m_ExtendedGuides != extended_guides_enabled)
+    {
+        m_Data.m_ExtendedGuides = extended_guides_enabled;
+        ExtendedGuidesEnabledChanged(extended_guides_enabled);
+    }
+}
+void Project::SetGuidesColorA(ColorRGB8 guides_color)
+{
+    if (m_Data.m_GuidesColorA != guides_color)
+    {
+        m_Data.m_GuidesColorA = guides_color;
+        GuidesColorAChanged(guides_color);
+    }
+}
+void Project::SetGuidesColorB(ColorRGB8 guides_color)
+{
+    if (m_Data.m_GuidesColorB != guides_color)
+    {
+        m_Data.m_GuidesColorB = guides_color;
+        GuidesColorBChanged(guides_color);
+    }
+}
+void Project::SetGuidesOffset(Length guides_offset)
+{
+    if (dla::math::abs(m_Data.m_GuidesOffset - guides_offset) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_GuidesOffset = guides_offset;
+    GuidesOffsetChanged(guides_offset);
+}
+void Project::SetGuidesLength(Length guides_length)
+{
+    if (dla::math::abs(m_Data.m_GuidesLength - guides_length) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_GuidesLength = guides_length;
+    GuidesLengthChanged(guides_length);
+}
+void Project::SetGuidesThickness(Length guides_thickness)
+{
+    if (dla::math::abs(m_Data.m_GuidesThickness - guides_thickness) < 0.001_mm)
+    {
+        return;
+    }
+
+    m_Data.m_GuidesThickness = guides_thickness;
+    GuidesThicknessChanged(guides_thickness);
+}
+
 bool Project::SetBacksideEnabled(bool backside_enabled)
 {
     if (m_Data.m_BacksideEnabled != backside_enabled)
