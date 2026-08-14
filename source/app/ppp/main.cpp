@@ -39,9 +39,9 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
-#include <ppp/ui/view_models/options/view_model_guides_options.hpp>
 #include <ppp/ui/view_models/options/view_model_card_options.hpp>
 #include <ppp/ui/view_models/options/view_model_global_options.hpp>
+#include <ppp/ui/view_models/options/view_model_guides_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
 
 #include <ppp/ui/main_window.hpp>

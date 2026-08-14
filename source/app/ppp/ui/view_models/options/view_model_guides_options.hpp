@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QString>
 #include <QObject>
+#include <QString>
 
 #include <ppp/color.hpp>
 #include <ppp/units.hpp>
@@ -22,7 +22,7 @@ class GuidesOptionsViewModel : public QObject
                            const Config& config);
 
   signals:
-  // forward
+    // forward
 
     void AdvancedModeChanged(bool advanced_mode);
     void BaseUnitChanged(Unit new_base_unit);

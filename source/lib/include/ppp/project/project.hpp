@@ -311,7 +311,7 @@ class Project : public QObject
     void FailedAddingExternalCard(const fs::path& absolute_image_path);
     void ExternalCardAdded(const fs::path& absolute_image_path);
     void ExternalCardRemoved(const fs::path& absolute_image_path);
-    
+
     void ExportExactGuidesChanged(bool export_exact_guides);
     void GuidesEnabledChanged(bool guides_enabled);
     void BacksideGuidesEnabledChanged(bool backside_guides_enabled);
