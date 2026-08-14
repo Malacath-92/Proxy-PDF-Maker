@@ -700,6 +700,15 @@ PoDoFoDocument::PoDoFoDocument(const Project& project,
     }
 }
 
+void PoDoFoDocument::SetColorSpace(std::string_view name,
+                                   std::span<const std::byte> icc_profile)
+{
+    m_ColorSpace.emplace(ColorSpace{
+        .m_Name{ name },
+        .m_IccProfile{ icc_profile.begin(), icc_profile.end() },
+    });
+}
+
 void PoDoFoDocument::ReservePages(size_t pages)
 {
     TRACY_AUTO_SCOPE();
@@ -750,6 +759,43 @@ fs::path PoDoFoDocument::Write(fs::path path, bool version_output)
 
     try
     {
+        if (m_ColorSpace.has_value())
+        {
+            using PoDoFo::operator""_n;
+
+            const auto& color_space{ m_ColorSpace.value() };
+
+            const PoDoFo::bufferview icc_buffer{
+                reinterpret_cast<const char*>(color_space.m_IccProfile.data()),
+                color_space.m_IccProfile.size()
+            };
+            auto& icc_stream{ m_Document.GetObjects().CreateDictionaryObject() };
+            icc_stream.GetOrCreateStream().SetData(icc_buffer);
+            icc_stream.GetDictionary().AddKey("N"_n,
+                                              PoDoFo::PdfVariant{ static_cast<int64_t>(3) });
+
+            PoDoFo::PdfDictionary output_intent{};
+            output_intent.AddKey("Type"_n,
+                                 "OutputIntent"_n);
+            output_intent.AddKey("S"_n,
+                                 "GTS_PDFA1"_n);
+            output_intent.AddKey("OutputCondition"_n,
+                                 PoDoFo::PdfName{ m_ColorSpace.value().m_Name.c_str() });
+            output_intent.AddKey("OutputConditionIdentifier"_n,
+                                 PoDoFo::PdfName{ m_ColorSpace.value().m_Name.c_str() });
+            output_intent.AddKey("RegistryName"_n,
+                                 "http://color.org"_n);
+            output_intent.AddKey("DestOutputProfile"_n,
+                                 icc_stream.GetIndirectReference());
+
+            PoDoFo::PdfArray output_intents{};
+            output_intents.Add(std::move(output_intent));
+
+            auto& catalog{ m_Document.GetCatalog() };
+            catalog.GetDictionary().AddKey("OutputIntents"_n,
+                                           std::move(output_intents));
+        }
+
         const auto pdf_path{
             [&]() -> fs::path
             {

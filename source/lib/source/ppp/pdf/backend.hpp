@@ -3,6 +3,8 @@
 #include <array>
 #include <memory>
 #include <ranges>
+#include <span>
+#include <string_view>
 
 #include <ppp/color.hpp>
 #include <ppp/config.hpp>
@@ -125,6 +127,9 @@ class PdfDocument
 {
   public:
     virtual ~PdfDocument() = default;
+
+    virtual void SetColorSpace(std::string_view name,
+                               std::span<const std::byte> icc_profile);
 
     virtual void ReservePages(size_t pages) = 0;
     virtual PdfPage* NextPage(bool is_backside) = 0;

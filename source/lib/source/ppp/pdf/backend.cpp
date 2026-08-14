@@ -106,3 +106,9 @@ Length PdfPage::ComputeFinalDashSize(Length line_length, Length dash_size)
     }
     return dash_size;
 }
+
+void PdfDocument::SetColorSpace(std::string_view /*name*/,
+                                std::span<const std::byte> /*icc_profile*/)
+{
+    // stub
+}

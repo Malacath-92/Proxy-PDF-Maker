@@ -14,6 +14,7 @@
         <file>res/stretch.png</file>
         <file>res/tap.png</file>
         <file>res/untap.png</file>
+        <file>res/sRGB_v4_ICC_preference.icc</file>
         <file compress="1" compress-algo="zstd">res/spinner.svg</file>
         <file compress="1" compress-algo="zstd">res/cubes/Foils Vibrance.CUBE</file>
     </qresource>

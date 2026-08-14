@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QFile>
 #include <QRunnable>
 #include <QThreadPool>
 
@@ -407,6 +408,34 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
 
     auto frontside_pdf{ CreatePdfDocument(config.m_Backend, project, config) };
 
+    const auto read_icc_profile{
+        [](const QString& path) -> QByteArray
+        {
+            if (QFile::exists(path))
+            {
+                QFile file{ path };
+                if (file.open(QFile::ReadOnly))
+                {
+                    return file.readAll();
+                }
+            }
+
+            return {};
+        }
+    };
+    QByteArray sRGB_icc_profile{ read_icc_profile("./res/sRGB_v4_ICC_preference.icc") };
+    if (sRGB_icc_profile.isEmpty())
+    {
+        sRGB_icc_profile = read_icc_profile(":/res/sRGB_v4_ICC_preference.icc");
+    }
+
+    if (!sRGB_icc_profile.isEmpty())
+    {
+        frontside_pdf->SetColorSpace("sRGB",
+                                     { reinterpret_cast<std::byte*>(sRGB_icc_profile.data()),
+                                       static_cast<size_t>(sRGB_icc_profile.size()) });
+    }
+
     auto unique_backside_pdf{
         backsides_on_separate_pdf
             ? CreatePdfDocument(config.m_Backend, project, config)
@@ -417,6 +446,13 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
             ? unique_backside_pdf.get()
             : frontside_pdf.get()
     };
+
+    if (unique_backside_pdf != nullptr && !sRGB_icc_profile.isEmpty())
+    {
+        unique_backside_pdf->SetColorSpace("sRGB",
+                                           { reinterpret_cast<std::byte*>(sRGB_icc_profile.data()),
+                                             static_cast<size_t>(sRGB_icc_profile.size()) });
+    }
 
     const auto frontside_images{ CollectUniqueImages(pages, transforms) };
     const auto backside_images{ CollectUniqueImages(backside_pages, backside_transforms) };

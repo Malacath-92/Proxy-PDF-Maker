@@ -85,6 +85,9 @@ class PoDoFoDocument final : public PdfDocument
                    const Config& config);
     virtual ~PoDoFoDocument() override = default;
 
+    virtual void SetColorSpace(std::string_view name,
+                               std::span<const std::byte> icc_profile) override;
+
     virtual void ReservePages(size_t pages) override;
     virtual PoDoFoPage* NextPage(bool is_backside) override;
 
@@ -116,4 +119,11 @@ class PoDoFoDocument final : public PdfDocument
     std::vector<std::unique_ptr<PoDoFo::PdfPainter>> m_Painters;
 
     std::unique_ptr<PoDoFoImageCache> m_ImageCache;
+
+    struct ColorSpace
+    {
+        std::string m_Name;
+        std::vector<std::byte> m_IccProfile;
+    };
+    std::optional<ColorSpace> m_ColorSpace{ std::nullopt };
 };
