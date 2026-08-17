@@ -7,16 +7,15 @@
 
 #include <QComboBox>
 
+#include <ppp/concepts.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 QComboBox* MakeComboBox();
 
-template<class StringT>
-static void UpdateComboBox(QComboBox* combo_box,
-                           std::span<StringT> options,
-                           std::span<StringT> tooltips,
-                           std::string_view default_option)
+inline void UpdateComboBox(QComboBox* combo_box,
+                           RangeOfStringLike auto options,
+                           StringLike auto default_option)
 {
     combo_box->blockSignals(true);
     combo_box->clear();
@@ -24,17 +23,6 @@ static void UpdateComboBox(QComboBox* combo_box,
     for (const auto& option : options)
     {
         combo_box->addItem(ToQString(option));
-    }
-
-    for (size_t i = 0; i < tooltips.size(); i++)
-    {
-        if (!tooltips[i].empty())
-        {
-            combo_box->setItemData(
-                static_cast<int>(i),
-                ToQString(tooltips[i]),
-                Qt::ToolTipRole);
-        }
     }
 
     combo_box->blockSignals(false);
@@ -45,20 +33,54 @@ static void UpdateComboBox(QComboBox* combo_box,
     }
 }
 
-template<class StringT>
-QComboBox* MakeComboBox(std::span<StringT> options,
-                        std::span<StringT> tooltips,
-                        std::string_view default_option)
+inline void UpdateComboBox(QComboBox* combo_box,
+                           RangeOfStringLike auto options,
+                           RangeOfStringLike auto tooltips,
+                           StringLike auto default_option)
+{
+    UpdateComboBox(combo_box,
+                   options,
+                   default_option);
+
+    int i{ 0 };
+    for (const auto& tooltip : tooltips)
+    {
+        if (!tooltip.empty())
+        {
+            combo_box->setItemData(
+                i,
+                ToQString(tooltip),
+                Qt::ToolTipRole);
+        }
+        ++i;
+    }
+}
+
+QComboBox* MakeComboBox(RangeOfStringLike auto options,
+                        RangeOfStringLike auto tooltips,
+                        StringLike auto default_option)
 {
     auto* combo_box{ MakeComboBox() };
-    UpdateComboBox(combo_box, options, tooltips, default_option);
+    UpdateComboBox(combo_box,
+                   options,
+                   tooltips,
+                   default_option);
+    return combo_box;
+}
+
+QComboBox* MakeComboBox(RangeOfStringLike auto options,
+                        StringLike auto default_option)
+{
+    auto* combo_box{ MakeComboBox() };
+    UpdateComboBox(combo_box,
+                   options,
+                   default_option);
     return combo_box;
 }
 
 template<Enum EnumT>
 static QComboBox* MakeComboBox(EnumT default_option)
 {
-    return MakeComboBox(std::span<const std::string_view>{ magic_enum::enum_names<EnumT>() },
-                        {},
+    return MakeComboBox(magic_enum::enum_names<EnumT>(),
                         magic_enum::enum_name(default_option));
 }

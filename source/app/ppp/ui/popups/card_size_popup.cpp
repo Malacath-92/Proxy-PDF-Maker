@@ -26,7 +26,9 @@
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
 
 CardSizePopup::CardSizePopup(QWidget* parent,
-                             const Config& config)
+                             const CardSizes& card_sizes,
+                             const CardSizes& default_card_sizes,
+                             Unit base_unit)
     : PopupBase{ parent }
 {
     m_AutoCenter = false;
@@ -73,24 +75,24 @@ CardSizePopup::CardSizePopup(QWidget* parent,
     };
 
     const auto make_svg_card_size_refresh{
-        [&config](QLabel* card_size_label)
+        [base_unit](QLabel* card_size_label)
         {
-            return [&config, card_size_label](const QString& svg)
+            return [&base_unit, card_size_label](const QString& svg)
             {
                 const auto loaded_svg{ LoadSvg("res/card_svgs/" + svg.toStdString() + ".svg") };
                 const auto card_size{ loaded_svg.m_Size };
-                const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
+                const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
                 const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                  .arg(card_width, 0, 'g', 2)
                                                  .arg(card_height, 0, 'g', 2)
-                                                 .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
+                                                 .arg(ToQString(UnitShortName(base_unit))) };
                 card_size_label->setText(card_size_string);
             };
         }
     };
 
     auto build_tables{
-        [this, &config, make_svg_card_size_refresh, svg_files](const auto& card_sizes)
+        [this, base_unit, make_svg_card_size_refresh, svg_files](const auto& card_sizes)
         {
             m_RectTable->clearContents();
             m_RectTable->setRowCount(0);
@@ -147,11 +149,11 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                 else
                 {
                     const auto card_size{ card_size_info.m_SvgInfo->m_Svg.m_Size };
-                    const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
+                    const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
                     const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                      .arg(card_width, 0, 'g', 2)
                                                      .arg(card_height, 0, 'g', 2)
-                                                     .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
+                                                     .arg(ToQString(UnitShortName(base_unit))) };
 
                     int i{ m_SvgTable->rowCount() };
                     m_SvgTable->insertRow(i);
@@ -163,8 +165,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 
                     // svg
                     auto* svg_combo{ MakeComboBox(
-                        std::span<const std::string>{ svg_files },
-                        {},
+                        svg_files,
                         fs::path{ card_size_info.m_SvgInfo->m_SvgName }.stem().string()) };
                     m_SvgTable->setCellWidget(i, 2, svg_combo);
                     QObject::connect(svg_combo,
@@ -214,7 +215,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
     m_SvgTable->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     m_SvgTable->setAlternatingRowColors(true);
 
-    build_tables(config.m_CardSizes);
+    build_tables(card_sizes);
 
     auto* custom_card_shape_hint{ new QLabel{ "Drag-and-Drop an .svg file onto the main app to add custom-shaped cards." } };
 
@@ -325,7 +326,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 
     QObject::connect(new_button,
                      &QPushButton::clicked,
-                     [this, &config, make_svg_card_size_refresh, svg_files, filter]()
+                     [this, base_unit, make_svg_card_size_refresh, svg_files, filter]()
                      {
                          static constexpr auto c_MakeNumberEditFromNumber{
                              [](double number)
@@ -341,11 +342,11 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                              const auto default_svg{ LoadSvg("res/card_svgs/" + default_svg_name + ".svg") };
 
                              const auto card_size{ default_svg.m_Size };
-                             const auto [card_width, card_height]{ (card_size / UnitValue(config.m_BaseUnit)).pod() };
+                             const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
                              const auto card_size_string{ QString{ "%1%3 x %2%3" }
                                                               .arg(card_width, 0, 'g', 2)
                                                               .arg(card_height, 0, 'g', 2)
-                                                              .arg(ToQString(UnitShortName(config.m_BaseUnit))) };
+                                                              .arg(ToQString(UnitShortName(base_unit))) };
 
                              int i{ m_SvgTable->rowCount() };
                              m_SvgTable->insertRow(i);
@@ -357,8 +358,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
 
                              // svg
                              auto* svg_combo{ MakeComboBox(
-                                 std::span<const std::string>{ svg_files },
-                                 {},
+                                 svg_files,
                                  default_svg_name) };
                              m_SvgTable->setCellWidget(i, 2, svg_combo);
                              QObject::connect(svg_combo,
@@ -459,9 +459,9 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                      });
     QObject::connect(restore_button,
                      &QPushButton::clicked,
-                     [build_tables]()
+                     [build_tables, &default_card_sizes]()
                      {
-                         build_tables(Config::g_DefaultCardSizes);
+                         build_tables(default_card_sizes);
                      });
 
     QObject::connect(ok_button,
@@ -627,7 +627,7 @@ void CardSizePopup::RestoreGeometry(const QByteArray& geometry)
 
 void CardSizePopup::Apply()
 {
-    std::map<std::string, Config::CardSizeInfo> card_sizes{};
+    CardSizes card_sizes{};
 
     QLocale locale{};
     auto get_decimals{

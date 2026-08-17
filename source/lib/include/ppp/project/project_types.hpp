@@ -63,6 +63,15 @@ enum class MarginsMode
     Linked,
 };
 
+enum class Margin
+{
+    Left,
+    Top,
+    Right,
+    Bottom,
+    All,
+};
+
 template<class T>
 struct GenericMargins
 {

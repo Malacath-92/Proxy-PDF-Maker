@@ -40,7 +40,7 @@ auto GetFirstValidPageSizeIter(const ConfigData& cfg)
 
     throw std::logic_error{ "No valid page sizes..." };
 }
-const ConfigData::SizeInfo& ConfigData::GetFirstValidPageSizeInfo() const
+const SizeInfo& ConfigData::GetFirstValidPageSizeInfo() const
 {
     return GetFirstValidPageSizeIter(*this)->second;
 }
@@ -63,13 +63,33 @@ auto GetFirstValidCardSizeIter(const ConfigData& cfg)
 
     throw std::logic_error{ "No valid card sizes..." };
 }
-const ConfigData::CardSizeInfo& ConfigData::GetFirstValidCardSizeInfo() const
+const CardSizeInfo& ConfigData::GetFirstValidCardSizeInfo() const
 {
     return GetFirstValidCardSizeIter(*this)->second;
 }
 std::string_view ConfigData::GetFirstValidCardSize() const
 {
     return GetFirstValidCardSizeIter(*this)->first;
+}
+
+std::vector<std::string_view> ConfigData::GetAvailableCardSizeNames() const
+{
+    return m_CardSizes |
+           c_CardSizeNames |
+           std::ranges::to<std::vector>();
+}
+std::vector<std::string_view> ConfigData::GetAvailableCardSizeHints() const
+{
+    return m_CardSizes |
+           c_CardSizeHints |
+           std::ranges::to<std::vector>();
+}
+
+std::vector<std::string_view> ConfigData::GetAvailablePageSizeNames() const
+{
+    return m_PageSizes |
+           c_PageSizeNames |
+           std::ranges::to<std::vector>();
 }
 
 void Config::Load()
@@ -128,7 +148,7 @@ void Config::Load()
         };
 
         static constexpr auto c_ParseSize{
-            [](std::string str) -> std::optional<Config::SizeInfo>
+            [](std::string str) -> std::optional<SizeInfo>
             {
                 std::replace(str.begin(), str.end(), ',', '.');
 
@@ -160,7 +180,7 @@ void Config::Load()
 
                 const auto decimals{ std::max(c_GetDecimals(width_str), c_GetDecimals(height_str)) };
 
-                return Config::SizeInfo{
+                return SizeInfo{
                     { width * base_unit_value, height * base_unit_value },
                     base_unit,
                     decimals,
@@ -168,7 +188,7 @@ void Config::Load()
             },
         };
         static constexpr auto c_ParseLength{
-            [](std::string str) -> std::optional<Config::LengthInfo>
+            [](std::string str) -> std::optional<LengthInfo>
             {
                 std::replace(str.begin(), str.end(), ',', '.');
 
@@ -197,7 +217,7 @@ void Config::Load()
 
                 const auto decimals{ c_GetDecimals(length_str) };
 
-                return Config::LengthInfo{
+                return LengthInfo{
                     length * base_unit_value,
                     base_unit,
                     decimals,
@@ -344,7 +364,7 @@ void Config::Load()
         static constexpr auto c_LoadCardSizeInfo{
             [](const QSettings& settings)
             {
-                std::optional<Config::CardSizeInfo> full_card_size_info{};
+                std::optional<CardSizeInfo> full_card_size_info{};
                 auto bleed_edge{ settings.value("Input.Bleed") };
                 auto card_size{ settings.value("Card.Size") };
                 auto corner_radius{ settings.value("Corner.Radius") };
@@ -439,7 +459,7 @@ void Config::Save() const
     if (settings.status() == QSettings::Status::NoError)
     {
         static constexpr auto c_SetSize{
-            [](QSettings& settings, const std::string& name, const Config::SizeInfo& info, float scale = 1.0f)
+            [](QSettings& settings, const std::string& name, const SizeInfo& info, float scale = 1.0f)
             {
                 const auto& [size, base, decimals]{ info };
                 const auto unit{ UnitName(base) };
@@ -449,7 +469,7 @@ void Config::Save() const
             }
         };
         static constexpr auto c_SetLength{
-            [](QSettings& settings, const std::string& name, const Config::LengthInfo& info, float scale = 1.0f)
+            [](QSettings& settings, const std::string& name, const LengthInfo& info, float scale = 1.0f)
             {
                 const auto& [length, base, decimals]{ info };
                 const auto unit{ UnitName(base) };
@@ -539,7 +559,7 @@ void Config::Save() const
         }
 
         static constexpr auto c_WriteCardSizeInfo{
-            [](QSettings& settings, const Config::CardSizeInfo& card_size_info)
+            [](QSettings& settings, const CardSizeInfo& card_size_info)
             {
                 c_SetLength(settings, "Input.Bleed", card_size_info.m_InputBleed);
                 if (static_cast<int32_t>(card_size_info.m_CardSizeScale * 10000) != 10000)
@@ -793,4 +813,27 @@ bool Config::SvgCardSizeAdded(const fs::path& svg_path,
     };
 
     return true;
+}
+
+void Config::SetAvailableCardSizes(CardSizes card_sizes)
+{
+    if (card_sizes.empty())
+    {
+        LogError("Attempting to remove all card sizes. Ignoring request.");
+        return;
+    }
+
+    m_CardSizes = std::move(card_sizes);
+    AvailableCardSizesChanged(m_CardSizes);
+}
+void Config::SetAvailablePageSizes(PageSizes page_sizes)
+{
+    if (page_sizes.empty())
+    {
+        LogError("Attempting to remove all page sizes. Ignoring request.");
+        return;
+    }
+
+    m_PageSizes = std::move(page_sizes);
+    AvailablePageSizesChanged(m_PageSizes);
 }

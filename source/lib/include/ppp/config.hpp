@@ -57,48 +57,10 @@ struct ConfigData
     // Hidden options, just doing someone a solid
     bool m_RenderZeroBleedRoundedEdges{ false };
 
-    static inline constexpr std::string_view c_FitSize{ "Fit" };
-    static inline constexpr std::string_view c_BasePDFSize{ "Base Pdf" };
+    static inline constexpr std::string_view c_FitSize{ g_FitSize };
+    static inline constexpr std::string_view c_BasePDFSize{ g_BasePDFSize };
 
-    struct SizeInfo
-    {
-        Size m_Dimensions;
-        Unit m_BaseUnit;
-        uint32_t m_Decimals;
-    };
-    struct LengthInfo
-    {
-        Length m_Dimension;
-        Unit m_BaseUnit;
-        uint32_t m_Decimals;
-    };
-
-    struct CardSizeRoundedRectInfo
-    {
-        SizeInfo m_CardSize;
-        LengthInfo m_CornerRadius;
-    };
-
-    struct CardSizeSvgInfo
-    {
-        std::string m_SvgName;
-        Svg m_Svg;
-    };
-
-    struct CardSizeInfo
-    {
-        LengthInfo m_InputBleed;
-        std::string m_Hint;
-        float m_CardSizeScale;
-
-        // Cards defined as a rounded rect
-        std::optional<CardSizeRoundedRectInfo> m_RoundedRect;
-
-        // Cards defined as an arbitrary shape
-        std::optional<CardSizeSvgInfo> m_SvgInfo;
-    };
-
-    inline static const std::map<std::string, SizeInfo> g_DefaultPageSizes{
+    inline static const PageSizes g_DefaultPageSizes{
         { "Letter", { { 8.5_in, 11_in }, Unit::Inches, 1u } },
         { "Legal", { { 8.5_in, 14_in }, Unit::Inches, 1u } },
         { "Ledger", { { 11_in, 17_in }, Unit::Inches, 1u } },
@@ -110,9 +72,9 @@ struct ConfigData
         { std::string{ c_FitSize }, {} },
         { std::string{ c_BasePDFSize }, {} },
     };
-    std::map<std::string, SizeInfo> m_PageSizes{ g_DefaultPageSizes };
+    PageSizes m_PageSizes{ g_DefaultPageSizes };
 
-    inline static const std::map<std::string, CardSizeInfo> g_DefaultCardSizes{
+    inline static const CardSizes g_DefaultCardSizes{
         {
             "Standard",
             {
@@ -189,13 +151,18 @@ struct ConfigData
             },
         },
     };
-    std::map<std::string, CardSizeInfo> m_CardSizes{ g_DefaultCardSizes };
+    CardSizes m_CardSizes{ g_DefaultCardSizes };
 
     std::string_view GetFirstValidPageSize() const;
     const SizeInfo& GetFirstValidPageSizeInfo() const;
 
     std::string_view GetFirstValidCardSize() const;
     const CardSizeInfo& GetFirstValidCardSizeInfo() const;
+
+    std::vector<std::string_view> GetAvailableCardSizeNames() const;
+    std::vector<std::string_view> GetAvailableCardSizeHints() const;
+
+    std::vector<std::string_view> GetAvailablePageSizeNames() const;
 };
 
 class Config
@@ -240,10 +207,10 @@ class Config
     void EnablePlugin(std::string plugin_name);
     void DisablePlugin(std::string plugin_name);
 
+    void SetAvailableCardSizes(CardSizes card_sizes);
+    void SetAvailablePageSizes(PageSizes page_sizes);
     bool SvgCardSizeAdded(const fs::path& svg_path,
                           LengthInfo input_bleed = { 0.12_in, Unit::Inches, 2u });
-
-    // TODO: Setters/Signals for add/remove card/page size
 
   signals:
     void AdvancedModeChanged(bool advanced_mode);
@@ -274,6 +241,9 @@ class Config
     void JpgQualityChanged(std::optional<int> jpg_quality);
 
     void BaseUnitChanged(Unit base_unit);
+
+    void AvailableCardSizesChanged(const CardSizes& card_sizes);
+    void AvailablePageSizesChanged(const PageSizes& page_sizes);
 
     void PluginEnabled(std::string_view plugin_name);
     void PluginDisabled(std::string_view plugin_name);

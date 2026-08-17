@@ -12,10 +12,8 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/app.hpp>
-#include <ppp/config.hpp>
+#include <ppp/config_types.hpp>
 #include <ppp/qt_util.hpp>
-
-#include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
@@ -25,41 +23,36 @@
 #include <ppp/ui/popups/card_size_popup.hpp>
 #include <ppp/ui/popups/paper_size_popup.hpp>
 
+#include <ppp/ui/view_models/options/view_model_print_options.hpp>
+#include <ppp/ui/view_models/util.hpp>
+
 #include <ppp/profile/profile.hpp>
 
-PrintOptionsWidget::PrintOptionsWidget(Project& project,
-                                       Config& config)
-    : m_Project{ project }
-    , m_Cfg{ config }
+PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
+    : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
     setObjectName("Print Options");
+    m_ViewModel.setParent(this);
 
-    const auto initial_page_size{ project.ComputePageSize() };
-    const auto initial_cards_size{ project.ComputeCardsSize() };
+    const auto config_reqs{ m_ViewModel.GetDefaultDataRequirements() };
+    const auto base_unit{ m_ViewModel.GetBaseUnit() };
 
     using namespace std::string_view_literals;
-    auto* print_output{ new LineEditWithLabel{ "Output &Filename", project.m_Data.m_FileName.string() } };
+    auto* print_output{ new LineEditWithLabel{ "Output &Filename", "Filename" } };
     m_PrintOutput = print_output->GetWidget();
 
     m_RenderHeader = new QCheckBox{ "Render Header" };
     m_RenderHeader->setToolTip("Determines whether the header of each page will be rendered or not.");
-    EnableOptionWidgetForDefaults(m_RenderHeader, m_Cfg, "render_header");
+    EnableOptionWidgetForDefaults(m_RenderHeader, config_reqs, "render_header");
 
     WidgetWithLabel* card_size;
     {
         m_CardSize = MakeComboBox(
-            std::span<const std::string>{
-                m_Cfg.m_CardSizes |
-                std::views::keys |
-                std::ranges::to<std::vector>() },
-            std::span<const std::string>{
-                m_Cfg.m_CardSizes |
-                std::views::values |
-                std::views::transform(&Config::CardSizeInfo::m_Hint) |
-                std::ranges::to<std::vector>() },
-            project.m_Data.m_CardSizeChoice);
+            m_ViewModel.GetCardSizes() | c_CardSizeNames,
+            m_ViewModel.GetCardSizes() | c_CardSizeHints,
+            "Card Size");
 
         auto* card_size_edit{ new QToolButton };
         card_size_edit->setIcon(QIcon{ QPixmap{ ":/res/edit.png" } });
@@ -69,111 +62,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
 
         QObject::connect(card_size_edit,
                          &QToolButton::pressed,
-                         [this]()
-                         {
-                             window()->setEnabled(false);
-                             {
-                                 CardSizePopup card_size_popup{ nullptr, m_Cfg };
-
-                                 QObject::connect(
-                                     &card_size_popup,
-                                     &CardSizePopup::CardSizesChanged,
-                                     [this](const std::map<std::string, Config::CardSizeInfo>& card_sizes)
-                                     {
-                                         if (card_sizes.empty())
-                                         {
-                                             LogError("User tried to remove all card sizes. Ignoring request.");
-                                             return;
-                                         }
-
-                                         static constexpr auto not_equal{
-                                             [](const Config::CardSizeInfo& lhs, const Config::CardSizeInfo& rhs)
-                                             {
-                                                 static constexpr auto len_not_equal{
-                                                     [](const Length& lhs, const Length& rhs, const Length& base_unit, uint32_t decimals)
-                                                     {
-                                                         const auto factor{ std::pow(10, decimals) / base_unit };
-                                                         return static_cast<int>(lhs * factor) != static_cast<int>(rhs * factor);
-                                                     }
-                                                 };
-                                                 static constexpr auto len_info_not_equal{
-                                                     [](const Config::LengthInfo& lhs, const Config::LengthInfo& rhs)
-                                                     {
-                                                         return lhs.m_BaseUnit != rhs.m_BaseUnit ||
-                                                                lhs.m_Decimals != rhs.m_Decimals ||
-                                                                len_not_equal(lhs.m_Dimension,
-                                                                              rhs.m_Dimension,
-                                                                              UnitValue(lhs.m_BaseUnit),
-                                                                              lhs.m_Decimals);
-                                                     }
-                                                 };
-
-                                                 static constexpr auto size_not_equal{
-                                                     [](const Size& lhs, const Size& rhs, const Length& base_unit, uint32_t decimals)
-                                                     {
-                                                         const auto factor{ std::pow(10, decimals) / base_unit };
-                                                         return static_cast<int>(lhs.x * factor) != static_cast<int>(rhs.x * factor) ||
-                                                                static_cast<int>(lhs.y * factor) != static_cast<int>(rhs.y * factor);
-                                                     }
-                                                 };
-                                                 static constexpr auto size_info_not_equal{
-                                                     [](const Config::SizeInfo& lhs, const Config::SizeInfo& rhs)
-                                                     {
-                                                         return lhs.m_BaseUnit != rhs.m_BaseUnit ||
-                                                                lhs.m_Decimals != rhs.m_Decimals ||
-                                                                size_not_equal(lhs.m_Dimensions,
-                                                                               rhs.m_Dimensions,
-                                                                               UnitValue(lhs.m_BaseUnit),
-                                                                               lhs.m_Decimals);
-                                                     }
-                                                 };
-
-                                                 if (static_cast<int>(lhs.m_CardSizeScale * 1000) != static_cast<int>(rhs.m_CardSizeScale * 1000) ||
-                                                     lhs.m_RoundedRect.has_value() != rhs.m_RoundedRect.has_value() ||
-                                                     lhs.m_SvgInfo.has_value() != rhs.m_SvgInfo.has_value() ||
-                                                     len_info_not_equal(lhs.m_InputBleed, rhs.m_InputBleed))
-                                                 {
-                                                     return true;
-                                                 }
-
-                                                 if (lhs.m_RoundedRect.has_value())
-                                                 {
-                                                     return len_info_not_equal(lhs.m_RoundedRect.value().m_CornerRadius,
-                                                                               rhs.m_RoundedRect.value().m_CornerRadius) ||
-                                                            size_info_not_equal(lhs.m_RoundedRect.value().m_CardSize,
-                                                                                rhs.m_RoundedRect.value().m_CardSize);
-                                                 }
-                                                 else
-                                                 {
-                                                     return lhs.m_SvgInfo.value().m_SvgName != rhs.m_SvgInfo.value().m_SvgName ||
-                                                            size_not_equal(lhs.m_SvgInfo.value().m_Svg.m_Size,
-                                                                           rhs.m_SvgInfo.value().m_Svg.m_Size,
-                                                                           1_m,
-                                                                           3);
-                                                 }
-                                             }
-                                         };
-
-                                         const bool need_card_size_update{
-                                             card_sizes.contains(m_Project.m_Data.m_CardSizeChoice) &&
-                                             not_equal(card_sizes.at(m_Project.m_Data.m_CardSizeChoice),
-                                                       m_Cfg.m_CardSizes.at(m_Project.m_Data.m_CardSizeChoice))
-                                         };
-
-                                         m_Cfg.m_CardSizes = card_sizes;
-                                         ExternalCardSizesChanged();
-                                         CardSizesChanged();
-
-                                         if (need_card_size_update)
-                                         {
-                                             ExternalCardSizeChanged();
-                                         }
-                                     });
-
-                                 card_size_popup.Show();
-                             }
-                             window()->setEnabled(true);
-                         });
+                         this,
+                         &PrintOptionsWidget::OpenCardSizesPopup);
 
         auto* card_size_layout{ new QHBoxLayout };
         card_size_layout->addWidget(m_CardSize);
@@ -189,15 +79,13 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
         };
         card_size->setToolTip("Additional card sizes can be defined in config.ini\n\nNote: Card size will be accurate in the rendered PDF but only the quantity of cards per page is accurately displayed in the preview.");
     }
-    EnableOptionWidgetForDefaults(m_CardSize, m_Cfg, "card_size");
+    EnableOptionWidgetForDefaults(m_CardSize, config_reqs, "card_size");
 
     WidgetWithLabel* paper_size;
     {
         m_PaperSize = MakeComboBox(
-            std::span<const std::string>{ std::views::keys(m_Cfg.m_PageSizes) |
-                                          std::ranges::to<std::vector>() },
-            {},
-            project.m_Data.m_PageSize);
+            m_ViewModel.GetPageSizes() | c_PageSizeNames,
+            "Page Size");
 
         auto* paper_size_edit{ new QToolButton };
         paper_size_edit->setIcon(QIcon{ QPixmap{ ":/res/edit.png" } });
@@ -207,44 +95,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
 
         QObject::connect(paper_size_edit,
                          &QToolButton::pressed,
-                         [this]()
-                         {
-                             window()->setEnabled(false);
-                             {
-                                 PaperSizePopup paper_size_popup{ nullptr, m_Cfg };
-
-                                 QObject::connect(
-                                     &paper_size_popup,
-                                     &PaperSizePopup::PageSizesChanged,
-                                     [this](const std::map<std::string, Config::SizeInfo>& page_sizes)
-                                     {
-                                         if (page_sizes.empty())
-                                         {
-                                             LogError("User tried to remove all page sizes. Ignoring request.");
-                                             return;
-                                         }
-
-                                         m_Cfg.m_PageSizes = page_sizes;
-                                         if (!m_Cfg.m_PageSizes.contains(m_Project.m_Data.m_PageSize))
-                                         {
-                                             m_Project.m_Data.m_PageSize = m_Cfg.GetFirstValidPageSize();
-                                             PageSizeChanged();
-                                         }
-
-                                         UpdateComboBox(
-                                             m_PaperSize,
-                                             std::span<const std::string>{
-                                                 std::views::keys(m_Cfg.m_PageSizes) |
-                                                 std::ranges::to<std::vector>() },
-                                             {},
-                                             m_Project.m_Data.m_PageSize);
-                                         PageSizesChanged();
-                                     });
-
-                                 paper_size_popup.Show();
-                             }
-                             window()->setEnabled(true);
-                         });
+                         this,
+                         &PrintOptionsWidget::OpenPageSizesPopup);
 
         auto* paper_size_layout{ new QHBoxLayout };
         paper_size_layout->addWidget(m_PaperSize);
@@ -260,44 +112,44 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
         };
         paper_size->setToolTip("Additional card sizes can be defined in config.ini");
     }
-    EnableOptionWidgetForDefaults(m_PaperSize, m_Cfg, "page_size");
+    EnableOptionWidgetForDefaults(m_PaperSize, config_reqs, "page_size");
 
     m_BasePdf = new ComboBoxWithLabel{
-        "&Base Pdf", GetBasePdfNames(), project.m_Data.m_BasePdf
+        "&Base Pdf", m_ViewModel.GetBasePdfNames(), "Base Pdf"
     };
-    EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), m_Cfg, "base_pdf");
+    EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), config_reqs, "base_pdf");
 
     m_Orientation = new ComboBoxWithLabel{
-        "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(project.m_Data.m_Orientation)
+        "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(PageOrientation::Portrait)
     };
-    EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), m_Cfg, "orientation");
+    EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), config_reqs, "orientation");
 
-    auto* paper_info{ new LabelWithLabel{ "", SizeToString(initial_page_size, m_Cfg.m_BaseUnit) } };
+    auto* paper_info{ new LabelWithLabel{ "", SizeToString({ 15_mm, 42_mm }, base_unit) } };
     m_PaperInfo = paper_info->GetWidget();
 
-    auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString(initial_cards_size, m_Cfg.m_BaseUnit) } };
+    auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString({ 15_mm, 42_mm }, base_unit) } };
     m_CardsInfo = cards_info->GetWidget();
     m_CardsInfo->setToolTip("Size of the cards area in the final rendered PDF (excluding margins)");
 
-    auto* left_margin{ new LengthSpinBoxWithLabel{ "&Left Margin", config.m_BaseUnit } };
+    auto* left_margin{ new LengthSpinBoxWithLabel{ "&Left Margin", base_unit } };
     m_LeftMarginSpin = static_cast<LengthSpinBox*>(left_margin->GetWidget());
     m_LeftMarginSpin->ConnectUnitSignals(this);
     m_LeftMarginSpin->setDecimals(2);
     m_LeftMarginSpin->setSingleStep(0.1);
 
-    auto* top_margin{ new LengthSpinBoxWithLabel{ "&Top Margin", config.m_BaseUnit } };
+    auto* top_margin{ new LengthSpinBoxWithLabel{ "&Top Margin", base_unit } };
     m_TopMarginSpin = static_cast<LengthSpinBox*>(top_margin->GetWidget());
     m_TopMarginSpin->ConnectUnitSignals(this);
     m_TopMarginSpin->setDecimals(2);
     m_TopMarginSpin->setSingleStep(0.1);
 
-    auto* right_margin{ new LengthSpinBoxWithLabel{ "&Right Margin", config.m_BaseUnit } };
+    auto* right_margin{ new LengthSpinBoxWithLabel{ "&Right Margin", base_unit } };
     m_RightMarginSpin = static_cast<LengthSpinBox*>(right_margin->GetWidget());
     m_RightMarginSpin->ConnectUnitSignals(this);
     m_RightMarginSpin->setDecimals(2);
     m_RightMarginSpin->setSingleStep(0.1);
 
-    auto* bottom_margin{ new LengthSpinBoxWithLabel{ "&Bottom Margin", config.m_BaseUnit } };
+    auto* bottom_margin{ new LengthSpinBoxWithLabel{ "&Bottom Margin", base_unit } };
     m_BottomMarginSpin = static_cast<LengthSpinBox*>(bottom_margin->GetWidget());
     m_BottomMarginSpin->ConnectUnitSignals(this);
     m_BottomMarginSpin->setDecimals(2);
@@ -306,11 +158,11 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
     auto* margins_mode{ new ComboBoxWithLabel{
         "&Margin Mode",
         magic_enum::enum_names<MarginsMode>(),
-        magic_enum::enum_name(project.m_Data.m_MarginsMode) } };
+        magic_enum::enum_name(MarginsMode::Auto) } };
     m_MarginsMode = margins_mode->GetWidget();
-    EnableOptionWidgetForDefaults(m_MarginsMode, m_Cfg, "margins_mode");
+    EnableOptionWidgetForDefaults(m_MarginsMode, config_reqs, "margins_mode");
 
-    auto* all_margins{ new LengthSpinBoxWithLabel{ "&All Margins", config.m_BaseUnit } };
+    auto* all_margins{ new LengthSpinBoxWithLabel{ "&All Margins", base_unit } };
     m_AllMarginsSpin = static_cast<LengthSpinBox*>(all_margins->GetWidget());
     m_AllMarginsSpin->ConnectUnitSignals(this);
     m_AllMarginsSpin->setDecimals(2);
@@ -319,9 +171,9 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
     auto* card_orientation{ new ComboBoxWithLabel{
         "Card Orien&tation",
         magic_enum::enum_names<CardOrientation>(),
-        magic_enum::enum_name(project.m_Data.m_CardOrientation) } };
+        magic_enum::enum_name(CardOrientation::Vertical) } };
     m_CardOrientation = card_orientation->GetWidget();
-    EnableOptionWidgetForDefaults(m_CardOrientation, m_Cfg, "card_orientation");
+    EnableOptionWidgetForDefaults(m_CardOrientation, config_reqs, "card_orientation");
 
     {
         m_CardsWidthVertical = MakeDoubleSpinBox();
@@ -340,8 +192,8 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
         cards_layout_vertical_container->setLayout(cards_layout_vertical_layout);
         m_CardsLayoutVertical = new WidgetWithLabel("&Vertical Layout", cards_layout_vertical_container);
 
-        EnableOptionWidgetForDefaults(m_CardsWidthVertical, m_Cfg, "card_layout_vertical.width");
-        EnableOptionWidgetForDefaults(m_CardsHeightVertical, m_Cfg, "card_layout_vertical.height");
+        EnableOptionWidgetForDefaults(m_CardsWidthVertical, config_reqs, "card_layout_vertical.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightVertical, config_reqs, "card_layout_vertical.height");
     }
 
     {
@@ -361,14 +213,14 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
         cards_layout_horizontal_container->setLayout(cards_layout_horizontal_layout);
         m_CardsLayoutHorizontal = new WidgetWithLabel("&Horizontal Layout", cards_layout_horizontal_container);
 
-        EnableOptionWidgetForDefaults(m_CardsWidthHorizontal, m_Cfg, "card_layout_horizontal.width");
-        EnableOptionWidgetForDefaults(m_CardsHeightHorizontal, m_Cfg, "card_layout_horizontal.height");
+        EnableOptionWidgetForDefaults(m_CardsWidthHorizontal, config_reqs, "card_layout_horizontal.width");
+        EnableOptionWidgetForDefaults(m_CardsHeightHorizontal, config_reqs, "card_layout_horizontal.height");
     }
 
     auto* flip_on{ new ComboBoxWithLabel{
-        "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(project.m_Data.m_FlipOn) } };
+        "Fl&ip On", magic_enum::enum_names<FlipPageOn>(), magic_enum::enum_name(FlipPageOn::LeftEdge) } };
     m_FlipOn = flip_on->GetWidget();
-    EnableOptionWidgetForDefaults(m_FlipOn, m_Cfg, "flip_page_on");
+    EnableOptionWidgetForDefaults(m_FlipOn, config_reqs, "flip_page_on");
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(print_output);
@@ -391,773 +243,402 @@ PrintOptionsWidget::PrintOptionsWidget(Project& project,
     layout->addWidget(flip_on);
     setLayout(layout);
 
-    SetDefaults();
-
-    auto change_output{
-        [=, this](QString t)
-        {
-            m_Project.m_Data.m_FileName = t.toStdString();
-        }
-    };
-
-    auto change_render_header{
-        [=, this](Qt::CheckState s)
-        {
-            m_Project.m_Data.m_RenderPageHeader = s == Qt::CheckState::Checked;
-        }
-    };
-
-    auto change_papersize{
-        [=, this](QString t)
-        {
-            m_Project.m_Data.m_PageSize = t.toStdString();
-
-            const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
-            const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
-            const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
-            const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
-
-            m_BasePdf->setEnabled(infer_size);
-            m_BasePdf->setVisible(infer_size);
-            m_CardsLayoutVertical->setEnabled(fit_size && layout_vertical);
-            m_CardsLayoutVertical->setVisible(fit_size && layout_vertical);
-            m_CardsLayoutHorizontal->setEnabled(fit_size && layout_horizontal);
-            m_CardsLayoutHorizontal->setVisible(fit_size && layout_horizontal);
-            m_Orientation->setEnabled(!fit_size && !infer_size);
-            m_Orientation->setVisible(!fit_size && !infer_size);
-
-            RefreshMargins(true);
-
-            RefreshSizes();
-            PageSizeChanged();
-        }
-    };
-
-    auto change_base_pdf{
-        [=, this](QString t)
-        {
-            const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
-            if (!infer_size)
-            {
-                return;
-            }
-
-            m_Project.m_Data.m_BasePdf = t.toStdString();
-
-            RefreshSizes();
-            RefreshMargins(false);
-
-            PageSizeChanged();
-        }
-    };
-
-    auto change_cardsize{
-        [=, this](QString t)
-        {
-            std::string new_choice{ t.toStdString() };
-            if (new_choice == m_Project.m_Data.m_CardSizeChoice)
-            {
-                return;
-            }
-
-            m_Project.m_Data.m_CardSizeChoice = std::move(new_choice);
-            CardSizeChanged(m_Project.CardSize());
-
-            // Refresh anything needed for size change
-            RefreshSizes();
-            RefreshMargins(false);
-        }
-    };
-
-    auto on_margins_changed{
+    const auto change_cards_layout_vertical{
         [this]()
         {
-            // Recalculate card layout and refresh UI to reflect margin changes
-            // This ensures the preview accurately represents the final output
-            m_Project.CacheCardLayout();
-            RefreshSizes();
-            RefreshMargins(false);
-            MarginsChanged();
+            m_ViewModel.ChangeCardsLayoutVertical(
+                m_CardsWidthVertical->value(),
+                m_CardsHeightVertical->value());
         }
     };
-
-    auto change_margins_mode{
-        [=, this](const QString& t)
+    const auto change_cards_layout_horizontal{
+        [this]()
         {
-            const auto margins_mode{ magic_enum::enum_cast<MarginsMode>(t.toStdString())
-                                         .value_or(MarginsMode::Simple) };
-            m_Project.SetMarginsMode(margins_mode);
-
-            on_margins_changed();
-        }
-    };
-
-    enum class Margin
-    {
-        Left,
-        Top,
-        Right,
-        Bottom,
-    };
-
-    auto change_margin{
-        [=, this](Margin margin, Length v)
-        {
-            if (!m_Project.m_Data.m_CustomMargins.has_value())
-            {
-                return;
-            }
-
-            auto& custom_margins{ m_Project.m_Data.m_CustomMargins.value() };
-            if (margin == Margin::Right || margin == Margin::Bottom)
-            {
-                if (!custom_margins.m_BottomRight.has_value())
-                {
-                    return;
-                }
-            }
-
-            // Convert UI value to internal units and update project data
-            // Real-time updates ensure immediate visual feedback in preview
-            switch (margin)
-            {
-            case Margin::Left:
-                custom_margins.m_TopLeft.x = v;
-                break;
-            case Margin::Top:
-                custom_margins.m_TopLeft.y = v;
-                break;
-            case Margin::Right:
-                custom_margins.m_BottomRight->x = v;
-                break;
-            case Margin::Bottom:
-                custom_margins.m_BottomRight->y = v;
-                break;
-            }
-
-            if (m_Project.m_Data.m_MarginsMode == MarginsMode::Full)
-            {
-                // In full control adjust margins to make sure we fit at least one card
-                const auto margins{ m_Project.ComputeMargins() };
-                const auto page_size{ m_Project.ComputePageSize() };
-                const auto card_size{ m_Project.CardSizeWithBleed() };
-                switch (margin)
-                {
-                case Margin::Left:
-                    if (page_size.x - margins.m_Left - margins.m_Right < card_size.x)
-                    {
-                        custom_margins.m_BottomRight->x =
-                            page_size.x - margins.m_Left - card_size.x;
-                    }
-                    break;
-                case Margin::Top:
-                    if (page_size.y - margins.m_Top - margins.m_Bottom < card_size.y)
-                    {
-                        custom_margins.m_BottomRight->y =
-                            page_size.y - margins.m_Top - card_size.y;
-                    }
-                    break;
-                case Margin::Right:
-                    if (page_size.x - margins.m_Left - margins.m_Right < card_size.x)
-                    {
-                        custom_margins.m_TopLeft.x =
-                            page_size.x - margins.m_Right - card_size.x;
-                    }
-                    break;
-                case Margin::Bottom:
-                    if (page_size.y - margins.m_Top - margins.m_Bottom < card_size.y)
-                    {
-                        custom_margins.m_TopLeft.y =
-                            page_size.y - margins.m_Bottom - card_size.y;
-                    }
-                    break;
-                }
-            }
-
-            on_margins_changed();
-        }
-    };
-
-    auto change_all_margins{
-        [=, this](Length v)
-        {
-            if (!m_Project.m_Data.m_CustomMargins.has_value())
-            {
-                return;
-            }
-
-            auto& custom_margins{ m_Project.m_Data.m_CustomMargins.value() };
-            if (!custom_margins.m_BottomRight.has_value())
-            {
-                return;
-            }
-
-            custom_margins.m_TopLeft.x = v;
-            custom_margins.m_TopLeft.y = v;
-            custom_margins.m_BottomRight->x = v;
-            custom_margins.m_BottomRight->y = v;
-
-            on_margins_changed();
-        }
-    };
-
-    auto change_card_orientation{
-        [=, this](QString t)
-        {
-            m_Project.m_Data.m_CardOrientation = magic_enum::enum_cast<CardOrientation>(t.toStdString())
-                                                     .value_or(CardOrientation::Vertical);
-
-            const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
-            if (fit_size)
-            {
-                const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
-                m_CardsLayoutVertical->setEnabled(layout_vertical);
-                m_CardsLayoutVertical->setVisible(layout_vertical);
-
-                const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
-                m_CardsLayoutHorizontal->setEnabled(layout_horizontal);
-                m_CardsLayoutHorizontal->setVisible(layout_horizontal);
-
-                m_Project.m_Data.m_CardLayoutVertical = dla::uvec2{ 0, 0 };
-                if (layout_vertical)
-                {
-                    m_Project.m_Data.m_CardLayoutVertical.x = static_cast<uint32_t>(m_CardsWidthVertical->value());
-                    m_Project.m_Data.m_CardLayoutVertical.y = static_cast<uint32_t>(m_CardsHeightVertical->value());
-                }
-
-                m_Project.m_Data.m_CardLayoutHorizontal = dla::uvec2{ 0, 0 };
-                if (layout_horizontal)
-                {
-                    m_Project.m_Data.m_CardLayoutHorizontal.x = static_cast<uint32_t>(m_CardsWidthHorizontal->value());
-                    m_Project.m_Data.m_CardLayoutHorizontal.y = static_cast<uint32_t>(m_CardsHeightHorizontal->value());
-                }
-
-                CardLayoutChanged();
-            }
-
-            if (m_Project.CacheCardLayout())
-            {
-                CardLayoutChanged();
-            }
-            CardOrientationChanged();
-
-            RefreshSizes();
-            RefreshMargins(false);
-        }
-    };
-
-    auto change_cards_width_vertical{
-        [=, this](double v)
-        {
-            m_Project.m_Data.m_CardLayoutVertical.x = static_cast<uint32_t>(v);
-            CardLayoutChanged();
-        }
-    };
-
-    auto change_cards_height_vertical{
-        [=, this](double v)
-        {
-            m_Project.m_Data.m_CardLayoutVertical.y = static_cast<uint32_t>(v);
-            CardLayoutChanged();
-        }
-    };
-
-    auto change_cards_width_horizontal{
-        [=, this](double v)
-        {
-            m_Project.m_Data.m_CardLayoutHorizontal.x = static_cast<uint32_t>(v);
-            CardLayoutChanged();
-        }
-    };
-
-    auto change_cards_height_horizontal{
-        [=, this](double v)
-        {
-            m_Project.m_Data.m_CardLayoutHorizontal.y = static_cast<uint32_t>(v);
-            CardLayoutChanged();
-        }
-    };
-
-    auto change_orientation{
-        [=, this](QString t)
-        {
-            m_Project.m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(t.toStdString())
-                                                 .value_or(PageOrientation::Portrait);
-
-            const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
-            const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
-            if (fit_size || infer_size)
-            {
-                return;
-            }
-
-            // Clear custom margins when orientation changes
-            m_Project.m_Data.m_CustomMargins.reset();
-
-            RefreshSizes();
-            RefreshMargins(true);
-
-            OrientationChanged();
-        }
-    };
-
-    auto change_flip_on{
-        [=, this](QString t)
-        {
-            m_Project.m_Data.m_FlipOn = magic_enum::enum_cast<FlipPageOn>(t.toStdString())
-                                            .value_or(FlipPageOn::LeftEdge);
-            FlipOnChanged();
+            m_ViewModel.ChangeCardsLayoutHorizontal(
+                m_CardsWidthHorizontal->value(),
+                m_CardsHeightHorizontal->value());
         }
     };
 
     QObject::connect(m_PrintOutput,
                      &QLineEdit::textChanged,
-                     this,
-                     change_output);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeOutputFilename);
     QObject::connect(m_RenderHeader,
                      &QCheckBox::checkStateChanged,
-                     this,
-                     change_render_header);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangePageHeaderEnabled);
     QObject::connect(m_CardSize,
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_cardsize);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeCardSizeChoice);
     QObject::connect(m_PaperSize,
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_papersize);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangePageSizeChoice);
     QObject::connect(m_BasePdf->GetWidget(),
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_base_pdf);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeBasePdf);
     QObject::connect(m_MarginsMode,
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_margins_mode);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangePageMarginsMode);
     QObject::connect(m_LeftMarginSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     std::bind_front(change_margin, Margin::Left));
+                     &m_ViewModel,
+                     std::bind_front(
+                         &PrintOptionsViewModel::ChangePageMargin,
+                         &m_ViewModel,
+                         Margin::Left));
     QObject::connect(m_TopMarginSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     std::bind_front(change_margin, Margin::Top));
+                     &m_ViewModel,
+                     std::bind_front(
+                         &PrintOptionsViewModel::ChangePageMargin,
+                         &m_ViewModel,
+                         Margin::Top));
     QObject::connect(m_RightMarginSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     std::bind_front(change_margin, Margin::Right));
+                     &m_ViewModel,
+                     std::bind_front(
+                         &PrintOptionsViewModel::ChangePageMargin,
+                         &m_ViewModel,
+                         Margin::Right));
     QObject::connect(m_BottomMarginSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     std::bind_front(change_margin, Margin::Bottom));
+                     &m_ViewModel,
+                     std::bind_front(
+                         &PrintOptionsViewModel::ChangePageMargin,
+                         &m_ViewModel,
+                         Margin::Bottom));
     QObject::connect(m_AllMarginsSpin,
                      &LengthSpinBox::ValueChanged,
-                     this,
-                     change_all_margins);
+                     &m_ViewModel,
+                     std::bind_front(
+                         &PrintOptionsViewModel::ChangePageMargin,
+                         &m_ViewModel,
+                         Margin::All));
     QObject::connect(card_orientation->GetWidget(),
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_card_orientation);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeCardOrientation);
     QObject::connect(m_CardsWidthVertical,
                      &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_cards_width_vertical);
+                     &m_ViewModel,
+                     change_cards_layout_vertical);
     QObject::connect(m_CardsHeightVertical,
                      &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_cards_height_vertical);
+                     &m_ViewModel,
+                     change_cards_layout_vertical);
     QObject::connect(m_CardsWidthHorizontal,
                      &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_cards_width_horizontal);
+                     &m_ViewModel,
+                     change_cards_layout_horizontal);
     QObject::connect(m_CardsHeightHorizontal,
                      &QDoubleSpinBox::valueChanged,
-                     this,
-                     change_cards_height_horizontal);
+                     &m_ViewModel,
+                     change_cards_layout_horizontal);
     QObject::connect(m_Orientation->GetWidget(),
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_orientation);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangePageOrientation);
     QObject::connect(flip_on->GetWidget(),
                      &QComboBox::currentTextChanged,
-                     this,
-                     change_flip_on);
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeFlipPageOn);
 
     QObject::connect(this,
                      &PrintOptionsWidget::BaseUnitChanged,
                      this,
-                     [this]()
+                     [this](Unit base_unit)
                      {
-                         m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize(), m_Cfg.m_BaseUnit)));
-                         m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize(), m_Cfg.m_BaseUnit)));
+                         m_PaperInfo->setText(
+                             ToQString(SizeToString(
+                                 m_ViewModel.GetPageSize(), base_unit)));
+                         m_CardsInfo->setText(
+                             ToQString(SizeToString(
+                                 m_ViewModel.GetCardsSize(), base_unit)));
                      });
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AdvancedModeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BaseUnitChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailableCardSizesChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailablePageSizesChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailableBasePdfsChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(OutputFilenameChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageHeaderEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChoiceChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageSizeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageSizeChoiceChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BasePdfChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsSizeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsModeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardOrientationChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsLayoutVerticalChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsLayoutHorizontalChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageOrientationChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(FlipPageOnChanged);
+
+    m_ViewModel.EmitDefaults();
 }
 
-void PrintOptionsWidget::NewProjectOpened()
+void PrintOptionsWidget::AdvancedModeChanged(bool advanced_mode)
 {
-    SetDefaults();
+    // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
+    m_LeftMarginSpin->parentWidget()->setVisible(advanced_mode);
+    m_TopMarginSpin->parentWidget()->setVisible(advanced_mode);
+    m_RightMarginSpin->parentWidget()->setVisible(advanced_mode);
+    m_BottomMarginSpin->parentWidget()->setVisible(advanced_mode);
+    m_MarginsMode->parentWidget()->setVisible(advanced_mode);
+    m_AllMarginsSpin->parentWidget()->setVisible(advanced_mode);
+    m_CardOrientation->parentWidget()->setVisible(advanced_mode);
+    m_FlipOn->parentWidget()->setVisible(advanced_mode);
 }
-
-void PrintOptionsWidget::BleedChanged()
+void PrintOptionsWidget::AvailableCardSizesChanged(const CardSizes& card_sizes)
 {
-    RefreshSizes();
-    RefreshMargins(false);
-}
-
-void PrintOptionsWidget::SpacingChanged()
-{
-    RefreshSizes();
-    RefreshMargins(false);
-}
-
-void PrintOptionsWidget::AdvancedModeChanged()
-{
-    SetAdvancedWidgetsVisibility();
-}
-
-void PrintOptionsWidget::RenderBackendChanged()
-{
-    TRACY_AUTO_SCOPE();
-
-    const int base_pdf_size_idx{
-        [&]()
-        {
-            for (int i = 0; i < m_PaperSize->count(); i++)
-            {
-                if (m_PaperSize->itemText(i).toStdString() == Config::c_BasePDFSize)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }()
-    };
-    const bool has_base_pdf_option{ base_pdf_size_idx >= 0 };
-    const bool has_base_pdf_confg{ m_Cfg.m_PageSizes.contains(std::string{ Config::c_BasePDFSize }) };
-    const bool need_add_base_pdf_option{ !has_base_pdf_option && has_base_pdf_confg };
-    const bool need_remove_base_pdf_option{ has_base_pdf_option && !has_base_pdf_confg };
-
-    if (need_add_base_pdf_option || need_remove_base_pdf_option)
-    {
-        if (need_add_base_pdf_option)
-        {
-            m_PaperSize->addItem(ToQString(Config::c_BasePDFSize));
-        }
-        else
-        {
-            m_PaperSize->removeItem(base_pdf_size_idx);
-        }
-        m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
-    }
-
-    if (m_Cfg.m_Backend != PdfBackend::PoDoFo && m_Project.m_Data.m_PageSize == Config::c_BasePDFSize)
-    {
-        const auto default_page_size{ m_Cfg.GetFirstValidPageSize() };
-        m_PaperSize->setCurrentText(ToQString(default_page_size));
-        m_Project.m_Data.m_PageSize = default_page_size;
-        PageSizeChanged();
-    }
-}
-
-void PrintOptionsWidget::BasePdfAdded()
-{
-    TRACY_AUTO_SCOPE();
-
-    auto* base_pdf_combo_box = m_BasePdf->GetWidget();
-    const auto has_base_pdf{
-        [=](const auto& base_pdf_name)
-        {
-            for (int i = 0; i < base_pdf_combo_box->count(); i++)
-            {
-                if (base_pdf_combo_box->itemText(i).toStdString() == base_pdf_name)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-    };
-
-    for (const auto& base_pdf_name : GetBasePdfNames())
-    {
-        if (!has_base_pdf(base_pdf_name))
-        {
-            base_pdf_combo_box->addItem(ToQString(base_pdf_name));
-        }
-    }
-}
-
-void PrintOptionsWidget::ExternalCardSizeChanged()
-{
-    TRACY_AUTO_SCOPE();
-
-    m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
-    RefreshSizes();
-    RefreshMargins(false);
-    CardSizeChanged(m_Project.CardSize());
-}
-
-void PrintOptionsWidget::ExternalCardSizesChanged()
-{
-    TRACY_AUTO_SCOPE();
-
     UpdateComboBox(
         m_CardSize,
-        std::span<const std::string>{
-            std::views::keys(m_Cfg.m_CardSizes) |
-            std::ranges::to<std::vector>() },
-        std::span<const std::string>{
-            m_Cfg.m_CardSizes |
-            std::views::values |
-            std::views::transform(&Config::CardSizeInfo::m_Hint) |
-            std::ranges::to<std::vector>() },
-        m_Project.m_Data.m_CardSizeChoice);
-
-    if (!m_Cfg.m_CardSizes.contains(m_Project.m_Data.m_CardSizeChoice))
-    {
-        m_Project.m_Data.m_CardSizeChoice = m_Cfg.GetFirstValidCardSize();
-        ExternalCardSizeChanged();
-    }
+        card_sizes | c_CardSizeNames,
+        card_sizes | c_CardSizeHints,
+        m_CardSize->currentText().toStdString());
+}
+void PrintOptionsWidget::AvailablePageSizesChanged(const PageSizes& page_sizes)
+{
+    UpdateComboBox(
+        m_PaperSize,
+        page_sizes | c_PageSizeNames,
+        m_PaperSize->currentText().toStdString());
+}
+void PrintOptionsWidget::AvailableBasePdfsChanged(std::span<const std::string> base_pdfs)
+{
+    UpdateComboBox(
+        m_BasePdf->GetWidget(),
+        base_pdfs,
+        m_BasePdf->GetWidget()->currentText().toStdString());
 }
 
-void PrintOptionsWidget::SetDefaults()
+void PrintOptionsWidget::OutputFilenameChanged(const fs::path& output_filename)
 {
-    TRACY_AUTO_SCOPE();
+    m_PrintOutput->blockSignals(true);
+    m_PrintOutput->setText(ToQString(output_filename));
+    m_PrintOutput->blockSignals(false);
+}
+void PrintOptionsWidget::PageHeaderEnabledChanged(bool page_header_enabled)
+{
+    m_RenderHeader->blockSignals(true);
+    m_RenderHeader->setChecked(page_header_enabled);
+    m_RenderHeader->blockSignals(false);
+}
+void PrintOptionsWidget::CardSizeChoiceChanged(std::string_view card_size_choice)
+{
+    m_CardSize->blockSignals(true);
+    m_CardSize->setCurrentText(ToQString(card_size_choice));
+    m_CardSize->blockSignals(false);
+}
+void PrintOptionsWidget::PageSizeChanged(Size page_size)
+{
+    m_PaperInfo->setText(ToQString(SizeToString(page_size, m_ViewModel.GetBaseUnit())));
+}
+void PrintOptionsWidget::PageSizeChoiceChanged(std::string_view page_size_choice)
+{
+    m_PaperSize->blockSignals(true);
+    m_PaperSize->setCurrentText(ToQString(page_size_choice));
+    m_PaperSize->blockSignals(false);
 
-    m_PrintOutput->setText(ToQString(m_Project.m_Data.m_FileName));
-    m_RenderHeader->setChecked(m_Project.m_Data.m_RenderPageHeader);
-    m_CardSize->setCurrentText(ToQString(m_Project.m_Data.m_CardSizeChoice));
-    m_PaperSize->setCurrentText(ToQString(m_Project.m_Data.m_PageSize));
-    m_CardOrientation->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_CardOrientation)));
+    const auto card_orientation{ m_ViewModel.GetCardOrientation() };
+    const bool fit_size{ page_size_choice == g_FitSize };
+    const bool infer_size{ page_size_choice == g_BasePDFSize };
 
-    const bool fit_size{ m_Project.m_Data.m_PageSize == Config::c_FitSize };
-    const bool infer_size{ m_Project.m_Data.m_PageSize == Config::c_BasePDFSize };
-
-    const bool layout_vertical{ m_Project.m_Data.m_CardOrientation != CardOrientation::Horizontal };
+    const bool layout_vertical{ card_orientation != CardOrientation::Horizontal };
     m_CardsLayoutVertical->setEnabled(fit_size && layout_vertical);
     m_CardsLayoutVertical->setVisible(fit_size && layout_vertical);
 
-    const bool layout_horizontal{ m_Project.m_Data.m_CardOrientation != CardOrientation::Vertical };
+    const bool layout_horizontal{ card_orientation != CardOrientation::Vertical };
     m_CardsLayoutHorizontal->setEnabled(fit_size && layout_horizontal);
     m_CardsLayoutHorizontal->setVisible(fit_size && layout_horizontal);
 
-    m_CardsWidthVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.x);
-    m_CardsHeightVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.y);
-    m_CardsWidthHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.x);
-    m_CardsHeightHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.y);
-
-    // Update card layout display and warnings
-    RefreshCardLayout();
-
     m_Orientation->setEnabled(!fit_size && !infer_size);
     m_Orientation->setVisible(!fit_size && !infer_size);
-    m_Orientation->GetWidget()->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_Orientation)));
 
-    m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_FlipOn)));
-
-    m_BasePdf->GetWidget()->setCurrentText(ToQString(m_Project.m_Data.m_BasePdf));
     m_BasePdf->setEnabled(infer_size);
     m_BasePdf->setVisible(infer_size);
+}
+void PrintOptionsWidget::BasePdfChanged(std::string_view base_pdf)
+{
+    auto* base_pdf_widget{ m_BasePdf->GetWidget() };
+    base_pdf_widget->blockSignals(true);
+    base_pdf_widget->setCurrentText(ToQString(base_pdf));
+    base_pdf_widget->blockSignals(false);
+}
+void PrintOptionsWidget::CardsSizeChanged(Size cards_size)
+{
+    m_CardsInfo->setText(ToQString(SizeToString(cards_size, m_ViewModel.GetBaseUnit())));
+}
+void PrintOptionsWidget::PageMarginsModeChanged(MarginsMode margins_mode)
+{
+    m_MarginsMode->blockSignals(true);
+    m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(margins_mode)));
+    m_MarginsMode->blockSignals(false);
 
-    const auto max_margins{ m_Project.ComputeMaxMargins() };
-    const auto margins{ m_Project.ComputeMargins() };
-
-    const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
     const bool custom_margins{ margins_mode != MarginsMode::Auto };
     const bool margins_full_control{ margins_mode == MarginsMode::Full };
     const bool margins_linked{ margins_mode == MarginsMode::Linked };
 
-    m_LeftMarginSpin->SetRange(0_mm, max_margins.x);
-    m_LeftMarginSpin->SetValue(margins.m_Left);
     m_LeftMarginSpin->setEnabled(custom_margins && !margins_linked);
-
-    m_TopMarginSpin->SetRange(0_mm, max_margins.y);
-    m_TopMarginSpin->SetValue(margins.m_Top);
     m_TopMarginSpin->setEnabled(custom_margins && !margins_linked);
-
-    m_RightMarginSpin->SetRange(0_mm, max_margins.x);
-    m_RightMarginSpin->SetValue(margins.m_Right);
     m_RightMarginSpin->setEnabled(custom_margins && margins_full_control);
-
-    m_BottomMarginSpin->SetRange(0_mm, max_margins.y);
-    m_BottomMarginSpin->SetValue(margins.m_Bottom);
     m_BottomMarginSpin->setEnabled(custom_margins && margins_full_control);
-
-    // Set up All Margins control
-    m_AllMarginsSpin->SetRange(0_mm, std::min(max_margins.x, max_margins.y));
-    m_AllMarginsSpin->SetValue(m_LeftMarginSpin->Value());
     m_AllMarginsSpin->setEnabled(custom_margins && margins_linked);
-
-    // Set up margin mode toggle
-    m_MarginsMode->setCurrentText(ToQString(magic_enum::enum_name(m_Project.m_Data.m_MarginsMode)));
-
-    SetAdvancedWidgetsVisibility();
 }
-
-void PrintOptionsWidget::SetAdvancedWidgetsVisibility()
+void PrintOptionsWidget::PageMarginsChanged(Margins margins)
 {
-    // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
-    m_LeftMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_TopMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_RightMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_BottomMarginSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_MarginsMode->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_AllMarginsSpin->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_CardOrientation->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
-    m_FlipOn->parentWidget()->setVisible(m_Cfg.m_AdvancedMode);
+    m_LeftMarginSpin->blockSignals(true);
+    m_LeftMarginSpin->SetValue(margins.m_Left);
+    m_LeftMarginSpin->blockSignals(false);
+
+    m_TopMarginSpin->blockSignals(true);
+    m_TopMarginSpin->SetValue(margins.m_Top);
+    m_TopMarginSpin->blockSignals(false);
+
+    m_RightMarginSpin->blockSignals(true);
+    m_RightMarginSpin->SetValue(margins.m_Right);
+    m_RightMarginSpin->blockSignals(false);
+
+    m_BottomMarginSpin->blockSignals(true);
+    m_BottomMarginSpin->SetValue(margins.m_Bottom);
+    m_BottomMarginSpin->blockSignals(false);
+
+    m_AllMarginsSpin->blockSignals(true);
+    m_AllMarginsSpin->SetValue(margins.m_Left);
+    m_AllMarginsSpin->blockSignals(false);
 }
-
-void PrintOptionsWidget::RefreshSizes()
+void PrintOptionsWidget::MaxPageMarginsChanged(Size max_margins)
 {
-    TRACY_AUTO_SCOPE();
-
-    RefreshCardLayout();
-
-    m_PaperInfo->setText(ToQString(SizeToString(m_Project.ComputePageSize(), m_Cfg.m_BaseUnit)));
-    m_CardsInfo->setText(ToQString(SizeToString(m_Project.ComputeCardsSize(), m_Cfg.m_BaseUnit)));
-}
-
-void PrintOptionsWidget::RefreshMargins(bool reset_margins)
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto margins_mode{ m_Project.m_Data.m_MarginsMode };
-    const auto max_margins{ m_Project.ComputeMaxMargins() };
-
     m_LeftMarginSpin->SetRange(0_mm, max_margins.x);
     m_TopMarginSpin->SetRange(0_mm, max_margins.y);
     m_RightMarginSpin->SetRange(0_mm, max_margins.x);
     m_BottomMarginSpin->SetRange(0_mm, max_margins.y);
-    m_AllMarginsSpin->SetRange(0_mm, dla::math::min(max_margins.x, max_margins.y));
+    m_AllMarginsSpin->SetRange(0_mm, std::min(max_margins.x, max_margins.y));
+}
+void PrintOptionsWidget::CardOrientationChanged(CardOrientation card_orientation)
+{
+    m_CardOrientation->blockSignals(true);
+    m_CardOrientation->setCurrentText(ToQString(magic_enum::enum_name(card_orientation)));
+    m_CardOrientation->blockSignals(false);
 
-    if (reset_margins)
+    const auto page_size_choice{ m_ViewModel.GetPageSizeChoice() };
+    const bool fit_size{ page_size_choice == g_FitSize };
+
+    const bool layout_vertical{ card_orientation != CardOrientation::Horizontal };
+    m_CardsLayoutVertical->setEnabled(fit_size && layout_vertical);
+    m_CardsLayoutVertical->setVisible(fit_size && layout_vertical);
+
+    const bool layout_horizontal{ card_orientation != CardOrientation::Vertical };
+    m_CardsLayoutHorizontal->setEnabled(fit_size && layout_horizontal);
+    m_CardsLayoutHorizontal->setVisible(fit_size && layout_horizontal);
+}
+void PrintOptionsWidget::CardsLayoutVerticalChanged(dla::uvec2 card_layout)
+{
+    m_CardsWidthVertical->blockSignals(true);
+    m_CardsWidthVertical->setValue(card_layout.x);
+    m_CardsWidthVertical->blockSignals(false);
+
+    m_CardsHeightVertical->blockSignals(true);
+    m_CardsHeightVertical->setValue(card_layout.y);
+    m_CardsHeightVertical->blockSignals(false);
+
+    if (card_layout.x == 0 || card_layout.y == 0)
     {
-        const auto default_margins{ m_Project.ComputeDefaultMargins() };
-        if (margins_mode == MarginsMode::Linked)
-        {
-            const auto default_all_margins{ std::min(default_margins.x, default_margins.y) };
-            m_LeftMarginSpin->SetValue(default_all_margins);
-            m_TopMarginSpin->SetValue(default_all_margins);
-            m_RightMarginSpin->SetValue(default_all_margins);
-            m_BottomMarginSpin->SetValue(default_all_margins);
-            m_AllMarginsSpin->SetValue(default_all_margins);
-        }
-        else
-        {
-            m_LeftMarginSpin->SetValue(default_margins.x);
-            m_TopMarginSpin->SetValue(default_margins.y);
-            m_RightMarginSpin->SetValue(default_margins.x);
-            m_BottomMarginSpin->SetValue(default_margins.y);
-            m_AllMarginsSpin->SetValue(0_mm);
-        }
+        m_CardsWidthVertical->setStyleSheet("QSpinBox { color: red; }");
+        m_CardsHeightVertical->setStyleSheet("QSpinBox { color: red; }");
+        m_CardsWidthVertical->setToolTip("No cards can fit on the page with current settings");
+        m_CardsHeightVertical->setToolTip("No cards can fit on the page with current settings");
     }
     else
     {
-        // Temporarily block signals to prevent recursive calls during refresh
-        m_LeftMarginSpin->blockSignals(true);
-        m_TopMarginSpin->blockSignals(true);
-        m_RightMarginSpin->blockSignals(true);
-        m_BottomMarginSpin->blockSignals(true);
-        m_AllMarginsSpin->blockSignals(true);
-
-        // Preserve current margin values after updating ranges while also pulling
-        // exact computed margins in case they are dependent on each other
-        const auto margins{ m_Project.ComputeMargins() };
-        m_LeftMarginSpin->SetValue(margins.m_Left);
-        m_TopMarginSpin->SetValue(margins.m_Top);
-        m_RightMarginSpin->SetValue(margins.m_Right);
-        m_BottomMarginSpin->SetValue(margins.m_Bottom);
-
-        if (margins_mode == MarginsMode::Linked)
-        {
-            m_AllMarginsSpin->SetValue(margins.m_Left);
-        }
-        else
-        {
-            m_AllMarginsSpin->SetValue(0_mm);
-        }
-
-        // Unblock signals
-        m_LeftMarginSpin->blockSignals(false);
-        m_TopMarginSpin->blockSignals(false);
-        m_RightMarginSpin->blockSignals(false);
-        m_BottomMarginSpin->blockSignals(false);
-        m_AllMarginsSpin->blockSignals(false);
-    }
-
-    // Set enabled states based on margin mode
-    const bool custom_margins{ margins_mode != MarginsMode::Auto };
-    const bool margins_full_control{ margins_mode == MarginsMode::Full };
-    const bool margins_linked{ margins_mode == MarginsMode::Linked };
-    m_LeftMarginSpin->setEnabled(custom_margins && !margins_linked);
-    m_TopMarginSpin->setEnabled(custom_margins && !margins_linked);
-    m_RightMarginSpin->setEnabled(custom_margins && margins_full_control);
-    m_BottomMarginSpin->setEnabled(custom_margins && margins_full_control);
-    m_AllMarginsSpin->setEnabled(custom_margins && margins_linked);
-}
-
-void PrintOptionsWidget::RefreshCardLayout()
-{
-    TRACY_AUTO_SCOPE();
-
-    if (m_Project.CacheCardLayout())
-    {
-        m_CardsWidthVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.x);
-        m_CardsHeightVertical->setValue(m_Project.m_Data.m_CardLayoutVertical.y);
-
-        m_CardsWidthHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.x);
-        m_CardsHeightHorizontal->setValue(m_Project.m_Data.m_CardLayoutHorizontal.y);
-
-        // Show visual warning when no cards can fit on the page
-        const auto check_valid_layout{
-            [](QDoubleSpinBox* width, QDoubleSpinBox* height, const auto& layout)
-            {
-                if (layout.x == 0 || layout.y == 0)
-                {
-                    width->setStyleSheet("QSpinBox { color: red; }");
-                    height->setStyleSheet("QSpinBox { color: red; }");
-                    width->setToolTip("No cards can fit on the page with current settings");
-                    height->setToolTip("No cards can fit on the page with current settings");
-                }
-                else
-                {
-                    width->setStyleSheet("");
-                    height->setStyleSheet("");
-                    width->setToolTip("");
-                    height->setToolTip("");
-                }
-            }
-        };
-        check_valid_layout(m_CardsWidthVertical, m_CardsHeightVertical, m_Project.m_Data.m_CardLayoutVertical);
-        check_valid_layout(m_CardsWidthHorizontal, m_CardsHeightHorizontal, m_Project.m_Data.m_CardLayoutHorizontal);
+        m_CardsWidthVertical->setStyleSheet("");
+        m_CardsHeightVertical->setStyleSheet("");
+        m_CardsWidthVertical->setToolTip("");
+        m_CardsHeightVertical->setToolTip("");
     }
 }
-
-std::vector<std::string> PrintOptionsWidget::GetBasePdfNames()
+void PrintOptionsWidget::CardsLayoutHorizontalChanged(dla::uvec2 card_layout)
 {
-    TRACY_AUTO_SCOPE();
+    m_CardsWidthHorizontal->blockSignals(true);
+    m_CardsWidthHorizontal->setValue(card_layout.x);
+    m_CardsWidthHorizontal->blockSignals(false);
 
-    std::vector<std::string> base_pdf_names{ "Empty A4" };
+    m_CardsHeightHorizontal->blockSignals(true);
+    m_CardsHeightHorizontal->setValue(card_layout.y);
+    m_CardsHeightHorizontal->blockSignals(false);
 
-    QDirIterator it("./res/base_pdfs");
-    while (it.hasNext())
+    if (card_layout.x == 0 || card_layout.y == 0)
     {
-        const QFileInfo next{ it.nextFileInfo() };
-        if (!next.isFile() || next.suffix().toLower() != "pdf")
-        {
-            continue;
-        }
-
-        std::string base_name{ next.baseName().toStdString() };
-        if (std::ranges::contains(base_pdf_names, base_name))
-        {
-            continue;
-        }
-
-        base_pdf_names.push_back(std::move(base_name));
+        m_CardsWidthHorizontal->setStyleSheet("QSpinBox { color: red; }");
+        m_CardsHeightHorizontal->setStyleSheet("QSpinBox { color: red; }");
+        m_CardsWidthHorizontal->setToolTip("No cards can fit on the page with current settings");
+        m_CardsHeightHorizontal->setToolTip("No cards can fit on the page with current settings");
     }
+    else
+    {
+        m_CardsWidthHorizontal->setStyleSheet("");
+        m_CardsHeightHorizontal->setStyleSheet("");
+        m_CardsWidthHorizontal->setToolTip("");
+        m_CardsHeightHorizontal->setToolTip("");
+    }
+}
+void PrintOptionsWidget::PageOrientationChanged(PageOrientation page_orientation)
+{
+    auto* page_orientation_widget{ m_Orientation->GetWidget() };
+    page_orientation_widget->blockSignals(true);
+    page_orientation_widget->setCurrentText(ToQString(magic_enum::enum_name(page_orientation)));
+    page_orientation_widget->blockSignals(false);
+}
+void PrintOptionsWidget::FlipPageOnChanged(FlipPageOn flip_on)
+{
+    m_FlipOn->blockSignals(true);
+    m_FlipOn->setCurrentText(ToQString(magic_enum::enum_name(flip_on)));
+    m_FlipOn->blockSignals(false);
+}
 
-    return base_pdf_names;
+void PrintOptionsWidget::OpenCardSizesPopup()
+{
+    CardSizePopup card_size_popup{
+        nullptr,
+        m_ViewModel.GetCardSizes(),
+        m_ViewModel.GetDefaultCardSizes(),
+        m_ViewModel.GetBaseUnit(),
+    };
+
+    QObject::connect(
+        &card_size_popup,
+        &CardSizePopup::CardSizesChanged,
+        &m_ViewModel,
+        &PrintOptionsViewModel::ChangeCardSizes);
+
+    window()->setEnabled(false);
+    card_size_popup.Show();
+    window()->setEnabled(true);
+}
+void PrintOptionsWidget::OpenPageSizesPopup()
+{
+    PaperSizePopup paper_size_popup{
+        nullptr,
+        m_ViewModel.GetPageSizes(),
+        m_ViewModel.GetDefaultPageSizes(),
+    };
+
+    QObject::connect(
+        &paper_size_popup,
+        &PaperSizePopup::PageSizesChanged,
+        &m_ViewModel,
+        &PrintOptionsViewModel::ChangePageSizes);
+
+    window()->setEnabled(false);
+    paper_size_popup.Show();
+    window()->setEnabled(true);
 }
 
 std::string PrintOptionsWidget::SizeToString(Size size, Unit unit)

@@ -8,6 +8,7 @@
 
 #include <ppp/color.hpp>
 #include <ppp/config.hpp>
+#include <ppp/config_types.hpp>
 #include <ppp/constants.hpp>
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
@@ -112,7 +113,7 @@ struct ProjectData
     Size ComputeMaxMargins(const ConfigData& config, MarginsMode margins_mode) const;
     Size ComputeDefaultMargins(const ConfigData& config) const;
 
-    const Config::CardSizeInfo& CardSizeInfo(const ConfigData& config) const;
+    const CardSizeInfo& CardSizeInfo(const ConfigData& config) const;
     float CardRatio(const ConfigData& config) const;
     Size CardSize(const ConfigData& config) const;
     Size CardSizeWithBleed(const ConfigData& config) const;
@@ -212,6 +213,21 @@ class Project : public QObject
     const Image& GetCroppedBacksidePreview(const fs::path& card_name) const;
     const Image& GetUncroppedBacksidePreview(const fs::path& card_name) const;
 
+    void SetOutputFilename(fs::path output_filename);
+    void SetPageHeaderEnabled(bool page_header_enabled);
+
+    void SetCardSizeChoice(std::string card_size_choice);
+    void SetCardOrientation(CardOrientation card_orientation);
+    void SetPageSizeChoice(std::string page_size_choice);
+    void SetBasePdf(std::string base_pdf);
+    void SetPageOrientation(PageOrientation page_orientation);
+    void SetFlipPageOn(FlipPageOn flip_page_on);
+
+    void SetPageMarginsMode(MarginsMode margins_mode);
+    void SetPageMargin(Margin margin, Length margin_value);
+    void SetCardsLayoutVertical(dla::uvec2 cards_layout);
+    void SetCardsLayoutHorizontal(dla::uvec2 cards_layout);
+
     void SetExportExactGuides(bool export_exact_guides);
     void SetGuidesEnabled(bool guides_enabled);
     void SetBacksideGuidesEnabled(bool backside_guides_enabled);
@@ -307,10 +323,33 @@ class Project : public QObject
     bool AddExternalCard(const fs::path& absolute_image_path);
     bool RemoveExternalCard(const fs::path& card_name);
 
+    void AvailableCardSizesChanged(const CardSizes& card_sizes);
+    void AvailablePageSizesChanged(const PageSizes& page_sizes);
+
   signals:
     void FailedAddingExternalCard(const fs::path& absolute_image_path);
     void ExternalCardAdded(const fs::path& absolute_image_path);
     void ExternalCardRemoved(const fs::path& absolute_image_path);
+
+    void OutputFilenameChanged(const fs::path& output_filename);
+    void PageHeaderEnabledChanged(bool page_header_enabled);
+
+    void CardSizeChoiceChanged(std::string card_size_choice);
+    void CardSizeChanged(Size card_size);
+    void CardOrientationChanged(CardOrientation card_orientation);
+    void PageSizeChoiceChanged(std::string_view page_size_choice);
+    void BasePdfChanged(std::string_view base_pdf);
+    void PageSizeChanged(Size page_size);
+    void PageOrientationChanged(PageOrientation page_orientation);
+    void FlipPageOnChanged(FlipPageOn flip_page_on);
+
+    void PageMarginsModeChanged(MarginsMode margins_mode);
+    void PageMarginsChanged(Margins margins);
+    void MaxPageMarginsChanged(Size margins);
+    void CardsLayoutVerticalChanged(dla::uvec2 cards_layout);
+    void CardsLayoutHorizontalChanged(dla::uvec2 cards_layout);
+
+    void CardsSizeChanged(Size cards_size);
 
     void ExportExactGuidesChanged(bool export_exact_guides);
     void GuidesEnabledChanged(bool guides_enabled);

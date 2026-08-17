@@ -4,8 +4,10 @@
 #include <QWheelEvent>
 #include <QWidget>
 
-#include <ppp/config.hpp>
-#include <ppp/util.hpp>
+#include <ppp/config_types.hpp>
+#include <ppp/units.hpp>
+
+#include <ppp/project/project_types.hpp>
 
 class QCheckBox;
 class QComboBox;
@@ -13,7 +15,7 @@ class QDoubleSpinBox;
 class QLabel;
 class QLineEdit;
 
-class Project;
+class PrintOptionsViewModel;
 class WidgetWithLabel;
 class ComboBoxWithLabel;
 class LengthSpinBox;
@@ -23,48 +25,41 @@ class PrintOptionsWidget : public QWidget
     Q_OBJECT
 
   public:
-    PrintOptionsWidget(Project& project,
-                       Config& config);
+    PrintOptionsWidget(PrintOptionsViewModel* view_model);
 
   signals:
-    void PageSizeChanged();
-    void PageSizesChanged();
-    void CardSizeChanged(Size card_size);
-    void CardSizesChanged();
-    void MarginsChanged();
-    void CardOrientationChanged();
-    void CardLayoutChanged();
-    void OrientationChanged();
-    void FlipOnChanged();
-
+    // forward
     void BaseUnitChanged(Unit base_unit);
 
-  public slots:
-    void NewProjectOpened();
-    void BleedChanged();
-    void SpacingChanged();
+  private slots:
+    void AdvancedModeChanged(bool advanced_mode);
+    void AvailableCardSizesChanged(const CardSizes& card_sizes);
+    void AvailablePageSizesChanged(const PageSizes& page_sizes);
+    void AvailableBasePdfsChanged(std::span<const std::string> base_pdfs);
 
-    void AdvancedModeChanged();
-    void RenderBackendChanged();
-
-    void BasePdfAdded();
-
-    void ExternalCardSizeChanged();
-    void ExternalCardSizesChanged();
+    void OutputFilenameChanged(const fs::path& output_filename);
+    void PageHeaderEnabledChanged(bool page_header_enabled);
+    void CardSizeChoiceChanged(std::string_view card_size_choice);
+    void PageSizeChanged(Size page_size);
+    void PageSizeChoiceChanged(std::string_view page_size_choice);
+    void BasePdfChanged(std::string_view base_pdf);
+    void CardsSizeChanged(Size cards_size);
+    void PageMarginsModeChanged(MarginsMode margins_mode);
+    void PageMarginsChanged(Margins margins);
+    void MaxPageMarginsChanged(Size max_margins);
+    void CardOrientationChanged(CardOrientation card_orientation);
+    void CardsLayoutVerticalChanged(dla::uvec2 card_layout);
+    void CardsLayoutHorizontalChanged(dla::uvec2 card_layout);
+    void PageOrientationChanged(PageOrientation page_orientation);
+    void FlipPageOnChanged(FlipPageOn flip_on);
 
   private:
-    void SetDefaults();
-    void SetAdvancedWidgetsVisibility();
+    void OpenCardSizesPopup();
+    void OpenPageSizesPopup();
 
-    void RefreshSizes();
-    void RefreshMargins(bool reset_margins);
-    void RefreshCardLayout();
+    static std::string SizeToString(Size size, Unit unit);
 
-    static std::vector<std::string> GetBasePdfNames();
-    static std::string SizeToString(Size size, Unit base_unit);
-
-    Project& m_Project;
-    Config& m_Cfg;
+    PrintOptionsViewModel& m_ViewModel;
 
     QLineEdit* m_PrintOutput{ nullptr };
     QCheckBox* m_RenderHeader{ nullptr };

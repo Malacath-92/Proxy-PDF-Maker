@@ -59,12 +59,8 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         };
         m_CardSize =
             MakeComboBox(
-                std::span<const std::string>{ std::views::keys(config.m_CardSizes) |
-                                              std::ranges::to<std::vector>() },
-                std::span<const std::string>{ config.m_CardSizes |
-                                              std::views::values |
-                                              std::views::transform(&Config::CardSizeInfo::m_Hint) |
-                                              std::ranges::to<std::vector>() },
+                config.m_CardSizes | c_CardSizeNames,
+                config.m_CardSizes | c_CardSizeHints,
                 default_card_size);
         auto* card_size{
             new WidgetWithLabel{
@@ -89,9 +85,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         };
         m_PaperSize =
             MakeComboBox(
-                std::span<const std::string>{ std::views::keys(config.m_PageSizes) |
-                                              std::ranges::to<std::vector>() },
-                {},
+                config.m_PageSizes | c_PageSizeNames,
                 default_page_size);
         auto* paper_size{
             new WidgetWithLabel{

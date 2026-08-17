@@ -86,7 +86,7 @@ static std::function<bool(const CardInfo&, const CardInfo&)> GetSortFunction(con
     std::unreachable();
 }
 
-fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
+static fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
 {
     try
     {
@@ -97,6 +97,22 @@ fs::file_time_type TryGetLastWriteTime(const fs::path& file_path)
         LogError("Failed getting last write time: {}", e.what());
         return {};
     }
+}
+
+static bool RoughlyEqual(Angle lhs, Angle rhs)
+{
+    return dla::math::abs(rhs - lhs) < 0.001_deg;
+}
+
+static bool RoughlyEqual(Length lhs, Length rhs)
+{
+    return dla::math::abs(rhs - lhs) < 0.001_mm;
+}
+
+static bool RoughlyEqual(Size lhs, Size rhs)
+{
+    return RoughlyEqual(lhs.x, rhs.x) &&
+           RoughlyEqual(lhs.y, rhs.y);
 }
 
 Project::Project(const Config& config)
@@ -1367,6 +1383,266 @@ const Image& Project::GetUncroppedBacksidePreview(const fs::path& card_name) con
     return m_Data.m_FallbackPreview.m_UncroppedImage;
 }
 
+void Project::SetOutputFilename(fs::path output_filename)
+{
+    if (m_Data.m_FileName != output_filename)
+    {
+        m_Data.m_FileName = std::move(output_filename);
+        OutputFilenameChanged(m_Data.m_FileName);
+    }
+}
+void Project::SetPageHeaderEnabled(bool page_header_enabled)
+{
+    if (m_Data.m_RenderPageHeader != page_header_enabled)
+    {
+        m_Data.m_RenderPageHeader = page_header_enabled;
+        PageHeaderEnabledChanged(page_header_enabled);
+    }
+}
+
+void Project::SetCardSizeChoice(std::string card_size_choice)
+{
+    if (m_Data.m_CardSizeChoice != card_size_choice &&
+        m_Cfg.m_CardSizes.contains(card_size_choice))
+    {
+        m_Data.m_CardSizeChoice = std::move(card_size_choice);
+
+        CacheCardLayout();
+
+        CardSizeChoiceChanged(m_Data.m_CardSizeChoice);
+        CardSizeChanged(ComputeCardsSize());
+    }
+}
+void Project::SetCardOrientation(CardOrientation card_orientation)
+{
+    if (m_Data.m_CardOrientation != card_orientation)
+    {
+        m_Data.m_CardOrientation = card_orientation;
+
+        CacheCardLayout();
+
+        CardOrientationChanged(card_orientation);
+    }
+}
+void Project::SetPageSizeChoice(std::string page_size_choice)
+{
+    if (m_Data.m_PageSize != page_size_choice &&
+        m_Cfg.m_PageSizes.contains(page_size_choice))
+    {
+        m_Data.m_PageSize = std::move(page_size_choice);
+
+        CacheCardLayout();
+
+        PageSizeChoiceChanged(m_Data.m_PageSize);
+        PageSizeChanged(ComputePageSize());
+
+        PageMarginsChanged(ComputeMargins());
+        MaxPageMarginsChanged(ComputeMaxMargins());
+    }
+}
+void Project::SetBasePdf(std::string base_pdf)
+{
+    if (m_Data.m_PageSize == Config::c_BasePDFSize &&
+        m_Data.m_BasePdf != base_pdf)
+    {
+        m_Data.m_BasePdf = base_pdf;
+
+        BasePdfChanged(m_Data.m_BasePdf);
+        PageSizeChanged(ComputePageSize());
+
+        PageMarginsChanged(ComputeMargins());
+        MaxPageMarginsChanged(ComputeMaxMargins());
+    }
+}
+void Project::SetPageOrientation(PageOrientation page_orientation)
+{
+    if (m_Data.m_Orientation != page_orientation)
+    {
+        m_Data.m_Orientation = page_orientation;
+        m_Data.m_CustomMargins.reset();
+
+        CacheCardLayout();
+
+        PageOrientationChanged(page_orientation);
+        PageSizeChanged(ComputePageSize());
+
+        PageMarginsChanged(ComputeMargins());
+        MaxPageMarginsChanged(ComputeMaxMargins());
+    }
+}
+void Project::SetFlipPageOn(FlipPageOn flip_page_on)
+{
+    if (m_Data.m_FlipOn != flip_page_on)
+    {
+        m_Data.m_FlipOn = flip_page_on;
+        FlipPageOnChanged(flip_page_on);
+    }
+}
+
+void Project::SetPageMarginsMode(MarginsMode margins_mode)
+{
+    if (m_Data.m_MarginsMode != margins_mode)
+    {
+        const auto previous_margins{ ComputeMargins() };
+
+        m_Data.m_MarginsMode = margins_mode;
+        PageMarginsModeChanged(margins_mode);
+
+        switch (margins_mode)
+        {
+        case MarginsMode::Auto:
+            m_Data.m_CustomMargins.reset();
+            break;
+        case MarginsMode::Simple:
+            if (!m_Data.m_CustomMargins.has_value())
+            {
+                m_Data.m_CustomMargins.emplace(CustomMargins{
+                    .m_TopLeft{
+                        previous_margins.m_Left,
+                        previous_margins.m_Top,
+                    },
+                    .m_BottomRight{ std::nullopt },
+                });
+            }
+            else
+            {
+                m_Data.m_CustomMargins.value().m_BottomRight.reset();
+            }
+            break;
+        case MarginsMode::Full:
+            if (!m_Data.m_CustomMargins.has_value())
+            {
+                m_Data.m_CustomMargins.emplace(CustomMargins{
+                    .m_TopLeft{
+                        previous_margins.m_Left,
+                        previous_margins.m_Top,
+                    },
+                    .m_BottomRight{
+                        Size{
+                            previous_margins.m_Right,
+                            previous_margins.m_Bottom,
+                        },
+                    },
+                });
+            }
+            else if (!m_Data.m_CustomMargins.value().m_BottomRight.has_value())
+            {
+                m_Data.m_CustomMargins.value().m_BottomRight.emplace(Size{
+                    previous_margins.m_Right,
+                    previous_margins.m_Bottom,
+                });
+            }
+            break;
+        case MarginsMode::Linked:
+            m_Data.m_CustomMargins.emplace(CustomMargins{
+                .m_TopLeft{
+                    previous_margins.m_Left,
+                    previous_margins.m_Left,
+                },
+                .m_BottomRight{
+                    Size{
+                        previous_margins.m_Left,
+                        previous_margins.m_Left,
+                    },
+                },
+            });
+            break;
+        }
+
+        const auto new_margins{ ComputeMargins() };
+        if (!RoughlyEqual(previous_margins.m_Left, new_margins.m_Left) ||
+            !RoughlyEqual(previous_margins.m_Top, new_margins.m_Top) ||
+            !RoughlyEqual(previous_margins.m_Right, new_margins.m_Right) ||
+            !RoughlyEqual(previous_margins.m_Bottom, new_margins.m_Bottom))
+        {
+            PageMarginsChanged(new_margins);
+        }
+    }
+}
+void Project::SetPageMargin(Margin margin, Length margin_value)
+{
+    if (m_Data.m_MarginsMode != MarginsMode::Auto &&
+        m_Data.m_CustomMargins.has_value())
+    {
+        auto& custom_margins{ m_Data.m_CustomMargins.value() };
+
+        bool has_changed{ false };
+        switch (margin)
+        {
+        case Margin::Top:
+            if (!RoughlyEqual(custom_margins.m_TopLeft.y, margin_value))
+            {
+                custom_margins.m_TopLeft.y = margin_value;
+                has_changed = true;
+            }
+            break;
+        case Margin::Left:
+            if (!RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
+            {
+                custom_margins.m_TopLeft.x = margin_value;
+                has_changed = true;
+            }
+            break;
+        case Margin::Bottom:
+            if (custom_margins.m_BottomRight.has_value() &&
+                !RoughlyEqual(custom_margins.m_BottomRight->y, margin_value))
+            {
+                custom_margins.m_BottomRight->y = margin_value;
+                has_changed = true;
+            }
+            break;
+        case Margin::Right:
+            if (custom_margins.m_BottomRight.has_value() &&
+                !RoughlyEqual(custom_margins.m_BottomRight->x, margin_value))
+            {
+                custom_margins.m_BottomRight->x = margin_value;
+                has_changed = true;
+            }
+            break;
+        case Margin::All:
+            if (!RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
+            {
+                custom_margins.m_TopLeft.x = margin_value;
+                custom_margins.m_TopLeft.y = margin_value;
+                if (custom_margins.m_BottomRight.has_value())
+                {
+                    custom_margins.m_BottomRight->x = margin_value;
+                    custom_margins.m_BottomRight->y = margin_value;
+                }
+                has_changed = true;
+            }
+            break;
+        }
+
+        if (has_changed)
+        {
+            PageMarginsChanged(ComputeMargins());
+        }
+    }
+}
+void Project::SetCardsLayoutVertical(dla::uvec2 cards_layout)
+{
+    if (m_Data.m_PageSize == Config::c_FitSize &&
+        m_Data.m_CardLayoutVertical != cards_layout)
+    {
+        m_Data.m_CardLayoutVertical = cards_layout;
+
+        CardsLayoutVerticalChanged(cards_layout);
+        CardsSizeChanged(ComputeCardsSize());
+    }
+}
+void Project::SetCardsLayoutHorizontal(dla::uvec2 cards_layout)
+{
+    if (m_Data.m_PageSize == Config::c_FitSize &&
+        m_Data.m_CardLayoutHorizontal != cards_layout)
+    {
+        m_Data.m_CardLayoutHorizontal = cards_layout;
+
+        CardsLayoutHorizontalChanged(cards_layout);
+        CardsSizeChanged(ComputeCardsSize());
+    }
+}
+
 void Project::SetExportExactGuides(bool export_exact_guides)
 {
     if (m_Data.m_ExportExactGuides != export_exact_guides)
@@ -1433,7 +1709,7 @@ void Project::SetGuidesColorB(ColorRGB8 guides_color)
 }
 void Project::SetGuidesOffset(Length guides_offset)
 {
-    if (dla::math::abs(m_Data.m_GuidesOffset - guides_offset) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_GuidesOffset, guides_offset))
     {
         return;
     }
@@ -1443,7 +1719,7 @@ void Project::SetGuidesOffset(Length guides_offset)
 }
 void Project::SetGuidesLength(Length guides_length)
 {
-    if (dla::math::abs(m_Data.m_GuidesLength - guides_length) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_GuidesLength, guides_length))
     {
         return;
     }
@@ -1453,7 +1729,7 @@ void Project::SetGuidesLength(Length guides_length)
 }
 void Project::SetGuidesThickness(Length guides_thickness)
 {
-    if (dla::math::abs(m_Data.m_GuidesThickness - guides_thickness) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_GuidesThickness, guides_thickness))
     {
         return;
     }
@@ -1532,8 +1808,7 @@ void Project::ClearBacksideDefault()
 
 void Project::SetBacksideOffset(Size offset)
 {
-    if (dla::math::abs(m_Data.m_BacksideOffset.x - offset.x) < 0.001_mm &&
-        dla::math::abs(m_Data.m_BacksideOffset.y - offset.y) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_BacksideOffset, offset))
     {
         return;
     }
@@ -1543,7 +1818,7 @@ void Project::SetBacksideOffset(Size offset)
 }
 void Project::SetBacksideRotation(Angle backside_rotation)
 {
-    if (dla::math::abs(m_Data.m_BacksideRotation - backside_rotation) < 0.001_deg)
+    if (RoughlyEqual(m_Data.m_BacksideRotation, backside_rotation))
     {
         return;
     }
@@ -1553,7 +1828,7 @@ void Project::SetBacksideRotation(Angle backside_rotation)
 }
 void Project::SetBacksideExtraBleedEdge(Length backside_extra_bleed_edge)
 {
-    if (dla::math::abs(m_Data.m_BacksideExtraBleedEdge - backside_extra_bleed_edge) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_BacksideExtraBleedEdge, backside_extra_bleed_edge))
     {
         return;
     }
@@ -1718,13 +1993,28 @@ bool Project::CacheCardLayout()
     m_Data.m_CardLayoutVertical = auto_layout.m_CardLayoutVertical;
     m_Data.m_CardLayoutHorizontal = auto_layout.m_CardLayoutHorizontal;
 
-    const bool card_layout_changed{
-        previous_layout_vertical != m_Data.m_CardLayoutVertical ||
+    const bool card_layout_vertical_changed{
+        previous_layout_vertical != m_Data.m_CardLayoutVertical
+    };
+    const bool card_layout_horizontal_changed{
         previous_layout_horizontal != m_Data.m_CardLayoutHorizontal
+    };
+    const bool card_layout_changed{
+        card_layout_vertical_changed ||
+        card_layout_horizontal_changed
     };
     if (card_layout_changed)
     {
         m_Data.m_SkippedLayoutSlots.clear();
+
+        if (card_layout_vertical_changed)
+        {
+            CardsLayoutVerticalChanged(m_Data.m_CardLayoutVertical);
+        }
+        if (card_layout_horizontal_changed)
+        {
+            CardsLayoutHorizontalChanged(m_Data.m_CardLayoutHorizontal);
+        }
     }
 
     return card_layout_changed;
@@ -1984,7 +2274,7 @@ void Project::EnsureOutputFolder() const
 
 void Project::SetBleedEdge(Length bleed_edge)
 {
-    if (dla::math::abs(m_Data.m_BleedEdge - bleed_edge) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_BleedEdge, bleed_edge))
     {
         return;
     }
@@ -1992,10 +2282,12 @@ void Project::SetBleedEdge(Length bleed_edge)
     m_Data.m_BleedEdge = bleed_edge;
     BleedEdgeChanged(bleed_edge);
     EnsureOutputFolder();
+
+    CardsSizeChanged(ComputeCardsSize());
 }
 void Project::SetEnvelopeBleedEdge(Length envelope_bleed_edge)
 {
-    if (dla::math::abs(m_Data.m_EnvelopeBleedEdge - envelope_bleed_edge) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_EnvelopeBleedEdge, envelope_bleed_edge))
     {
         return;
     }
@@ -2003,18 +2295,21 @@ void Project::SetEnvelopeBleedEdge(Length envelope_bleed_edge)
     m_Data.m_EnvelopeBleedEdge = envelope_bleed_edge;
     EnvelopeBleedEdgeChanged(envelope_bleed_edge);
     EnsureOutputFolder();
+
+    CardsSizeChanged(ComputeCardsSize());
 }
 
 void Project::SetSpacing(Size spacing)
 {
-    if (dla::math::abs(m_Data.m_Spacing.x - spacing.x) < 0.001_mm &&
-        dla::math::abs(m_Data.m_Spacing.y - spacing.y) < 0.001_mm)
+    if (RoughlyEqual(m_Data.m_Spacing, spacing))
     {
         return;
     }
 
     m_Data.m_Spacing = spacing;
     SpacingChanged(spacing);
+
+    CardsSizeChanged(ComputeCardsSize());
 }
 void Project::SetSpacingLinked(bool spacing_linked)
 {
@@ -2343,7 +2638,7 @@ Size ProjectData::ComputeDefaultMargins(const ConfigData& config) const
     std::unreachable();
 }
 
-const Config::CardSizeInfo& ProjectData::CardSizeInfo(const ConfigData& config) const
+const CardSizeInfo& ProjectData::CardSizeInfo(const ConfigData& config) const
 {
     const bool has_valid_card_size{ config.m_CardSizes.contains(m_CardSizeChoice) };
     if (!has_valid_card_size)
@@ -2363,7 +2658,7 @@ float ProjectData::CardRatio(const ConfigData& config) const
     return card_size.x / card_size.y;
 }
 
-inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
+inline Size GetCardSize(const CardSizeInfo& card_size_info)
 {
     if (card_size_info.m_RoundedRect.has_value())
     {
@@ -2431,8 +2726,8 @@ const Svg& ProjectData::CardSvgData(const ConfigData& config) const
     const auto& card_size_info{ CardSizeInfo(config) };
     if (!card_size_info.m_SvgInfo.has_value())
     {
-        static Svg fallback{};
-        return fallback;
+        static Svg s_Fallback{};
+        return s_Fallback;
     }
     return card_size_info.m_SvgInfo.value().m_Svg;
 }
@@ -2529,6 +2824,21 @@ bool Project::RemoveExternalCard(const fs::path& card_name)
         return true;
     }
     return false;
+}
+
+void Project::AvailableCardSizesChanged(const CardSizes& card_sizes)
+{
+    if (!std::ranges::contains(card_sizes | c_CardSizeNames, m_Data.m_CardSizeChoice))
+    {
+        SetCardSizeChoice(std::string{ m_Cfg.GetFirstValidCardSize() });
+    }
+}
+void Project::AvailablePageSizesChanged(const PageSizes& page_sizes)
+{
+    if (!std::ranges::contains(page_sizes | c_PageSizeNames, m_Data.m_PageSize))
+    {
+        SetPageSizeChoice(std::string{ m_Cfg.GetFirstValidPageSize() });
+    }
 }
 
 void Project::AppendCardToList(const fs::path& card_name)

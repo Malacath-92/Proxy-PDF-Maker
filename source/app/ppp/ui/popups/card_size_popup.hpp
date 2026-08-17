@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ppp/config.hpp>
+#include <ppp/config_types.hpp>
 
 #include <ppp/ui/popups/popups.hpp>
 
@@ -11,14 +11,17 @@ class CardSizePopup : public PopupBase
     Q_OBJECT
 
   public:
-    CardSizePopup(QWidget* parent, const Config& config);
+    CardSizePopup(QWidget* parent,
+                  const CardSizes& card_sizes,
+                  const CardSizes& default_card_sizes,
+                  Unit base_unit);
     ~CardSizePopup();
 
     virtual void showEvent(QShowEvent* event) override;
     virtual void resizeEvent(QResizeEvent* event) override;
 
   signals:
-    void CardSizesChanged(const std::map<std::string, Config::CardSizeInfo>& card_sizes);
+    void CardSizesChanged(const CardSizes& card_sizes);
 
   protected:
     virtual QByteArray GetGeometry() override;

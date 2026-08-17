@@ -22,7 +22,8 @@
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
 
 PaperSizePopup::PaperSizePopup(QWidget* parent,
-                               const Config& config)
+                               const PageSizes& page_sizes,
+                               const PageSizes& default_page_sizes)
     : PopupBase{ parent }
 {
     m_AutoCenter = false;
@@ -50,7 +51,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
             QLocale locale{};
             for (const auto& [paper_name, paper_size_info] : paper_sizes)
             {
-                if (paper_name == Config::c_FitSize || paper_name == Config::c_BasePDFSize)
+                if (!std::ranges::contains(g_SpecialPagerSizes, paper_name))
                 {
                     continue;
                 }
@@ -75,7 +76,7 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
     m_Table->setHorizontalHeaderLabels({ "Paper Name", "Width", "Height", "Units" });
     m_Table->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
     m_Table->setAlternatingRowColors(true);
-    build_table(config.m_PageSizes);
+    build_table(page_sizes);
 
     auto* new_button{ new QPushButton{ "New" } };
     auto* delete_button{ new QPushButton{ "Delete Selected" } };
@@ -168,9 +169,9 @@ PaperSizePopup::PaperSizePopup(QWidget* parent,
                      });
     QObject::connect(restore_button,
                      &QPushButton::clicked,
-                     [build_table]()
+                     [build_table, &default_page_sizes]()
                      {
-                         build_table(Config::g_DefaultPageSizes);
+                         build_table(default_page_sizes);
                      });
 
     QObject::connect(ok_button,
@@ -283,9 +284,9 @@ void PaperSizePopup::RestoreGeometry(const QByteArray& geometry)
 
 void PaperSizePopup::Apply()
 {
-    std::map<std::string, Config::SizeInfo> page_sizes{
-        { std::string{ Config::c_FitSize }, {} },
-        { std::string{ Config::c_BasePDFSize }, {} },
+    PageSizes page_sizes{
+        { std::string{ g_FitSize }, {} },
+        { std::string{ g_BasePDFSize }, {} },
     };
 
     QLocale locale{};

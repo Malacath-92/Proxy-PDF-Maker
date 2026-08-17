@@ -19,11 +19,12 @@ class ActionsViewModel : public QObject
 
   signals:
     // forward
+
     void CropperWorking();
     void CropperDone();
     void CropperProgress(float progress);
 
-    void RenderBackendChanged(PdfBackend backend);
+    void PdfBackendChanged(PdfBackend backend);
 
   private slots:
     void RenderDocument() const;

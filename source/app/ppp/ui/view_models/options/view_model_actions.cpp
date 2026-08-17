@@ -49,5 +49,5 @@ void ActionsViewModel::OpenImagesFolder() const
 
 void ActionsViewModel::EmitDefaults()
 {
-    RenderBackendChanged(m_Cfg.m_Backend);
+    PdfBackendChanged(m_Cfg.m_Backend);
 }

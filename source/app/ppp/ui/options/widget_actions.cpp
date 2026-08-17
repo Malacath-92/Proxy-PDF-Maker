@@ -93,9 +93,9 @@ ActionsWidget::ActionsWidget(ActionsViewModel* view_model)
                      this,
                      &ActionsWidget::CropperProgress);
     QObject::connect(&m_ViewModel,
-                     &ActionsViewModel::RenderBackendChanged,
+                     &ActionsViewModel::PdfBackendChanged,
                      this,
-                     &ActionsWidget::RenderBackendChanged);
+                     &ActionsWidget::PdfBackendChanged);
 
     m_ViewModel.EmitDefaults();
 }
@@ -117,7 +117,7 @@ void ActionsWidget::CropperProgress(float progress)
     m_CropperProgressBar->setValue(progress_whole);
 }
 
-void ActionsWidget::RenderBackendChanged(PdfBackend backend)
+void ActionsWidget::PdfBackendChanged(PdfBackend backend)
 {
     switch (backend)
     {

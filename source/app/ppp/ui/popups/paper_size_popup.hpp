@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ppp/config.hpp>
+#include <ppp/config_types.hpp>
 
 #include <ppp/ui/popups/popups.hpp>
 
@@ -11,14 +11,16 @@ class PaperSizePopup : public PopupBase
     Q_OBJECT
 
   public:
-    PaperSizePopup(QWidget* parent, const Config& config);
+    PaperSizePopup(QWidget* parent,
+                   const PageSizes& page_sizes,
+                   const PageSizes& default_page_sizes);
     ~PaperSizePopup();
 
     virtual void showEvent(QShowEvent* event) override;
     virtual void resizeEvent(QResizeEvent* event) override;
 
   signals:
-    void PageSizesChanged(const std::map<std::string, Config::SizeInfo>& page_sizes);
+    void PageSizesChanged(const PageSizes& page_sizes);
 
   protected:
     virtual QByteArray GetGeometry() override;

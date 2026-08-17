@@ -39,7 +39,7 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
                                      std::string_view default_option)
     : WidgetWithLabel{
         label_text,
-        MakeComboBox(options, {}, default_option),
+        MakeComboBox(options, default_option),
     }
 {
 }
@@ -49,7 +49,7 @@ ComboBoxWithLabel::ComboBoxWithLabel(std::string_view label_text,
                                      std::string_view default_option)
     : WidgetWithLabel{
         label_text,
-        MakeComboBox(options, {}, default_option),
+        MakeComboBox(options, default_option),
     }
 {
 }

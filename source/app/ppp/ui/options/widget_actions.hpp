@@ -23,7 +23,7 @@ class ActionsWidget : public QWidget
     void CropperDone();
     void CropperProgress(float progress);
 
-    void RenderBackendChanged(PdfBackend backend);
+    void PdfBackendChanged(PdfBackend backend);
 
   private:
     void RenderButtonPressed() const;

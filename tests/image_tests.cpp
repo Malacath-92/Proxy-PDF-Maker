@@ -116,7 +116,7 @@ TEST_CASE("Grow image", "[image_resize_grow]")
     REQUIRE(resized_image.Hash() == 0x1892b36349d83626);
 }
 
-inline Size GetCardSize(const Config::CardSizeInfo& card_size_info)
+inline Size GetCardSize(const CardSizeInfo& card_size_info)
 {
     if (card_size_info.m_RoundedRect.has_value())
     {
