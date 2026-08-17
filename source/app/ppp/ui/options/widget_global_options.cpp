@@ -219,7 +219,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
     layout->addWidget(m_RenderToPng);
     layout->addWidget(image_format);
     layout->addWidget(jpg_quality);
-    layout->addWidget(m_ColorCube);
+    layout->addWidget(color_cube);
     layout->addWidget(preview_width);
     layout->addWidget(m_NoCropMode);
     layout->addWidget(max_dpi);
