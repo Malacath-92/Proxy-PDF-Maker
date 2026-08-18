@@ -19,6 +19,7 @@
 #include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/ui/view_models/options/view_model_guides_options.hpp>
+#include <ppp/ui/view_models/util.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -181,7 +182,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(GuidesOptionsViewModel* view_model)
         {
             if (const auto picked_color{ pick_color(*m_GuidesColorB->GetWidget()) })
             {
-                m_ViewModel.ChangeGuidesColorA(picked_color.value());
+                m_ViewModel.ChangeGuidesColorB(picked_color.value());
             }
         }
     };
@@ -231,6 +232,22 @@ GuidesOptionsWidget::GuidesOptionsWidget(GuidesOptionsViewModel* view_model)
                      &m_ViewModel,
                      &GuidesOptionsViewModel::ChangeGuidesThickness);
 
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AdvancedModeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(ExportExactGuidesChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideGuidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CornerGuidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CrossGuidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(ExtendedGuidesEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesColorAChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesColorBChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesOffsetChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesLengthChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesThicknessChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BleedEdgeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideEnabledChanged);
+
     m_ViewModel.EmitDefaults();
 }
 
@@ -256,24 +273,24 @@ void GuidesOptionsWidget::GuidesEnabledChanged(bool guides_enabled)
     m_EnableGuidesCheckbox->blockSignals(true);
     m_EnableGuidesCheckbox->setChecked(guides_enabled);
     m_EnableGuidesCheckbox->blockSignals(false);
+
+    m_EnableBacksideGuidesCheckbox->setEnabled(guides_enabled);
+    m_ExtendedGuidesCheckbox->setEnabled(guides_enabled);
+    m_CornerGuidesCheckbox->setEnabled(guides_enabled);
+    m_GuidesColorA->setEnabled(guides_enabled);
+    m_GuidesColorB->setEnabled(guides_enabled);
+    m_GuidesThicknessSpin->setEnabled(guides_enabled);
+
+    const bool corner_guides_enabled{ m_ViewModel.GetCornerGuidesEnabled() };
+    m_CrossGuidesCheckbox->setEnabled(corner_guides_enabled && guides_enabled);
+    m_GuidesOffsetSpin->setEnabled(corner_guides_enabled && guides_enabled);
+    m_GuidesLengthSpin->setEnabled(corner_guides_enabled && guides_enabled);
 }
 void GuidesOptionsWidget::BacksideGuidesEnabledChanged(bool backside_guides_enabled)
 {
     m_EnableBacksideGuidesCheckbox->blockSignals(true);
     m_EnableBacksideGuidesCheckbox->setChecked(backside_guides_enabled);
     m_EnableBacksideGuidesCheckbox->blockSignals(false);
-
-    m_EnableBacksideGuidesCheckbox->setEnabled(backside_guides_enabled);
-    m_ExtendedGuidesCheckbox->setEnabled(backside_guides_enabled);
-    m_CornerGuidesCheckbox->setEnabled(backside_guides_enabled);
-    m_GuidesColorA->setEnabled(backside_guides_enabled);
-    m_GuidesColorB->setEnabled(backside_guides_enabled);
-    m_GuidesThicknessSpin->setEnabled(backside_guides_enabled);
-
-    const bool corner_guides_enabled{ m_ViewModel.GetCornerGuidesEnabled() };
-    m_CrossGuidesCheckbox->setEnabled(corner_guides_enabled && backside_guides_enabled);
-    m_GuidesOffsetSpin->setEnabled(corner_guides_enabled && backside_guides_enabled);
-    m_GuidesLengthSpin->setEnabled(corner_guides_enabled && backside_guides_enabled);
 }
 void GuidesOptionsWidget::CornerGuidesEnabledChanged(bool corner_guides_enabled)
 {
@@ -349,14 +366,14 @@ ColorRGB8 GuidesOptionsWidget::ColorFromBackgroundStyle(const QString& style)
 {
     const auto hex{
         style
-            .split(":enabled {{ background-color:")
+            .split("#")
             .back()
             .split(";")
             .front()
     };
     const auto r{ hex.mid(0, 2) };
-    const auto g{ hex.mid(2, 4) };
-    const auto b{ hex.mid(4, 6) };
+    const auto g{ hex.mid(2, 2) };
+    const auto b{ hex.mid(4, 2) };
     return ColorRGB8{
         static_cast<ColorRGB8::value_type>(r.toInt(nullptr, 16)),
         static_cast<ColorRGB8::value_type>(g.toInt(nullptr, 16)),
