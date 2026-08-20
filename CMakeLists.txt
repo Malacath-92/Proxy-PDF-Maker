@@ -58,6 +58,7 @@ include(cmake/group_files.cmake)
 # --------------------------------------------------
 # Add submodules
 add_subdirectory("submodules/dla")
+add_subdirectory("submodules/imageinfo")
 
 # --------------------------------------------------
 # Add formatting target
@@ -214,6 +215,7 @@ target_compile_definitions(proxy_pdf_version PRIVATE
 add_library(proxy_pdf_dependencies INTERFACE)
 target_link_libraries(proxy_pdf_dependencies INTERFACE
 	dla
+	imageinfo::imageinfo
 	nanosvg
 	fmt::fmt
 	opencv::opencv

@@ -10,3 +10,6 @@
 [submodule "submodules/BreezeStyleSheets"]
 	path = submodules/BreezeStyleSheets
 	url = https://github.com/Malacath-92/BreezeStyleSheets.git
+[submodule "submodules/imageinfo"]
+	path = submodules/imageinfo
+	url = https://github.com/xiaozhuai/imageinfo.git

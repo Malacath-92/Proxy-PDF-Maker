@@ -5,6 +5,8 @@
 
 #include <dla/scalar_math.h>
 
+#include <imageinfo.hpp>
+
 #include <opencv2/img_hash.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
@@ -54,6 +56,53 @@ static uint32_t CRC(const uchar* buf, int len)
     return c_CrcImpl(0xffffffffL, buf, len) ^ 0xffffffffL;
 }
 } // namespace pngcrc
+
+ImageMetaData ImageMetaData::Rotate(Rotation rotation) const
+{
+    switch (rotation)
+    {
+    case Rotation::Degree90:
+        [[fallthrough]];
+    case Rotation::Degree180:
+        return ImageMetaData{
+            .m_Size{ dla::rotl(m_Size) },
+        };
+    case Rotation::Degree270:
+        [[fallthrough]];
+    default:
+        return *this;
+    }
+}
+ImageMetaData ImageMetaData::RotateInverse(Rotation rotation) const
+{
+    return Rotate(rotation);
+}
+
+Pixel ImageMetaData::Width() const
+{
+    return m_Size.x;
+}
+Pixel ImageMetaData::Height() const
+{
+    return m_Size.y;
+}
+float ImageMetaData::AspectRatio() const
+{
+    return m_Size.x / m_Size.y;
+}
+PixelDensity ImageMetaData::Density(::Size real_size) const
+{
+    const auto [w, h]{ m_Size.pod() };
+    const auto [bw, bh]{ (real_size).pod() };
+
+    // Safety check: if real_size is very small or zero, return a reasonable default
+    if (bw <= 0_m || bh <= 0_m)
+    {
+        return PixelDensity{ 96.0f }; // Default DPI value
+    }
+
+    return dla::math::min(w / bw, h / bh);
+}
 
 Image::Image(cv::Mat impl)
     : m_Impl{ std::move(impl) }
@@ -296,6 +345,34 @@ Image Image::Decode(EncodedImageView buffer)
                               static_cast<int>(buffer.size()) };
     img.m_Impl = cv::imdecode(cv_buffer, cv::IMREAD_UNCHANGED);
     return img;
+}
+
+ImageMetaData Image::ReadMetaData(const fs::path& path)
+{
+    const auto info{ imageinfo::parse<imageinfo::FilePathReader>(path.string()) };
+    return ImageMetaData{
+        .m_Size{
+            static_cast<float>(info.size().width) * 1_pix,
+            static_cast<float>(info.size().height) * 1_pix,
+        },
+    };
+}
+
+ImageMetaData Image::DecodeMetaData(const EncodedImage& buffer)
+{
+    return DecodeMetaData(EncodedImageView{ buffer });
+}
+
+ImageMetaData Image::DecodeMetaData(EncodedImageView buffer)
+{
+    const imageinfo::RawData raw_data{ buffer.data(), buffer.size() };
+    const auto info{ imageinfo::parse<imageinfo::RawDataReader>(raw_data) };
+    return ImageMetaData{
+        .m_Size{
+            static_cast<float>(info.size().width) * 1_pix,
+            static_cast<float>(info.size().height) * 1_pix,
+        },
+    };
 }
 
 Image Image::PlainColor(PixelSize size, ColorRGB8 color)
@@ -993,16 +1070,7 @@ float Image::AspectRatio() const
 
 PixelDensity Image::Density(::Size real_size) const
 {
-    const auto [w, h]{ Size().pod() };
-    const auto [bw, bh]{ (real_size).pod() };
-
-    // Safety check: if real_size is very small or zero, return a reasonable default
-    if (bw <= 0_m || bh <= 0_m)
-    {
-        return PixelDensity{ 96.0f }; // Default DPI value
-    }
-
-    return dla::math::min(w / bw, h / bh);
+    return ImageMetaData{ Size() }.Density(real_size);
 }
 
 uint64_t Image::Hash() const

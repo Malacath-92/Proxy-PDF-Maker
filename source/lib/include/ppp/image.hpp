@@ -12,6 +12,20 @@
 using EncodedImage = std::vector<std::byte>;
 using EncodedImageView = std::span<const std::byte>;
 
+struct ImageMetaData
+{
+    PixelSize m_Size;
+
+    using Rotation = ::Rotation;
+    ImageMetaData Rotate(Rotation rotation) const;
+    ImageMetaData RotateInverse(Rotation rotation) const;
+
+    Pixel Width() const;
+    Pixel Height() const;
+    float AspectRatio() const;
+    PixelDensity Density(::Size real_size) const;
+};
+
 class [[nodiscard]] Image
 {
   public:
@@ -31,6 +45,10 @@ class [[nodiscard]] Image
 
     static Image Decode(const EncodedImage& buffer);
     static Image Decode(EncodedImageView buffer);
+
+    static ImageMetaData ReadMetaData(const fs::path& path);
+    static ImageMetaData DecodeMetaData(const EncodedImage& buffer);
+    static ImageMetaData DecodeMetaData(EncodedImageView buffer);
 
     static Image PlainColor(PixelSize size, ColorRGB8 color);
     static Image PlainColor(PixelSize size, ColorRGBA8 color);

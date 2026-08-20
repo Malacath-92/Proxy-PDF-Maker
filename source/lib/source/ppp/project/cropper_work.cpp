@@ -300,9 +300,41 @@ void CropperCropWork::run()
             return;
         }
 
-        Image source_image{ Image::Read(input_file).Rotate(m_Rotation) };
+        class LazyReadImage : public Image
+        {
+          public:
+            LazyReadImage(const fs::path& path,
+                          Rotation rotation)
+                : m_Path{ path }
+                , m_Rotation{ rotation }
+            {
+            }
 
-        const auto image_aspect_ratio{ source_image.AspectRatio() };
+            LazyReadImage& operator=(Image&& rhs)
+            {
+                *static_cast<Image*>(this) = std::move(rhs);
+                return *this;
+            }
+
+            void DoRead()
+            {
+                if (!Valid())
+                {
+                    *this = Image::Read(m_Path)
+                                .Rotate(m_Rotation);
+                }
+            }
+
+          private:
+            const fs::path& m_Path;
+            Rotation m_Rotation;
+        };
+
+
+        LazyReadImage source_image{ input_file, m_Rotation };
+        const auto source_image_meta{ Image::ReadMetaData(input_file).Rotate(m_Rotation) };
+
+        const auto image_aspect_ratio{ source_image_meta.AspectRatio() };
         const auto with_bleed_diff{
             std::abs(image_aspect_ratio - card_with_full_bleed_aspect_ratio)
         };
@@ -349,15 +381,16 @@ void CropperCropWork::run()
             else
             {
                 // do the uncrop, write the file, and copy to source_image
+                source_image.DoRead();
                 source_image = FixImageAspectRatio(source_image,
                                                    m_BadAspectRatioHandling,
                                                    card_aspect_ratio);
-                const Image uncropped_image{ UncropImage(source_image,
-                                                         m_CardName,
-                                                         card_size,
-                                                         full_bleed_edge,
-                                                         fancy_uncrop ? UncropMode::Mirror
-                                                                      : UncropMode::Black) };
+                Image uncropped_image{ UncropImage(source_image,
+                                                   m_CardName,
+                                                   card_size,
+                                                   full_bleed_edge,
+                                                   fancy_uncrop ? UncropMode::Mirror
+                                                                : UncropMode::Black) };
                 uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
                 m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
 
@@ -377,10 +410,13 @@ void CropperCropWork::run()
                 return;
             }
 
+            source_image.DoRead();
             source_image = FixImageAspectRatio(source_image,
                                                m_BadAspectRatioHandling,
                                                card_with_full_bleed_aspect_ratio);
         }
+
+        assert(source_image.Valid());
 
         const Image cropped_image{
             CropImage(source_image,
