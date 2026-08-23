@@ -8,6 +8,7 @@
 
 #include <QApplication>
 #include <QComboBox>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMetaEnum>
@@ -15,6 +16,7 @@
 #include <QNetworkReply>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QStorageInfo>
 #include <QThreadPool>
 
 #include <ppp/project/image_ops.hpp>
@@ -94,7 +96,7 @@ void CardDownloaderImageWorker::run()
         QFile file(out_file);
         if (file.open(QIODevice::WriteOnly))
         {
-        file.write(m_ImageData);
+            file.write(m_ImageData);
         }
         else
         {
@@ -373,7 +375,7 @@ void CardDownloaderPopup::StartDownload()
                                              QFile file(ToQString(GetModelFilename(upscale_model)));
                                              if (file.open(QIODevice::WriteOnly))
                                              {
-                                             file.write(reply->readAll());
+                                                file.write(reply->readAll());
                                              }
                                              else
                                              {
@@ -448,13 +450,19 @@ void CardDownloaderPopup::FinalizeDownload()
             if (!DownloadBacksides() &&
                 card_info.m_Name == m_Project.m_Data.m_BacksideDefault)
             {
+                LogInfo("Skip deleting old file {} from {} because it is the current default backside",
+                                card_info.m_Name.string(),
+                                target_dir.string());
                 continue;
             }
 
             if (!card_info.m_ExternalPath.has_value() &&
-                !std::ranges::contains(downloaded_file_paths, card_info.m_Name) &&
+                std::ranges::contains(downloaded_file_paths, card_info.m_Name) &&
                 fs::exists(target_dir / card_info.m_Name))
             {
+                LogInfo("Deleting old file {} from {}",
+                                card_info.m_Name.string(),
+                                target_dir.string());
                 fs::remove(target_dir / card_info.m_Name);
             }
 
@@ -467,15 +475,36 @@ void CardDownloaderPopup::FinalizeDownload()
         }
     }
 
+    const auto output_path{ m_OutputDir.path() };
     const fs::path output_dir{
-        m_OutputDir.path().toStdString()
+        output_path.toStdString()
     };
+
+    const QStorageInfo output_storage{ QFileInfo{ output_path }.absolutePath() };
+    const QStorageInfo target_storage{ QDir{ ToQString(target_dir) }.absolutePath() };
+
+    const bool can_move{ output_storage.rootPath() == target_storage.rootPath() };
 
     for (const auto& [card, path] : std::views::zip(downloaded_files, downloaded_file_paths))
     {
         if (fs::exists(output_dir / path))
         {
-            fs::rename(output_dir / path, target_dir / path);
+            if (can_move)
+            {
+                LogInfo("Moving file {} from {} to {}",
+                                path.string(),
+                                output_dir.string(),
+                                target_dir.string());
+                fs::rename(output_dir / path, target_dir / path);
+            }
+            else
+            {
+                LogInfo("Copying file {} from {} to {}",
+                                path.string(),
+                                output_dir.string(),
+                                target_dir.string());
+                fs::copy(output_dir / path, target_dir / path);
+            }
         }
 
         m_Project.CardAdded(path);
