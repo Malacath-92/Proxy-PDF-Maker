@@ -92,8 +92,14 @@ void CardDownloaderImageWorker::run()
         LogInfo("Writing image {}...", m_ImageName.toStdString());
 
         QFile file(out_file);
-        file.open(QIODevice::WriteOnly);
+        if (file.open(QIODevice::WriteOnly))
+        {
         file.write(m_ImageData);
+        }
+        else
+        {
+            LogError("Failed writing image {}...", m_ImageName.toStdString());
+        }
     }
 
     Done();
@@ -365,8 +371,14 @@ void CardDownloaderPopup::StartDownload()
                                      {
                                          {
                                              QFile file(ToQString(GetModelFilename(upscale_model)));
-                                             file.open(QIODevice::WriteOnly);
+                                             if (file.open(QIODevice::WriteOnly))
+                                             {
                                              file.write(reply->readAll());
+                                             }
+                                             else
+                                             {
+                                                LogError("Failed writing upscale model...");
+                                             }
                                          }
 
                                          m_ProgressBar->setVisible(false);

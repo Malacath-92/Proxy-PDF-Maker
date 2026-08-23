@@ -113,7 +113,7 @@ struct ProjectData
     Size ComputeMaxMargins(const ConfigData& config, MarginsMode margins_mode) const;
     Size ComputeDefaultMargins(const ConfigData& config) const;
 
-    const CardSizeInfo& CardSizeInfo(const ConfigData& config) const;
+    const ::CardSizeInfo& CardSizeInfo(const ConfigData& config) const;
     float CardRatio(const ConfigData& config) const;
     Size CardSize(const ConfigData& config) const;
     Size CardSizeWithBleed(const ConfigData& config) const;

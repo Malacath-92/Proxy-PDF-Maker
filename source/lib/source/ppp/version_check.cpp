@@ -6,6 +6,7 @@
 
 #include <QEventLoop>
 #include <QJsonDocument>
+#include <QJsonValue>
 #include <QMetaEnum>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>

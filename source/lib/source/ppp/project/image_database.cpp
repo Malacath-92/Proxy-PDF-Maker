@@ -189,8 +189,11 @@ QByteArray ImageDataBase::TestEntry(const fs::path& destination, const fs::path&
         [&]()
         {
             QFile source_file{ ToQString(source) };
-            source_file.open(QFile::ReadOnly);
-            return source_file.readAll();
+            if (source_file.open(QFile::ReadOnly))
+             {
+                return source_file.readAll();
+             }
+             return QByteArray{};
         }
     };
     QByteArray cur_hash{ QCryptographicHash::hash(get_source_data(), QCryptographicHash::Md5) };
