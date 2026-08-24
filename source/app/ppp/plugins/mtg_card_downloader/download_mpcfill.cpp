@@ -251,28 +251,53 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 
 void MPCFillDownloader::HandleReply(QNetworkReply* reply)
 {
-    const auto file_name{
-        [this, reply]()
-        {
-            const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
-            for (const auto& card : m_Set.m_Frontsides)
-            {
-                if (card.m_Id == id)
-                {
-                    return card.m_Name;
-                }
-
-                if (card.m_Backside.has_value() && card.m_Backside.value().m_Id == id)
-                {
-                    return card.m_Backside.value().m_Name;
-                }
+    const auto content_type{
+        [reply]() -> QString {
+            const QVariant content_type{ reply->header(QNetworkRequest::ContentTypeHeader) };
+            if (content_type.isValid()) {
+                return content_type.toString();
             }
-
-            return QString{ "__back.jpg" };
+            return "image/jpg";
         }()
     };
 
-    ImageAvailable(reply->readAll(), file_name);
+    const QString id{ MPCFillIdFromUrl(reply->request().url().toString()) };
+    if (!content_type.startsWith("image/"))
+    {
+        LogError("Reply for image {} was not an image...",
+                 id.toStdString());
+    }
+    else
+    {
+        const auto ext{ content_type.mid(6) };
+        const auto& file_name{
+            [this, &id, &ext]()
+            {
+                for (auto& card : m_Set.m_Frontsides)
+                {
+                    if (card.m_Id == id)
+                    {
+                        card.m_Downloaded = true;
+                        card.m_Name = card.m_Name.sliced(0, card.m_Name.length() - 3) + ext;
+                        return card.m_Name;
+                    }
+
+                    if (card.m_Backside.has_value() && card.m_Backside.value().m_Id == id)
+                    {
+                        auto& backside{ card.m_Backside.value() };
+                        backside.m_Downloaded = true;
+                        backside.m_Name = backside.m_Name.sliced(0, backside.m_Name.length() - 3) + ext;
+                        return backside.m_Name;
+                    }
+                }
+
+                m_DefaultBackside = QString{ "__back.%1" }.arg(ext);
+                return m_DefaultBackside;
+            }()
+        };
+
+        ImageAvailable(reply->readAll(), file_name);
+    }
 
     ++m_FinishedRequests;
     Progress(static_cast<int>(m_FinishedRequests),
@@ -285,23 +310,29 @@ void MPCFillDownloader::HandleReply(QNetworkReply* reply)
 
 std::vector<QString> MPCFillDownloader::GetFiles() const
 {
-    auto frontsides{
-        m_Set.m_Frontsides |
-        std::views::transform(&MPCFillCard::m_Name)
-    };
-    auto backsides{
-        m_Set.m_Frontsides |
-        std::views::transform(&MPCFillCard::m_Backside) |
-        std::views::filter([](const auto& back)
-                           { return back.has_value(); }) |
-        std::views::transform([](const auto& back)
-                              { return back.value().m_Name; })
-    };
     std::vector<QString> files{
-        "__back.jpg"
+        m_DefaultBackside,
     };
-    files.insert(files.end(), frontsides.begin(), frontsides.end());
-    files.insert(files.end(), backsides.begin(), backsides.end());
+
+    for (const auto& card : m_Set.m_Frontsides)
+    {
+        if (!card.m_Downloaded)
+        {
+            continue;
+        }
+
+        if (card.m_Backside.has_value())
+        {
+            const auto& back{ card.m_Backside.value() };
+            if (back.m_Downloaded)
+            {
+                files.push_back(back.m_Name);
+            }
+        }
+
+        files.push_back(card.m_Name);
+    }
+
     return files;
 }
 
@@ -337,7 +368,7 @@ std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) 
 
 QString MPCFillDownloader::DefaultBackside() const
 {
-    return "__back.jpg";
+    return m_DefaultBackside;
 }
 
 bool MPCFillDownloader::ProvidesBleedEdge() const

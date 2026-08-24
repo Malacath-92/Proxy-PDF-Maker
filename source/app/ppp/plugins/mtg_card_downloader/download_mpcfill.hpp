@@ -33,6 +33,8 @@ class MPCFillDownloader : public CardArtDownloader
     {
         QString m_Name;
         QString m_Id;
+
+        bool m_Downloaded{ false };
     };
     struct MPCFillCard
     {
@@ -41,6 +43,8 @@ class MPCFillDownloader : public CardArtDownloader
         uint32_t m_Amount;
 
         std::optional<MPCFillBackside> m_Backside;
+
+        bool m_Downloaded{ false };
     };
     struct MPCFillSet
     {
@@ -64,6 +68,7 @@ class MPCFillDownloader : public CardArtDownloader
     bool PushSingleRequest();
 
     MPCFillSet m_Set{};
+    QString m_DefaultBackside{ "__back.jpg" };
     std::unordered_map<QString, std::vector<QString>> m_Duplicates;
 
     QNetworkAccessManager* m_NetworkManager{ nullptr };
