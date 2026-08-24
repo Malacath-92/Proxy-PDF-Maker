@@ -31,17 +31,20 @@ class CropperWork : public QObject, public QRunnable
         Failure,
         Skipped,
         Cancelled,
+        Delayed,
         RestartRequested,
     };
 
   public slots:
-    void Pause();
-    void Unpause();
+    void Block();
+    void Unblock();
+
+    void Delay();
 
   signals:
     void Finished(Conclusion conclusion) const;
 
-    void OnUnpaused(QPrivateSignal) const;
+    void OnUnblocked(QPrivateSignal) const;
 
   protected:
     bool EnterRun();
@@ -58,7 +61,8 @@ class CropperWork : public QObject, public QRunnable
     {
         Waiting,
         Running,
-        Paused,
+        Blocked,
+        Delayed,
         Cancelled,
     };
     std::atomic<State> m_State{ State::Waiting };

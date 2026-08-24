@@ -199,11 +199,11 @@ void Cropper::PauseWork()
 
     for (auto& [_, work] : m_CropWork)
     {
-        work->Pause();
+        work->Delay();
     }
     for (auto& [_, work] : m_PreviewWork)
     {
-        work->Pause();
+        work->Delay();
     }
 
     while (m_RunningCropperWork.load(std::memory_order_acquire))
@@ -216,11 +216,11 @@ void Cropper::RestartWork()
 {
     for (auto& [_, work] : m_CropWork)
     {
-        work->Unpause();
+        work->Restart();
     }
     for (auto& [_, work] : m_PreviewWork)
     {
-        work->Unpause();
+        work->Restart();
     }
 
     m_State = State::Running;

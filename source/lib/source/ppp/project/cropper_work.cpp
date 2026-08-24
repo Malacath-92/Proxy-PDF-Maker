@@ -171,36 +171,48 @@ int CropperWork::Priority() const
     return m_Priorty;
 }
 
-void CropperWork::Pause()
+void CropperWork::Block()
 {
     State expected{ State::Waiting };
-    m_State.compare_exchange_strong(expected, State::Paused);
+    m_State.compare_exchange_strong(expected, State::Blocked);
 }
-void CropperWork::Unpause()
+void CropperWork::Unblock()
 {
-    State expected{ State::Paused };
+    State expected{ State::Blocked };
     if (m_State.compare_exchange_strong(expected, State::Waiting))
     {
-        OnUnpaused(QPrivateSignal{});
+        OnUnblocked(QPrivateSignal{});
     }
+}
+
+void CropperWork::Delay()
+{
+    State expected{ State::Waiting };
+    m_State.compare_exchange_strong(expected, State::Delayed);
 }
 
 bool CropperWork::EnterRun()
 {
-    if (m_State.load() == State::Cancelled)
+    const auto state{ m_State.load(std::memory_order_acquire) };
+    if (state == State::Cancelled)
     {
         Finished(Conclusion::Cancelled);
         return false;
     }
 
-    if (m_State.load() == State::Paused)
+    if (state == State::Delayed)
+    {
+        return false;
+    }
+
+    if (state == State::Blocked)
     {
         QEventLoop loop;
-        QObject::connect(this, &CropperWork::OnUnpaused, &loop, &QEventLoop::quit);
+        QObject::connect(this, &CropperWork::OnUnblocked, &loop, &QEventLoop::quit);
         loop.exec();
     }
 
-    m_State = State::Running;
+    m_State.store(State::Running, std::memory_order_relaxed);
     return true;
 }
 
