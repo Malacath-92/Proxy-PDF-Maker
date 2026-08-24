@@ -1,6 +1,8 @@
 #include <ppp/plugins/yugioh_card_downloader/yugioh_card_downloader.hpp>
 
 #include <QPushButton>
+#include <QVBoxLayout>
+#include <QWidget>
 
 #include <ppp/plugins/yugioh_card_downloader/yugioh_card_downloader_popup.hpp>
 
@@ -8,40 +10,49 @@ class YuGiOhDownloaderPlugin : public PluginInterface
 {
   public:
     YuGiOhDownloaderPlugin(const QString& text)
-        : m_Button{ new QPushButton{ text } }
+        : m_Widget{ new QWidget{} }
+        , m_Button{ new QPushButton{ text } }
     {
+        auto* layout{ new QVBoxLayout };
+        layout->addWidget(m_Button);
+        m_Widget->setLayout(layout);
+        m_Widget->setObjectName("YuGiOh Card Downloader");
     }
 
-    virtual QPushButton* Widget() override
+    virtual QWidget* Widget() override
+    {
+        return m_Widget;
+    }
+    QPushButton* Button()
     {
         return m_Button;
     }
 
   private:
+    QWidget* m_Widget;
     QPushButton* m_Button;
 };
 
 PluginInterface* InitYuGiOhCardDownloaderPlugin(Project& project, const Config& config)
 {
     auto* plugin{ new YuGiOhDownloaderPlugin{ "Open" } };
-    auto* widget{ static_cast<QPushButton*>(plugin->Widget()) };
-    widget->setObjectName("YuGiOh Card Downloader");
+    auto* button{ plugin->Button() };
 
     const auto open_downloader_popup{
-        [plugin, widget, &project, &config]()
+        [plugin, button, &project, &config]()
         {
-            widget->window()->setEnabled(false);
+            button->window()->setEnabled(false);
             {
                 YuGiOhDownloaderPopup downloader{ nullptr, project, config, *plugin };
                 downloader.Show();
             }
-            widget->window()->setEnabled(true);
+            button->window()->setEnabled(true);
         }
     };
 
-    QObject::connect(widget,
+    QObject::connect(button,
                      &QPushButton::clicked,
-                     widget,
+                     button,
                      open_downloader_popup);
 
     return plugin;
