@@ -88,7 +88,7 @@ endif()
 
 # --------------------------------------------------
 # Timestamp
-string(TIMESTAMP PROXY_PDF_NOW "%d-%m-%Y @ %H:%M")
+string(TIMESTAMP PROXY_PDF_NOW "%Y-%m-%dT%H:%M:%SZ" UTC)
 
 # --------------------------------------------------
 # Find packages
