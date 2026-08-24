@@ -1221,7 +1221,7 @@ void Project::CardModified(const fs::path& card_name)
 {
     if (auto* card{ FindCard(card_name) })
     {
-        card->m_LastWriteTime = TryGetLastWriteTime(card->GetSourcePath(m_Data) / card_name);
+        card->m_LastWriteTime = TryGetLastWriteTime(card->GetSourcePath(m_Data));
     }
 }
 
