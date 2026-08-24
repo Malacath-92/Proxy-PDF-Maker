@@ -342,7 +342,6 @@ void CropperCropWork::run()
             Rotation m_Rotation;
         };
 
-
         LazyReadImage source_image{ input_file, m_Rotation };
         const auto source_image_meta{ Image::ReadMetaData(input_file).Rotate(m_Rotation) };
 

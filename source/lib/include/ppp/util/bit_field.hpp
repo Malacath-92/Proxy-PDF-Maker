@@ -42,7 +42,7 @@ struct AtomicBitFieldOperatorsEnabled
 #define MAKE_BINARY_BITFIELD_OPERATOR(op)                                                              \
     template<typename BitFieldTy>                                                                      \
     inline constexpr std::enable_if_t<detail::BitFieldOperatorsEnabled<BitFieldTy>::value, BitFieldTy> \
-    operator op(const BitFieldTy & lhs, const BitFieldTy & rhs)                                        \
+    operator op(const BitFieldTy& lhs, const BitFieldTy& rhs)                                          \
     {                                                                                                  \
         using BaseTy = std::underlying_type_t<BitFieldTy>;                                             \
         return static_cast<BitFieldTy>(                                                                \
@@ -61,7 +61,7 @@ MAKE_BINARY_BITFIELD_OPERATOR(^)
 #define MAKE_BINARY_ASSIGN_BITFIELD_OPERATOR(op)                                                        \
     template<typename BitFieldTy>                                                                       \
     inline constexpr std::enable_if_t<detail::BitFieldOperatorsEnabled<BitFieldTy>::value, BitFieldTy>& \
-    operator op##=(BitFieldTy & lhs, const BitFieldTy & rhs)                                            \
+    operator op## = (BitFieldTy & lhs, const BitFieldTy& rhs)                                           \
     {                                                                                                   \
         using BaseTy = std::underlying_type_t<BitFieldTy>;                                              \
         lhs = static_cast<BitFieldTy>(                                                                  \
@@ -81,7 +81,7 @@ MAKE_BINARY_ASSIGN_BITFIELD_OPERATOR(^)
 #define MAKE_UNARY_BITFIELD_OPERATOR(op)                                                               \
     template<typename BitFieldTy>                                                                      \
     inline constexpr std::enable_if_t<detail::BitFieldOperatorsEnabled<BitFieldTy>::value, BitFieldTy> \
-    operator op(const BitFieldTy & lhs)                                                                \
+    operator op(const BitFieldTy& lhs)                                                                 \
     {                                                                                                  \
         using BaseTy = std::underlying_type_t<BitFieldTy>;                                             \
         return static_cast<BitFieldTy>(                                                                \

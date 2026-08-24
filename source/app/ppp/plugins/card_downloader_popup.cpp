@@ -375,11 +375,11 @@ void CardDownloaderPopup::StartDownload()
                                              QFile file(ToQString(GetModelFilename(upscale_model)));
                                              if (file.open(QIODevice::WriteOnly))
                                              {
-                                                file.write(reply->readAll());
+                                                 file.write(reply->readAll());
                                              }
                                              else
                                              {
-                                                LogError("Failed writing upscale model...");
+                                                 LogError("Failed writing upscale model...");
                                              }
                                          }
 
@@ -451,8 +451,8 @@ void CardDownloaderPopup::FinalizeDownload()
                 card_info.m_Name == m_Project.m_Data.m_BacksideDefault)
             {
                 LogInfo("Skip deleting old file {} from {} because it is the current default backside",
-                                card_info.m_Name.string(),
-                                target_dir.string());
+                        card_info.m_Name.string(),
+                        target_dir.string());
                 continue;
             }
 
@@ -461,8 +461,8 @@ void CardDownloaderPopup::FinalizeDownload()
                 fs::exists(target_dir / card_info.m_Name))
             {
                 LogInfo("Deleting old file {} from {}",
-                                card_info.m_Name.string(),
-                                target_dir.string());
+                        card_info.m_Name.string(),
+                        target_dir.string());
                 fs::remove(target_dir / card_info.m_Name);
             }
 
@@ -492,17 +492,17 @@ void CardDownloaderPopup::FinalizeDownload()
             if (can_move)
             {
                 LogInfo("Moving file {} from {} to {}",
-                                path.string(),
-                                output_dir.string(),
-                                target_dir.string());
+                        path.string(),
+                        output_dir.string(),
+                        target_dir.string());
                 fs::rename(output_dir / path, target_dir / path);
             }
             else
             {
                 LogInfo("Copying file {} from {} to {}",
-                                path.string(),
-                                output_dir.string(),
-                                target_dir.string());
+                        path.string(),
+                        output_dir.string(),
+                        target_dir.string());
                 fs::copy(output_dir / path, target_dir / path);
             }
         }

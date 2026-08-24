@@ -41,7 +41,7 @@ class YGOProDeckDownloader : public CardArtDownloader
     virtual bool ProvidesBleedEdge() const override;
 
   private slots:
-    void OnError(){};
+    void OnError() {};
 
   private:
     void NextRequest();

@@ -252,9 +252,11 @@ bool MPCFillDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 void MPCFillDownloader::HandleReply(QNetworkReply* reply)
 {
     const auto content_type{
-        [reply]() -> QString {
+        [reply]() -> QString
+        {
             const QVariant content_type{ reply->header(QNetworkRequest::ContentTypeHeader) };
-            if (content_type.isValid()) {
+            if (content_type.isValid())
+            {
                 return content_type.toString();
             }
             return "image/jpg";
