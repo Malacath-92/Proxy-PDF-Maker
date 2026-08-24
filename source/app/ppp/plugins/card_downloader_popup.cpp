@@ -457,7 +457,6 @@ void CardDownloaderPopup::FinalizeDownload()
             }
 
             if (!card_info.m_ExternalPath.has_value() &&
-                std::ranges::contains(downloaded_file_paths, card_info.m_Name) &&
                 fs::exists(target_dir / card_info.m_Name))
             {
                 LogInfo("Deleting old file {} from {}",
