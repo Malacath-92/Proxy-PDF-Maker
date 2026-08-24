@@ -32,12 +32,12 @@ OptionsAreaWidget::OptionsAreaWidget(
     TRACY_AUTO_SCOPE();
 
     auto* layout{ new QVBoxLayout };
+    layout->addStretch();
     AddCollapsible(layout, project_options);
     AddCollapsible(layout, print_options);
     AddCollapsible(layout, guides_options);
     AddCollapsible(layout, card_options);
     AddCollapsible(layout, global_options);
-    layout->addStretch();
     layout->setContentsMargins(0, 0, 0, 0);
 
     auto* widget{ new QWidget };
@@ -112,8 +112,8 @@ void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
         widget,
         !application.GetObjectVisibility(widget->objectName()),
     } };
-    layout->addWidget(collapse_button);
-    layout->addWidget(widget);
+    layout->insertWidget(layout->count() - 1, collapse_button);
+    layout->insertWidget(layout->count() - 1, widget);
 
     QObject::connect(collapse_button,
                      &CollapseButton::SetObjectVisibility,
