@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QDirIterator>
 #include <QHBoxLayout>
+#include <QPushButton>
 #include <QToolButton>
 
 #include <nlohmann/json.hpp>
@@ -16,6 +17,7 @@
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
+#include <ppp/ui/main_window.hpp>
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
 #include <ppp/ui/widget_util/widget_double_spin_box.hpp>
 #include <ppp/ui/widget_util/widget_label.hpp>
@@ -42,6 +44,8 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     using namespace std::string_view_literals;
     auto* print_output{ new LineEditWithLabel{ "Output &Filename", "Filename" } };
     m_PrintOutput = print_output->GetWidget();
+
+    auto* render_alignment_button{ new QPushButton{ "Alignment Test" } };
 
     m_RenderHeader = new QCheckBox{ "Render Header" };
     m_RenderHeader->setToolTip("Determines whether the header of each page will be rendered or not.");
@@ -223,6 +227,7 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     EnableOptionWidgetForDefaults(m_FlipOn, config_reqs, "flip_page_on");
 
     auto* layout{ new QVBoxLayout };
+    layout->addWidget(render_alignment_button);
     layout->addWidget(print_output);
     layout->addWidget(m_RenderHeader);
     layout->addWidget(card_size);
@@ -260,6 +265,20 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
         }
     };
 
+    QObject::connect(render_alignment_button,
+                     &QPushButton::clicked,
+                     &m_ViewModel,
+                     [this]()
+                     {
+                         if (!m_ViewModel.DoRenderAlignmentTest())
+                         {
+                             TRACY_AUTO_SCOPE();
+                             auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+                             main_window->Toast(ToastType::Error,
+                                                "PDF Rendering Error",
+                                                "Failure while creating pdf, please check logs for details.");
+                         }
+                     });
     QObject::connect(m_PrintOutput,
                      &QLineEdit::textChanged,
                      &m_ViewModel,

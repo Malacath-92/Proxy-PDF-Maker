@@ -327,6 +327,8 @@ class Project : public QObject
     void AvailablePageSizesChanged(const PageSizes& page_sizes);
 
   signals:
+    void NewProjectOpened(const ProjectData& old_data, const ProjectData& new_data);
+
     void FailedAddingExternalCard(const fs::path& absolute_image_path);
     void ExternalCardAdded(const fs::path& absolute_image_path);
     void ExternalCardRemoved(const fs::path& absolute_image_path);

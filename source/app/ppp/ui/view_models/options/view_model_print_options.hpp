@@ -52,6 +52,8 @@ class PrintOptionsViewModel : public QObject
     void BasePdfAdded();
 
   private slots:
+    bool DoRenderAlignmentTest() const;
+
     void ChangeCardSizes(const CardSizes& card_sizes);
     void ChangePageSizes(const PageSizes& page_sizes);
 

@@ -2,8 +2,6 @@
 
 #include <ranges>
 
-#include <QApplication>
-
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -12,21 +10,23 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-#include <nlohmann/json.hpp>
-
+#include <ppp/config_types.hpp>
 #include <ppp/qt_util.hpp>
 
-#include <ppp/app.hpp>
-#include <ppp/project/project.hpp>
 #include <ppp/ui/widget_util/widget_combo_box.hpp>
 #include <ppp/ui/widget_util/widget_label.hpp>
+
+#include <ppp/ui/view_models/options/view_model_new_project_popup.hpp>
 
 #include <ppp/profile/profile.hpp>
 
 NewProjectPopup::NewProjectPopup(QWidget* parent,
-                                 const Config& config)
+                                 NewProjectPopupViewModel* view_model)
     : PopupBase{ parent }
+    , m_ViewModel{ *view_model }
 {
+    m_ViewModel.setParent(this);
+
     m_AutoCenter = false;
     m_PersistGeometry = true;
 
@@ -39,54 +39,24 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         auto* project_name{ new LineEditWithLabel{ "Project Name", "new_project" } };
         m_ProjectName = project_name->GetWidget();
 
-        m_ImageFolder = new QPushButton{ m_ActualImageFolder };
+        m_ImageFolder = new QPushButton{ "images" };
         auto* image_folder{ new WidgetWithLabel{ "Image Folder", m_ImageFolder } };
 
-        const auto default_card_size{
-            [&config]() -> std::string
-            {
-                auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-                auto user_default{ app->GetProjectDefault("card_size") };
-                if (!user_default.is_null())
-                {
-                    return user_default;
-                }
-                else
-                {
-                    return ProjectData{ config }.m_CardSizeChoice;
-                }
-            }()
-        };
         m_CardSize =
             MakeComboBox(
-                config.m_CardSizes | c_CardSizeNames,
-                config.m_CardSizes | c_CardSizeHints,
-                default_card_size);
+                m_ViewModel.GetCardSizes() | c_CardSizeNames,
+                m_ViewModel.GetCardSizes() | c_CardSizeHints,
+                m_ViewModel.GetDefaultCardSize());
         auto* card_size{
             new WidgetWithLabel{
                 "Card Size",
                 m_CardSize }
         };
 
-        const auto default_page_size{
-            [&config]() -> std::string
-            {
-                auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
-                auto user_default{ app->GetProjectDefault("page_size") };
-                if (!user_default.is_null())
-                {
-                    return user_default;
-                }
-                else
-                {
-                    return ProjectData{ config }.m_PageSize;
-                }
-            }()
-        };
         m_PaperSize =
             MakeComboBox(
-                config.m_PageSizes | c_PageSizeNames,
-                default_page_size);
+                m_ViewModel.GetPageSizes() | c_PageSizeNames,
+                m_ViewModel.GetDefaultPageSize());
         auto* paper_size{
             new WidgetWithLabel{
                 "Paper Size",
@@ -121,13 +91,17 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
                 if (const auto new_image_dir{ OpenFolderDialog(".") })
                 {
                     m_ImageFolder->setText(ToQString(new_image_dir.value().filename()));
-                    m_ActualImageFolder = ToQString(new_image_dir.value());
+                    m_ViewModel.ChangeImageFolder(ToQString(new_image_dir.value()));
                 }
             }
         };
 
         connect(m_ProjectName, &QLineEdit::textChanged, m_ProjectName, set_project_name_tooltip);
+        connect(m_ProjectName, &QLineEdit::textChanged, &m_ViewModel, &NewProjectPopupViewModel::ChangeProjectName);
         connect(m_ImageFolder, &QPushButton::clicked, this, browse_image_folder);
+        connect(m_CardSize, &QComboBox::currentTextChanged, &m_ViewModel, &NewProjectPopupViewModel::ChangeCardSize);
+        connect(m_PaperSize, &QComboBox::currentTextChanged, &m_ViewModel, &NewProjectPopupViewModel::ChangePaperSize);
+        connect(m_ClearImages, &QCheckBox::checkStateChanged, &m_ViewModel, &NewProjectPopupViewModel::ChangeClearImages);
     }
 
     auto* buttons{ new QWidget };
@@ -153,11 +127,12 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
             cancel_button,
             &QPushButton::clicked,
             this,
-            [this]()
-            {
-                m_Cancelled = true;
-                close();
-            });
+            &QDialog::close);
+        QObject::connect(
+            cancel_button,
+            &QPushButton::clicked,
+            &m_ViewModel,
+            &NewProjectPopupViewModel::Cancel);
     }
 
     auto* window_layout{ new QVBoxLayout };
@@ -165,34 +140,10 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
     window_layout->addWidget(buttons);
 
     setLayout(window_layout);
-}
 
-bool NewProjectPopup::CreateNewProject() const
-{
-    return !m_Cancelled;
-}
-
-QString NewProjectPopup::NewProjectName() const
-{
-    return m_ProjectName->text();
-}
-
-QString NewProjectPopup::NewImageFolder() const
-{
-    return m_ActualImageFolder;
-}
-
-QString NewProjectPopup::NewCardSize() const
-{
-    return m_CardSize->currentText();
-}
-
-QString NewProjectPopup::NewPaperSize() const
-{
-    return m_PaperSize->currentText();
-}
-
-bool NewProjectPopup::ClearImages() const
-{
-    return m_ClearImages->isChecked();
+    m_ViewModel.ChangeProjectName(m_ProjectName->text());
+    m_ViewModel.ChangeImageFolder(m_ImageFolder->text());
+    m_ViewModel.ChangeCardSize(m_CardSize->currentText());
+    m_ViewModel.ChangePaperSize(m_PaperSize->currentText());
+    m_ViewModel.ChangeClearImages(m_ClearImages->checkState());
 }

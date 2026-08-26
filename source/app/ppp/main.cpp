@@ -43,6 +43,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/ui/view_models/options/view_model_global_options.hpp>
 #include <ppp/ui/view_models/options/view_model_guides_options.hpp>
 #include <ppp/ui/view_models/options/view_model_print_options.hpp>
+#include <ppp/ui/view_models/options/view_model_project_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
 
 #include <ppp/ui/main_window.hpp>
@@ -232,6 +233,7 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
+    auto* project_options_view_model{ new ProjectOptionsViewModel{ project, config } };
     auto* print_options_view_model{ new PrintOptionsViewModel{ project, config } };
     auto* guides_options_view_model{ new GuidesOptionsViewModel{ project, config } };
     auto* card_options_view_model{ new CardOptionsViewModel{ project, config } };
@@ -242,7 +244,7 @@ int main(int argc, char** argv)
     auto* print_preview{ new PrintPreview{ project, config } };
     auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
 
-    auto* project_options{ new ProjectOptionsWidget{ project, config } };
+    auto* project_options{ new ProjectOptionsWidget{ project_options_view_model } };
     auto* print_options{ new PrintOptionsWidget{ print_options_view_model } };
     auto* guides_options{ new GuidesOptionsWidget{ guides_options_view_model } };
     auto* card_options{ new CardOptionsWidget{ card_options_view_model } };
@@ -349,12 +351,6 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_app);
         QObject::connect(options_area, &OptionsAreaWidget::SetObjectVisibility, &app, &PrintProxyPrepApplication::SetObjectVisibility);
-    }
-
-    {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(connect_signals_main_window);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
     }
 
     {
@@ -503,7 +499,6 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_project);
 
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &project, &Project::EnsureOutputFolder);
         QObject::connect(&config, &Config::NoCropModeChanged, &project, &Project::EnsureOutputFolder);
         QObject::connect(&config, &Config::ColorCubeChanged, &project, &Project::EnsureOutputFolder);
 
@@ -519,7 +514,7 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_cropper);
 
         QObject::connect(&project, &Project::ImageDirChanged, &cropper, &Cropper::CropDirChanged);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
+        QObject::connect(&project, &Project::NewProjectOpened, &cropper, &Cropper::CropDirChanged);
     }
 
     {
@@ -528,7 +523,7 @@ int main(int argc, char** argv)
 
         // Sequence refreshing of cards after cleanup of cropper
         QObject::connect(&project, &Project::ImageDirChanged, &card_provider, &CardProvider::ImageDirChanged);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
+        QObject::connect(&project, &Project::NewProjectOpened, &card_provider, &CardProvider::NewProjectOpened);
         QObject::connect(&project, &Project::CardSizeChanged, &card_provider, &CardProvider::CardSizeChanged);
         QObject::connect(&project, &Project::BleedEdgeChanged, &card_provider, &CardProvider::BleedChanged);
         QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, &card_provider, &CardProvider::BleedChanged);
@@ -550,7 +545,7 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::CardVisibilityChanged, card_area, &CardArea::CardVisibilityChanged);
 
         QObject::connect(&project, &Project::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
+        QObject::connect(&project, &Project::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
         QObject::connect(&project, &Project::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
         QObject::connect(&project, &Project::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
         QObject::connect(&project, &Project::CardBacksideChanged, card_area, &CardArea::FullRefresh);
@@ -567,7 +562,7 @@ int main(int argc, char** argv)
         // TODO: Fine-tune these connections to reduce amount of pointless work
         QObject::connect(&project, &Project::ImageDirChanged, print_preview, &PrintPreview::Refresh);
 
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_preview, &PrintPreview::Refresh);
+        QObject::connect(&project, &Project::NewProjectOpened, print_preview, &PrintPreview::Refresh);
 
         QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::RequestRefresh);
@@ -609,11 +604,12 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(connect_signals_print_options);
+        TRACY_SCOPE_NAME(connect_signals_new_project);
 
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, print_options_view_model, &PrintOptionsViewModel::NewProjectOpened);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, guides_options_view_model, &GuidesOptionsViewModel::NewProjectOpened);
-        QObject::connect(project_options, &ProjectOptionsWidget::NewProjectOpened, card_options_view_model, &CardOptionsViewModel::NewProjectOpened);
+        QObject::connect(&project, &Project::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
+        QObject::connect(&project, &Project::NewProjectOpened, print_options_view_model, &PrintOptionsViewModel::NewProjectOpened);
+        QObject::connect(&project, &Project::NewProjectOpened, guides_options_view_model, &GuidesOptionsViewModel::NewProjectOpened);
+        QObject::connect(&project, &Project::NewProjectOpened, card_options_view_model, &CardOptionsViewModel::NewProjectOpened);
     }
 
     {

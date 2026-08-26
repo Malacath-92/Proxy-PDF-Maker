@@ -152,6 +152,7 @@ bool Project::Load(const fs::path& json_path,
 bool Project::LoadFromJson(const std::string& json_blob,
                            const JsonProvider* overrides)
 {
+    const auto old_data{ std::move(m_Data) };
     m_Data = ProjectData{ m_Cfg };
 
     LogInfo("Initializing project...");
@@ -630,6 +631,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
     }
 
     Init();
+
+    NewProjectOpened(old_data, m_Data);
     return !error;
 }
 

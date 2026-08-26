@@ -10,6 +10,8 @@
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
 
+#include <ppp/pdf/generate.hpp>
+
 #include <ppp/ui/default_project_value_actions.hpp>
 
 #include <ppp/project/project.hpp>
@@ -35,6 +37,23 @@ void PrintOptionsViewModel::BasePdfAdded()
 {
     const auto available_base_pdfs{ GetBasePdfNames() };
     AvailableBasePdfsChanged(available_base_pdfs);
+}
+
+bool PrintOptionsViewModel::DoRenderAlignmentTest() const
+{
+    TRACY_AUTO_SCOPE();
+
+    try
+    {
+        const auto file_path{ GenerateTestPdf(m_Project, m_Cfg) };
+        OpenFile(file_path);
+    }
+    catch (const std::exception& e)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void PrintOptionsViewModel::ChangeCardSizes(const CardSizes& card_sizes)
