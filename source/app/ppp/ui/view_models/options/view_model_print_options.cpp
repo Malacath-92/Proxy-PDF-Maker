@@ -9,6 +9,7 @@
 #include <ppp/app.hpp>
 #include <ppp/config.hpp>
 #include <ppp/qt_util.hpp>
+#include <ppp/util/log.hpp>
 
 #include <ppp/pdf/generate.hpp>
 
