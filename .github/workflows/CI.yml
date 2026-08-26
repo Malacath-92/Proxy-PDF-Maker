@@ -132,6 +132,10 @@ jobs:
         run: |
             cd build
             cmake --build . --config ${{inputs.build_type}}
+
+      - name: Install
+        run: |
+            cd build
             cmake --install . --config ${{inputs.build_type}}
 
       - name: Test
