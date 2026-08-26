@@ -50,6 +50,7 @@ bool PrintOptionsViewModel::DoRenderAlignmentTest() const
     }
     catch (const std::exception& e)
     {
+        LogError("Failed creating render alignment test pdf: {}", e.what());
         return false;
     }
 
