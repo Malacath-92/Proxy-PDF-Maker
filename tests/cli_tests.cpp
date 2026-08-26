@@ -121,13 +121,23 @@ auto RunCLI(const char* command_line)
 QByteArray HashPdfFile(const fs::path& file_path)
 {
     const auto source_data{
-        [&]()
+        [&]() -> QByteArray
         {
             QFile source_file{ ToQString(file_path) };
-            source_file.open(QFile::ReadOnly);
-            return source_file.readAll();
+            if (source_file.open(QFile::ReadOnly))
+            {
+                return source_file.readAll();
+            }
+
+            return QByteArray{};
         }()
     };
+
+    if (source_data.isEmpty())
+    {
+        return source_data;
+    }
+
     const auto id_start{ source_data.lastIndexOf("ID[<") };
     const auto id_end{ source_data.indexOf(">]", id_start) };
     const auto id_less_data{ source_data.sliced(0, id_start) +
