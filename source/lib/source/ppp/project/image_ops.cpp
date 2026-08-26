@@ -262,10 +262,11 @@ void WritePreviews(const fs::path& img_cache_file, const ImgDict& img_dict)
 cv::Mat LoadColorCube(const fs::path& file_path)
 {
     QFile color_cube_file{ ToQString(file_path) };
-    if (color_cube_file.open(QFile::ReadOnly))
+    if (!color_cube_file.open(QFile::ReadOnly))
     {
         return cv::Mat{};
     }
+
     const std::string color_cube_raw{ QLatin1String{ color_cube_file.readAll() }.toString().toStdString() };
 
     static constexpr auto c_ToStringViews{ std::views::transform(
