@@ -377,6 +377,13 @@ set_target_properties(proxy_pdf_cli PROPERTIES
     VS_GLOBAL_EnableMicrosoftCodeAnalysis false
     VS_GLOBAL_EnableClangTidyCodeAnalysis true)
 
+if(MSVC)
+	# Due to our setup with conan we have to see a lot of warnings of missing pdb files
+	# that don't help us, so we can just silence them as well
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /ignore:4099")
+    set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /ignore:4099")
+endif()
+
 # --------------------------------------------------
 # Set debugging properties
 set_target_properties(proxy_pdf PROPERTIES
