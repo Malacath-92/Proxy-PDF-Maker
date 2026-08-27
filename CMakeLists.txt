@@ -114,12 +114,6 @@ target_compile_definitions(nanosvg PRIVATE NANOSVG_IMPLEMENTATION)
 target_include_directories(nanosvg PUBLIC "${CMAKE_BINARY_DIR}/nanosvgh")
 
 # --------------------------------------------------
-# Workaround for unreachable code in QByteArray
-if(MSVC)
-	set_target_properties(Qt6::Core PROPERTIES SYSTEM ON)
-endif()
-
-# --------------------------------------------------
 # Workaround for conan not exposing this plugin
 if (NOT TARGET Qt6::TlsBackendOpenSSLPlugin)
 	if (WIN32)
@@ -179,6 +173,8 @@ endif()
 add_library(proxy_pdf_warnings INTERFACE)
 if(MSVC)
 	target_compile_options(proxy_pdf_warnings INTERFACE /W4 /WX /permissive- /Zc:preprocessor)
+	# Workaround for unreachable code in QByteArray
+	target_compile_options(proxy_pdf_warnings INTERFACE /ww4702)
 else()
 	target_compile_options(proxy_pdf_warnings INTERFACE -Wall -Wextra -pedantic -Werror)
 endif()
