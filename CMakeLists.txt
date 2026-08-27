@@ -174,7 +174,7 @@ add_library(proxy_pdf_warnings INTERFACE)
 if(MSVC)
 	target_compile_options(proxy_pdf_warnings INTERFACE /W4 /WX /permissive- /Zc:preprocessor)
 	# Workaround for unreachable code in QByteArray
-	target_compile_options(proxy_pdf_warnings INTERFACE /w14702)
+	target_compile_options(proxy_pdf_warnings INTERFACE /wd4702)
 else()
 	target_compile_options(proxy_pdf_warnings INTERFACE -Wall -Wextra -pedantic -Werror)
 endif()
