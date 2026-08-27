@@ -114,6 +114,12 @@ target_compile_definitions(nanosvg PRIVATE NANOSVG_IMPLEMENTATION)
 target_include_directories(nanosvg PUBLIC "${CMAKE_BINARY_DIR}/nanosvgh")
 
 # --------------------------------------------------
+# Workaround for unreachable code in QByteArray
+if(MSVC)
+	set_target_properties(Qt6::Core PROPERTIES SYSTEM ON)
+endif()
+
+# --------------------------------------------------
 # Workaround for conan not exposing this plugin
 if (NOT TARGET Qt6::TlsBackendOpenSSLPlugin)
 	if (WIN32)
