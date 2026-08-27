@@ -3,11 +3,13 @@
 #include <ranges>
 
 #include <QApplication>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QLocale>
 #include <QPushButton>
 #include <QThread>
 #include <QVBoxLayout>
@@ -299,9 +301,12 @@ void GenericPopup::UpdateTextImpl(std::string_view text)
 AboutPopup::AboutPopup(QWidget* parent)
     : PopupBase(parent)
 {
+    const auto build_time{ QDateTime::fromString(ToQString(ProxyPdfBuildTime()), Qt::ISODate) };
+    const auto build_time_str{ QLocale::system().toString(build_time, QLocale::LongFormat) };
+
     auto* app_text{ new QLabel{ ToQString("Proxy-PDF-Maker") } };
     auto* version_text{ new QLabel{ ToQString(fmt::format("Version: {}", ProxyPdfVersion())) } };
-    auto* built_text{ new QLabel{ ToQString(fmt::format("Built: {}", ProxyPdfBuildTime())) } };
+    auto* built_text{ new QLabel{ QString{ "Built: %1" }.arg(build_time_str) } };
     auto* license_text{ new QLabel{ ToQString("Released under MIT License") } };
 
     auto* buttons{ new QWidget{} };
