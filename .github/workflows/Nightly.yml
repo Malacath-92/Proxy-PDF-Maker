@@ -109,14 +109,6 @@ jobs:
           echo "compiler.cppstd=17" >> default
           echo "" >> default
 
-      - name: Clone temporary podofo recipe
-        run: |
-          git clone --depth 1 https://github.com/Malacath-92/conan-podofo-1.1.2 podofo-1.1.2
-
-      - name: Export podofo recipe to Conan Cache
-        run: |
-          conan export podofo-1.1.2 --version 1.1.2
-
       - name: Restore Conan Cache
         id: cache-conan
         uses: actions/cache/restore@v4
@@ -131,6 +123,14 @@ jobs:
             pip install conan
             conan --version
             conan profile detect --force
+
+      - name: Clone temporary podofo recipe
+        run: |
+          git clone --depth 1 https://github.com/Malacath-92/conan-podofo-1.1.2 podofo-1.1.2
+
+      - name: Export podofo recipe to Conan Cache
+        run: |
+          conan export podofo-1.1.2 --version 1.1.2
 
       - name: Conan setup Backup Servers
         run: |
