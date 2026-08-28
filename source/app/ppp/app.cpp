@@ -80,13 +80,27 @@ void PrintProxyPrepApplication::SaveWindowGeometry(const QString& object_name, Q
     m_WindowGeometries[object_name] = std::move(geometry);
 }
 
+void PrintProxyPrepApplication::SetProjectName(std::string project_name)
+{
+    const auto project_ext{ m_ProjectPath.extension() };
+    m_ProjectPath = m_ProjectPath.parent_path() / project_name;
+    m_ProjectPath += project_ext;
+    ProjectPathChanged(m_ProjectPath);
+}
 void PrintProxyPrepApplication::SetProjectPath(fs::path project_path)
 {
     m_ProjectPath = std::move(project_path);
+    ProjectPathChanged(m_ProjectPath);
 }
 const fs::path& PrintProxyPrepApplication::GetProjectPath() const
 {
     return m_ProjectPath;
+}
+
+void PrintProxyPrepApplication::SetProjectsRoot(fs::path projects_root)
+{
+    m_ProjectPath = projects_root / m_ProjectPath.filename();
+    ProjectPathChanged(m_ProjectPath);
 }
 
 void PrintProxyPrepApplication::SetTheme(std::string theme)

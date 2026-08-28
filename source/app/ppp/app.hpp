@@ -26,6 +26,8 @@ class PrintProxyPrepApplication
     : public QApplication,
       public JsonProvider
 {
+    Q_OBJECT
+
   public:
     PrintProxyPrepApplication(int& argc, char** argv);
     ~PrintProxyPrepApplication();
@@ -36,8 +38,11 @@ class PrintProxyPrepApplication
     std::optional<QByteArray> LoadWindowGeometry(const QString& object_name) const;
     void SaveWindowGeometry(const QString& object_name, QByteArray geometry);
 
+    void SetProjectName(std::string project_name);
     void SetProjectPath(fs::path project_path);
     const fs::path& GetProjectPath() const;
+
+    void SetProjectsRoot(fs::path projects_root);
 
     void SetTheme(std::string theme);
     const std::string& GetTheme() const;
@@ -57,6 +62,9 @@ class PrintProxyPrepApplication
 
     virtual nlohmann::json GetJsonValue(std::string_view path) const override;
     virtual void SetJsonValue(std::string_view path, nlohmann::json value) override;
+
+  signals:
+    void ProjectPathChanged(const fs::path& project_path);
 
   private:
     bool notify(QObject*, QEvent*) override;

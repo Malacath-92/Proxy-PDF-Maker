@@ -39,7 +39,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
     virtual void dragEnterEvent(QDragEnterEvent* event) override;
     virtual void dropEvent(QDropEvent* event) override;
 
-    void ProjectPathChanged();
+    void ProjectPathChanged(const fs::path& project_path);
 
   signals:
     void PdfDropped(const fs::path& absolute_pdf_path) const;

@@ -606,7 +606,9 @@ int main(int argc, char** argv)
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_new_project);
 
-        QObject::connect(&project, &Project::NewProjectOpened, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
+        QObject::connect(&app, &PrintProxyPrepApplication::ProjectPathChanged, project_options_view_model, &ProjectOptionsViewModel::ProjectPathChanged);
+        QObject::connect(&app, &PrintProxyPrepApplication::ProjectPathChanged, main_window, &PrintProxyPrepMainWindow::ProjectPathChanged);
+
         QObject::connect(&project, &Project::NewProjectOpened, print_options_view_model, &PrintOptionsViewModel::NewProjectOpened);
         QObject::connect(&project, &Project::NewProjectOpened, guides_options_view_model, &GuidesOptionsViewModel::NewProjectOpened);
         QObject::connect(&project, &Project::NewProjectOpened, card_options_view_model, &CardOptionsViewModel::NewProjectOpened);

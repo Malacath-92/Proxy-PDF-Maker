@@ -49,7 +49,8 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs,
 {
     TRACY_AUTO_SCOPE();
 
-    ProjectPathChanged();
+    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    ProjectPathChanged(app->GetProjectPath());
 
     auto* window_layout{ new QHBoxLayout };
     window_layout->addWidget(tabs);
@@ -226,9 +227,8 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
     QMainWindow::dropEvent(event);
 }
 
-void PrintProxyPrepMainWindow::ProjectPathChanged()
+void PrintProxyPrepMainWindow::ProjectPathChanged(const fs::path& project_path)
 {
-    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
     setWindowTitle(QString{ "Proxy-PDF-Maker - %1" }
-                       .arg(ToQString(app->GetProjectPath().filename())));
+                       .arg(ToQString(project_path.filename())));
 }

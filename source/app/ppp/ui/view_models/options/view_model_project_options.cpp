@@ -23,6 +23,16 @@ ProjectOptionsViewModel::ProjectOptionsViewModel(Project& project,
     TRACY_AUTO_SCOPE();
 }
 
+void ProjectOptionsViewModel::ChangeProjectName(const QString& project_name)
+{
+    auto* application{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    application->SetProjectName(project_name.toStdString());
+}
+void ProjectOptionsViewModel::ChangeProjectsRoot(const QString& projects_root)
+{
+    auto* application{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    application->SetProjectsRoot(projects_root.toStdString());
+}
 void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& view_model)
 {
     TRACY_AUTO_SCOPE();
@@ -76,14 +86,12 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
 
     m_Project.LoadFromJson(new_project.DumpToJson(), &application);
 }
-void ProjectOptionsViewModel::SaveProject(const fs::path& project_path)
+void ProjectOptionsViewModel::SaveProject()
 {
     TRACY_AUTO_SCOPE();
 
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
-    application.SetProjectPath(project_path);
-
-    m_Project.Dump(project_path);
+    m_Project.Dump(application.GetProjectPath());
 }
 void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 {
@@ -96,6 +104,18 @@ void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 
         m_Project.Load(project_path);
     }
+}
+
+void ProjectOptionsViewModel::EmitDefaults()
+{
+    const auto* application{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    ProjectPathChanged(application->GetProjectPath());
+}
+
+fs::path ProjectOptionsViewModel::GetProjectsRoot() const
+{
+    const auto* application{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    return application->GetProjectPath().parent_path();
 }
 
 NewProjectPopupViewModel* ProjectOptionsViewModel::MakeProjectPopupViewModel() const
