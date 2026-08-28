@@ -19,7 +19,7 @@ class ProxyPDF(ConanFile):
         self.requires("nlohmann_json/3.11.3")
 
         # PDF Write/Read
-        self.requires("podofo/1.1.2")
+        self.requires("podofo/1.0.3")
 
         # String Formatting
         self.requires("fmt/12.1.0")
