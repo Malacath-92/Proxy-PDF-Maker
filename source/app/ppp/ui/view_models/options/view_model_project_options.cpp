@@ -75,7 +75,7 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
         std::filesystem::remove_all(entry.path());
     }
 
-    Project new_project{ m_Cfg, application.GetBasePdfsFolder() };
+    Project new_project{ m_Cfg, application.GetProjectsFolder(), application.GetBasePdfsFolder() };
     new_project.m_Data.m_FileName = view_model.NewProjectName().toStdString();
     new_project.m_Data.m_ImageDir = new_image_folder;
     new_project.m_Data.m_CropDir = new_project.m_Data.m_ImageDir / "crop";

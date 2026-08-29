@@ -270,6 +270,13 @@ int main(int argc, char** raw_argv)
 
     QCoreApplication app{ argc, raw_argv };
 
+    const auto projects_folder{
+        []
+        {
+            const auto documents_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
+            return QDir{ documents_dir }.filesystemPath() / "Proxy Projects";
+        }()
+    };
     const auto data_folder{
         []
         {
@@ -370,7 +377,7 @@ int main(int argc, char** raw_argv)
         cli.m_ProjectOverrides
     };
 
-    Project project{ config, base_pdfs_folder };
+    Project project{ config, projects_folder, base_pdfs_folder };
     if (cli.m_ProjectFile.has_value())
     {
         project.Load(cli.m_ProjectFile.value(),

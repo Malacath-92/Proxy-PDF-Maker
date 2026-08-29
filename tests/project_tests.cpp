@@ -25,7 +25,7 @@ TEST_CASE("Empty project", "[project_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project empty_project{ config, imaginary_path };
+    Project empty_project{ config, ".", imaginary_path };
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
     empty_project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -45,7 +45,7 @@ TEST_CASE("Empty project can be saved", "[project_save_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project empty_project{ config, imaginary_path };
+    Project empty_project{ config, ".", imaginary_path };
     empty_project.m_Data.m_ImageDir = "no_images";
     empty_project.m_Data.m_CropDir = "no_images/crop";
     empty_project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -65,7 +65,7 @@ TEST_CASE("Empty project can be loaded", "[project_load_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project empty_project{ config, imaginary_path };
+    Project empty_project{ config, ".", imaginary_path };
     REQUIRE_NOTHROW(empty_project.Load("empty_project.json"));
 }
 
@@ -73,7 +73,7 @@ TEST_CASE("Non-empty project", "[project_non_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project project{ config, imaginary_path };
+    Project project{ config, ".", imaginary_path };
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
     project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -92,7 +92,7 @@ TEST_CASE("Non-empty project can be saved", "[project_save_non_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project project{ config, imaginary_path };
+    Project project{ config, ".", imaginary_path };
     project.m_Data.m_ImageDir = "some_images";
     project.m_Data.m_CropDir = "some_images/crop";
     project.m_Data.m_UncropDir = "no_images/uncrop";
@@ -114,6 +114,6 @@ TEST_CASE("Non-empty project can be loaded", "[project_load_non_empty]")
 {
     const Config& config{};
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
-    Project project{ config, imaginary_path };
+    Project project{ config, ".", imaginary_path };
     REQUIRE_NOTHROW(project.Load("non_empty_project.json"));
 }

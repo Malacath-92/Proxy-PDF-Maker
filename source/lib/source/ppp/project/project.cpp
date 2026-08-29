@@ -116,10 +116,16 @@ static bool RoughlyEqual(Size lhs, Size rhs)
 }
 
 Project::Project(const Config& config,
+                 const fs::path& default_projects_folder,
                  const fs::path& base_pdfs_folder)
     : m_Data{ config }
     , m_Cfg{ config }
 {
+    m_Data.m_ImageDir = default_projects_folder / m_Data.m_ImageDir;
+    m_Data.m_CropDir = default_projects_folder / m_Data.m_CropDir;
+    m_Data.m_UncropDir = default_projects_folder / m_Data.m_UncropDir;
+    m_Data.m_ImageCache = default_projects_folder / m_Data.m_ImageCache;
+
     m_Data.m_BasePdfsFolder = base_pdfs_folder;
 }
 
@@ -156,6 +162,10 @@ bool Project::LoadFromJson(const std::string& json_blob,
 {
     const auto old_data{ std::move(m_Data) };
     m_Data = ProjectData{ m_Cfg };
+    m_Data.m_ImageDir = old_data.m_ImageDir;
+    m_Data.m_CropDir = old_data.m_CropDir;
+    m_Data.m_UncropDir = old_data.m_UncropDir;
+    m_Data.m_ImageCache = old_data.m_ImageCache;
     m_Data.m_BasePdfsFolder = old_data.m_BasePdfsFolder;
 
     LogInfo("Initializing project...");

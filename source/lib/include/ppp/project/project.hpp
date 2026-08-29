@@ -143,6 +143,7 @@ class Project : public QObject
 
   public:
     Project(const Config& config,
+            const fs::path& default_projects_folder,
             const fs::path& base_pdfs_folder);
     ~Project();
 

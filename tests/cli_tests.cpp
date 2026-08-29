@@ -33,7 +33,7 @@ auto SetupImages(
 
     const fs::path proj_json{ folder.string() + ".json" };
     {
-        Project some_images{ g_Cfg, c_ImaginaryPath };
+        Project some_images{ g_Cfg, ".", c_ImaginaryPath };
         some_images.m_Data.m_ImageDir = folder;
         some_images.m_Data.m_CropDir = folder / "crop";
         project_mod(some_images);
@@ -170,7 +170,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xb8\x2c\xb6\x2c\xc1\x30\x30\x40\x7e\x24\xbd\xbf\x61\x03\x1b\xea"
+        "\x42\xb9\xbc\xb2\x27\x03\x9b\xf5\xcb\x7a\xf2\x2c\x7a\x90\xa3\x6a"
     };
     const fs::path imaginary_path{ "./the/path/that/dont/exist" };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
@@ -191,7 +191,7 @@ TEST_CASE("Run CLI with one image", "[cli_one_image]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xf4\x44\x11\x3a\x36\x48\x1e\x61\x25\xe5\xc7\xda\xd8\x85\x46\xa0"
+        "\x48\x88\x15\xab\x41\x16\x50\xeb\x65\x39\x3f\x26\x93\xdd\xb3\x3b"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -211,7 +211,7 @@ TEST_CASE("Run CLI with some images", "[cli_some_images]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\xfc\xa5\xf3\x8d\x7f\x91\x6b\xc8\x32\x86\x0c\x43\x69\xe7\x86\x50"
+        "\x71\xb4\x07\x0c\xad\xe8\x91\x98\x56\xf6\x0b\xcc\xd3\x98\xfc\x20"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -237,7 +237,7 @@ TEST_CASE("Run CLI with some images with bleed", "[cli_some_images_with_bleed]")
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x13\x5d\x71\x10\x92\xf0\x34\x27\x25\x03\x09\x27\xa0\xbe\x65\xb5"
+        "\xd3\x19\x97\x49\xba\xc5\xfd\xc1\x60\x69\xb1\x26\xa5\x2e\xbb\x3f"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -264,7 +264,7 @@ TEST_CASE("Run CLI with some images with spacing", "[cli_some_images_with_spacin
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x81\x36\x40\xd1\xa6\x95\xe3\x8d\x0a\x51\xd8\xf6\x27\xb2\xb2\x16"
+        "\x51\xcf\x3e\x23\xd0\xeb\x75\xf4\xdb\xb9\x9f\xf4\x29\x51\x28\xfc"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -293,7 +293,7 @@ TEST_CASE("Run CLI with some images with spacing and backside",
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x18\xfa\x73\x96\x67\x08\x0f\x56\x1e\x7d\xd8\x9e\xb9\xf3\xfa\x3b"
+        "\x29\x80\x50\x20\x5e\x4d\x5c\xbc\x4d\xfa\xd6\x81\x72\x43\xd7\xd6"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
@@ -323,7 +323,7 @@ TEST_CASE("Run CLI with some images with spacing and backside bleed",
     const auto cli_res{ RunCLI(command_line) };
 
     constexpr const char c_ExpectedHash[]{
-        "\x8e\x72\xc3\xbf\x90\x1c\x82\x07\xd8\xbb\xee\x3e\x71\x4f\xa4\xcb"
+        "\xfe\x69\x32\x29\x0e\xad\x25\x5c\xe6\x76\x32\x38\xfc\xe7\x22\x41"
     };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
