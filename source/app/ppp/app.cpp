@@ -40,10 +40,17 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
         }
     }
 
-    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
-    QDir{}.mkpath(config_dir);
+    {
+        const auto documents_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
+        QDir{}.mkpath(documents_dir);
 
-    m_ProjectPath = fs::path{ config_dir.toStdString() } / "proj.json";
+        m_ProjectPath = fs::path{ documents_dir.toStdString() } / "proj.json";
+    }
+
+    {
+        const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+        QDir{}.mkpath(config_dir);
+    }
 
     MigrateOldStyleSettings();
     Load();
