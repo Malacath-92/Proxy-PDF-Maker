@@ -27,6 +27,16 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     QCoreApplication::setOrganizationName("Proxy");
     QCoreApplication::setApplicationName("Proxy PDF Maker");
 
+    constexpr auto c_EnsureExists{
+        [](const fs::path& p)
+        {
+            if (!fs::exists(p))
+            {
+                fs::create_directories(p);
+            }
+        }
+    };
+
     // Create folders for user-content
     for (const auto& folder : { "./res/cubes",
                                 "./res/styles",
@@ -34,23 +44,15 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
                                 "./res/card_svgs",
                                 "./res/models" })
     {
-        if (!fs::exists(folder))
-        {
-            fs::create_directories(folder);
-        }
+        c_EnsureExists(folder);
     }
 
-    {
-        const auto documents_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
-        QDir{}.mkpath(documents_dir);
+    c_EnsureExists(GetConfigFolder());
+    c_EnsureExists(GetDataFolder());
+    c_EnsureExists(GetProjectsFolder());
+    c_EnsureExists(GetCacheFolder());
 
-        m_ProjectPath = fs::path{ documents_dir.toStdString() } / "proj.json";
-    }
-
-    {
-        const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
-        QDir{}.mkpath(config_dir);
-    }
+    m_ProjectPath = GetProjectsFolder() / "proj.json";
 
     MigrateOldStyleSettings();
     Load();
@@ -61,6 +63,27 @@ PrintProxyPrepApplication::~PrintProxyPrepApplication()
     TRACY_AUTO_SCOPE();
 
     Save();
+}
+
+fs::path PrintProxyPrepApplication::GetConfigFolder() const
+{
+    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    return QDir{ config_dir }.filesystemPath();
+}
+fs::path PrintProxyPrepApplication::GetDataFolder() const
+{
+    const auto data_dir{ QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) };
+    return QDir{ data_dir }.filesystemPath();
+}
+fs::path PrintProxyPrepApplication::GetProjectsFolder() const
+{
+    const auto data_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
+    return QDir{ data_dir }.filesystemPath() / "Proxy Projects";
+}
+fs::path PrintProxyPrepApplication::GetCacheFolder() const
+{
+    const auto cache_dir{ QStandardPaths::writableLocation(QStandardPaths::CacheLocation) };
+    return QDir{ cache_dir }.filesystemPath();
 }
 
 void PrintProxyPrepApplication::SetMainWindow(PrintProxyPrepMainWindow* main_window)
@@ -268,9 +291,7 @@ void PrintProxyPrepApplication::Load()
 {
     TRACY_AUTO_SCOPE();
 
-    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
-    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
-
+    const auto ini_path{ ToQString(GetConfigFolder() / "state.ini") };
     QSettings settings{ ini_path, QSettings::IniFormat };
     if (settings.contains("version"))
     {
@@ -327,9 +348,7 @@ void PrintProxyPrepApplication::Save() const
 {
     TRACY_AUTO_SCOPE();
 
-    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
-    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
-
+    const auto ini_path{ ToQString(GetConfigFolder() / "state.ini") };
     QSettings settings{ ini_path, QSettings::IniFormat };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", m_MainWindow->saveGeometry());
@@ -372,9 +391,7 @@ void PrintProxyPrepApplication::Save() const
 
 void PrintProxyPrepApplication::MigrateOldStyleSettings()
 {
-    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
-    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
-
+    const auto ini_path{ ToQString(GetConfigFolder() / "state.ini") };
     QSettings ini_settings{ ini_path, QSettings::IniFormat };
     QSettings native_settings{ "Proxy", "Proxy PDF Maker" };
 

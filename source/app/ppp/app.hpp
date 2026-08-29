@@ -32,6 +32,11 @@ class PrintProxyPrepApplication
     PrintProxyPrepApplication(int& argc, char** argv);
     ~PrintProxyPrepApplication();
 
+    fs::path GetConfigFolder() const;
+    fs::path GetDataFolder() const;
+    fs::path GetProjectsFolder() const;
+    fs::path GetCacheFolder() const;
+
     void SetMainWindow(PrintProxyPrepMainWindow* main_window);
     PrintProxyPrepMainWindow* GetMainWindow() const;
 
