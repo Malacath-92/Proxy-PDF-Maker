@@ -145,6 +145,11 @@ void PrintProxyPrepApplication::SaveWindowGeometry(const QString& object_name, Q
 
 void PrintProxyPrepApplication::SetProjectName(std::string project_name)
 {
+    if (project_name.empty())
+    {
+        return;
+    }
+
     const auto project_ext{ m_ProjectPath.extension() };
     m_ProjectPath = m_ProjectPath.parent_path() / project_name;
     m_ProjectPath += project_ext;
