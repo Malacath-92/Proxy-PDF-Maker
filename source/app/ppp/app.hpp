@@ -72,10 +72,12 @@ class PrintProxyPrepApplication
     void Load();
     void Save() const;
 
+    void MigrateOldStyleSettings();
+
     PrintProxyPrepMainWindow* m_MainWindow{ nullptr };
     std::unordered_map<QString, QByteArray> m_WindowGeometries;
 
-    fs::path m_ProjectPath{ cwd() / "proj.json" };
+    fs::path m_ProjectPath;
     std::string m_Theme{ "Default" };
 
     mutable TRACY_DECLARE_MUTEX(std::mutex, m_CubesMutex);

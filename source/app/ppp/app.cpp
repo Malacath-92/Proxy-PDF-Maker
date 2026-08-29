@@ -2,10 +2,12 @@
 
 #include <ranges>
 
+#include <QDir>
 #include <QFile>
 #include <QKeyEvent>
 #include <QMainWindow>
 #include <QSettings>
+#include <QStandardPaths>
 
 #include <onnxruntime/core/session/onnxruntime_cxx_api.h>
 
@@ -22,6 +24,9 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
 {
     TRACY_AUTO_SCOPE();
 
+    QCoreApplication::setOrganizationName("Proxy");
+    QCoreApplication::setApplicationName("Proxy PDF Maker");
+
     // Create folders for user-content
     for (const auto& folder : { "./res/cubes",
                                 "./res/styles",
@@ -35,6 +40,12 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
         }
     }
 
+    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    QDir{}.mkpath(config_dir);
+
+    m_ProjectPath = fs::path{ config_dir.toStdString() } / "proj.json";
+
+    MigrateOldStyleSettings();
     Load();
 }
 
@@ -250,7 +261,10 @@ void PrintProxyPrepApplication::Load()
 {
     TRACY_AUTO_SCOPE();
 
-    QSettings settings{ "Proxy", "Proxy PDF Maker" };
+    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
+
+    QSettings settings{ ini_path, QSettings::IniFormat };
     if (settings.contains("version"))
     {
         m_WindowGeometry.emplace() = settings.value("geometry").toByteArray();
@@ -306,7 +320,10 @@ void PrintProxyPrepApplication::Save() const
 {
     TRACY_AUTO_SCOPE();
 
-    QSettings settings{ "Proxy", "Proxy PDF Maker" };
+    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
+
+    QSettings settings{ ini_path, QSettings::IniFormat };
     settings.setValue("version", ToQString(ProxyPdfVersion()));
     settings.setValue("geometry", m_MainWindow->saveGeometry());
     settings.setValue("state", m_MainWindow->saveState());
@@ -343,5 +360,32 @@ void PrintProxyPrepApplication::Save() const
         {
             LogError("Failed wring project defaults, they will be rest on next load: {}", e.what());
         }
+    }
+}
+
+void PrintProxyPrepApplication::MigrateOldStyleSettings()
+{
+    const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+    const auto ini_path{ QDir(config_dir).filePath("state.ini") };
+
+    QSettings ini_settings{ ini_path, QSettings::IniFormat };
+    QSettings native_settings{ "Proxy", "Proxy PDF Maker" };
+
+    if (!native_settings.allKeys().isEmpty() && ini_settings.allKeys().isEmpty())
+    {
+        LogInfo("Migrating old native app state to new ini app state...");
+
+        for (const auto& key : native_settings.allKeys())
+        {
+            const auto value{ native_settings.value(key) };
+            ini_settings.setValue(key, value);
+        }
+
+        ini_settings.sync();
+
+        native_settings.clear();
+        native_settings.sync();
+
+        LogInfo("Migration completed...");
     }
 }
