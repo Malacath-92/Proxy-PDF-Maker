@@ -635,23 +635,23 @@ int main(int argc, char** argv)
 
         // Move user resources into the right folders
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/base_pdfs", fs::copy_options::overwrite_existing); });
+                         { fs::copy(path, "./res/base_pdfs", fs::copy_options::overwrite_existing); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/cubes", fs::copy_options::overwrite_existing); });
+                         { fs::copy(path, "./res/cubes", fs::copy_options::overwrite_existing); });
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, &project, [](const auto& path)
-                         { fs::copy(path, "res/styles", fs::copy_options::overwrite_existing); });
+                         { fs::copy(path, "./res/styles", fs::copy_options::overwrite_existing); });
         QObject::connect(main_window,
                          &PrintProxyPrepMainWindow::SvgDropped,
                          &project,
                          [&config](const auto& path)
                          {
-                             if (fs::absolute(path.parent_path()) != fs::absolute("res/card_svgs"))
+                             if (fs::absolute(path.parent_path()) != fs::absolute("./res/card_svgs"))
                              {
-                                 fs::copy(path, "res/card_svgs", fs::copy_options::overwrite_existing);
+                                 fs::copy(path, "./res/card_svgs", fs::copy_options::overwrite_existing);
                              }
 
                              // Add a new card size
-                             config.SvgCardSizeAdded("res/card_svgs" / path.filename());
+                             config.SvgCardSizeAdded("./res/card_svgs" / path.filename());
                          });
 
         // Refresh corresponding widgets

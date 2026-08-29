@@ -23,7 +23,11 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     TRACY_AUTO_SCOPE();
 
     // Create folders for user-content
-    for (const auto& folder : { "res/cubes", "res/styles", "res/base_pdfs", "res/card_svgs", "res/models" })
+    for (const auto& folder : { "./res/cubes",
+                                "./res/styles",
+                                "./res/base_pdfs",
+                                "./res/card_svgs",
+                                "./res/models" })
     {
         if (!fs::exists(folder))
         {

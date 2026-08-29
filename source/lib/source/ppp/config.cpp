@@ -395,7 +395,7 @@ void Config::Load()
                     }
                     else if (svg_name.isValid())
                     {
-                        auto svg_path{ fs::path{ "res/card_svgs" } / svg_name.toString().toStdString() };
+                        auto svg_path{ fs::path{ "./res/card_svgs" } / svg_name.toString().toStdString() };
                         if (bleed_edge_info && fs::exists(svg_path))
                         {
                             full_card_size_info.emplace();

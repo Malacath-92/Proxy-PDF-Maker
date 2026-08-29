@@ -79,7 +79,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         {
             return [&base_unit, card_size_label](const QString& svg)
             {
-                const auto loaded_svg{ LoadSvg("res/card_svgs/" + svg.toStdString() + ".svg") };
+                const auto loaded_svg{ LoadSvg("./res/card_svgs/" + svg.toStdString() + ".svg") };
                 const auto card_size{ loaded_svg.m_Size };
                 const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
                 const auto card_size_string{ QString{ "%1%3 x %2%3" }
@@ -339,7 +339,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
                          if (c_IsAncestorOf(m_SvgTable, filter->m_LastFocusObject))
                          {
                              const auto default_svg_name{ svg_files.front() };
-                             const auto default_svg{ LoadSvg("res/card_svgs/" + default_svg_name + ".svg") };
+                             const auto default_svg{ LoadSvg("./res/card_svgs/" + default_svg_name + ".svg") };
 
                              const auto card_size{ default_svg.m_Size };
                              const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
@@ -733,7 +733,7 @@ void CardSizePopup::Apply()
             static_cast<QComboBox*>(m_SvgTable->cellWidget(i, 2))->currentText().toStdString() + ".svg"
         };
         const auto svg_file{
-            "res/card_svgs/" + svg_file_name
+            "./res/card_svgs/" + svg_file_name
         };
 
         const auto bleed_size_str{
