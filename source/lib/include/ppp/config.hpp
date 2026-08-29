@@ -172,7 +172,7 @@ class Config
     Q_OBJECT
 
   public:
-    void Load();
+    void Load(const fs::path& card_svgs_folder);
     void Save() const;
 
     void SetAdvancedMode(bool advanced_mode);

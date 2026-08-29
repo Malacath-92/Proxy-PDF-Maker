@@ -115,10 +115,12 @@ static bool RoughlyEqual(Size lhs, Size rhs)
            RoughlyEqual(lhs.y, rhs.y);
 }
 
-Project::Project(const Config& config)
+Project::Project(const Config& config,
+                 const fs::path& base_pdfs_folder)
     : m_Data{ config }
     , m_Cfg{ config }
 {
+    m_Data.m_BasePdfsFolder = base_pdfs_folder;
 }
 
 Project::~Project()
@@ -154,6 +156,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
 {
     const auto old_data{ std::move(m_Data) };
     m_Data = ProjectData{ m_Cfg };
+    m_Data.m_BasePdfsFolder = old_data.m_BasePdfsFolder;
 
     LogInfo("Initializing project...");
 
@@ -2023,18 +2026,22 @@ bool Project::CacheCardLayout()
     return card_layout_changed;
 }
 
+std::optional<fs::path> Project::GetBasePdfPath() const
+{
+    return m_Data.GetBasePdfPath();
+}
+
 Size Project::ComputePageSize() const
 {
     const bool fit_size{ m_Data.m_PageSize == Config::c_FitSize };
-    const bool infer_size{ m_Data.m_PageSize == Config::c_BasePDFSize };
 
     if (fit_size)
     {
         return ComputeCardsSize();
     }
-    else if (infer_size)
+    else if (const auto base_pdf_path{ GetBasePdfPath() })
     {
-        return LoadPdfSize(m_Data.m_BasePdf + ".pdf")
+        return LoadPdfSize(base_pdf_path.value())
             .value_or(m_Cfg.GetFirstValidPageSizeInfo().m_Dimensions);
     }
     else
@@ -2424,18 +2431,27 @@ dla::uvec2 ProjectData::ComputeCardLayout(const ConfigData& config,
     return layout;
 }
 
+std::optional<fs::path> ProjectData::GetBasePdfPath() const
+{
+    const bool infer_size{ m_PageSize == Config::c_BasePDFSize };
+    if (infer_size)
+    {
+        return (m_BasePdfsFolder / m_BasePdf).replace_extension(".pdf");
+    }
+    return std::nullopt;
+}
+
 Size ProjectData::ComputePageSize(const ConfigData& config) const
 {
     const bool fit_size{ m_PageSize == Config::c_FitSize };
-    const bool infer_size{ m_PageSize == Config::c_BasePDFSize };
 
     if (fit_size)
     {
         return ComputeCardsSize(config);
     }
-    else if (infer_size)
+    else if (const auto base_pdf_path{ GetBasePdfPath() })
     {
-        return LoadPdfSize(m_BasePdf + ".pdf")
+        return LoadPdfSize(base_pdf_path.value())
             .value_or(config.GetFirstValidPageSizeInfo().m_Dimensions);
     }
     else

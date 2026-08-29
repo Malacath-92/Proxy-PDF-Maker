@@ -2,8 +2,6 @@
 
 #include <ranges>
 
-#include <QDirIterator>
-
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/app.hpp>
@@ -188,25 +186,21 @@ std::vector<std::string> PrintOptionsViewModel::GetBasePdfNames() const
 {
     TRACY_AUTO_SCOPE();
 
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     std::vector<std::string> base_pdf_names{ "Empty A4" };
 
-    QDirIterator it("./res/base_pdfs");
-    while (it.hasNext())
-    {
-        const QFileInfo next{ it.nextFileInfo() };
-        if (!next.isFile() || next.suffix().toLower() != "pdf")
+    ForEachFile(
+        application.GetBasePdfsFolder(),
+        [&](const fs::path& file_name)
         {
-            continue;
-        }
-
-        std::string base_name{ next.baseName().toStdString() };
-        if (std::ranges::contains(base_pdf_names, base_name))
-        {
-            continue;
-        }
-
-        base_pdf_names.push_back(std::move(base_name));
-    }
+            std::string base_name{ file_name.stem().string() };
+            if (!std::ranges::contains(base_pdf_names, base_name))
+            {
+                base_pdf_names.push_back(std::move(base_name));
+            }
+        },
+        std::array{ ".pdf"_p });
 
     return base_pdf_names;
 }

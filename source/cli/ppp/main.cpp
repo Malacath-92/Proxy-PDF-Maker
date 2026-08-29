@@ -11,6 +11,7 @@
 
 #include <QCoreApplication>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QThreadPool>
 
 #include <QtPlugin>
@@ -265,8 +266,26 @@ int main(int argc, char** raw_argv)
     };
     Log main_log{ log_flags, Log::c_MainLogName };
 
+    Q_INIT_RESOURCE(cli_resources);
+
     QCoreApplication app{ argc, raw_argv };
+
+    const auto data_folder{
+        []
+        {
+            const auto data_dir{ QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) };
+            return QDir{ data_dir }.filesystemPath();
+        }()
+    };
+    const auto cubes_folder{ data_folder / "cubes" };
+    const auto base_pdfs_folder{ data_folder / "base_pdfs" };
+    const auto card_svgs_folder{ data_folder / "card_svgs" };
+
+    QCoreApplication::setOrganizationName("Proxy");
+    QCoreApplication::setApplicationName("Proxy PDF Maker");
+
     Config config;
+    config.Load(card_svgs_folder);
 
     QThreadPool::globalInstance()->setMaxThreadCount(config.m_MaxWorkerThreads);
 
@@ -351,7 +370,7 @@ int main(int argc, char** raw_argv)
         cli.m_ProjectOverrides
     };
 
-    Project project{ config };
+    Project project{ config, base_pdfs_folder };
     if (cli.m_ProjectFile.has_value())
     {
         project.Load(cli.m_ProjectFile.value(),
@@ -389,7 +408,12 @@ int main(int argc, char** raw_argv)
                              std::lock_guard lock{ color_cubes_mutex };
                              if (!color_cubes.contains(cube_name_str))
                              {
-                                 color_cubes[cube_name_str] = LoadColorCube(cube_name_str);
+                                 fs::path cube_path{ (cubes_folder / cube_name).replace_extension(".CUBE") };
+                                 if (!fs::exists(cube_path))
+                                 {
+                                     cube_path = fmt::format(":/res/cubes/{}.CUBE", cube_name);
+                                 }
+                                 color_cubes[cube_name_str] = LoadColorCube(cube_path);
                              }
                              return &color_cubes.at(cube_name_str);
                          } };

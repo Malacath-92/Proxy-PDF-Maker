@@ -37,18 +37,15 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
         }
     };
 
-    // Create folders for user-content
-    for (const auto& folder : { "./res/cubes",
-                                "./res/styles",
-                                "./res/base_pdfs",
-                                "./res/card_svgs",
-                                "./res/models" })
-    {
-        c_EnsureExists(folder);
-    }
-
     c_EnsureExists(GetConfigFolder());
-    c_EnsureExists(GetDataFolder());
+    for (const auto& data_folder : { GetCubesFolder(),
+                                     GetStylesFolder(),
+                                     GetBasePdfsFolder(),
+                                     GetCardSvgsFolder(),
+                                     GetUpscaleModelsFolder() })
+    {
+        c_EnsureExists(data_folder);
+    }
     c_EnsureExists(GetProjectsFolder());
     c_EnsureExists(GetCacheFolder());
 
@@ -84,6 +81,27 @@ fs::path PrintProxyPrepApplication::GetCacheFolder() const
 {
     const auto cache_dir{ QStandardPaths::writableLocation(QStandardPaths::CacheLocation) };
     return QDir{ cache_dir }.filesystemPath();
+}
+
+fs::path PrintProxyPrepApplication::GetCubesFolder() const
+{
+    return GetDataFolder() / "cubes";
+}
+fs::path PrintProxyPrepApplication::GetStylesFolder() const
+{
+    return GetDataFolder() / "styles";
+}
+fs::path PrintProxyPrepApplication::GetBasePdfsFolder() const
+{
+    return GetDataFolder() / "base_pdfs";
+}
+fs::path PrintProxyPrepApplication::GetCardSvgsFolder() const
+{
+    return GetDataFolder() / "card_svgs";
+}
+fs::path PrintProxyPrepApplication::GetUpscaleModelsFolder() const
+{
+    return GetDataFolder() / "models";
 }
 
 void PrintProxyPrepApplication::SetMainWindow(PrintProxyPrepMainWindow* main_window)

@@ -105,16 +105,16 @@ int main(int argc, char** argv)
 
     Log main_log{ log_flags, Log::c_MainLogName };
 
+    PrintProxyPrepApplication app{ argc, argv };
+    SetStyle(app.GetTheme());
+
     Config config{};
-    config.Load();
+    config.Load(app.GetCardSvgsFolder());
     const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
     if (config.m_MaxWorkerThreads >= ideal_thread_count)
     {
         config.m_MaxWorkerThreads = ideal_thread_count - 2;
     }
-
-    PrintProxyPrepApplication app{ argc, argv };
-    SetStyle(app.GetTheme());
 
     main_log.InstallHook(
         [](const Log::DetailInformation&, Log::LogLevel level, std::string_view message)
@@ -198,7 +198,7 @@ int main(int argc, char** argv)
     app.installEventFilter(&filter);
 #endif
 
-    Project project{ config };
+    Project project{ config, app.GetBasePdfsFolder() };
     const bool project_load_success{ project.Load(app.GetProjectPath()) };
 
     const auto project_backup_folder{ g_ExeDir / "_project_backup" };
@@ -634,24 +634,27 @@ int main(int argc, char** argv)
         TRACY_SCOPE_NAME(connect_signals_resource_drag_and_drop);
 
         // Move user resources into the right folders
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [](const auto& path)
-                         { fs::copy(path, "./res/base_pdfs", fs::copy_options::overwrite_existing); });
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, &project, [](const auto& path)
-                         { fs::copy(path, "./res/cubes", fs::copy_options::overwrite_existing); });
-        QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, &project, [](const auto& path)
-                         { fs::copy(path, "./res/styles", fs::copy_options::overwrite_existing); });
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, &project, [&app](const auto& path)
+                         { fs::copy(path, app.GetBasePdfsFolder(), fs::copy_options::overwrite_existing); });
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, &project, [&app](const auto& path)
+                         { fs::copy(path, app.GetCubesFolder(), fs::copy_options::overwrite_existing); });
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, &project, [&app](const auto& path)
+                         { fs::copy(path, app.GetStylesFolder(), fs::copy_options::overwrite_existing); });
+        QObject::connect(main_window, &PrintProxyPrepMainWindow::ModelDropped, &project, [&app](const auto& path)
+                         { fs::copy(path, app.GetUpscaleModelsFolder(), fs::copy_options::overwrite_existing); });
         QObject::connect(main_window,
                          &PrintProxyPrepMainWindow::SvgDropped,
                          &project,
-                         [&config](const auto& path)
+                         [&app, &config](const auto& path)
                          {
-                             if (fs::absolute(path.parent_path()) != fs::absolute("./res/card_svgs"))
+                             const auto card_svgs_folder{ app.GetCardSvgsFolder() };
+                             if (fs::absolute(path.parent_path()) != fs::absolute(card_svgs_folder))
                              {
-                                 fs::copy(path, "./res/card_svgs", fs::copy_options::overwrite_existing);
+                                 fs::copy(path, card_svgs_folder, fs::copy_options::overwrite_existing);
                              }
 
                              // Add a new card size
-                             config.SvgCardSizeAdded("./res/card_svgs" / path.filename());
+                             config.SvgCardSizeAdded(card_svgs_folder / path.filename());
                          });
 
         // Refresh corresponding widgets

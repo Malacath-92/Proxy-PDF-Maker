@@ -12,6 +12,7 @@
 #include <ppp/util.hpp>
 
 const Config g_Cfg{};
+const fs::path c_ImaginaryPath{ "./the/path/that/dont/exist" };
 
 std::ostream& operator<<(std::ostream& os, const QByteArray& value)
 {
@@ -32,7 +33,7 @@ auto SetupImages(
 
     const fs::path proj_json{ folder.string() + ".json" };
     {
-        Project some_images{ g_Cfg };
+        Project some_images{ g_Cfg, c_ImaginaryPath };
         some_images.m_Data.m_ImageDir = folder;
         some_images.m_Data.m_CropDir = folder / "crop";
         project_mod(some_images);
@@ -171,6 +172,7 @@ TEST_CASE("Run CLI without any images", "[cli_empty_project]")
     constexpr const char c_ExpectedHash[]{
         "\xb8\x2c\xb6\x2c\xc1\x30\x30\x40\x7e\x24\xbd\xbf\x61\x03\x1b\xea"
     };
+    const fs::path imaginary_path{ "./the/path/that/dont/exist" };
     TestPdfFile("_printme.pdf", c_ExpectedHash);
 }
 

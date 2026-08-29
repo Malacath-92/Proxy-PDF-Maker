@@ -92,7 +92,7 @@ std::vector<std::string_view> ConfigData::GetAvailablePageSizeNames() const
            std::ranges::to<std::vector>();
 }
 
-void Config::Load()
+void Config::Load(const fs::path& card_svgs_folder)
 {
     TRACY_AUTO_SCOPE();
 
@@ -361,8 +361,8 @@ void Config::Load()
             settings.endGroup();
         }
 
-        static constexpr auto c_LoadCardSizeInfo{
-            [](const QSettings& settings)
+        const auto load_card_size_info{
+            [&card_svgs_folder](const QSettings& settings)
             {
                 std::optional<CardSizeInfo> full_card_size_info{};
                 auto bleed_edge{ settings.value("Input.Bleed") };
@@ -395,7 +395,7 @@ void Config::Load()
                     }
                     else if (svg_name.isValid())
                     {
-                        auto svg_path{ fs::path{ "./res/card_svgs" } / svg_name.toString().toStdString() };
+                        const auto svg_path{ card_svgs_folder / svg_name.toString().toStdString() };
                         if (bleed_edge_info && fs::exists(svg_path))
                         {
                             full_card_size_info.emplace();
@@ -430,7 +430,7 @@ void Config::Load()
             if (group.startsWith("CARD_SIZE") && group.indexOf("-") != -1)
             {
                 settings.beginGroup(group);
-                if (auto card_size_info{ c_LoadCardSizeInfo(settings) })
+                if (auto card_size_info{ load_card_size_info(settings) })
                 {
                     const auto group_name_split{ group.split("-") };
                     const QStringList card_size_name_split{ group_name_split.begin() + 1, group_name_split.end() };

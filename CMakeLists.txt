@@ -366,7 +366,9 @@ set_target_properties(proxy_pdf PROPERTIES
 # --------------------------------------------------
 # Create CLI executable
 if (WIN32)
-	set(proxy_pdf_cli_resources "res/proxy_pdf.rc")
+	set(proxy_pdf_cli_resources "cli_resources.qrc;res/proxy_pdf.rc")
+else()
+	set(proxy_pdf_cli_resources "cli_resources.qrc")
 endif()
 file(GLOB_RECURSE proxy_pdf_cli_sources CONFIGURE_DEPENDS "source/cli/*.cpp")
 file(GLOB_RECURSE proxy_pdf_cli_headers CONFIGURE_DEPENDS "source/cli/*.hpp" "source/cli/*.inl")

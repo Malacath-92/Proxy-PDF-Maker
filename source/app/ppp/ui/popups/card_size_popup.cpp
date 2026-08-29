@@ -20,6 +20,7 @@
 #include <QToolTip>
 #include <QVBoxLayout>
 
+#include <ppp/app.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/units.hpp>
 
@@ -47,39 +48,38 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         }
     };
 
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     const auto svg_files{
-        []()
+        [&application]()
         {
             std::vector<std::string> svg_files{};
 
-            QDirIterator it{ "./res/card_svgs" };
-            while (it.hasNext())
-            {
-                const QFileInfo next{ it.nextFileInfo() };
-                if (!next.isFile() || next.suffix().toLower() != "svg")
+            ForEachFile(
+                application.GetCardSvgsFolder(),
+                [&svg_files](const fs::path& file_name)
                 {
-                    continue;
-                }
-
-                std::string base_name{ next.baseName().toStdString() };
-                if (std::ranges::contains(svg_files, base_name))
-                {
-                    continue;
-                }
-
-                svg_files.push_back(std::move(base_name));
-            }
+                    std::string base_name{ file_name.stem().string() };
+                    if (!std::ranges::contains(svg_files, base_name))
+                    {
+                        svg_files.push_back(std::move(base_name));
+                    }
+                },
+                std::array{ ".svg"_p });
 
             return svg_files;
         }()
     };
 
     const auto make_svg_card_size_refresh{
-        [base_unit](QLabel* card_size_label)
+        [&application, base_unit](QLabel* card_size_label)
         {
-            return [&base_unit, card_size_label](const QString& svg)
+            return [&application, &base_unit, card_size_label](const QString& svg)
             {
-                const auto loaded_svg{ LoadSvg("./res/card_svgs/" + svg.toStdString() + ".svg") };
+                const auto svg_path{
+                    (application.GetCardSvgsFolder() / svg.toStdString()).replace_extension(".svg")
+                };
+                const auto loaded_svg{ LoadSvg(svg_path) };
                 const auto card_size{ loaded_svg.m_Size };
                 const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
                 const auto card_size_string{ QString{ "%1%3 x %2%3" }
@@ -324,92 +324,96 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         }
     };
 
-    QObject::connect(new_button,
-                     &QPushButton::clicked,
-                     [this, base_unit, make_svg_card_size_refresh, svg_files, filter]()
-                     {
-                         static constexpr auto c_MakeNumberEditFromNumber{
-                             [](double number)
-                             {
-                                 QLocale locale{};
-                                 return c_MakeNumberEdit(locale.toString(number, 'f', 1));
-                             }
-                         };
+    QObject::connect(
+        new_button,
+        &QPushButton::clicked,
+        [this, &application, base_unit, make_svg_card_size_refresh, svg_files, filter]()
+        {
+            static constexpr auto c_MakeNumberEditFromNumber{
+                [](double number)
+                {
+                    QLocale locale{};
+                    return c_MakeNumberEdit(locale.toString(number, 'f', 1));
+                }
+            };
 
-                         if (c_IsAncestorOf(m_SvgTable, filter->m_LastFocusObject))
-                         {
-                             const auto default_svg_name{ svg_files.front() };
-                             const auto default_svg{ LoadSvg("./res/card_svgs/" + default_svg_name + ".svg") };
+            if (c_IsAncestorOf(m_SvgTable, filter->m_LastFocusObject))
+            {
+                const auto default_svg_name{ svg_files.front() };
+                const auto default_svg_path{
+                    (application.GetCardSvgsFolder() / default_svg_name).replace_extension(".svg")
+                };
+                const auto default_svg{ LoadSvg(default_svg_path) };
 
-                             const auto card_size{ default_svg.m_Size };
-                             const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
-                             const auto card_size_string{ QString{ "%1%3 x %2%3" }
-                                                              .arg(card_width, 0, 'g', 2)
-                                                              .arg(card_height, 0, 'g', 2)
-                                                              .arg(ToQString(UnitShortName(base_unit))) };
+                const auto card_size{ default_svg.m_Size };
+                const auto [card_width, card_height]{ (card_size / UnitValue(base_unit)).pod() };
+                const auto card_size_string{ QString{ "%1%3 x %2%3" }
+                                                 .arg(card_width, 0, 'g', 2)
+                                                 .arg(card_height, 0, 'g', 2)
+                                                 .arg(ToQString(UnitShortName(base_unit))) };
 
-                             int i{ m_SvgTable->rowCount() };
-                             m_SvgTable->insertRow(i);
-                             m_SvgTable->setCellWidget(i, 0, new QLineEdit{ "New Card" });
+                int i{ m_SvgTable->rowCount() };
+                m_SvgTable->insertRow(i);
+                m_SvgTable->setCellWidget(i, 0, new QLineEdit{ "New Card" });
 
-                             // card size
-                             auto* card_size_label{ new QLabel{ card_size_string } };
-                             m_SvgTable->setCellWidget(i, 1, card_size_label);
+                // card size
+                auto* card_size_label{ new QLabel{ card_size_string } };
+                m_SvgTable->setCellWidget(i, 1, card_size_label);
 
-                             // svg
-                             auto* svg_combo{ MakeComboBox(
-                                 svg_files,
-                                 default_svg_name) };
-                             m_SvgTable->setCellWidget(i, 2, svg_combo);
-                             QObject::connect(svg_combo,
-                                              &QComboBox::currentTextChanged,
-                                              this,
-                                              make_svg_card_size_refresh(card_size_label));
+                // svg
+                auto* svg_combo{ MakeComboBox(
+                    svg_files,
+                    default_svg_name) };
+                m_SvgTable->setCellWidget(i, 2, svg_combo);
+                QObject::connect(svg_combo,
+                                 &QComboBox::currentTextChanged,
+                                 this,
+                                 make_svg_card_size_refresh(card_size_label));
 
-                             // input bleed
-                             m_SvgTable->setCellWidget(i, 3, c_MakeNumberEditFromNumber(0.1));
-                             m_SvgTable->setCellWidget(i, 4, MakeComboBox(Unit::Inches));
+                // input bleed
+                m_SvgTable->setCellWidget(i, 3, c_MakeNumberEditFromNumber(0.1));
+                m_SvgTable->setCellWidget(i, 4, MakeComboBox(Unit::Inches));
 
-                             // hint
-                             m_SvgTable->setCellWidget(i, 5, new QLineEdit{ "Hint" });
+                // hint
+                m_SvgTable->setCellWidget(i, 5, new QLineEdit{ "Hint" });
 
-                             m_SvgTable->selectRow(i);
-                             m_SvgTable->scrollToBottom();
-                         }
-                         else
-                         {
-                             int i{ m_RectTable->rowCount() };
-                             m_RectTable->insertRow(i);
-                             m_RectTable->setCellWidget(i, 0, new QLineEdit{ "New Card" });
+                m_SvgTable->selectRow(i);
+                m_SvgTable->scrollToBottom();
+            }
+            else
+            {
+                int i{ m_RectTable->rowCount() };
+                m_RectTable->insertRow(i);
+                m_RectTable->setCellWidget(i, 0, new QLineEdit{ "New Card" });
 
-                             // card size
-                             m_RectTable->setCellWidget(i, 1, c_MakeNumberEditFromNumber(3.3));
-                             m_RectTable->setCellWidget(i, 2, c_MakeNumberEditFromNumber(4.4));
-                             m_RectTable->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
+                // card size
+                m_RectTable->setCellWidget(i, 1, c_MakeNumberEditFromNumber(3.3));
+                m_RectTable->setCellWidget(i, 2, c_MakeNumberEditFromNumber(4.4));
+                m_RectTable->setCellWidget(i, 3, MakeComboBox(Unit::Inches));
 
-                             // input bleed
-                             m_RectTable->setCellWidget(i, 4, c_MakeNumberEditFromNumber(0.1));
-                             m_RectTable->setCellWidget(i, 5, MakeComboBox(Unit::Inches));
+                // input bleed
+                m_RectTable->setCellWidget(i, 4, c_MakeNumberEditFromNumber(0.1));
+                m_RectTable->setCellWidget(i, 5, MakeComboBox(Unit::Inches));
 
-                             // corner radius
-                             m_RectTable->setCellWidget(i, 6, c_MakeNumberEditFromNumber(0.1));
-                             m_RectTable->setCellWidget(i, 7, MakeComboBox(Unit::Inches));
+                // corner radius
+                m_RectTable->setCellWidget(i, 6, c_MakeNumberEditFromNumber(0.1));
+                m_RectTable->setCellWidget(i, 7, MakeComboBox(Unit::Inches));
 
-                             // scale
-                             auto* scale_spin_box{ new QDoubleSpinBox };
-                             scale_spin_box->setDecimals(1);
-                             scale_spin_box->setRange(0.1, 10.0);
-                             scale_spin_box->setSingleStep(0.1);
-                             scale_spin_box->setValue(1.0);
-                             m_RectTable->setCellWidget(i, 8, scale_spin_box);
+                // scale
+                auto* scale_spin_box{ new QDoubleSpinBox };
+                scale_spin_box->setDecimals(1);
+                scale_spin_box->setRange(0.1, 10.0);
+                scale_spin_box->setSingleStep(0.1);
+                scale_spin_box->setValue(1.0);
+                m_RectTable->setCellWidget(i, 8, scale_spin_box);
 
-                             // hint
-                             m_RectTable->setCellWidget(i, 9, new QLineEdit{ "Hint" });
+                // hint
+                m_RectTable->setCellWidget(i, 9, new QLineEdit{ "Hint" });
 
-                             m_RectTable->selectRow(i);
-                             m_RectTable->scrollToBottom();
-                         }
-                     });
+                m_RectTable->selectRow(i);
+                m_RectTable->scrollToBottom();
+            }
+        });
     QObject::connect(delete_button,
                      &QPushButton::clicked,
                      [this, filter]()
@@ -723,6 +727,8 @@ void CardSizePopup::Apply()
         };
     }
 
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     for (int i = 0; i < m_SvgTable->rowCount(); ++i)
     {
         const auto name{
@@ -733,7 +739,7 @@ void CardSizePopup::Apply()
             static_cast<QComboBox*>(m_SvgTable->cellWidget(i, 2))->currentText().toStdString() + ".svg"
         };
         const auto svg_file{
-            "./res/card_svgs/" + svg_file_name
+            application.GetCardSvgsFolder() / svg_file_name
         };
 
         const auto bleed_size_str{

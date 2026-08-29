@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file>res/sRGB_v4_ICC_preference.icc</file>
+        <file compress="1" compress-algo="zstd">res/cubes/Foils Vibrance.CUBE</file>
+    </qresource>
+</RCC>

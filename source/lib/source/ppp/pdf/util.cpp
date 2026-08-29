@@ -11,11 +11,10 @@
 
 std::optional<Size> LoadPdfSize(const fs::path& pdf_path)
 {
-    const fs::path full_path{ "./res/base_pdfs" / pdf_path };
-    if (fs::exists(full_path))
+    if (fs::exists(pdf_path))
     {
         PoDoFo::PdfMemDocument document;
-        document.Load(full_path.string());
+        document.Load(pdf_path.string());
 
         const auto& pages{ document.GetPages() };
         if (pages.GetCount() > 0)

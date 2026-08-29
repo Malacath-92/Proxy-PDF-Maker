@@ -35,6 +35,8 @@ inline constexpr std::array c_DownloadableModels{
 
 std::vector<std::string> GetModelNames()
 {
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     std::vector<std::string> model_names{ "None" };
 
     for (const auto& [model, url] : c_DownloadableModels)
@@ -43,7 +45,7 @@ std::vector<std::string> GetModelNames()
     }
 
     Q_INIT_RESOURCE(resources);
-    for (const auto models_dir : { ":/res/models", "./res/models" })
+    for (const auto& models_dir : { ":/res/models"_p, application.GetUpscaleModelsFolder() })
     {
         QDirIterator it(models_dir);
         while (it.hasNext())
@@ -69,7 +71,8 @@ std::vector<std::string> GetModelNames()
 
 std::string GetModelFilename(std::string_view model_name)
 {
-    return fmt::format("./res/models/{}.onnx", model_name);
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    return (application.GetUpscaleModelsFolder() / model_name).replace_extension(".onnx");
 }
 
 bool ModelRequiresDownload(std::string_view model_name)

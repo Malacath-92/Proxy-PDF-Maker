@@ -612,12 +612,12 @@ PoDoFoDocument::PoDoFoDocument(const Project& project,
 
     m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project, config);
 
-    if (project.m_Data.m_PageSize == Config::c_BasePDFSize && LoadPdfSize(project.m_Data.m_BasePdf + ".pdf"))
+    const auto base_pdf_path{ project.GetBasePdfPath() };
+    if (base_pdf_path.has_value() && fs::exists(base_pdf_path.value()))
     {
         // Load base-pdf
-        const fs::path full_path{ "./res/base_pdfs" / fs::path{ project.m_Data.m_BasePdf + ".pdf" } };
         PoDoFo::PdfMemDocument temp_document;
-        temp_document.Load(full_path.string());
+        temp_document.Load(base_pdf_path.value().string());
 
         // Copy pages into our own pdf
         m_BaseDocument.reset(new PoDoFo::PdfMemDocument);

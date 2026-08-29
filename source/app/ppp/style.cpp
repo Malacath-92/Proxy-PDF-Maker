@@ -8,6 +8,8 @@
 #include <QImageReader>
 #include <QStyleFactory>
 
+#include <ppp/app.hpp>
+#include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 
 using namespace std::string_view_literals;
@@ -18,6 +20,8 @@ inline constexpr std::array c_BuiltInStyles{
 
 std::vector<std::string> GetStyles()
 {
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     std::vector<std::string> styles{};
 
     for (const auto& builtin_style : c_BuiltInStyles)
@@ -29,7 +33,7 @@ std::vector<std::string> GetStyles()
     Q_INIT_RESOURCE(breeze);
     Q_INIT_RESOURCE(breeze_styles);
 
-    for (const auto style_dir : { ":/res/styles", "./res/styles" })
+    for (const auto& style_dir : { ":/res/styles"_p, application.GetStylesFolder() })
     {
         QDirIterator it(style_dir);
         while (it.hasNext())
@@ -55,9 +59,10 @@ std::vector<std::string> GetStyles()
 
 void SetStyle(std::string_view style)
 {
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     if (std::ranges::contains(c_BuiltInStyles, style))
     {
-        auto& application{ *qApp };
         application.setStyleSheet("");
 
         if (style == "Default")
@@ -71,7 +76,7 @@ void SetStyle(std::string_view style)
     }
     else
     {
-        QString style_path{ QString::asprintf("./res/styles/%.*s.qss", static_cast<int>(style.size()), style.data()) };
+        QString style_path{ ToQString((application.GetStylesFolder() / style).replace_extension(".qss")) };
         if (!QFile::exists(style_path))
         {
             Q_INIT_RESOURCE(resources);

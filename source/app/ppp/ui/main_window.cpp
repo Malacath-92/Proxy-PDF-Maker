@@ -204,6 +204,10 @@ void PrintProxyPrepMainWindow::dropEvent(QDropEvent* event)
             {
                 StyleDropped(path);
             }
+            else if (ext == ".onnx")
+            {
+                ModelDropped(path);
+            }
             else if (std::ranges::contains(g_ValidImageExtensions, ext))
             {
                 ImageDropped(path);

@@ -37,6 +37,12 @@ class PrintProxyPrepApplication
     fs::path GetProjectsFolder() const;
     fs::path GetCacheFolder() const;
 
+    fs::path GetCubesFolder() const;
+    fs::path GetStylesFolder() const;
+    fs::path GetBasePdfsFolder() const;
+    fs::path GetCardSvgsFolder() const;
+    fs::path GetUpscaleModelsFolder() const;
+
     void SetMainWindow(PrintProxyPrepMainWindow* main_window);
     PrintProxyPrepMainWindow* GetMainWindow() const;
 

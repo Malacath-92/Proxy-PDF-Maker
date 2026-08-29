@@ -6,7 +6,8 @@
 TEST_CASE("Generate empty pdf", "[pdf_empty]")
 {
     const Config config{};
-    Project empty_project{ config };
+    const fs::path imaginary_path{ "./the/path/that/dont/exist" };
+    Project empty_project{ config, imaginary_path };
     empty_project.m_Data.m_FileName = "empty.pdf";
     (void)GeneratePdf(empty_project, config);
     REQUIRE(fs::exists("empty.pdf"));

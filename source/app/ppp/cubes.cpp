@@ -12,10 +12,12 @@
 
 std::vector<std::string> GetCubeNames()
 {
+    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+
     std::vector<std::string> cubes_names{ "None" };
 
     Q_INIT_RESOURCE(resources);
-    for (const auto cubes_dir : { ":/res/cubes", "./res/cubes" })
+    for (const auto& cubes_dir : { ":/res/cubes"_p, application.GetCubesFolder() })
     {
         QDirIterator it(cubes_dir);
         while (it.hasNext())
@@ -47,8 +49,8 @@ void PreloadCube(std::string_view cube_name)
         return;
     }
 
-    fs::path cube_path{ fmt::format("./res/cubes/{}.CUBE", cube_name) };
-    if (!QFile::exists(cube_path))
+    fs::path cube_path{ (application.GetCubesFolder() / cube_name).replace_extension(".CUBE") };
+    if (!fs::exists(cube_path))
     {
         Q_INIT_RESOURCE(resources);
         cube_path = fmt::format(":/res/cubes/{}.CUBE", cube_name);

@@ -57,6 +57,7 @@ struct ProjectData
     std::string m_CardSizeChoice;
     std::string m_PageSize;
     std::string m_BasePdf{ "None" };
+    fs::path m_BasePdfsFolder;
 
     // Margin mode is the user-selected edit-mode of margins
     MarginsMode m_MarginsMode{ MarginsMode::Auto };
@@ -104,6 +105,8 @@ struct ProjectData
                                  Size available_space,
                                  CardOrientation orientation) const;
 
+    std::optional<fs::path> GetBasePdfPath() const;
+
     Size ComputePageSize(const ConfigData& config) const;
     Size ComputeExactBordersSize(const ConfigData& config) const;
     Size ComputeCardsSize(const ConfigData& config) const;
@@ -139,7 +142,8 @@ class Project : public QObject
     Q_OBJECT
 
   public:
-    Project(const Config& config);
+    Project(const Config& config,
+            const fs::path& base_pdfs_folder);
     ~Project();
 
     bool Load(const fs::path& json_path);
@@ -264,6 +268,8 @@ class Project : public QObject
     bool SetBacksideAutoPattern(std::string pattern);
 
     bool CacheCardLayout();
+
+    std::optional<fs::path> GetBasePdfPath() const;
 
     Size ComputePageSize() const;
     Size ComputeExactBordersSize() const;
