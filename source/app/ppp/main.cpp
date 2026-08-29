@@ -715,7 +715,7 @@ int main(int argc, char** argv)
         main_window->show();
     }
 
-    if (!project_load_success)
+    if (!project_load_success && !app.IsFirstStartup())
     {
         if (!fs::exists(app.GetProjectPath()))
         {

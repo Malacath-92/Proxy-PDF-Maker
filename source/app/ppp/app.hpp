@@ -32,6 +32,8 @@ class PrintProxyPrepApplication
     PrintProxyPrepApplication(int& argc, char** argv);
     ~PrintProxyPrepApplication();
 
+    bool IsFirstStartup() const;
+
     fs::path GetConfigFolder() const;
     fs::path GetDataFolder() const;
     fs::path GetProjectsFolder() const;
@@ -84,6 +86,8 @@ class PrintProxyPrepApplication
     void Save() const;
 
     void MigrateOldStyleSettings();
+
+    bool m_IsFirstStartup{ false };
 
     PrintProxyPrepMainWindow* m_MainWindow{ nullptr };
     std::unordered_map<QString, QByteArray> m_WindowGeometries;

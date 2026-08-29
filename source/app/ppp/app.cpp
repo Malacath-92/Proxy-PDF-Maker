@@ -62,6 +62,11 @@ PrintProxyPrepApplication::~PrintProxyPrepApplication()
     Save();
 }
 
+bool PrintProxyPrepApplication::IsFirstStartup() const
+{
+    return m_IsFirstStartup;
+}
+
 fs::path PrintProxyPrepApplication::GetConfigFolder() const
 {
     const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
@@ -316,7 +321,9 @@ void PrintProxyPrepApplication::Load()
 
     const auto ini_path{ ToQString(GetConfigFolder() / "state.ini") };
     QSettings settings{ ini_path, QSettings::IniFormat };
-    if (settings.contains("version"))
+
+    m_IsFirstStartup = !settings.contains("version");
+    if (!m_IsFirstStartup)
     {
         m_WindowGeometry.emplace() = settings.value("geometry").toByteArray();
         m_WindowState.emplace() = settings.value("state").toByteArray();
