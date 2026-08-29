@@ -74,8 +74,8 @@ fs::path PrintProxyPrepApplication::GetDataFolder() const
 }
 fs::path PrintProxyPrepApplication::GetProjectsFolder() const
 {
-    const auto data_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
-    return QDir{ data_dir }.filesystemPath() / "Proxy Projects";
+    const auto documents_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
+    return QDir{ documents_dir }.filesystemPath() / "Proxy Projects";
 }
 fs::path PrintProxyPrepApplication::GetCacheFolder() const
 {
