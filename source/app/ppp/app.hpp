@@ -33,6 +33,7 @@ class PrintProxyPrepApplication
     ~PrintProxyPrepApplication();
 
     bool IsFirstStartup() const;
+    void LoadState();
 
     fs::path GetConfigFolder() const;
     fs::path GetDataFolder() const;

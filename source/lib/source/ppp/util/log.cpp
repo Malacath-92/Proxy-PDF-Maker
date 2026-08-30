@@ -20,6 +20,11 @@ bool Log::RegisterThreadName(std::string_view thread_name)
     return LogImpl::RegisterThreadName(thread_name);
 }
 
+void Log::SetLogOutputFolder(std::filesystem::path output_folder)
+{
+    LogImpl::SetLogOutputFolder(std::move(output_folder));
+}
+
 std::string_view Log::GetThreadName(const std::thread::id& thread_id)
 {
     return LogImpl::GetThreadName(thread_id);

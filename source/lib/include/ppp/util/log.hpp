@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ctime>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <source_location>
@@ -39,6 +40,11 @@ class Log
     */
     static bool RegisterThreadName(std::string_view thread_name);
     static std::string_view GetThreadName(const std::thread::id& thread_id);
+
+    /*
+            Set the folder to write logs to
+    */
+    static void SetLogOutputFolder(std::filesystem::path output_folder);
 
     /*
             LogLevels dictate the severity of the log

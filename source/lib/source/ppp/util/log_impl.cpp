@@ -102,6 +102,11 @@ std::string_view Log::LogImpl::GetThreadName(const std::thread::id& thread_id)
     return "Unregistered";
 }
 
+void Log::LogImpl::SetLogOutputFolder(std::filesystem::path output_folder)
+{
+    g_OutputFolder = std::move(output_folder);
+}
+
 uint32_t Log::LogImpl::InstallHook(Log::LogHook hook)
 {
     TRACY_AUTO_SCOPE();
@@ -285,14 +290,18 @@ void Log::LogImpl::CreateLogFile()
 
     namespace fs = std::filesystem;
 
-    char file_name_buffer[256]{};
+    char file_name_buffer[512]{};
 
     {
         auto now = std::chrono::system_clock::now();
-        fmt::format_to_n(file_name_buffer, 255, "logs/{:%Y-%m-%d_%H-%M-%S}.log", now);
+        fmt::format_to_n(file_name_buffer,
+            255,
+            "{}/{:%Y-%m-%d_%H-%M-%S}.log",
+            g_OutputFolder.string(),
+            now);
     }
 
-    fs::path logs_directory{ fs::absolute("logs") };
+    fs::path logs_directory{ fs::absolute(g_OutputFolder) };
     if (!fs::exists(logs_directory) || !fs::is_directory(logs_directory))
     {
         if (fs::exists(logs_directory))

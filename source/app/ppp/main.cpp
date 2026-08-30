@@ -90,7 +90,10 @@ int main(int argc, char** argv)
     }
 #endif
 
+    PrintProxyPrepApplication app{ argc, argv };
+
     Log::RegisterThreadName("MainThread");
+    Log::SetLogOutputFolder(app.GetCacheFolder() / "logs");
 
     LogFlags log_flags{
         LogFlags::Console |
@@ -104,7 +107,7 @@ int main(int argc, char** argv)
 
     Log main_log{ log_flags, Log::c_MainLogName };
 
-    PrintProxyPrepApplication app{ argc, argv };
+    app.LoadState();
     SetStyle(app.GetTheme());
 
     MigrateConfigFromCwd("config.ini", app.GetConfigFolder());

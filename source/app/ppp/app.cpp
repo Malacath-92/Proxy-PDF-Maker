@@ -50,9 +50,6 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
     c_EnsureExists(GetCacheFolder());
 
     m_ProjectPath = GetProjectsFolder() / "proj.json";
-
-    MigrateOldStyleSettings();
-    Load();
 }
 
 PrintProxyPrepApplication::~PrintProxyPrepApplication()
@@ -65,6 +62,11 @@ PrintProxyPrepApplication::~PrintProxyPrepApplication()
 bool PrintProxyPrepApplication::IsFirstStartup() const
 {
     return m_IsFirstStartup;
+}
+void PrintProxyPrepApplication::LoadState()
+{
+    MigrateOldStyleSettings();
+    Load();
 }
 
 fs::path PrintProxyPrepApplication::GetConfigFolder() const

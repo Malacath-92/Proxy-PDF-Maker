@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -27,6 +28,8 @@ class Log::LogImpl
 
     static bool RegisterThreadName(std::string_view thread_name);
     static std::string_view GetThreadName(const std::thread::id& thread_id);
+
+    static void SetLogOutputFolder(std::filesystem::path output_folder);
 
     uint32_t InstallHook(typename Log::LogHook hook);
     void UninstallHook(uint32_t hook_id);
@@ -61,4 +64,6 @@ class Log::LogImpl
 
     inline static std::shared_mutex g_ThreadListMutex;
     inline static std::unordered_map<std::thread::id, std::string> g_ThreadList;
+
+    inline static std::filesystem::path g_OutputFolder{ "./logs" };
 };
