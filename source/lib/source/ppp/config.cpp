@@ -92,17 +92,18 @@ std::vector<std::string_view> ConfigData::GetAvailablePageSizeNames() const
            std::ranges::to<std::vector>();
 }
 
-void Config::Load(const fs::path& card_svgs_folder)
+void Config::Load(const fs::path& config_path,
+                  const fs::path& card_svgs_folder)
 {
     TRACY_AUTO_SCOPE();
 
     static_cast<ConfigData&>(*this) = ConfigData{};
-    if (!QFile::exists("config.ini"))
+    if (!QFile::exists(ToQString(config_path)))
     {
         return;
     }
 
-    QSettings settings("config.ini", QSettings::IniFormat);
+    QSettings settings(ToQString(config_path), QSettings::IniFormat);
     if (settings.status() == QSettings::Status::NoError)
     {
         {
@@ -449,11 +450,11 @@ void Config::Load(const fs::path& card_svgs_folder)
     }
 }
 
-void Config::Save() const
+void Config::Save(const fs::path& config_path) const
 {
     TRACY_AUTO_SCOPE();
 
-    QSettings settings("config.ini", QSettings::IniFormat);
+    QSettings settings(ToQString(config_path), QSettings::IniFormat);
     settings.clear();
 
     if (settings.status() == QSettings::Status::NoError)

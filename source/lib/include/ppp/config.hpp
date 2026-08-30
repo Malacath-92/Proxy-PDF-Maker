@@ -172,8 +172,9 @@ class Config
     Q_OBJECT
 
   public:
-    void Load(const fs::path& card_svgs_folder);
-    void Save() const;
+    void Load(const fs::path& config_path,
+              const fs::path& card_svgs_folder);
+    void Save(const fs::path& config_path) const;
 
     void SetAdvancedMode(bool advanced_mode);
 

@@ -270,6 +270,13 @@ int main(int argc, char** raw_argv)
 
     QCoreApplication app{ argc, raw_argv };
 
+    const auto config_folder{
+        []()
+        {
+            const auto config_dir{ QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) };
+            return QDir{ config_dir }.filesystemPath();
+        }()
+    };
     const auto projects_folder{
         []
         {
@@ -292,7 +299,15 @@ int main(int argc, char** raw_argv)
     QCoreApplication::setApplicationName("Proxy PDF Maker");
 
     Config config;
-    config.Load(card_svgs_folder);
+    if (fs::exists("config.ini"))
+    {
+        config.Load("config.ini", card_svgs_folder);
+    }
+    else
+    {
+        const auto std_config_path{ config_folder / "config.ini" };
+        config.Load(std_config_path, card_svgs_folder);
+    }
 
     QThreadPool::globalInstance()->setMaxThreadCount(config.m_MaxWorkerThreads);
 

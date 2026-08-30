@@ -23,8 +23,6 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 
 #include <fmt/chrono.h>
 
-#include <nlohmann/json.hpp>
-
 #include <ppp/project/card_provider.hpp>
 #include <ppp/project/cropper.hpp>
 #include <ppp/project/project.hpp>
@@ -109,8 +107,11 @@ int main(int argc, char** argv)
     PrintProxyPrepApplication app{ argc, argv };
     SetStyle(app.GetTheme());
 
+    MigrateConfigFromCwd("config.ini", app.GetConfigFolder());
+    const auto config_path{ app.GetConfigFolder() / "config.ini" };
+
     Config config{};
-    config.Load(app.GetCardSvgsFolder());
+    config.Load(config_path, app.GetCardSvgsFolder());
     const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
     if (config.m_MaxWorkerThreads >= ideal_thread_count)
     {
@@ -165,8 +166,7 @@ int main(int argc, char** argv)
     }
 
     MigrateOldConfigDefaults(app, config);
-
-    config.Save();
+    config.Save(config_path);
 
 #ifdef PPP_DEBUG_CHILDLESS_WIDGETS
     class ParentCheckFilter : public QObject
@@ -884,7 +884,7 @@ int main(int argc, char** argv)
         }()
     };
 
-    config.Save();
+    config.Save(config_path);
     project.Dump(app.GetProjectPath());
 
     return ret;
