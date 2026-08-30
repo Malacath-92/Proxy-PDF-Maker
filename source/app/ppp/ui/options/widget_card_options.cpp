@@ -415,13 +415,13 @@ void CardOptionsWidget::BacksideDefaultChanged(OptionalImageRef /*backside_card_
 
 void CardOptionsWidget::BacksideOffsetChanged(Size offset)
 {
-    m_BacksideOffsetVerticalSpin->blockSignals(true);
-    m_BacksideOffsetVerticalSpin->SetValue(offset.x);
-    m_BacksideOffsetVerticalSpin->blockSignals(false);
-
     m_BacksideOffsetHorizontalSpin->blockSignals(true);
-    m_BacksideOffsetHorizontalSpin->SetValue(offset.y);
+    m_BacksideOffsetHorizontalSpin->SetValue(offset.x);
     m_BacksideOffsetHorizontalSpin->blockSignals(false);
+
+    m_BacksideOffsetVerticalSpin->blockSignals(true);
+    m_BacksideOffsetVerticalSpin->SetValue(offset.y);
+    m_BacksideOffsetVerticalSpin->blockSignals(false);
 }
 void CardOptionsWidget::BacksideRotationChanged(Angle backside_rotation)
 {
