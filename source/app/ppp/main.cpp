@@ -32,6 +32,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/app.hpp>
 #include <ppp/auto_update.hpp>
 #include <ppp/cubes.hpp>
+#include <ppp/data_migration.hpp>
 #include <ppp/style.hpp>
 #include <ppp/version_check.hpp>
 
@@ -163,17 +164,7 @@ int main(int argc, char** argv)
         }
     }
 
-    {
-        // Backwards compatiblity of saving card/page size default in Config
-        if (config.m_DefaultCardSize.value_or("Standard") != "Standard")
-        {
-            app.SetProjectDefault("card_size", config.m_DefaultCardSize.value());
-        }
-        if (config.m_DefaultPageSize.value_or("Letter") != "Letter")
-        {
-            app.SetProjectDefault("page_size", config.m_DefaultPageSize.value());
-        }
-    }
+    MigrateOldConfigDefaults(app, config);
 
     config.Save();
 
