@@ -72,7 +72,7 @@ std::vector<std::string> GetModelNames()
 std::string GetModelFilename(std::string_view model_name)
 {
     auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
-    return (application.GetUpscaleModelsFolder() / model_name).replace_extension(".onnx");
+    return (application.GetUpscaleModelsFolder() / model_name).replace_extension(".onnx").string();
 }
 
 bool ModelRequiresDownload(std::string_view model_name)
