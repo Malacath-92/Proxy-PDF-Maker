@@ -119,7 +119,7 @@ void PopupBase::showEvent(QShowEvent* event)
 
     if (m_PersistGeometry)
     {
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        auto* app{ ppApp };
         if (auto geometry{ app->LoadWindowGeometry(objectName()) })
         {
             RestoreGeometry(std::move(geometry).value());
@@ -131,7 +131,7 @@ void PopupBase::closeEvent(QCloseEvent* event)
 {
     if (m_PersistGeometry)
     {
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        auto* app{ ppApp };
         app->SaveWindowGeometry(objectName(), GetGeometry());
     }
 
@@ -153,7 +153,7 @@ void PopupBase::resizeEvent(QResizeEvent* event)
 
 PrintProxyPrepMainWindow* PopupBase::GetMainWindow() const
 {
-    return static_cast<PrintProxyPrepApplication*>(qApp)->GetMainWindow();
+    return ppApp->GetMainWindow();
 }
 
 void PopupBase::Recenter()

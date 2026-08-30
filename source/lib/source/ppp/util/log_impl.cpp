@@ -295,10 +295,10 @@ void Log::LogImpl::CreateLogFile()
     {
         auto now = std::chrono::system_clock::now();
         fmt::format_to_n(file_name_buffer,
-            255,
-            "{}/{:%Y-%m-%d_%H-%M-%S}.log",
-            g_OutputFolder.string(),
-            now);
+                         255,
+                         "{}/{:%Y-%m-%d_%H-%M-%S}.log",
+                         g_OutputFolder.string(),
+                         now);
     }
 
     fs::path logs_directory{ fs::absolute(g_OutputFolder) };

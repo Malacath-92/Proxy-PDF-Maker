@@ -12,7 +12,7 @@
 
 std::vector<std::string> GetCubeNames()
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     std::vector<std::string> cubes_names{ "None" };
 
@@ -43,7 +43,7 @@ std::vector<std::string> GetCubeNames()
 
 void PreloadCube(std::string_view cube_name)
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     if (cube_name == "None" || application.GetCube(std::string{ cube_name }) != nullptr)
     {
         return;
@@ -62,6 +62,6 @@ const cv::Mat* GetCubeImage(std::string_view cube_name)
 {
     PreloadCube(cube_name);
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     return application.GetCube(std::string{ cube_name });
 }

@@ -35,7 +35,7 @@ inline constexpr std::array c_DownloadableModels{
 
 std::vector<std::string> GetModelNames()
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     std::vector<std::string> model_names{ "None" };
 
@@ -71,7 +71,7 @@ std::vector<std::string> GetModelNames()
 
 std::string GetModelFilename(std::string_view model_name)
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     return (application.GetUpscaleModelsFolder() / model_name).replace_extension(".onnx").string();
 }
 

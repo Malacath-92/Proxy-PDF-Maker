@@ -66,7 +66,7 @@ void NewProjectPopupViewModel::ChangeClearImages(Qt::CheckState clear_images)
 
 std::string NewProjectPopupViewModel::GetDefaultCardSize() const
 {
-    auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* app{ ppApp };
     auto user_default{ app->GetProjectDefault("card_size") };
     if (!user_default.is_null())
     {
@@ -84,7 +84,7 @@ const CardSizes& NewProjectPopupViewModel::GetCardSizes() const
 
 std::string NewProjectPopupViewModel::GetDefaultPageSize() const
 {
-    auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* app{ ppApp };
     auto user_default{ app->GetProjectDefault("page_size") };
     if (!user_default.is_null())
     {

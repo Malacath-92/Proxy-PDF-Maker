@@ -125,7 +125,7 @@ void GlobalOptionsViewModel::ChangeStyle(const QString& style)
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     application.SetTheme(style.toStdString());
     SetStyle(application.GetTheme());
 }

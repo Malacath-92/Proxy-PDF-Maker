@@ -48,7 +48,7 @@ CardSizePopup::CardSizePopup(QWidget* parent,
         }
     };
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     const auto svg_files{
         [&application]()
@@ -727,7 +727,7 @@ void CardSizePopup::Apply()
         };
     }
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     for (int i = 0; i < m_SvgTable->rowCount(); ++i)
     {

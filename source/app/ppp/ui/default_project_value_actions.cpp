@@ -75,7 +75,7 @@ nlohmann::json GetValueImpl(QLineEdit* widget)
 nlohmann::json GetDefault(std::string_view path,
                           const DefaultDataRequirements& config_reqs)
 {
-    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    const auto* app{ ppApp };
     const auto user_default_value{ app->GetProjectDefault(path) };
     if (!user_default_value.is_null())
     {
@@ -97,7 +97,7 @@ nlohmann::json GetDefault(std::string_view path,
 }
 void SetAsDefault(std::string_view path, nlohmann::json value)
 {
-    auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* app{ ppApp };
     app->SetProjectDefault(path, std::move(value));
 }
 

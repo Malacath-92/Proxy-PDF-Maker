@@ -25,12 +25,12 @@ ProjectOptionsViewModel::ProjectOptionsViewModel(Project& project,
 
 void ProjectOptionsViewModel::ChangeProjectName(const QString& project_name)
 {
-    auto* application{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* application{ ppApp };
     application->SetProjectName(project_name.toStdString());
 }
 void ProjectOptionsViewModel::ChangeProjectsRoot(const QString& projects_root)
 {
-    auto* application{ static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto* application{ ppApp };
     application->SetProjectsRoot(projects_root.toStdString());
 }
 void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& view_model)
@@ -65,7 +65,7 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
         }
     }
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     application.SetProjectPath(QString{ "%1.json" }
                                    .arg(view_model.NewProjectName())
                                    .toStdString());
@@ -90,14 +90,14 @@ void ProjectOptionsViewModel::SaveProject()
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     m_Project.Dump(application.GetProjectPath());
 }
 void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     if (project_path != application.GetProjectPath())
     {
         application.SetProjectPath(project_path);
@@ -108,13 +108,13 @@ void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 
 void ProjectOptionsViewModel::EmitDefaults()
 {
-    const auto* application{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    const auto* application{ ppApp };
     ProjectPathChanged(application->GetProjectPath());
 }
 
 fs::path ProjectOptionsViewModel::GetProjectsRoot() const
 {
-    const auto* application{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    const auto* application{ ppApp };
     return application->GetProjectPath().parent_path();
 }
 

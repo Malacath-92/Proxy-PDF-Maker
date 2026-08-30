@@ -82,7 +82,7 @@ void CardDownloaderImageWorker::run()
             }),
         };
 
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        auto* app{ ppApp };
         auto upscaled_image{ RunModel(*app, m_UpscaleModel.toStdString(), image, m_PhysicalCardSize, m_MaxDensity) };
 
         const auto encoded_image{ upscaled_image.EncodePng() };
@@ -295,7 +295,7 @@ void CardDownloaderPopup::StartDownload()
             if (!upscale_model.empty())
             {
                 LogInfo("Preloading upscaling model...");
-                auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+                auto* app{ ppApp };
                 LoadModel(*app, upscale_model);
             }
 
@@ -421,7 +421,7 @@ void CardDownloaderPopup::FinalizeDownload()
     const auto upscale_model{ UpscaleModel().toStdString() };
     if (!upscale_model.empty())
     {
-        auto* app{ static_cast<PrintProxyPrepApplication*>(qApp) };
+        auto* app{ ppApp };
         UnloadModel(*app, upscale_model);
     }
 

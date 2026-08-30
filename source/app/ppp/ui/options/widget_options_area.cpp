@@ -107,7 +107,7 @@ void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     auto* collapse_button{ new CollapseButton{
         widget,
         !application.GetObjectVisibility(widget->objectName()),

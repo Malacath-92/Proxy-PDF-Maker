@@ -49,7 +49,7 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs,
 {
     TRACY_AUTO_SCOPE();
 
-    const auto* app{ static_cast<const PrintProxyPrepApplication*>(qApp) };
+    const auto* app{ ppApp };
     ProjectPathChanged(app->GetProjectPath());
 
     auto* window_layout{ new QHBoxLayout };

@@ -193,7 +193,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
     auto* max_worker_threads{ new WidgetWithLabel{ "Max &Worker Threads", m_MaxWorkerThreads } };
     max_worker_threads->setToolTip("Higher numbers speed up cropping and pdf generation, but cost more system resources");
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
     auto* style{ new ComboBoxWithLabel{
         "&Theme", GetStyles(), application.GetTheme() } };
     m_Style = style->GetWidget();

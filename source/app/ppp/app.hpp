@@ -109,3 +109,5 @@ class PrintProxyPrepApplication
     std::optional<QByteArray> m_WindowGeometry{};
     std::optional<QByteArray> m_WindowState{};
 };
+
+#define ppApp static_cast<PrintProxyPrepApplication*>(qApp)

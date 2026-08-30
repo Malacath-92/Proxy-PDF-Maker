@@ -20,7 +20,7 @@ inline constexpr std::array c_BuiltInStyles{
 
 std::vector<std::string> GetStyles()
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     std::vector<std::string> styles{};
 
@@ -59,7 +59,7 @@ std::vector<std::string> GetStyles()
 
 void SetStyle(std::string_view style)
 {
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     if (std::ranges::contains(c_BuiltInStyles, style))
     {

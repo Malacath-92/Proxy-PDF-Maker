@@ -186,7 +186,7 @@ std::vector<std::string> PrintOptionsViewModel::GetBasePdfNames() const
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *static_cast<PrintProxyPrepApplication*>(qApp) };
+    auto& application{ *ppApp };
 
     std::vector<std::string> base_pdf_names{ "Empty A4" };
 
