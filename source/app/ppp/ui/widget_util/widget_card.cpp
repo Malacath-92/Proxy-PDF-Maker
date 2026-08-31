@@ -11,8 +11,6 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QStackedLayout>
-#include <QSvgRenderer>
-#include <QSvgWidget>
 
 #include <opencv2/opencv.hpp>
 
@@ -23,26 +21,9 @@
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/widget_util/widget_spinner.hpp>
+
 #include <ppp/profile/profile.hpp>
-
-class SpinnerWidget : public QSvgWidget
-{
-  public:
-    SpinnerWidget()
-        : QSvgWidget{ ":/res/spinner.svg" }
-    {
-    }
-
-    virtual bool hasHeightForWidth() const override
-    {
-        return true;
-    }
-
-    virtual int heightForWidth(int width) const override
-    {
-        return width;
-    }
-};
 
 QPixmap StoreIntoQtPixmap(const Image& img)
 {
