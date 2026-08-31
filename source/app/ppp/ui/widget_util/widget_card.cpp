@@ -72,6 +72,9 @@ CardSizedLabel::CardSizedLabel(const Project& project, CardImageWidgetParams par
     , m_CardRatio{ m_CardSize.x / m_CardSize.y }
     , m_BleedEdge{ params.m_BleedEdge }
 {
+    QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    pm.setHeightForWidth(true);
+    setSizePolicy(pm);
 }
 
 void CardSizedLabel::RefreshSize(const Project& project)
@@ -109,19 +112,15 @@ int CardSizedLabel::heightForWidth(int width) const
         return int(std::round(width / card_ratio));
     }
 }
-
-bool CardSizedLabel::FixSize(int width, int height)
+QSize CardSizedLabel::sizeHint() const
 {
-    const auto wanted_height{ heightForWidth(width) };
-    if (height != wanted_height)
-    {
-        resize(width, wanted_height);
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    const int default_width{ 200 };
+    return QSize(default_width, heightForWidth(default_width));
+}
+QSize CardSizedLabel::minimumSizeHint() const
+{
+    const int min_width{ minimumWidth() };
+    return QSize(min_width, heightForWidth(min_width));
 }
 
 BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams params)
@@ -157,20 +156,9 @@ BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams par
     };
     setPixmap(StoreIntoQtPixmap(img));
 
-    setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
 
     setMinimumWidth(params.m_MinimumWidth.value);
-}
-
-void BlankCardImage::resizeEvent(QResizeEvent* event)
-{
-    const auto width{ event->size().width() };
-    const auto height{ event->size().height() };
-    if (!FixSize(width, height))
-    {
-        QLabel::resizeEvent(event);
-    }
 }
 
 CardImage::CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
@@ -237,7 +225,6 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
         setPixmap(FinalizePixmap(std::move(image)));
     }
 
-    setSizePolicy(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::MinimumExpanding);
     setScaledContents(true);
 
     setMinimumWidth(params.m_MinimumWidth.value);
@@ -435,16 +422,6 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
         layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
 
         m_Spinner = spinner;
-    }
-}
-
-void CardImage::resizeEvent(QResizeEvent* event)
-{
-    const auto width{ event->size().width() };
-    const auto height{ event->size().height() };
-    if (!FixSize(width, height))
-    {
-        QLabel::resizeEvent(event);
     }
 }
 
@@ -852,11 +829,6 @@ void StackedCardBacksideView::RefreshSize(const Project& project)
     }
 }
 
-int StackedCardBacksideView::heightForWidth(int width) const
-{
-    return m_Image->heightForWidth(width);
-}
-
 void StackedCardBacksideView::RefreshSizes(QSize size)
 {
     const auto width{ size.width() };
@@ -876,17 +848,8 @@ void StackedCardBacksideView::RefreshSizes(QSize size)
 
 void StackedCardBacksideView::resizeEvent(QResizeEvent* event)
 {
-    const auto width{ event->size().width() };
-    const auto height{ heightForWidth(width) };
-    if (event->size().height() != height)
-    {
-        resize(width, height);
-    }
-    else
-    {
-        QStackedWidget::resizeEvent(event);
-        RefreshSizes(event->size());
-    }
+    QStackedWidget::resizeEvent(event);
+    RefreshSizes(event->size());
 }
 
 void StackedCardBacksideView::mouseMoveEvent(QMouseEvent* event)
@@ -927,4 +890,23 @@ void StackedCardBacksideView::mouseReleaseEvent(QMouseEvent* event)
         BacksideClicked();
         event->accept();
     }
+}
+
+bool StackedCardBacksideView::hasHeightForWidth() const
+{
+    return true;
+}
+int StackedCardBacksideView::heightForWidth(int width) const
+{
+    return m_Image->heightForWidth(width);
+}
+QSize StackedCardBacksideView::sizeHint() const
+{
+    const int default_width{ 200 };
+    return QSize(default_width, heightForWidth(default_width));
+}
+QSize StackedCardBacksideView::minimumSizeHint() const
+{
+    const int min_width{ minimumWidth() };
+    return QSize(min_width, heightForWidth(min_width));
 }

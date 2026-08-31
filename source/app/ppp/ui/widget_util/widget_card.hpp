@@ -54,9 +54,8 @@ class CardSizedLabel : public QLabel
 
     virtual bool hasHeightForWidth() const override;
     virtual int heightForWidth(int width) const override;
-
-  protected:
-    bool FixSize(int width, int height);
+    virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
 
   protected:
     bool m_Rotated;
@@ -69,8 +68,6 @@ class BlankCardImage : public CardSizedLabel
 {
   public:
     BlankCardImage(const Project& project, CardImageWidgetParams params = CardImageWidgetParams{});
-
-    virtual void resizeEvent(QResizeEvent* event) override;
 };
 
 class CardImage : public CardSizedLabel
@@ -91,8 +88,6 @@ class CardImage : public CardSizedLabel
     {
         return m_CardName;
     }
-
-    virtual void resizeEvent(QResizeEvent* event) override;
 
   private slots:
     void PreviewRemoved(const fs::path& card_name);
@@ -184,12 +179,6 @@ class StackedCardBacksideView : public QStackedWidget
     void RefreshBackside(QWidget* new_backside);
     void RefreshSize(const Project& project);
 
-    virtual bool hasHeightForWidth() const override
-    {
-        return true;
-    }
-    virtual int heightForWidth(int width) const override;
-
   signals:
     void BacksideClicked();
 
@@ -200,6 +189,11 @@ class StackedCardBacksideView : public QStackedWidget
     virtual void mouseMoveEvent(QMouseEvent* event) override;
     virtual void leaveEvent(QEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
+
+    virtual bool hasHeightForWidth() const override;
+    virtual int heightForWidth(int width) const override;
+    virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
 
     CardImage* m_Image;
     QWidget* m_Backside;
