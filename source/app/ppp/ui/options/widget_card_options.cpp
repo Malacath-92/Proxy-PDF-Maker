@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSlider>
+#include <QStackedWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -30,7 +31,7 @@
 
 #include <ppp/profile/profile.hpp>
 
-class DefaultBacksidePreview : public QWidget
+class DefaultBacksidePreview : public QStackedWidget
 {
   public:
     DefaultBacksidePreview(const Project& project)
@@ -38,18 +39,24 @@ class DefaultBacksidePreview : public QWidget
     {
         TRACY_AUTO_SCOPE();
 
-        auto* backside_default_image{ MakeBacksideImage() };
+        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
+        m_BacksideImage = new BacksideImage{ backside_name.value_or("__back.png"), c_MinimumWidth, m_Project };
+        m_BacksideClear = new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } };
 
-        auto* layout{ new QVBoxLayout };
-        layout->addWidget(backside_default_image);
-        layout->setAlignment(backside_default_image, Qt::AlignmentFlag::AlignHCenter);
-        layout->setContentsMargins(0, 0, 0, 0);
-        layout->setSizeConstraint(QLayout::SetMinAndMaxSize);
-        setLayout(layout);
+        addWidget(m_BacksideImage);
+        addWidget(m_BacksideClear);
+        setCurrentWidget(backside_name.has_value()
+                             ? static_cast<QLabel*>(m_BacksideImage)
+                             : static_cast<QLabel*>(m_BacksideClear));
 
-        setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+        setMinimumWidth(c_MinimumWidth.value);
+        setMinimumHeight(heightForWidth(c_MinimumWidth.value));
+        setMaximumWidth(c_MaximumWidth.value);
+        setMaximumHeight(heightForWidth(c_MaximumWidth.value));
 
-        m_DefaultImage = backside_default_image;
+        QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Minimum);
+        pm.setHeightForWidth(true);
+        setSizePolicy(pm);
     }
 
     void Refresh()
@@ -57,54 +64,46 @@ class DefaultBacksidePreview : public QWidget
         TRACY_AUTO_SCOPE();
 
         const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-
-        auto* backside_image{ dynamic_cast<BacksideImage*>(m_DefaultImage) };
-        const bool had_backside{ backside_image != nullptr };
         const bool has_backside{ backside_name.has_value() };
+        if (has_backside)
+        {
+            m_BacksideImage->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
+            setCurrentWidget(m_BacksideImage);
+        }
+        else
+        {
+            setCurrentWidget(m_BacksideClear);
+        }
+    }
 
-        if (had_backside != has_backside)
-        {
-            auto* backside_default_image{ MakeBacksideImage() };
-            layout()->replaceWidget(m_DefaultImage, backside_default_image);
-            delete m_DefaultImage;
-            m_DefaultImage = backside_default_image;
-        }
-        else if (had_backside)
-        {
-            backside_image->Refresh(backside_name.value(), c_ImageWidth, m_Project);
-        }
+    QSize sizeHint() const override
+    {
+        return m_BacksideImage->sizeHint();
+    }
+
+    QSize minimumSizeHint() const override
+    {
+        return m_BacksideImage->minimumSizeHint();
+    }
+
+    bool hasHeightForWidth() const override
+    {
+        return m_BacksideImage->hasHeightForWidth();
+    }
+
+    int heightForWidth(int w) const override
+    {
+        return m_BacksideImage->heightForWidth(w);
     }
 
   private:
-    static QString ClampName(const QString& name)
-    {
-        static constexpr auto c_MaxNameLength{ 20 };
-        static constexpr auto c_EllipsisSize{ 3 };
-        return name.size() > c_MaxNameLength + c_EllipsisSize
-                   ? name.left(c_MaxNameLength / 2) + "..." + name.right(c_MaxNameLength / 2)
-                   : name;
-    }
-
-    QWidget* MakeBacksideImage()
-    {
-        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-
-        QWidget* backside_default_image{
-            backside_name.has_value()
-                ? static_cast<QWidget*>(new BacksideImage{ backside_name.value(), c_ImageWidth, m_Project })
-                : new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_ImageWidth } } }
-        };
-
-        backside_default_image->setFixedWidth(c_ImageWidth.value);
-
-        return backside_default_image;
-    }
-
-    inline static constexpr auto c_ImageWidth{ 60_pix };
+    inline static constexpr auto c_MinimumWidth{ 60_pix };
+    inline static constexpr auto c_MaximumWidth{ 120_pix };
 
     const Project& m_Project;
 
-    QWidget* m_DefaultImage{ nullptr };
+    BacksideImage* m_BacksideImage{ nullptr };
+    BlankCardImage* m_BacksideClear{ nullptr };
 };
 
 CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
@@ -254,12 +253,11 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     layout->addWidget(m_SeparateBacksidesCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
+    layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     layout->addWidget(m_BacksideOffset);
     layout->addWidget(m_BacksideExtraBleedEdge);
     layout->addWidget(m_BacksideRotation);
     layout->addWidget(m_BacksideAuto);
-
-    layout->setAlignment(m_BacksideDefaultPreview, Qt::AlignmentFlag::AlignHCenter);
     setLayout(layout);
 
     auto pick_backside{
