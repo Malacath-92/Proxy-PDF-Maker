@@ -9,7 +9,7 @@ CollapseButton::CollapseButton(QWidget* handled_widget, bool collapsed)
     setCheckable(true);
     setStyleSheet("background:none; border:none");
     setIconSize(QSize(8, 8));
-    setText(" " + handled_widget->objectName());
+    setText(" " + m_HandledWidget->objectName());
     connect(this,
             &QToolButton::toggled,
             [this](bool checked)
@@ -20,12 +20,12 @@ CollapseButton::CollapseButton(QWidget* handled_widget, bool collapsed)
                     : Uncheck();
             });
 
-    auto animation{ new QPropertyAnimation{ m_HandledWidget, "maximumHeight" } };
-    animation->setStartValue(0);
-    animation->setEasingCurve(QEasingCurve::InOutQuad);
-    animation->setDuration(300);
-    animation->setEndValue(m_HandledWidget->geometry().height() + 10);
-    m_Animator.addAnimation(animation);
+    m_Animation = new QPropertyAnimation{ m_HandledWidget, "maximumHeight" };
+    m_Animation->setStartValue(0);
+    m_Animation->setEndValue(0);
+    m_Animation->setEasingCurve(QEasingCurve::InOutQuad);
+    m_Animation->setDuration(300);
+    m_Animator.addAnimation(m_Animation);
 
     if (collapsed)
     {
@@ -35,13 +35,21 @@ CollapseButton::CollapseButton(QWidget* handled_widget, bool collapsed)
     }
     else
     {
+        blockSignals(true);
         setChecked(true);
+        blockSignals(false);
         setArrowType(Qt::ArrowType::DownArrow);
     }
 }
 
 void CollapseButton::Uncheck()
 {
+    if (m_Animation->endValue() == 0)
+    {
+        m_Animation->setEndValue(m_HandledWidget->sizeHint().height());
+        m_Animation->setCurrentTime(m_Animation->totalDuration());
+    }
+
     m_Animator.setDirection(QAbstractAnimation::Backward);
     m_Animator.start();
     SetObjectVisibility(false);
@@ -49,6 +57,8 @@ void CollapseButton::Uncheck()
 
 void CollapseButton::Check()
 {
+    m_Animation->setEndValue(m_HandledWidget->sizeHint().height());
+
     m_Animator.setDirection(QAbstractAnimation::Forward);
     m_Animator.start();
     SetObjectVisibility(true);

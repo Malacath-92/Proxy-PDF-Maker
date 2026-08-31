@@ -3,6 +3,8 @@
 #include <QParallelAnimationGroup>
 #include <QToolButton>
 
+class QPropertyAnimation;
+
 class CollapseButton : public QToolButton
 {
     Q_OBJECT
@@ -18,5 +20,6 @@ class CollapseButton : public QToolButton
 
   private:
     QWidget* m_HandledWidget;
+    QPropertyAnimation* m_Animation;
     QParallelAnimationGroup m_Animator;
 };
