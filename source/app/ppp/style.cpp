@@ -86,7 +86,6 @@ void SetStyle(std::string_view style)
         QFile style_file{ style_path };
         if (style_file.open(QFile::ReadOnly))
         {
-            auto& application{ *qApp };
             application.setStyleSheet(QLatin1String{ style_file.readAll() });
         }
     }
