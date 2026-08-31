@@ -169,6 +169,28 @@ class BacksideImage : public CardImage
     void Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project);
 };
 
+class ClearableCardImage : public QStackedWidget
+{
+  public:
+    ClearableCardImage(const Project& project);
+
+    void Refresh();
+
+    virtual QSize sizeHint() const override;
+    virtual QSize minimumSizeHint() const override;
+    virtual bool hasHeightForWidth() const override;
+    virtual int heightForWidth(int w) const override;
+
+  private:
+    inline static constexpr auto c_MinimumWidth{ 60_pix };
+    inline static constexpr auto c_MaximumWidth{ 120_pix };
+
+    const Project& m_Project;
+
+    BacksideImage* m_BacksideImage{ nullptr };
+    BlankCardImage* m_BacksideClear{ nullptr };
+};
+
 class StackedCardBacksideView : public QStackedWidget
 {
     Q_OBJECT

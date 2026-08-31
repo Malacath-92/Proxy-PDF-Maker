@@ -746,6 +746,65 @@ void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, 
         CardImageWidgetParams{ .m_Backside = true, .m_MinimumWidth{ minimum_width } });
 }
 
+ClearableCardImage::ClearableCardImage(const Project& project)
+    : m_Project{ project }
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
+    m_BacksideImage = new BacksideImage{ backside_name.value_or("__back.png"), c_MinimumWidth, m_Project };
+    m_BacksideClear = new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } };
+
+    addWidget(m_BacksideImage);
+    addWidget(m_BacksideClear);
+    setCurrentWidget(backside_name.has_value()
+                         ? static_cast<QLabel*>(m_BacksideImage)
+                         : static_cast<QLabel*>(m_BacksideClear));
+
+    setMinimumWidth(c_MinimumWidth.value);
+    setMinimumHeight(heightForWidth(c_MinimumWidth.value));
+    setMaximumWidth(c_MaximumWidth.value);
+    setMaximumHeight(heightForWidth(c_MaximumWidth.value));
+
+    QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    pm.setHeightForWidth(true);
+    setSizePolicy(pm);
+}
+
+void ClearableCardImage::Refresh()
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
+    const bool has_backside{ backside_name.has_value() };
+    if (has_backside)
+    {
+        m_BacksideImage->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
+        setCurrentWidget(m_BacksideImage);
+    }
+    else
+    {
+        setCurrentWidget(m_BacksideClear);
+    }
+}
+
+QSize ClearableCardImage::sizeHint() const
+{
+    return m_BacksideImage->sizeHint();
+}
+QSize ClearableCardImage::minimumSizeHint() const
+{
+    return m_BacksideImage->minimumSizeHint();
+}
+bool ClearableCardImage::hasHeightForWidth() const
+{
+    return m_BacksideImage->hasHeightForWidth();
+}
+int ClearableCardImage::heightForWidth(int w) const
+{
+    return m_BacksideImage->heightForWidth(w);
+}
+
 StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)
 {
     TRACY_AUTO_SCOPE();

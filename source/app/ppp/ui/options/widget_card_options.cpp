@@ -31,81 +31,6 @@
 
 #include <ppp/profile/profile.hpp>
 
-class DefaultBacksidePreview : public QStackedWidget
-{
-  public:
-    DefaultBacksidePreview(const Project& project)
-        : m_Project{ project }
-    {
-        TRACY_AUTO_SCOPE();
-
-        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-        m_BacksideImage = new BacksideImage{ backside_name.value_or("__back.png"), c_MinimumWidth, m_Project };
-        m_BacksideClear = new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } };
-
-        addWidget(m_BacksideImage);
-        addWidget(m_BacksideClear);
-        setCurrentWidget(backside_name.has_value()
-                             ? static_cast<QLabel*>(m_BacksideImage)
-                             : static_cast<QLabel*>(m_BacksideClear));
-
-        setMinimumWidth(c_MinimumWidth.value);
-        setMinimumHeight(heightForWidth(c_MinimumWidth.value));
-        setMaximumWidth(c_MaximumWidth.value);
-        setMaximumHeight(heightForWidth(c_MaximumWidth.value));
-
-        QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Minimum);
-        pm.setHeightForWidth(true);
-        setSizePolicy(pm);
-    }
-
-    void Refresh()
-    {
-        TRACY_AUTO_SCOPE();
-
-        const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-        const bool has_backside{ backside_name.has_value() };
-        if (has_backside)
-        {
-            m_BacksideImage->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
-            setCurrentWidget(m_BacksideImage);
-        }
-        else
-        {
-            setCurrentWidget(m_BacksideClear);
-        }
-    }
-
-    QSize sizeHint() const override
-    {
-        return m_BacksideImage->sizeHint();
-    }
-
-    QSize minimumSizeHint() const override
-    {
-        return m_BacksideImage->minimumSizeHint();
-    }
-
-    bool hasHeightForWidth() const override
-    {
-        return m_BacksideImage->hasHeightForWidth();
-    }
-
-    int heightForWidth(int w) const override
-    {
-        return m_BacksideImage->heightForWidth(w);
-    }
-
-  private:
-    inline static constexpr auto c_MinimumWidth{ 60_pix };
-    inline static constexpr auto c_MaximumWidth{ 120_pix };
-
-    const Project& m_Project;
-
-    BacksideImage* m_BacksideImage{ nullptr };
-    BlankCardImage* m_BacksideClear{ nullptr };
-};
-
 CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     : m_ViewModel{ *view_model }
 {
@@ -165,7 +90,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
 
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
-    m_BacksideDefaultPreview = new DefaultBacksidePreview{ m_ViewModel.GetProject() };
+    m_BacksideDefaultPreview = new ClearableCardImage{ m_ViewModel.GetProject() };
     EnableOptionWidgetForDefaults(
         m_BacksideDefaultPreview,
         config_reqs,

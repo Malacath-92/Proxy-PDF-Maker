@@ -13,7 +13,7 @@ class QSlider;
 class QLineEdit;
 
 struct DefaultDataRequirements;
-class DefaultBacksidePreview;
+class ClearableCardImage;
 class CardOptionsViewModel;
 class LengthSpinBox;
 class LinkedSpinBoxes;
@@ -68,7 +68,7 @@ class CardOptionsWidget : public QWidget
     QCheckBox* m_BacksideCheckbox{ nullptr };
     QCheckBox* m_SeparateBacksidesCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
-    DefaultBacksidePreview* m_BacksideDefaultPreview{ nullptr };
+    ClearableCardImage* m_BacksideDefaultPreview{ nullptr };
     LengthSpinBox* m_BacksideOffsetHorizontalSpin{ nullptr };
     LengthSpinBox* m_BacksideOffsetVerticalSpin{ nullptr };
     QWidget* m_BacksideOffset{ nullptr };
