@@ -17,7 +17,7 @@ class NewProjectPopupViewModel : public QObject
     bool CreateNewProject() const;
 
     QString NewProjectName() const;
-    QString NewImageFolder() const;
+    fs::path NewImageFolder() const;
     QString NewCardSize() const;
     QString NewPaperSize() const;
     bool ClearImages() const;
@@ -26,7 +26,7 @@ class NewProjectPopupViewModel : public QObject
     void Cancel();
 
     void ChangeProjectName(const QString& project_name);
-    void ChangeImageFolder(const QString& image_folder);
+    void ChangeImageFolder(const fs::path& image_folder);
     void ChangeCardSize(const QString& card_size);
     void ChangePaperSize(const QString& paper_size);
     void ChangeClearImages(Qt::CheckState clear_images);
@@ -43,7 +43,7 @@ class NewProjectPopupViewModel : public QObject
     bool m_Cancelled{ false };
 
     QString m_ProjectName;
-    QString m_ImageFolder;
+    fs::path m_ImageFolder;
     QString m_CardSize;
     QString m_PaperSize;
     bool m_ClearImages;

@@ -9,6 +9,7 @@
 
 NewProjectPopupViewModel::NewProjectPopupViewModel(const Config& config)
     : m_Cfg{ config }
+    , m_ImageFolder{ ppApp->GetProjectsFolder() / "images" }
 {
 }
 
@@ -21,7 +22,7 @@ QString NewProjectPopupViewModel::NewProjectName() const
 {
     return m_ProjectName;
 }
-QString NewProjectPopupViewModel::NewImageFolder() const
+fs::path NewProjectPopupViewModel::NewImageFolder() const
 {
     return m_ImageFolder;
 }
@@ -47,7 +48,7 @@ void NewProjectPopupViewModel::ChangeProjectName(const QString& project_name)
 {
     m_ProjectName = project_name;
 }
-void NewProjectPopupViewModel::ChangeImageFolder(const QString& image_folder)
+void NewProjectPopupViewModel::ChangeImageFolder(const fs::path& image_folder)
 {
     m_ImageFolder = image_folder;
 }

@@ -43,7 +43,7 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
     }
 
     const fs::path new_image_folder{
-        view_model.NewImageFolder().toStdString()
+        view_model.NewImageFolder()
     };
 
     if (view_model.ClearImages())

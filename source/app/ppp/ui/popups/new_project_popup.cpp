@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+#include <ppp/app.hpp>
 #include <ppp/config_types.hpp>
 #include <ppp/qt_util.hpp>
 
@@ -88,10 +89,10 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
             [this]()
             {
                 TRACY_AUTO_SCOPE();
-                if (const auto new_image_dir{ OpenFolderDialog(".") })
+                if (const auto new_image_dir{ OpenFolderDialog(ppApp->GetProjectsFolder()) })
                 {
                     m_ImageFolder->setText(ToQString(new_image_dir.value().filename()));
-                    m_ViewModel.ChangeImageFolder(ToQString(new_image_dir.value()));
+                    m_ViewModel.ChangeImageFolder(new_image_dir.value());
                 }
             }
         };
@@ -142,7 +143,6 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
     setLayout(window_layout);
 
     m_ViewModel.ChangeProjectName(m_ProjectName->text());
-    m_ViewModel.ChangeImageFolder(m_ImageFolder->text());
     m_ViewModel.ChangeCardSize(m_CardSize->currentText());
     m_ViewModel.ChangePaperSize(m_PaperSize->currentText());
     m_ViewModel.ChangeClearImages(m_ClearImages->checkState());
