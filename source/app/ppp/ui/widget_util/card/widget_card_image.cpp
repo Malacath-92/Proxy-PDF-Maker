@@ -1,155 +1,30 @@
-#include <ppp/ui/widget_util/widget_card.hpp>
+#include <ppp/ui/widget_util/card/widget_card_image.hpp>
 
-#include <QAction>
 #include <QCommonStyle>
-#include <QHBoxLayout>
 #include <QMenu>
-#include <QMovie>
-#include <QPainter>
-#include <QPainterPath>
-#include <QPixmap>
-#include <QPushButton>
-#include <QResizeEvent>
-#include <QStackedLayout>
+#include <QStyle>
+#include <QVBoxLayout>
 
-#include <opencv2/opencv.hpp>
-
-#include <ppp/constants.hpp>
+#include <ppp/image.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
+#include <ppp/ui/widget_util/card/card_widget_util.hpp>
 #include <ppp/ui/widget_util/widget_spinner.hpp>
 
 #include <ppp/profile/profile.hpp>
 
-QPixmap StoreIntoQtPixmap(const Image& img)
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto& img_impl{ img.GetUnderlying() };
-    switch (img_impl.channels())
-    {
-    case 1:
-        return QPixmap::fromImage(QImage(img_impl.ptr(), img_impl.cols, img_impl.rows, img_impl.step, QImage::Format_Grayscale8));
-    case 3:
-        return QPixmap::fromImage(QImage(img_impl.ptr(), img_impl.cols, img_impl.rows, img_impl.step, QImage::Format_BGR888));
-    case 4:
-    {
-        cv::Mat cvt_img;
-        cv::cvtColor(img_impl, cvt_img, cv::COLOR_BGR2RGBA);
-        return QPixmap::fromImage(QImage(cvt_img.ptr(), cvt_img.cols, cvt_img.rows, cvt_img.step, QImage::Format_RGBA8888));
-    }
-    default:
-        return QPixmap{ img_impl.cols, img_impl.rows };
-    }
-}
-
-CardSizedLabel::CardSizedLabel(const Project& project, CardImageWidgetParams params)
-    : m_Rotated{ params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270 }
-    , m_CardSize{ project.CardSize() }
-    , m_CardRatio{ m_CardSize.x / m_CardSize.y }
-    , m_BleedEdge{ params.m_BleedEdge }
-{
-    QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    pm.setHeightForWidth(true);
-    setSizePolicy(pm);
-}
-
-void CardSizedLabel::RefreshSize(const Project& project)
-{
-    m_CardSize = project.CardSize();
-    m_CardRatio = m_CardSize.x / m_CardSize.y;
-}
-
-void CardSizedLabel::RefreshSize(const Project& project, CardImageWidgetParams params)
-{
-    RefreshSize(project);
-    m_Rotated = params.m_Rotation == Image::Rotation::Degree90 || params.m_Rotation == Image::Rotation::Degree270;
-    m_BleedEdge = params.m_BleedEdge;
-}
-
-bool CardSizedLabel::hasHeightForWidth() const
-{
-    return true;
-}
-int CardSizedLabel::heightForWidth(int width) const
-{
-    float card_ratio{ m_CardRatio };
-    if (m_BleedEdge > 0_mm)
-    {
-        const auto card_size{ m_CardSize + 2.0f * m_BleedEdge };
-        card_ratio = card_size.x / card_size.y;
-    }
-
-    if (m_Rotated)
-    {
-        return int(std::round(width * card_ratio));
-    }
-    else
-    {
-        return int(std::round(width / card_ratio));
-    }
-}
-QSize CardSizedLabel::sizeHint() const
-{
-    const int default_width{ 200 };
-    return QSize(default_width, heightForWidth(default_width));
-}
-QSize CardSizedLabel::minimumSizeHint() const
-{
-    const int min_width{ minimumWidth() };
-    return QSize(min_width, heightForWidth(min_width));
-}
-
-BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams params)
-    : CardSizedLabel{ project, params }
-{
-    TRACY_AUTO_SCOPE();
-
-    setStyleSheet("QLabel{ background-color: transparent; }");
-
-    const auto width{ 512_pix };
-    const auto height{ width / m_CardRatio };
-    const auto img{
-        [&](const Image& img)
-        {
-            if (params.m_RoundedCorners && m_BleedEdge == 0_mm)
-            {
-                if (project.IsCardRoundedRect())
-                {
-                    return img
-                        .RoundCorners(m_CardSize, project.CardCornerRadius())
-                        .Rotate(params.m_Rotation);
-                }
-                else if (project.IsCardSvg())
-                {
-                    return img
-                        .ClipSvg(project.CardSvgData())
-                        .Rotate(params.m_Rotation);
-                }
-            }
-            return img
-                .Rotate(params.m_Rotation);
-        }(Image::PlainColor({ width, height }, ColorRGBA8{ 0xff, 0xff, 0xff, 0xff }))
-    };
-    setPixmap(StoreIntoQtPixmap(img));
-
-    setScaledContents(true);
-
-    setMinimumWidth(params.m_MinimumWidth.value);
-}
-
 CardImage::CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
-    : CardSizedLabel{ project, params }
+    : WidgetWithCardSize{ GetCardWidgetAspectRatio(project, params.m_Rotation, params.m_BleedEdge) }
     , m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
 
     {
-        auto* layout{ new QBoxLayout(QBoxLayout::TopToBottom) };
+        auto* layout{ new QVBoxLayout };
         layout->addStretch();
         layout->addStretch();
         setLayout(layout);
@@ -225,7 +100,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
     {
         auto* spinner{ new SpinnerWidget };
 
-        QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+        QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
         layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
 
         m_Spinner = spinner;
@@ -240,7 +115,10 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
 
 void CardImage::RefreshSize(const Project& project)
 {
-    CardSizedLabel::RefreshSize(project, m_OriginalParams);
+    WidgetWithCardSize::RefreshSize(
+        GetCardWidgetAspectRatio(project,
+                                 m_OriginalParams.m_Rotation,
+                                 m_OriginalParams.m_BleedEdge));
     m_FullBleed = project.CardFullBleed();
 }
 
@@ -399,7 +277,7 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
 
         auto* spinner{ new SpinnerWidget };
 
-        QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+        QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
         layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
 
         m_Spinner = spinner;
@@ -444,7 +322,7 @@ Image CardImage::GetImage(const ImagePreview& preview) const
 {
     TRACY_AUTO_SCOPE();
 
-    if (m_BleedEdge > 0_mm)
+    if (m_OriginalParams.m_BleedEdge > 0_mm)
     {
         if (m_OriginalParams.m_RoundedCorners)
         {
@@ -453,8 +331,8 @@ Image CardImage::GetImage(const ImagePreview& preview) const
                 {
                     return UncropImage(base_image,
                                        m_CardName,
-                                       m_CardSize,
-                                       m_BleedEdge,
+                                       m_Project.CardSize(),
+                                       m_OriginalParams.m_BleedEdge,
                                        UncropMode::Transparent)
                         .Rotate(m_OriginalParams.m_Rotation);
                 }
@@ -463,7 +341,7 @@ Image CardImage::GetImage(const ImagePreview& preview) const
             {
                 return finalize_image(
                     preview.m_CroppedImage
-                        .RoundCorners(m_CardSize, m_CornerRadius));
+                        .RoundCorners(m_Project.CardSize(), m_CornerRadius));
             }
             else if (m_Project.IsCardSvg())
             {
@@ -476,9 +354,9 @@ Image CardImage::GetImage(const ImagePreview& preview) const
         }
         return CropImage(preview.m_UncroppedImage,
                          m_CardName,
-                         m_CardSize,
+                         m_Project.CardSize(),
                          m_FullBleed,
-                         m_BleedEdge,
+                         m_OriginalParams.m_BleedEdge,
                          6800_dpi)
             .Rotate(m_OriginalParams.m_Rotation);
     }
@@ -490,7 +368,7 @@ Image CardImage::GetImage(const ImagePreview& preview) const
             {
                 return preview
                     .m_CroppedImage
-                    .RoundCorners(m_CardSize, m_CornerRadius)
+                    .RoundCorners(m_Project.CardSize(), m_CornerRadius)
                     .Rotate(m_OriginalParams.m_Rotation);
             }
             else if (m_Project.IsCardSvg())
@@ -515,7 +393,7 @@ Image CardImage::GetEmptyImage() const
     TRACY_AUTO_SCOPE();
 
     const auto width{ 512_pix };
-    const auto height{ width / m_CardRatio };
+    const auto height{ heightForWidth(width / 1_pix) * 1_pix };
     return Image::PlainColor({ width, height }, ColorRGBA8{ 0x80, 0x80, 0x80, 0xff });
 }
 
@@ -554,7 +432,7 @@ void CardImage::AddBadFormatWarning(const ImagePreview& preview)
     format_warning->setFixedWidth(c_WarningSize);
     format_warning->setFixedHeight(c_WarningSize);
 
-    QBoxLayout* layout{ static_cast<QBoxLayout*>(this->layout()) };
+    QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
     layout->insertWidget(0, format_warning, 0, Qt::AlignLeft);
 
     m_Warning = format_warning;
@@ -701,7 +579,7 @@ void CardImage::ClearChildren()
 {
     TRACY_AUTO_SCOPE();
 
-    auto* layout{ static_cast<QBoxLayout*>(this->layout()) };
+    auto* layout{ static_cast<QVBoxLayout*>(this->layout()) };
 
     if (m_Warning != nullptr)
     {
@@ -716,237 +594,4 @@ void CardImage::ClearChildren()
         delete m_Spinner;
         m_Spinner = nullptr;
     }
-}
-
-BacksideImage::BacksideImage(const fs::path& backside_name, const Project& project)
-    : BacksideImage{ backside_name, CardImageWidgetParams{}.m_MinimumWidth, project }
-{
-    TRACY_AUTO_SCOPE();
-}
-BacksideImage::BacksideImage(const fs::path& backside_name, Pixel minimum_width, const Project& project)
-    : CardImage{
-        backside_name,
-        project,
-        CardImageWidgetParams{ .m_Backside = true, .m_MinimumWidth{ minimum_width } }
-    }
-{
-    TRACY_AUTO_SCOPE();
-}
-
-void BacksideImage::Refresh(const fs::path& backside_name, const Project& project)
-{
-    Refresh(backside_name, CardImageWidgetParams{}.m_MinimumWidth, project);
-}
-void BacksideImage::Refresh(const fs::path& backside_name, Pixel minimum_width, const Project& project)
-{
-    TRACY_AUTO_SCOPE();
-    CardImage::Refresh(
-        backside_name,
-        project,
-        CardImageWidgetParams{ .m_Backside = true, .m_MinimumWidth{ minimum_width } });
-}
-
-ClearableCardImage::ClearableCardImage(const Project& project)
-    : m_Project{ project }
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-    m_BacksideImage = new BacksideImage{ backside_name.value_or("__back.png"), c_MinimumWidth, m_Project };
-    m_BacksideClear = new BlankCardImage{ m_Project, CardImageWidgetParams{ .m_MinimumWidth{ c_MinimumWidth } } };
-
-    addWidget(m_BacksideImage);
-    addWidget(m_BacksideClear);
-    setCurrentWidget(backside_name.has_value()
-                         ? static_cast<QLabel*>(m_BacksideImage)
-                         : static_cast<QLabel*>(m_BacksideClear));
-
-    setMinimumWidth(c_MinimumWidth.value);
-    setMinimumHeight(heightForWidth(c_MinimumWidth.value));
-    setMaximumWidth(c_MaximumWidth.value);
-    setMaximumHeight(heightForWidth(c_MaximumWidth.value));
-
-    QSizePolicy pm(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    pm.setHeightForWidth(true);
-    setSizePolicy(pm);
-}
-
-void ClearableCardImage::Refresh()
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto& backside_name{ m_Project.m_Data.m_BacksideDefault };
-    const bool has_backside{ backside_name.has_value() };
-    if (has_backside)
-    {
-        m_BacksideImage->Refresh(backside_name.value(), c_MinimumWidth, m_Project);
-        setCurrentWidget(m_BacksideImage);
-    }
-    else
-    {
-        setCurrentWidget(m_BacksideClear);
-    }
-}
-
-QSize ClearableCardImage::sizeHint() const
-{
-    return m_BacksideImage->sizeHint();
-}
-QSize ClearableCardImage::minimumSizeHint() const
-{
-    return m_BacksideImage->minimumSizeHint();
-}
-bool ClearableCardImage::hasHeightForWidth() const
-{
-    return m_BacksideImage->hasHeightForWidth();
-}
-int ClearableCardImage::heightForWidth(int w) const
-{
-    return m_BacksideImage->heightForWidth(w);
-}
-
-StackedCardBacksideView::StackedCardBacksideView(CardImage* image, QWidget* backside)
-{
-    TRACY_AUTO_SCOPE();
-
-    backside->setToolTip("Choose individual Backside");
-
-    auto* backside_layout{ new QHBoxLayout };
-    backside_layout->addStretch();
-    backside_layout->addWidget(backside, 0, Qt::AlignmentFlag::AlignBottom);
-    backside_layout->setContentsMargins(0, 0, 0, 0);
-
-    auto* backside_container{ new QWidget{ this } };
-    backside_container->setLayout(backside_layout);
-
-    image->setMouseTracking(true);
-    backside->setMouseTracking(true);
-    backside_container->setMouseTracking(true);
-    setMouseTracking(true);
-
-    addWidget(image);
-    addWidget(backside_container);
-
-    auto* this_layout{ static_cast<QStackedLayout*>(layout()) };
-    this_layout->setStackingMode(QStackedLayout::StackingMode::StackAll);
-    this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
-    this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
-
-    m_Image = image;
-    m_Backside = backside;
-    m_BacksideContainer = backside_container;
-}
-
-void StackedCardBacksideView::RefreshBackside(QWidget* new_backside)
-{
-    TRACY_AUTO_SCOPE();
-
-    new_backside->setMouseTracking(true);
-
-    auto* backside_layout{ static_cast<QHBoxLayout*>(m_BacksideContainer->layout()) };
-
-    m_Backside->setParent(nullptr);
-    delete m_Backside;
-
-    backside_layout->addWidget(new_backside);
-    backside_layout->addWidget(new_backside, 0, Qt::AlignmentFlag::AlignBottom);
-    m_Backside = new_backside;
-
-    RefreshSizes(rect().size());
-}
-
-void StackedCardBacksideView::RefreshSize(const Project& project)
-{
-    m_Image->RefreshSize(project);
-
-    if (auto* image_widget{ dynamic_cast<CardImage*>(m_Backside) })
-    {
-        image_widget->RefreshSize(project);
-    }
-    else if (auto* blank_widget{ dynamic_cast<BlankCardImage*>(m_Backside) })
-    {
-        blank_widget->RefreshSize(project);
-    }
-}
-
-void StackedCardBacksideView::RefreshSizes(QSize size)
-{
-    const auto width{ size.width() };
-    const auto height{ size.height() };
-
-    const auto img_width{ int(width * 0.9) };
-    const auto img_height{ int(height * 0.9) };
-
-    const auto backside_width{ int(width * 0.45) };
-    const auto backside_height{ int(height * 0.45) };
-
-    m_Image->setFixedWidth(img_width);
-    m_Image->setFixedHeight(img_height);
-    m_Backside->setFixedWidth(backside_width);
-    m_Backside->setFixedHeight(backside_height);
-}
-
-void StackedCardBacksideView::resizeEvent(QResizeEvent* event)
-{
-    QStackedWidget::resizeEvent(event);
-    RefreshSizes(event->size());
-}
-
-void StackedCardBacksideView::mouseMoveEvent(QMouseEvent* event)
-{
-    QStackedWidget::mouseMoveEvent(event);
-
-    const auto x{ event->pos().x() };
-    const auto y{ event->pos().y() };
-
-    const auto neg_backside_width{ rect().width() - m_Backside->rect().size().width() };
-    const auto neg_backside_height{ rect().height() - m_Backside->rect().size().height() };
-
-    if (x >= neg_backside_width && y >= neg_backside_height)
-    {
-        setCurrentWidget(m_BacksideContainer);
-    }
-    else
-    {
-        setCurrentWidget(m_Image);
-    }
-}
-
-void StackedCardBacksideView::leaveEvent(QEvent* event)
-{
-    QStackedWidget::leaveEvent(event);
-
-    setCurrentWidget(m_Image);
-}
-
-void StackedCardBacksideView::mouseReleaseEvent(QMouseEvent* event)
-{
-    QStackedWidget::mouseReleaseEvent(event);
-
-    if (!event->isAccepted() &&
-        event->button() == Qt::MouseButton::LeftButton &&
-        currentWidget() == m_BacksideContainer)
-    {
-        BacksideClicked();
-        event->accept();
-    }
-}
-
-bool StackedCardBacksideView::hasHeightForWidth() const
-{
-    return true;
-}
-int StackedCardBacksideView::heightForWidth(int width) const
-{
-    return m_Image->heightForWidth(width);
-}
-QSize StackedCardBacksideView::sizeHint() const
-{
-    const int default_width{ 200 };
-    return QSize(default_width, heightForWidth(default_width));
-}
-QSize StackedCardBacksideView::minimumSizeHint() const
-{
-    const int min_width{ minimumWidth() };
-    return QSize(min_width, heightForWidth(min_width));
 }

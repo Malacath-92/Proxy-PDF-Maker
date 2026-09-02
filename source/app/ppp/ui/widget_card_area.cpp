@@ -180,7 +180,7 @@ class CardWidget : public QFrame
         {
             if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
             {
-                stacked_widget->RefreshBackside(MakeBacksideImage(project));
+                stacked_widget->RefreshBackside(project.m_Data.m_BacksideDefault);
             }
         }
 
@@ -210,16 +210,6 @@ class CardWidget : public QFrame
     }
 
   private:
-    QWidget* MakeBacksideImage(Project& project)
-    {
-        if (m_Backside.has_value())
-        {
-            BacksideImage* backside_image{ new BacksideImage{ m_Backside.value(), project } };
-            backside_image->EnableContextMenu(true, project);
-            return backside_image;
-        }
-        return new BlankCardImage{ project };
-    }
     QWidget* MakeCardWidget(Project& project)
     {
         TRACY_AUTO_SCOPE();
@@ -229,7 +219,13 @@ class CardWidget : public QFrame
 
         if (m_BacksideEnabled)
         {
-            auto* backside_image{ MakeBacksideImage(project) };
+            auto* backside_image{
+                new ClearableCardImage{
+                    project,
+                    m_Backside,
+                    true,
+                }
+            };
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
 
             auto backside_choose{
@@ -262,28 +258,14 @@ class CardWidget : public QFrame
                                  {
                                      if (m_CardName == card_name)
                                      {
-                                         QWidget* new_backside_image{};
-                                         if (backside.has_value())
+                                         if (backside.has_value() && backside.value() == ""_p)
                                          {
-                                             const bool default_backside_image{ backside.value().get().empty() };
-                                             if (default_backside_image && !project.m_Data.m_BacksideDefault.has_value())
-                                             {
-                                                 new_backside_image = new BlankCardImage{ project };
-                                             }
-                                             else
-                                             {
-                                                 new_backside_image =
-                                                     !backside.has_value() || backside.value().get().empty()
-                                                         ? new BacksideImage{ project.m_Data.m_BacksideDefault.value(), project }
-                                                         : new BacksideImage{ backside.value().get(), project };
-                                                 static_cast<BacksideImage*>(new_backside_image)->EnableContextMenu(true, project);
-                                             }
+                                             stacked_widget->RefreshBackside(project.m_Data.m_BacksideDefault);
                                          }
                                          else
                                          {
-                                             new_backside_image = new BlankCardImage{ project };
+                                             stacked_widget->RefreshBackside(backside);
                                          }
-                                         stacked_widget->RefreshBackside(new_backside_image);
                                      }
                                  });
                 QObject::connect(stacked_widget,

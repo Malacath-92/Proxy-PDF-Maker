@@ -90,7 +90,11 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
 
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
-    m_BacksideDefaultPreview = new ClearableCardImage{ m_ViewModel.GetProject() };
+    m_BacksideDefaultPreview = new ClearableCardImage{
+        m_ViewModel.GetProject(),
+        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
+        true,
+    };
     EnableOptionWidgetForDefaults(
         m_BacksideDefaultPreview,
         config_reqs,
@@ -333,7 +337,9 @@ void CardOptionsWidget::SeparateBacksidesEnabledChanged(bool separate_backsides)
 
 void CardOptionsWidget::BacksideDefaultChanged(OptionalImageRef /*backside_card_name*/)
 {
-    m_BacksideDefaultPreview->Refresh();
+    m_BacksideDefaultPreview->Refresh(
+        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
+        true);
 }
 
 void CardOptionsWidget::BacksideOffsetChanged(Size offset)
@@ -469,5 +475,7 @@ void CardOptionsWidget::CornersChanged(CardCorners corners)
 void CardOptionsWidget::ImageDirChanged(const fs::path& /*old_path*/,
                                         const fs::path& /*new_path*/)
 {
-    m_BacksideDefaultPreview->Refresh();
+    m_BacksideDefaultPreview->Refresh(
+        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
+        true);
 }
