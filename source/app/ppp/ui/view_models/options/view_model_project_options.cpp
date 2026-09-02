@@ -70,9 +70,12 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
                                    .arg(view_model.NewProjectName())
                                    .toStdString());
 
-    for (const auto& entry : std::filesystem::directory_iterator(new_image_folder))
+    if (view_model.ClearImages())
     {
-        std::filesystem::remove_all(entry.path());
+        for (const auto& entry : std::filesystem::directory_iterator(new_image_folder))
+        {
+            std::filesystem::remove_all(entry.path());
+        }
     }
 
     Project new_project{ m_Cfg, application.GetProjectsFolder(), application.GetBasePdfsFolder() };
