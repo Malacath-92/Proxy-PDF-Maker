@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QEventLoop>
 #include <QThreadPool>
@@ -77,16 +78,41 @@ Cropper::~Cropper()
                          &QTimer::timeout,
                          &evt_loop,
                          &QEventLoop::quit);
+
+        auto work_done{
+            [&evt_loop, num_done = 0]() mutable
+            {
+                num_done += 1;
+                if (num_done == 2)
+                {
+                    evt_loop.quit();
+                }
+            }
+        };
         QObject::connect(this,
                          &Cropper::CropWorkDone,
                          &evt_loop,
-                         &QEventLoop::quit);
+                         work_done);
+        QObject::connect(this,
+                         &Cropper::PreviewWorkDone,
+                         &evt_loop,
+                         work_done);
 
         dtor_timeout.start();
         evt_loop.exec();
+
+        // Process all pending deletions since some workers may still live right now
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     }
 
-    assert(m_AliveCropperWork.load(std::memory_order_acquire) == 0);
+    const auto alive_cropper_work{ m_AliveCropperWork.load(std::memory_order_acquire) };
+    if (alive_cropper_work != 0)
+    {
+        const auto work_in_flight{ m_CropWork.size() + m_PreviewWork.size() };
+        LogError("{} cropper workers are still alive, {} are in flight, app may crash...",
+                 alive_cropper_work,
+                 work_in_flight);
+    }
 
     m_ImageDB.Write();
 }
@@ -379,6 +405,11 @@ void Cropper::PushWorkImpl(const fs::path& key,
                                      m_PreviewWork.erase(card_name);
                                  }
 
+                                 if (m_PreviewWork.empty())
+                                 {
+                                     PreviewWorkDone();
+                                 }
+
                                  preview_work->deleteLater();
                              });
 
@@ -386,6 +417,10 @@ void Cropper::PushWorkImpl(const fs::path& key,
 
             if (m_State == State::Running)
             {
+                if (m_PreviewWork.size() == 1)
+                {
+                    PreviewWorkStart();
+                }
                 preview_work->Start();
             }
         }
