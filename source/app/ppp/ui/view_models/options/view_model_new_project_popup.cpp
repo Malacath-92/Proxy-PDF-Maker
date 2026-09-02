@@ -19,7 +19,7 @@ NewProjectPopupViewModel::NewProjectPopupViewModel(const Config& config)
 
 bool NewProjectPopupViewModel::CreateNewProject() const
 {
-    return !m_Cancelled;
+    return m_Confirmed;
 }
 
 QString NewProjectPopupViewModel::NewProjectName() const
@@ -43,9 +43,9 @@ bool NewProjectPopupViewModel::ClearImages() const
     return m_ClearImages;
 }
 
-void NewProjectPopupViewModel::Cancel()
+void NewProjectPopupViewModel::Confirm()
 {
-    m_Cancelled = true;
+    m_Confirmed = true;
 }
 
 void NewProjectPopupViewModel::ChangeProjectName(const QString& project_name)

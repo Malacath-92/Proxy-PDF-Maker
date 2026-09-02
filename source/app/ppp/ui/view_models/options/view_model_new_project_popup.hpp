@@ -23,7 +23,7 @@ class NewProjectPopupViewModel : public QObject
     bool ClearImages() const;
 
   private slots:
-    void Cancel();
+    void Confirm();
 
     void ChangeProjectName(const QString& project_name);
     void ChangeImageFolder(const fs::path& image_folder);
@@ -40,7 +40,7 @@ class NewProjectPopupViewModel : public QObject
 
     const Config& m_Cfg;
 
-    bool m_Cancelled{ false };
+    bool m_Confirmed{ false };
 
     QString m_ProjectName;
     fs::path m_ImageFolder;

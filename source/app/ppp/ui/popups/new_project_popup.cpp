@@ -124,18 +124,18 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         QObject::connect(
             create_button,
             &QPushButton::clicked,
-            this,
-            &QDialog::close);
-        QObject::connect(
-            cancel_button,
-            &QPushButton::clicked,
-            this,
-            &QDialog::close);
-        QObject::connect(
-            cancel_button,
-            &QPushButton::clicked,
             &m_ViewModel,
-            &NewProjectPopupViewModel::Cancel);
+            &NewProjectPopupViewModel::Confirm);
+        QObject::connect(
+            create_button,
+            &QPushButton::clicked,
+            this,
+            &QDialog::close);
+        QObject::connect(
+            cancel_button,
+            &QPushButton::clicked,
+            this,
+            &QDialog::close);
     }
 
     auto* window_layout{ new QVBoxLayout };
