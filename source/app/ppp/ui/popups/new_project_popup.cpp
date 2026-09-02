@@ -37,17 +37,19 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
 
     auto* options{ new QWidget };
     {
-        auto* project_name{ new LineEditWithLabel{ "Project Name", "new_project" } };
+        auto* project_name{ new LineEditWithLabel{ "Project Name", m_ViewModel.m_ProjectName.toStdString() } };
         m_ProjectName = project_name->GetWidget();
 
         m_ImageFolder = new QPushButton{ "images" };
+        m_ImageFolder->setText(ToQString(m_ViewModel.m_ImageFolder.filename()));
+
         auto* image_folder{ new WidgetWithLabel{ "Image Folder", m_ImageFolder } };
 
         m_CardSize =
             MakeComboBox(
                 m_ViewModel.GetCardSizes() | c_CardSizeNames,
                 m_ViewModel.GetCardSizes() | c_CardSizeHints,
-                m_ViewModel.GetDefaultCardSize());
+                m_ViewModel.m_CardSize.toStdString());
         auto* card_size{
             new WidgetWithLabel{
                 "Card Size",
@@ -57,7 +59,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         m_PaperSize =
             MakeComboBox(
                 m_ViewModel.GetPageSizes() | c_PageSizeNames,
-                m_ViewModel.GetDefaultPageSize());
+                m_ViewModel.m_PaperSize.toStdString());
         auto* paper_size{
             new WidgetWithLabel{
                 "Paper Size",
@@ -141,9 +143,4 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
     window_layout->addWidget(buttons);
 
     setLayout(window_layout);
-
-    m_ViewModel.ChangeProjectName(m_ProjectName->text());
-    m_ViewModel.ChangeCardSize(m_CardSize->currentText());
-    m_ViewModel.ChangePaperSize(m_PaperSize->currentText());
-    m_ViewModel.ChangeClearImages(m_ClearImages->checkState());
 }

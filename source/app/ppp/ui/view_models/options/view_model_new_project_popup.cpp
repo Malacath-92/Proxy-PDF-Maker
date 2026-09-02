@@ -6,10 +6,14 @@
 
 #include <ppp/app.hpp>
 #include <ppp/config.hpp>
+#include <ppp/qt_util.hpp>
 
 NewProjectPopupViewModel::NewProjectPopupViewModel(const Config& config)
     : m_Cfg{ config }
+    , m_ProjectName{ "new_project" }
     , m_ImageFolder{ ppApp->GetProjectsFolder() / "images" }
+    , m_CardSize{ ToQString(GetDefaultCardSize()) }
+    , m_PaperSize{ ToQString(GetDefaultPageSize()) }
 {
 }
 
