@@ -157,6 +157,8 @@ class Project : public QObject
     std::string DumpToJson() const;
     static std::string DumpToJson(const ProjectData& data);
 
+    bool DiffersWithFile(const fs::path& json_path) const;
+
     void Init();
     void InitProperties();
 

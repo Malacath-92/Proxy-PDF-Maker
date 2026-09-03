@@ -811,6 +811,20 @@ std::string Project::DumpToJson(const ProjectData& data)
     return json.dump();
 }
 
+bool Project::DiffersWithFile(const fs::path& json_path) const
+{
+    if (!fs::exists(json_path))
+    {
+        return true;
+    }
+
+    std::ifstream file_stream{ json_path };
+    const std::string file_json{ std::istreambuf_iterator<char>{ file_stream },
+                                 std::istreambuf_iterator<char>{} };
+    const auto project_json{ DumpToJson() };
+    return file_json != project_json;
+}
+
 void Project::Init()
 {
     TRACY_AUTO_SCOPE();

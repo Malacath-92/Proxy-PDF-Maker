@@ -85,15 +85,10 @@ void ProjectOptionsWidget::NewProjectClicked()
     NewProjectPopup new_project_wizard{ nullptr, new_project_view_model };
     new_project_wizard.Show();
 
-    const auto reset_project_work{
-        [&]()
-        {
-            m_ViewModel.CreateNewProject(*new_project_view_model);
-        }
-    };
-
-    GenericPopup reload_window{ nullptr, "Resetting project..." };
-    reload_window.ShowDuringWork(reset_project_work);
+    if (m_ViewModel.VerifyNewProjectOptions(*new_project_view_model))
+    {
+        m_ViewModel.CreateNewProject(*new_project_view_model);
+    }
 }
 void ProjectOptionsWidget::LoadProjectClicked()
 {

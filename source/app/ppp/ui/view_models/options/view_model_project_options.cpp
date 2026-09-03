@@ -33,18 +33,16 @@ void ProjectOptionsViewModel::ChangeProjectsRoot(const QString& projects_root)
     auto* application{ ppApp };
     application->SetProjectsRoot(projects_root.toStdString());
 }
-void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& view_model)
+bool ProjectOptionsViewModel::VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const
 {
     TRACY_AUTO_SCOPE();
 
     if (!view_model.CreateNewProject())
     {
-        return;
+        return false;
     }
 
-    const fs::path new_image_folder{
-        view_model.NewImageFolder()
-    };
+    const auto new_image_folder{ view_model.NewImageFolder() };
 
     if (view_model.ClearImages())
     {
@@ -60,15 +58,73 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
             };
             if (response == QMessageBox::StandardButton::No)
             {
-                return;
+                return false;
             }
         }
     }
 
     auto& application{ *ppApp };
-    application.SetProjectPath(QString{ "%1.json" }
-                                   .arg(view_model.NewProjectName())
-                                   .toStdString());
+
+    const auto project_path{
+        application
+            .GetProjectsFolder() /
+        QString{ "%1.json" }
+            .arg(view_model.NewProjectName())
+            .toStdString()
+    };
+
+    if (fs::exists(project_path))
+    {
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Override Project",
+                "This will override an existing project. Are you sure you want to continue?")
+        };
+        if (response == QMessageBox::StandardButton::No)
+        {
+            return false;
+        }
+    }
+
+    const auto current_project_path{ application.GetProjectPath() };
+    if (project_path != current_project_path && m_Project.DiffersWithFile(current_project_path))
+    {
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Save current Project",
+                "The current project is not saved. Do you want to save it?")
+        };
+        if (response == QMessageBox::StandardButton::Yes)
+        {
+            m_Project.Dump(current_project_path);
+        }
+    }
+
+    return true;
+}
+void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& view_model)
+{
+    TRACY_AUTO_SCOPE();
+
+    if (!view_model.CreateNewProject())
+    {
+        return;
+    }
+
+    auto& application{ *ppApp };
+
+    const auto project_path{
+        application
+            .GetProjectsFolder() /
+        QString{ "%1.json" }
+            .arg(view_model.NewProjectName())
+            .toStdString()
+    };
+    application.SetProjectPath(project_path);
+
+    auto new_image_folder{ view_model.NewImageFolder() };
 
     if (view_model.ClearImages())
     {
@@ -80,7 +136,7 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
 
     Project new_project{ m_Cfg, application.GetProjectsFolder(), application.GetBasePdfsFolder() };
     new_project.m_Data.m_FileName = view_model.NewProjectName().toStdString();
-    new_project.m_Data.m_ImageDir = new_image_folder;
+    new_project.m_Data.m_ImageDir = std::move(new_image_folder);
     new_project.m_Data.m_CropDir = new_project.m_Data.m_ImageDir / "crop";
     new_project.m_Data.m_UncropDir = new_project.m_Data.m_ImageDir / "uncrop";
     new_project.m_Data.m_ImageCache = new_project.m_Data.m_CropDir / "preview.cache";
