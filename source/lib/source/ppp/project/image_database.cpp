@@ -102,7 +102,7 @@ ImageDataBase ImageDataBase::FromFile(const fs::path& path)
     {
         try
         {
-            const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
+            const nlohmann::json json(nlohmann::json::parse(std::ifstream{ path }));
             if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
             {
                 throw std::logic_error{ "Image databse version not compatible with App version..." };
@@ -124,7 +124,7 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
 
     try
     {
-        const nlohmann::json json{ nlohmann::json::parse(std::ifstream{ path }) };
+        const nlohmann::json json(nlohmann::json::parse(std::ifstream{ path }));
         if (!json.contains("version") || !json["version"].is_string() || json["version"].get_ref<const std::string&>() != ImageDbFormatVersion())
         {
             throw std::logic_error{ "Image databse version not compatible with App version..." };
@@ -138,7 +138,7 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
     {
         fmt::print("{}", e.what());
 
-        // Failed loading image database, continuing with an empty image databse...
+        // Failed loading image database, continuing with an empty image database...
         TRACY_SCOPED_LOCK(m_Mutex);
         m_DataBase.clear();
         m_Path.clear();
