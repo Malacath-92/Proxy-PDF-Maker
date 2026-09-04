@@ -1210,7 +1210,8 @@ void Project::CardRemoved(const fs::path& card_name)
                 m_PendingStalePreviewCleanup = true;
                 QTimer::singleShot(
                     0,
-                    [this]() {
+                    [this]()
+                    {
                         m_Data.m_StalePreviews.clear();
                         m_PendingStalePreviewCleanup = false;
                     });
@@ -1220,24 +1221,6 @@ void Project::CardRemoved(const fs::path& card_name)
 
     RemoveCardFromList(card_name);
 }
-
-        if (m_Data.m_Previews.contains(card_name))
-        {
-            m_Data.m_StalePreviews[card_name] = std::move(m_Data.m_Previews.at(card_name));
-            m_Data.m_Previews.erase(card_name);
-            PreviewRemoved(card_name);
-
-            if (!m_PendingStalePreviewCleanup)
-            {
-                m_PendingStalePreviewCleanup = true;
-                QTimer::singleShot(
-                    0,
-                    [this]() {
-                        m_Data.m_StalePreviews.clear();
-                        m_PendingStalePreviewCleanup = false;
-                    });
-            }
-        }
 
 void Project::CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name)
 {
