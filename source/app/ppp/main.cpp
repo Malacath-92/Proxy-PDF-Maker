@@ -392,6 +392,7 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_PROJECT(CardsSizeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(PageMarginsModeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(PageMarginsChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(MaxPageMarginsChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardOrientationChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardsLayoutVerticalChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardsLayoutHorizontalChanged);

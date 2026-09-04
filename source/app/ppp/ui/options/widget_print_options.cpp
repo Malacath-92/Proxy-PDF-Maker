@@ -394,6 +394,7 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsSizeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsModeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(MaxPageMarginsChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardOrientationChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsLayoutVerticalChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsLayoutHorizontalChanged);

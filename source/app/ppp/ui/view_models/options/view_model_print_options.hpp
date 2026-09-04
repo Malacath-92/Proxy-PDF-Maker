@@ -40,6 +40,7 @@ class PrintOptionsViewModel : public QObject
     void CardsSizeChanged(Size cards_size);
     void PageMarginsModeChanged(MarginsMode margins_mode);
     void PageMarginsChanged(Margins margins);
+    void MaxPageMarginsChanged(Size max_margins);
     void CardOrientationChanged(CardOrientation card_orientation);
     void CardsLayoutVerticalChanged(dla::uvec2 card_layout);
     void CardsLayoutHorizontalChanged(dla::uvec2 card_layout);

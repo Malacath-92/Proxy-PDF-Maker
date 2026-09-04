@@ -141,6 +141,7 @@ void PrintOptionsViewModel::EmitDefaults()
     CardsSizeChanged(m_Project.ComputeCardsSize());
     PageMarginsModeChanged(m_Project.m_Data.m_MarginsMode);
     PageMarginsChanged(m_Project.ComputeMargins());
+    MaxPageMarginsChanged(m_Project.ComputeMaxMargins());
     CardOrientationChanged(m_Project.m_Data.m_CardOrientation);
     CardsLayoutVerticalChanged(m_Project.m_Data.m_CardLayoutVertical);
     CardsLayoutHorizontalChanged(m_Project.m_Data.m_CardLayoutHorizontal);
