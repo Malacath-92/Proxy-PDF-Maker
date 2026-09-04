@@ -21,6 +21,7 @@ option(PPP_BUILD_TESTS "Build test suite" OFF)
 option(PPP_BUILD_FAKE_VERSION "Build target with fake version, used to test auto-update" OFF)
 option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
+option(PPP_BUILD_RELEASE_TARGETS "Include additional code that is only relevant in released binaries" OFF)
 
 # --------------------------------------------------
 # Install to custom location
@@ -197,6 +198,13 @@ if(MSVC)
 		WIN32_LEAN_AND_MEAN
 		NOMINMAX)
 else()
+endif()
+if (PPP_BUILD_RELEASE_TARGETS)
+	target_compile_definitions(proxy_pdf_definitions INTERFACE
+		PPP_RELEASE_BUILD=true)
+else()
+	target_compile_definitions(proxy_pdf_definitions INTERFACE
+		PPP_RELEASE_BUILD=false)
 endif()
 
 option(PROXY_PDF_UNITY_BUILD "Build batch sources for faster builds." OFF)

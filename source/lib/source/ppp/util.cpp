@@ -4,6 +4,8 @@
 #include <ranges>
 
 #include <QDesktopServices>
+#include <QFileInfo>
+#include <QStorageInfo>
 #include <QString>
 #include <QUrl>
 
@@ -11,41 +13,68 @@
 
 #include <ppp/qt_util.hpp>
 
-size_t CountFiles(const fs::path& path, const std::span<const fs::path> extensions)
+size_t CountFiles(const fs::path& path,
+                  const std::span<const fs::path> extensions,
+                  bool recursive)
 {
     size_t num_files{ 0 };
-    ForEachFile(
-        path,
+    const auto count_fun{
         [&num_files](const fs::path& /*path*/)
         {
             ++num_files;
-        },
-        extensions);
+        }
+    };
+    if (!recursive)
+    {
+        ForEachFile(path, count_fun, extensions);
+    }
+    else
+    {
+        ForEachFileRecursive(path, count_fun, extensions);
+    }
     return num_files;
 }
 
-std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions)
+std::vector<fs::path> ListFiles(const fs::path& path,
+                                const std::span<const fs::path> extensions,
+                                bool recursive)
 {
     std::vector<fs::path> files;
-    ForEachFile(
-        path,
+    const auto push_fun{
         [&files](const fs::path& path)
         {
             files.push_back(path.filename());
-        },
-        extensions);
+        }
+    };
+    if (!recursive)
+    {
+        ForEachFile(path, push_fun, extensions);
+    }
+    else
+    {
+        ForEachFileRecursive(path, push_fun, extensions);
+    }
     return files;
 }
 
-std::vector<fs::path> ListFolders(const fs::path& path)
+std::vector<fs::path> ListFolders(const fs::path& path,
+                                  bool recursive)
 {
     std::vector<fs::path> folders;
-    ForEachFolder(
-        path,
+    const auto push_fun{
         [&folders](const fs::path& path)
         {
             folders.push_back(path.filename());
-        });
+        }
+    };
+    if (!recursive)
+    {
+        ForEachFolder(path, push_fun);
+    }
+    else
+    {
+        ForEachFolderRecursive(path, push_fun);
+    }
     return folders;
 }
 
@@ -113,6 +142,40 @@ bool OpenFile(const fs::path& path)
 bool OpenPath(const fs::path& path)
 {
     return QDesktopServices::openUrl(QUrl("file:///" + ToQString(path), QUrl::TolerantMode));
+}
+
+bool CanMoveFiles(const fs::path& from, const fs::path& to)
+{
+    const QStorageInfo from_storage{
+        fs::is_directory(from) ? QDir{ from }.absolutePath()
+                               : QFileInfo{ from }.absolutePath()
+    };
+    const QStorageInfo to_storage{
+        fs::is_directory(to) ? QDir{ to }.absolutePath()
+                             : QFileInfo{ to }.absolutePath()
+    };
+    return from_storage.rootPath() == to_storage.rootPath();
+}
+bool SafeMove(const fs::path& from, const fs::path& to)
+{
+    const bool can_move{ CanMoveFiles(from, to) };
+    if (can_move)
+    {
+        if (fs::is_regular_file(from) && fs::is_directory(to))
+        {
+            fs::rename(from, to / from.filename());
+        }
+        else
+        {
+            fs::rename(from, to);
+        }
+    }
+    else
+    {
+        fs::copy(from, to);
+    }
+
+    return true;
 }
 
 fs::path GetExePath()

@@ -111,6 +111,24 @@ fs::path PrintProxyPrepApplication::GetUpscaleModelsFolder() const
     return GetDataFolder() / "models";
 }
 
+bool PrintProxyPrepApplication::HasMigratedProjectsFromCwd() const
+{
+    return m_HasMigratedProjectsFromCwd;
+}
+void PrintProxyPrepApplication::SetHasMigratedProjectsFromCwd(bool migrated)
+{
+    m_HasMigratedProjectsFromCwd = migrated;
+}
+
+bool PrintProxyPrepApplication::HasMigratedResourcesFromCwd() const
+{
+    return m_HasMigratedResourcesFromCwd;
+}
+void PrintProxyPrepApplication::SetHasMigratedResourcesFromCwd(bool migrated)
+{
+    m_HasMigratedResourcesFromCwd = migrated;
+}
+
 void PrintProxyPrepApplication::SetMainWindow(PrintProxyPrepMainWindow* main_window)
 {
     TRACY_AUTO_SCOPE();
@@ -331,6 +349,8 @@ void PrintProxyPrepApplication::Load()
         m_WindowState.emplace() = settings.value("state").toByteArray();
         m_ProjectPath = settings.value("json").toString().toStdString();
         m_Theme = settings.value("theme", "Default").toString().toStdString();
+        m_HasMigratedProjectsFromCwd = settings.value("migrated_projects", false).toBool();
+        m_HasMigratedResourcesFromCwd = settings.value("migrated_resources", false).toBool();
 
         if (settings.childGroups().contains("ObjectVisibility", Qt::CaseInsensitive))
         {
@@ -387,6 +407,8 @@ void PrintProxyPrepApplication::Save() const
     settings.setValue("state", m_MainWindow->saveState());
     settings.setValue("json", ToQString(m_ProjectPath));
     settings.setValue("theme", ToQString(m_Theme));
+    settings.setValue("migrated_projects", m_HasMigratedProjectsFromCwd);
+    settings.setValue("migrated_resources", m_HasMigratedResourcesFromCwd);
 
     {
         settings.beginGroup("ObjectVisibility");

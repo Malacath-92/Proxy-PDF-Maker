@@ -475,14 +475,9 @@ void CardDownloaderPopup::FinalizeDownload()
     }
 
     const auto output_path{ m_OutputDir.path() };
-    const fs::path output_dir{
-        output_path.toStdString()
-    };
+    const fs::path output_dir{ output_path.toStdString() };
 
-    const QStorageInfo output_storage{ QFileInfo{ output_path }.absolutePath() };
-    const QStorageInfo target_storage{ QDir{ ToQString(target_dir) }.absolutePath() };
-
-    const bool can_move{ output_storage.rootPath() == target_storage.rootPath() };
+    const bool can_move{ CanMoveFiles(output_dir, target_dir) };
 
     for (const auto& [card, path] : std::views::zip(downloaded_files, downloaded_file_paths))
     {

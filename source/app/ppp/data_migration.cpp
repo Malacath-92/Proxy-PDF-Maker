@@ -1,9 +1,13 @@
 #include <ppp/data_migration.hpp>
 
+#include <QMessageBox>
+#include <array>
+
 #include <nlohmann/json.hpp>
 
 #include <ppp/app.hpp>
 #include <ppp/config.hpp>
+#include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
 
 void MigrateOldConfigDefaults(PrintProxyPrepApplication& app,
@@ -37,5 +41,50 @@ void MigrateConfigFromCwd(const fs::path& config_name,
 
         fs::copy(config_name, config_folder);
         fs::remove(config_name);
+    }
+}
+
+void MigrateProjectsFromCwd(const fs::path& projects_folder)
+{
+    const auto project_files{ ListFiles(".", std::array{ ".json"_p }) };
+    if (!project_files.empty())
+    {
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Migrate Projects",
+                QString{ "There are %1 projects in your working directory.\n"
+                         "Do you want to move them to the documents folder?" }
+                    .arg(project_files.size()))
+        };
+        if (response == QMessageBox::StandardButton::Yes)
+        {
+            for (const auto& project_file : project_files)
+            {
+                SafeMove(project_file, projects_folder);
+            }
+        }
+    }
+}
+
+void MigrateResourcesFromCwd(const fs::path& data_folder)
+{
+    const auto res_folder{ "./res" };
+    const auto data_files{ CountFiles(res_folder) };
+    if (data_files > 0)
+    {
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Migrate Projects",
+                QString{ "There are %1 data files in your working directory.\n"
+                         "Do you want to move them to the data folder?\n"
+                         "If they are not moved you have to manually register them again." }
+                    .arg(data_files))
+        };
+        if (response == QMessageBox::StandardButton::Yes)
+        {
+            SafeMove(res_folder, data_folder / res_folder);
+        }
     }
 }

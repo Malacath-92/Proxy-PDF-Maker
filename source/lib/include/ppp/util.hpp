@@ -82,13 +82,34 @@ inline auto operator""_p(const char16_t *str, size_t len) { return fs::path(str,
 inline auto operator""_p(const char32_t *str, size_t len) { return fs::path(str, str + len); }
 
 template<class T>
-struct TagT
-{
-};
+struct TagT {};
 template<class T>
 inline constexpr TagT<T> c_Tag{};
-// clang-format off
+// clang-format on
 
+template<class FunT>
+void ForEachFileRecursive(const fs::path& path, FunT&& fun, const std::span<const fs::path> extensions)
+{
+    if (!std::filesystem::is_directory(path))
+    {
+        return;
+    }
+
+    std::vector<fs::path> files;
+    for (auto& child : std::filesystem::recursive_directory_iterator(path))
+    {
+        if (!child.is_directory())
+        {
+            const bool is_matching_extension{
+                extensions.empty() || std::ranges::contains(extensions, child.path().extension())
+            };
+            if (is_matching_extension)
+            {
+                fun(child.path());
+            }
+        }
+    }
+}
 template<class FunT>
 void ForEachFile(const fs::path& path, FunT&& fun, const std::span<const fs::path> extensions)
 {
@@ -129,16 +150,41 @@ void ForEachFolder(const fs::path& path, FunT&& fun)
         }
     }
 }
+template<class FunT>
+void ForEachFolderRecursive(const fs::path& path, FunT&& fun)
+{
+    if (!std::filesystem::is_directory(path))
+    {
+        return;
+    }
 
-size_t CountFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
-std::vector<fs::path> ListFiles(const fs::path& path, const std::span<const fs::path> extensions = {});
-std::vector<fs::path> ListFolders(const fs::path& path);
+    std::vector<fs::path> files;
+    for (auto& child : std::filesystem::recursive_directory_iterator(path))
+    {
+        if (child.is_directory())
+        {
+            fun(child.path());
+        }
+    }
+}
+
+size_t CountFiles(const fs::path& path,
+                  const std::span<const fs::path> extensions = {},
+                  bool recursive = false);
+std::vector<fs::path> ListFiles(const fs::path& path,
+                                const std::span<const fs::path> extensions = {},
+                                bool recursive = false);
+std::vector<fs::path> ListFolders(const fs::path& path,
+                                  bool recursive = false);
 
 fs::path GetNextVersionedPath(const fs::path& base_path);
 
 bool OpenFolder(const fs::path& path);
 bool OpenFile(const fs::path& path);
 bool OpenPath(const fs::path& path);
+
+bool CanMoveFiles(const fs::path& from, const fs::path& to);
+bool SafeMove(const fs::path& from, const fs::path& to);
 
 fs::path GetExePath();
 

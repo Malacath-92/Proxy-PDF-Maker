@@ -46,6 +46,12 @@ class PrintProxyPrepApplication
     fs::path GetCardSvgsFolder() const;
     fs::path GetUpscaleModelsFolder() const;
 
+    bool HasMigratedProjectsFromCwd() const;
+    void SetHasMigratedProjectsFromCwd(bool migrated);
+
+    bool HasMigratedResourcesFromCwd() const;
+    void SetHasMigratedResourcesFromCwd(bool migrated);
+
     void SetMainWindow(PrintProxyPrepMainWindow* main_window);
     PrintProxyPrepMainWindow* GetMainWindow() const;
 
@@ -92,6 +98,9 @@ class PrintProxyPrepApplication
 
     PrintProxyPrepMainWindow* m_MainWindow{ nullptr };
     std::unordered_map<QString, QByteArray> m_WindowGeometries;
+
+    bool m_HasMigratedProjectsFromCwd{ false };
+    bool m_HasMigratedResourcesFromCwd{ false };
 
     fs::path m_ProjectPath;
     std::string m_Theme{ "Default" };

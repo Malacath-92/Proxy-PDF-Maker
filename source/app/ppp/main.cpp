@@ -113,6 +113,23 @@ int main(int argc, char** argv)
     MigrateConfigFromCwd("config.ini", app.GetConfigFolder());
     const auto config_path{ app.GetConfigFolder() / "config.ini" };
 
+    if constexpr (PPP_RELEASE_BUILD)
+    {
+        const auto cwd{ fs::absolute(".") };
+
+        if (!app.HasMigratedProjectsFromCwd())
+        {
+            MigrateProjectsFromCwd(app.GetProjectsFolder());
+            app.SetHasMigratedProjectsFromCwd(true);
+        }
+
+        if (!app.HasMigratedResourcesFromCwd())
+        {
+            MigrateResourcesFromCwd(app.GetDataFolder());
+            app.SetHasMigratedResourcesFromCwd(true);
+        }
+    }
+
     Config config{};
     config.Load(config_path, app.GetCardSvgsFolder());
     const auto ideal_thread_count{ static_cast<uint32_t>(QThread::idealThreadCount()) };
