@@ -31,6 +31,7 @@ struct ProjectData
     // List of all cards
     CardContainer m_Cards{};
     ImgDict m_Previews{};
+    ImgDict m_StalePreviews{};
     ImagePreview m_FallbackPreview{};
 
     // Possibly empty list of all cards, determines user-provided order of cards
@@ -407,6 +408,7 @@ class Project : public QObject
   public:
     ProjectData m_Data;
     const Config& m_Cfg;
+    bool m_PendingStalePreviewCleanup{ false };
 
   private:
     Project(const Project&) = delete;
