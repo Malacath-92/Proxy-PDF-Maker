@@ -101,6 +101,11 @@ void ProjectOptionsWidget::LoadProjectClicked()
         projects_root,
         [this, projects_root, project_menu](const fs::path& file_name)
         {
+            if (m_ViewModel.IsCurrentProject(file_name))
+            {
+                return;
+            }
+
             auto* action{ project_menu->addAction(ToQString(file_name.stem())) };
             connect(
                 action,
@@ -108,7 +113,10 @@ void ProjectOptionsWidget::LoadProjectClicked()
                 this,
                 [this, projects_root, file_name]()
                 {
-                    m_ViewModel.LoadProject(projects_root / file_name);
+                    if (m_ViewModel.VerifyLoadProject())
+                    {
+                        m_ViewModel.LoadProject(projects_root / file_name);
+                    }
                 });
         },
         std::array{ ".json"_p });

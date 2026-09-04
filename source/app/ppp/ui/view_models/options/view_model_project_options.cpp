@@ -33,6 +33,7 @@ void ProjectOptionsViewModel::ChangeProjectsRoot(const QString& projects_root)
     auto* application{ ppApp };
     application->SetProjectsRoot(projects_root.toStdString());
 }
+
 bool ProjectOptionsViewModel::VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const
 {
     TRACY_AUTO_SCOPE();
@@ -98,7 +99,7 @@ bool ProjectOptionsViewModel::VerifyNewProjectOptions(const NewProjectPopupViewM
         };
         if (response == QMessageBox::StandardButton::Yes)
         {
-            m_Project.Dump(current_project_path);
+            SaveProject();
         }
     }
 
@@ -145,12 +146,35 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
 
     m_Project.LoadFromJson(new_project.DumpToJson(), &application);
 }
+
 void ProjectOptionsViewModel::SaveProject()
 {
     TRACY_AUTO_SCOPE();
 
-    auto& application{ *ppApp };
+    const auto& application{ *ppApp };
     m_Project.Dump(application.GetProjectPath());
+}
+bool ProjectOptionsViewModel::VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto& application{ *ppApp };
+    const auto current_project_path{ application.GetProjectPath() };
+    if (m_Project.DiffersWithFile(current_project_path))
+    {
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Save current Project",
+                "The current project is not saved. Do you want to save it?")
+        };
+        if (response == QMessageBox::StandardButton::Yes)
+        {
+            SaveProject();
+        }
+    }
+
+    return true;
 }
 void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 {
@@ -175,6 +199,13 @@ fs::path ProjectOptionsViewModel::GetProjectsRoot() const
 {
     const auto* application{ ppApp };
     return application->GetProjectPath().parent_path();
+}
+bool ProjectOptionsViewModel::IsCurrentProject(const fs::path& project_path) const
+{
+    auto& application{ *ppApp };
+    const auto current_project_path{ application.GetProjectPath() };
+    return project_path == current_project_path;
+
 }
 
 NewProjectPopupViewModel* ProjectOptionsViewModel::MakeProjectPopupViewModel() const
