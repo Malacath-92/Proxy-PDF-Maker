@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <QObject>
 #include <QString>
 
@@ -66,13 +68,11 @@ class GuidesOptionsViewModel : public QObject
     bool GetAdvancedMode() const;
     Unit GetBaseUnit() const;
 
+    std::optional<Length> GetCardCornerRadius() const;
     bool GetCornerGuidesEnabled() const;
     Length GetBleedEdge() const;
     Length GetEnvelopeBleedEdge() const;
-
-    // TODO: KillMe
-    const Project& GetProject() const;
-
+    
     Project& m_Project;
     const Config& m_Cfg;
 };

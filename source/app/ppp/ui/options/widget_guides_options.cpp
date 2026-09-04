@@ -347,10 +347,9 @@ void GuidesOptionsWidget::CardSizeChanged(Size card_size)
     m_GuidesLengthSpin->SetRange(0_mm, dla::math::min(card_size.x, card_size.y) / 2.0f);
     m_GuidesLengthSpin->blockSignals(false);
 
-    // TODO
-    if (m_ViewModel.GetProject().IsCardRoundedRect())
+    if (const auto corner_radius{ m_ViewModel.GetCardCornerRadius() })
     {
-        m_GuidesLengthSpin->SetValue(m_ViewModel.GetProject().CardCornerRadius() / 2.0f);
+        m_GuidesLengthSpin->SetValue(corner_radius.value() / 2.0f);
     }
 }
 void GuidesOptionsWidget::BleedEdgeChanged(Length bleed_edge)

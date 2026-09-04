@@ -136,6 +136,14 @@ Unit GuidesOptionsViewModel::GetBaseUnit() const
     return m_Cfg.m_BaseUnit;
 }
 
+std::optional<Length> GuidesOptionsViewModel::GetCardCornerRadius() const
+{
+    if (m_Project.IsCardRoundedRect())
+    {
+        return m_Project.CardCornerRadius();
+    }
+    return std::nullopt;
+}
 bool GuidesOptionsViewModel::GetCornerGuidesEnabled() const
 {
     return m_Project.m_Data.m_CornerGuides;
@@ -147,9 +155,4 @@ Length GuidesOptionsViewModel::GetBleedEdge() const
 Length GuidesOptionsViewModel::GetEnvelopeBleedEdge() const
 {
     return m_Project.m_Data.m_EnvelopeBleedEdge;
-}
-
-const Project& GuidesOptionsViewModel::GetProject() const
-{
-    return m_Project;
 }
