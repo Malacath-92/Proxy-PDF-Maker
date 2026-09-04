@@ -78,13 +78,17 @@ void MigrateResourcesFromCwd(const fs::path& data_folder)
                 nullptr,
                 "Migrate Projects",
                 QString{ "There are %1 data files in your working directory.\n"
-                         "Do you want to move them to the data folder?\n"
-                         "If they are not moved you have to manually register them again." }
+                         "Do you want to copy them to the data folder?\n"
+                         "If they are not copied you have to manually register them again." }
                     .arg(data_files))
         };
         if (response == QMessageBox::StandardButton::Yes)
         {
-            SafeMove(res_folder, data_folder / res_folder);
+            ForEachFolder(res_folder,
+                          [&](const fs::path& folder)
+                          {
+                              fs::copy(folder, data_folder / folder.filename(), fs::copy_options::recursive | fs::copy_options::skip_existing);
+                          });
         }
     }
 }
