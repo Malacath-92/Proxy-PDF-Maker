@@ -30,7 +30,7 @@ class ProjectOptionsViewModel : public QObject
     bool VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const;
     void CreateNewProject(const NewProjectPopupViewModel& view_model);
     
-    void SaveProject();
+    void SaveProject() const;
 
     bool VerifyLoadProject() const;
     void LoadProject(const fs::path& project_path);

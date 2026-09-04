@@ -147,14 +147,15 @@ void ProjectOptionsViewModel::CreateNewProject(const NewProjectPopupViewModel& v
     m_Project.LoadFromJson(new_project.DumpToJson(), &application);
 }
 
-void ProjectOptionsViewModel::SaveProject()
+void ProjectOptionsViewModel::SaveProject() const
 {
     TRACY_AUTO_SCOPE();
 
     const auto& application{ *ppApp };
     m_Project.Dump(application.GetProjectPath());
 }
-bool ProjectOptionsViewModel::VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const
+
+bool ProjectOptionsViewModel::VerifyLoadProject() const
 {
     TRACY_AUTO_SCOPE();
 
