@@ -440,6 +440,9 @@ void CardOptionsWidget::EnvelopeBleedEdgeChanged(Length envelope_bleed_edge)
     const auto full_bleed{ m_ViewModel.GetFullBleed() };
     m_BleedEdgeSpin->SetRange(0_mm, full_bleed - envelope_bleed_edge);
     m_BacksideExtraBleedEdgeSpin->SetRange(0_mm, full_bleed - total_bleed);
+
+    const bool non_zero_envelope{ envelope_bleed_edge > 0_mm };
+    m_Spacing->setEnabled(!non_zero_envelope);
 }
 
 void CardOptionsWidget::SpacingChanged(Size spacing)
@@ -451,6 +454,9 @@ void CardOptionsWidget::SpacingChanged(Size spacing)
     m_VerticalSpacingSpin->blockSignals(true);
     m_VerticalSpacingSpin->SetValue(spacing.y);
     m_VerticalSpacingSpin->blockSignals(false);
+
+    const bool non_zero_spacing{ spacing.x > 0_mm || spacing.y > 0_mm };
+    m_EnvelopeSpin->setEnabled(!non_zero_spacing);
 }
 void CardOptionsWidget::SpacingLinkedChanged(bool spacing_linked)
 {
