@@ -511,8 +511,6 @@ bool Project::LoadFromJson(const std::string& json_blob,
             }
         }
 
-        CacheCardLayout();
-
         {
             // no-{}
             const auto custom_margins_width(get_value("custom_margins.width"));
@@ -563,6 +561,8 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 }
             }
         }
+
+        CacheCardLayout();
 
         m_Data.m_FileName = get_value("file_name").get<std::string>();
 
@@ -1500,6 +1500,8 @@ void Project::SetBasePdf(std::string base_pdf)
     {
         m_Data.m_BasePdf = base_pdf;
 
+        CacheCardLayout();
+
         BasePdfChanged(m_Data.m_BasePdf);
         PageSizeChanged(ComputePageSize());
 
@@ -1537,9 +1539,7 @@ void Project::SetPageMarginsMode(MarginsMode margins_mode)
     if (m_Data.m_MarginsMode != margins_mode)
     {
         const auto previous_margins{ ComputeMargins() };
-
-        m_Data.m_MarginsMode = margins_mode;
-        PageMarginsModeChanged(margins_mode);
+        const auto previous_max_margins{ ComputeMaxMargins() };
 
         switch (margins_mode)
         {
@@ -1602,6 +1602,11 @@ void Project::SetPageMarginsMode(MarginsMode margins_mode)
             break;
         }
 
+        m_Data.m_MarginsMode = margins_mode;
+        PageMarginsModeChanged(margins_mode);
+
+        CacheCardLayout();
+
         const auto new_margins{ ComputeMargins() };
         if (!RoughlyEqual(previous_margins.m_Left, new_margins.m_Left) ||
             !RoughlyEqual(previous_margins.m_Top, new_margins.m_Top) ||
@@ -1609,6 +1614,13 @@ void Project::SetPageMarginsMode(MarginsMode margins_mode)
             !RoughlyEqual(previous_margins.m_Bottom, new_margins.m_Bottom))
         {
             PageMarginsChanged(new_margins);
+        }
+
+        const auto new_max_margins{ ComputeMaxMargins() };
+        if (!RoughlyEqual(previous_max_margins.x, new_max_margins.x) ||
+            !RoughlyEqual(previous_max_margins.y, new_max_margins.y))
+        {
+            MaxPageMarginsChanged(new_max_margins);
         }
     }
 }
@@ -1671,6 +1683,8 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
         {
             PageMarginsChanged(ComputeMargins());
         }
+
+        CacheCardLayout();
     }
 }
 void Project::SetCardsLayoutVertical(dla::uvec2 cards_layout)
@@ -2153,84 +2167,6 @@ Size Project::ComputeDefaultMargins() const
     return m_Data.ComputeMaxMargins(m_Cfg);
 }
 
-void Project::SetMarginsMode(MarginsMode margins_mode)
-{
-    switch (margins_mode)
-    {
-    case MarginsMode::Auto:
-        // Reset custom margins
-        m_Data.m_CustomMargins.reset();
-        break;
-    case MarginsMode::Simple:
-    {
-        const auto current_margins{ ComputeMargins() };
-        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
-
-        // Initialize with computed top-left margin defaults to provide a reasonable starting point
-        m_Data.m_CustomMargins = CustomMargins{
-            .m_TopLeft{
-                dla::math::min(max_margins.x, current_margins.m_Left),
-                dla::math::min(max_margins.y, current_margins.m_Top),
-            },
-        };
-        break;
-    }
-    case MarginsMode::Full:
-    {
-        const auto current_margins{ ComputeMargins() };
-        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
-
-        // Initialize with computed four-margin defaults to provide a reasonable starting point
-        m_Data.m_CustomMargins = CustomMargins{
-            .m_TopLeft{
-                dla::math::min(max_margins.x, current_margins.m_Left),
-                dla::math::min(max_margins.y, current_margins.m_Top),
-            },
-            .m_BottomRight{ Size{
-                dla::math::min(max_margins.x, current_margins.m_Right),
-                dla::math::min(max_margins.y, current_margins.m_Bottom),
-            } },
-        };
-    }
-    break;
-    case MarginsMode::Linked:
-    {
-        const auto max_margins{ m_Data.ComputeMaxMargins(m_Cfg, margins_mode) };
-        const auto current_margins{ ComputeMargins() };
-        const auto min_margins_vertical{
-            dla::math::min(
-                dla::math::min(
-                    current_margins.m_Top,
-                    current_margins.m_Bottom),
-                max_margins.y)
-        };
-        const auto min_margins_horizontal{
-            dla::math::min(
-                dla::math::min(
-                    current_margins.m_Left,
-                    current_margins.m_Right),
-                max_margins.x)
-        };
-        const auto min_margins{
-            dla::math::min(
-                min_margins_vertical,
-                min_margins_horizontal)
-        };
-
-        // Initialize with the minimum of the compute margins
-        m_Data.m_CustomMargins = CustomMargins{
-            .m_TopLeft{ min_margins, min_margins },
-            .m_BottomRight{ Size{ min_margins, min_margins } },
-        };
-        break;
-    }
-    }
-
-    // Set margins mode after setting margins as we want to grab the current
-    // margins and their computation may depend on the current margins mode
-    m_Data.m_MarginsMode = margins_mode;
-}
-
 float Project::CardRatio() const
 {
     return m_Data.CardRatio(m_Cfg);
@@ -2341,6 +2277,8 @@ void Project::SetBleedEdge(Length bleed_edge)
     EnsureOutputFolder();
 
     CardsSizeChanged(ComputeCardsSize());
+
+    CacheCardLayout();
 }
 void Project::SetEnvelopeBleedEdge(Length envelope_bleed_edge)
 {
@@ -2354,6 +2292,8 @@ void Project::SetEnvelopeBleedEdge(Length envelope_bleed_edge)
     EnsureOutputFolder();
 
     CardsSizeChanged(ComputeCardsSize());
+
+    CacheCardLayout();
 }
 
 void Project::SetSpacing(Size spacing)
@@ -2367,6 +2307,8 @@ void Project::SetSpacing(Size spacing)
     SpacingChanged(spacing);
 
     CardsSizeChanged(ComputeCardsSize());
+
+    CacheCardLayout();
 }
 void Project::SetSpacingLinked(bool spacing_linked)
 {
