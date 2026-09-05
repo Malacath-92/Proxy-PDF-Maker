@@ -15,9 +15,6 @@ CardOptionsViewModel::CardOptionsViewModel(Project& project,
     : m_Project{ project }
     , m_Cfg{ config }
 {
-    TRACY_AUTO_SCOPE();
-
-    setObjectName("Card Options");
 }
 
 void CardOptionsViewModel::NewProjectOpened()

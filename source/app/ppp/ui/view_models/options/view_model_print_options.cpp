@@ -22,9 +22,6 @@ PrintOptionsViewModel::PrintOptionsViewModel(Project& project,
     : m_Project{ project }
     , m_Cfg{ config }
 {
-    TRACY_AUTO_SCOPE();
-
-    setObjectName("Print Options");
 }
 
 void PrintOptionsViewModel::NewProjectOpened()

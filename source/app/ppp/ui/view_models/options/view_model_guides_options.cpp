@@ -19,9 +19,6 @@ GuidesOptionsViewModel::GuidesOptionsViewModel(Project& project,
     : m_Project{ project }
     , m_Cfg{ config }
 {
-    TRACY_AUTO_SCOPE();
-
-    setObjectName("Guides Options");
 }
 
 void GuidesOptionsViewModel::ChangeExportExactGuides(Qt::CheckState export_exact_guides)

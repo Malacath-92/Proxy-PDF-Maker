@@ -20,7 +20,6 @@ ProjectOptionsViewModel::ProjectOptionsViewModel(Project& project,
     : m_Project{ project }
     , m_Cfg{ config }
 {
-    TRACY_AUTO_SCOPE();
 }
 
 void ProjectOptionsViewModel::ChangeProjectName(const QString& project_name)
