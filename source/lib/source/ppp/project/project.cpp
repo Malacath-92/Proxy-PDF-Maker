@@ -2604,14 +2604,12 @@ Size ProjectData::ComputeMaxMargins(const ConfigData& config, MarginsMode margin
         // that is pushed all the way to the edge of the page
         switch (m_CardOrientation)
         {
+        case CardOrientation::Mixed:
+            [[fallthrough]];
         case CardOrientation::Vertical:
             return dla::max(0_mm, page_size - card_size_with_bleed);
         case CardOrientation::Horizontal:
             return dla::max(0_mm, page_size - dla::rotl(card_size_with_bleed));
-        case CardOrientation::Mixed:
-            return dla::max(0_mm,
-                            dla::max(page_size - card_size_with_bleed,
-                                     page_size - dla::rotl(card_size_with_bleed)));
         }
 
         // Fallthrough, we should not land here unless enum values are invalid
@@ -2621,16 +2619,12 @@ Size ProjectData::ComputeMaxMargins(const ConfigData& config, MarginsMode margin
         // that is centered on the page
         switch (m_CardOrientation)
         {
+        case CardOrientation::Mixed:
+            [[fallthrough]];
         case CardOrientation::Vertical:
             return dla::max(0_mm, page_size - card_size_with_bleed) / 2;
         case CardOrientation::Horizontal:
             return dla::max(0_mm, page_size - dla::rotl(card_size_with_bleed)) / 2;
-        case CardOrientation::Mixed:
-            // clang-format off
-            return dla::max(0_mm,
-                            dla::max(page_size - card_size_with_bleed,
-                                     page_size - dla::rotl(card_size_with_bleed))) / 2;
-            // clang-format on
         }
 
         // Fallthrough, we should not land here unless enum values are invalid
