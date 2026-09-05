@@ -1,5 +1,6 @@
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
 
+#include <ppp/app.hpp>
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
 
@@ -34,6 +35,12 @@ void ActionsViewModel::RenderDocument() const
         GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode);
         GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode);
     }
+}
+
+fs::path ActionsViewModel::GetImageFolderBase() const
+{
+    const auto& application{ *ppApp };
+    return application.GetProjectsFolder();
 }
 
 void ActionsViewModel::SetImagesFolder(fs::path new_image_dir)

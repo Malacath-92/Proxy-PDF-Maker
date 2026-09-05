@@ -28,6 +28,7 @@ class ActionsViewModel : public QObject
 
   private slots:
     void RenderDocument() const;
+    fs::path GetImageFolderBase() const;
     void SetImagesFolder(fs::path new_image_dir);
     void OpenImagesFolder() const;
 

@@ -175,7 +175,7 @@ void ActionsWidget::RenderButtonPressed() const
 void ActionsWidget::SetImagesButtonPressed() const
 {
     TRACY_AUTO_SCOPE();
-    if (const auto new_image_dir{ OpenFolderDialog(".") })
+    if (const auto new_image_dir{ OpenFolderDialog(m_ViewModel.GetImageFolderBase()) })
     {
         m_ViewModel.SetImagesFolder(std::move(new_image_dir).value());
     }
