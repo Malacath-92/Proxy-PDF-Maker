@@ -14,7 +14,7 @@ void MigrateConfigFromCwd(const fs::path& config_name,
                           const fs::path& config_folder);
 
 // Prompt user to move projects from cwd to standard documents folder
-void MigrateProjectsFromCwd(const fs::path& projects_folder);
+bool MigrateProjectsFromCwd(const fs::path& projects_folder);
 
 // Prompt user to move data from cwd to standard data folder
 void MigrateResourcesFromCwd(const fs::path& data_folder);

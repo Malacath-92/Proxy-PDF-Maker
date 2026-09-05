@@ -119,7 +119,16 @@ int main(int argc, char** argv)
 
         if (!app.HasMigratedProjectsFromCwd())
         {
-            MigrateProjectsFromCwd(app.GetProjectsFolder());
+            const auto projects_folder{ app.GetProjectsFolder() };
+            if (MigrateProjectsFromCwd(projects_folder))
+            {
+                const auto project_path{ app.GetProjectPath() };
+                if (fs::absolute(project_path.parent_path()) == fs::absolute("."))
+                {
+                    const auto new_project_path{ projects_folder / project_path.filename() };
+                    app.SetProjectPath(new_project_path);
+                }
+            }
             app.SetHasMigratedProjectsFromCwd(true);
         }
 

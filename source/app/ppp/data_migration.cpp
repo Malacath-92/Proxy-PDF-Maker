@@ -44,7 +44,7 @@ void MigrateConfigFromCwd(const fs::path& config_name,
     }
 }
 
-void MigrateProjectsFromCwd(const fs::path& projects_folder)
+bool MigrateProjectsFromCwd(const fs::path& projects_folder)
 {
     const auto project_files{ ListFiles(".", std::array{ ".json"_p }) };
     if (!project_files.empty())
@@ -62,9 +62,12 @@ void MigrateProjectsFromCwd(const fs::path& projects_folder)
             for (const auto& project_file : project_files)
             {
                 SafeMove(project_file, projects_folder);
+                return true;
             }
         }
     }
+
+    return false;
 }
 
 void MigrateResourcesFromCwd(const fs::path& data_folder)
