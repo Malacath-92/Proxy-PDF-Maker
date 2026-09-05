@@ -1470,7 +1470,24 @@ void Project::SetCardOrientation(CardOrientation card_orientation)
 {
     if (m_Data.m_CardOrientation != card_orientation)
     {
+        const bool need_max_margin_change{
+            (card_orientation == CardOrientation::Horizontal) !=
+            (m_Data.m_CardOrientation == CardOrientation::Horizontal)
+        };
+
         m_Data.m_CardOrientation = card_orientation;
+
+        if (need_max_margin_change)
+        {
+            const auto margins{ ComputeMargins() };
+            const auto max_margins{ ComputeMaxMargins() };
+            SetPageMargin(Margin::Left,
+                          dla::math::min(margins.m_Left, max_margins.x),
+                          true);
+            SetPageMargin(Margin::Top,
+                          dla::math::min(margins.m_Top, max_margins.y),
+                          true);
+        }
 
         CacheCardLayout();
 
@@ -1624,7 +1641,7 @@ void Project::SetPageMarginsMode(MarginsMode margins_mode)
         }
     }
 }
-void Project::SetPageMargin(Margin margin, Length margin_value)
+void Project::SetPageMargin(Margin margin, Length margin_value, bool force)
 {
     if (m_Data.m_MarginsMode != MarginsMode::Auto &&
         m_Data.m_CustomMargins.has_value())
@@ -1636,7 +1653,7 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
         switch (margin)
         {
         case Margin::Top:
-            if (!RoughlyEqual(custom_margins.m_TopLeft.y, margin_value))
+            if (force || !RoughlyEqual(custom_margins.m_TopLeft.y, margin_value))
             {
                 custom_margins.m_TopLeft.y = margin_value;
                 if (custom_margins.m_BottomRight.has_value() &&
@@ -1648,7 +1665,7 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             }
             break;
         case Margin::Left:
-            if (!RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
+            if (force || !RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
             {
                 custom_margins.m_TopLeft.x = margin_value;
                 if (custom_margins.m_BottomRight.has_value() &&
@@ -1661,7 +1678,8 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             break;
         case Margin::Bottom:
             if (custom_margins.m_BottomRight.has_value() &&
-                !RoughlyEqual(custom_margins.m_BottomRight->y, margin_value))
+                (force ||
+                 !RoughlyEqual(custom_margins.m_BottomRight->y, margin_value)))
             {
                 custom_margins.m_BottomRight->y = margin_value;
                 if (custom_margins.m_TopLeft.y + margin_value > max_margins.y)
@@ -1673,7 +1691,8 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             break;
         case Margin::Right:
             if (custom_margins.m_BottomRight.has_value() &&
-                !RoughlyEqual(custom_margins.m_BottomRight->x, margin_value))
+                (force ||
+                 !RoughlyEqual(custom_margins.m_BottomRight->x, margin_value)))
             {
                 custom_margins.m_BottomRight->x = margin_value;
                 if (custom_margins.m_TopLeft.x + margin_value > max_margins.x)
@@ -1684,7 +1703,7 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             }
             break;
         case Margin::All:
-            if (!RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
+            if (force || !RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
             {
                 custom_margins.m_TopLeft.x = margin_value;
                 custom_margins.m_TopLeft.y = margin_value;

@@ -232,7 +232,7 @@ class Project : public QObject
     void SetFlipPageOn(FlipPageOn flip_page_on);
 
     void SetPageMarginsMode(MarginsMode margins_mode);
-    void SetPageMargin(Margin margin, Length margin_value);
+    void SetPageMargin(Margin margin, Length margin_value, bool force = false);
     void SetCardsLayoutVertical(dla::uvec2 cards_layout);
     void SetCardsLayoutHorizontal(dla::uvec2 cards_layout);
 
