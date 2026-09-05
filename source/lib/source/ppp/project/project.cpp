@@ -1630,6 +1630,7 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
         m_Data.m_CustomMargins.has_value())
     {
         auto& custom_margins{ m_Data.m_CustomMargins.value() };
+        const auto max_margins{ ComputeMaxMargins() };
 
         bool has_changed{ false };
         switch (margin)
@@ -1638,6 +1639,11 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             if (!RoughlyEqual(custom_margins.m_TopLeft.y, margin_value))
             {
                 custom_margins.m_TopLeft.y = margin_value;
+                if (custom_margins.m_BottomRight.has_value() &&
+                    custom_margins.m_BottomRight->y + margin_value > max_margins.y)
+                {
+                    custom_margins.m_BottomRight->y = max_margins.y - margin_value;
+                }
                 has_changed = true;
             }
             break;
@@ -1645,6 +1651,11 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
             if (!RoughlyEqual(custom_margins.m_TopLeft.x, margin_value))
             {
                 custom_margins.m_TopLeft.x = margin_value;
+                if (custom_margins.m_BottomRight.has_value() &&
+                    custom_margins.m_BottomRight->x + margin_value > max_margins.x)
+                {
+                    custom_margins.m_BottomRight->x = max_margins.x - margin_value;
+                }
                 has_changed = true;
             }
             break;
@@ -1653,6 +1664,10 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
                 !RoughlyEqual(custom_margins.m_BottomRight->y, margin_value))
             {
                 custom_margins.m_BottomRight->y = margin_value;
+                if (custom_margins.m_TopLeft.y + margin_value > max_margins.y)
+                {
+                    custom_margins.m_TopLeft.y = max_margins.y - margin_value;
+                }
                 has_changed = true;
             }
             break;
@@ -1661,6 +1676,10 @@ void Project::SetPageMargin(Margin margin, Length margin_value)
                 !RoughlyEqual(custom_margins.m_BottomRight->x, margin_value))
             {
                 custom_margins.m_BottomRight->x = margin_value;
+                if (custom_margins.m_TopLeft.x + margin_value > max_margins.x)
+                {
+                    custom_margins.m_TopLeft.x = max_margins.x - margin_value;
+                }
                 has_changed = true;
             }
             break;
