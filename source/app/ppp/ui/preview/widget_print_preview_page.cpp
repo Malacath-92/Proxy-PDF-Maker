@@ -13,6 +13,8 @@
 #include <ppp/ui/preview/overlays/widget_guides_overlay.hpp>
 #include <ppp/ui/preview/overlays/widget_margins_overlay.hpp>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 class PageBackground : public QWidget
 {
   public:
@@ -193,16 +195,22 @@ PagePreview::PagePreview(Project& project,
                 : total_bleed_edge,
         };
 
-        auto* image_widget{
-            new PrintPreviewCardImage{
+        auto* image_view_model{
+            new CardViewModel{
                 card_name.value(),
-                project,
-                CardImageWidgetParams{
+                CardViewParams{
                     .m_RoundedCorners = rounded_corners,
                     .m_Backside = params.m_IsBackside,
                     .m_Rotation = rotation,
                     .m_BleedEdge{ bleed_edge },
                 },
+                project,
+            },
+        };
+        
+        auto* image_widget{
+            new PrintPreviewCardImage{
+                image_view_model,
                 index,
                 image_companion,
                 widget_clip_rect,
@@ -226,8 +234,9 @@ PagePreview::PagePreview(Project& project,
                          &PrintPreviewCardImage::ReorderCards,
                          this,
                          &PagePreview::ReorderCards);
-        QObject::connect(image_widget,
-                         &PrintPreviewCardImage::SkipThisSlot,
+
+        QObject::connect(image_view_model,
+                         &CardViewModel::SkipThisSlot,
                          this,
                          [&project, this, slot]()
                          {

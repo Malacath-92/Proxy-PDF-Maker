@@ -16,9 +16,13 @@ class WidgetWithCardSize : public WidgetT
         WidgetT::setSizePolicy(pm);
     }
 
-    void RefreshSize(float aspect_ratio)
+    void ChangeAspectRatio(float aspect_ratio)
     {
-        m_AspectRatio = aspect_ratio;
+        if (m_AspectRatio != aspect_ratio)
+        {
+            m_AspectRatio = aspect_ratio;
+            static_cast<WidgetT*>(this)->updateGeometry();
+        }
     }
 
     virtual bool hasHeightForWidth() const override

@@ -3,10 +3,12 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include <ppp/config.hpp>
+#include <ppp/project/project.hpp>
 
 #include <ppp/ui/default_project_value_actions.hpp>
 
-#include <ppp/project/project.hpp>
+#include <ppp/ui/view_models/view_model_blank_card.hpp>
+#include <ppp/ui/view_models/view_model_card.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -108,6 +110,18 @@ void CardOptionsViewModel::EmitDefaults()
     CornersChanged(m_Project.m_Data.m_Corners);
 }
 
+CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel()
+{
+    return new CardViewModel{ m_Project.m_Data.m_BacksideDefault.value_or("__back.jpeg"),
+                              CardViewParams{ .m_MinimumWidth{ 60_pix } },
+                              m_Project };
+}
+BlankCardViewModel* CardOptionsViewModel::MakeBlankCardViewModel()
+{
+    return new BlankCardViewModel{ CardViewParams{ .m_MinimumWidth{ 60_pix } },
+                                   m_Project };
+}
+
 DefaultDataRequirements CardOptionsViewModel::GetDefaultDataRequirements() const
 {
     return DefaultDataRequirements{
@@ -139,7 +153,7 @@ Length CardOptionsViewModel::GetTotalBleed() const
            m_Project.m_Data.m_EnvelopeBleedEdge;
 }
 
-const Project& CardOptionsViewModel::GetProject() const
+Project& CardOptionsViewModel::GetProject() const
 {
     return m_Project;
 }

@@ -91,9 +91,9 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     m_BacksideDefaultButton = new QPushButton{ "Choose Default" };
 
     m_BacksideDefaultPreview = new ClearableCardImage{
-        m_ViewModel.GetProject(),
-        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
-        true,
+        m_ViewModel.MakeBacksideCardViewModel(),
+        m_ViewModel.MakeBlankCardViewModel(),
+        !m_ViewModel.GetBacksideDefault().has_value(),
     };
     EnableOptionWidgetForDefaults(
         m_BacksideDefaultPreview,
@@ -335,11 +335,16 @@ void CardOptionsWidget::SeparateBacksidesEnabledChanged(bool separate_backsides)
     m_SeparateBacksidesCheckbox->blockSignals(false);
 }
 
-void CardOptionsWidget::BacksideDefaultChanged(OptionalImageRef /*backside_card_name*/)
+void CardOptionsWidget::BacksideDefaultChanged(OptionalImageRef backside_card_name)
 {
-    m_BacksideDefaultPreview->Refresh(
-        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
-        true);
+    if (backside_card_name.has_value())
+    {
+        m_BacksideDefaultPreview->SetCardName(backside_card_name.value());
+    }
+    else
+    {
+        m_BacksideDefaultPreview->Clear();
+    }
 }
 
 void CardOptionsWidget::BacksideOffsetChanged(Size offset)
@@ -481,7 +486,5 @@ void CardOptionsWidget::CornersChanged(CardCorners corners)
 void CardOptionsWidget::ImageDirChanged(const fs::path& /*old_path*/,
                                         const fs::path& /*new_path*/)
 {
-    m_BacksideDefaultPreview->Refresh(
-        m_ViewModel.GetProject().m_Data.m_BacksideDefault,
-        true);
+    BacksideDefaultChanged(m_ViewModel.GetBacksideDefault());
 }

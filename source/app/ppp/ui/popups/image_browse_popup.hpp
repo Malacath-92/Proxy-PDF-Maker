@@ -13,7 +13,7 @@ class ImageBrowsePopup : public PopupBase
 
   public:
     ImageBrowsePopup(QWidget* parent,
-                     const Project& project,
+                     Project& project,
                      std::span<const fs::path> ignored_images = {});
 
     std::optional<fs::path> Show();

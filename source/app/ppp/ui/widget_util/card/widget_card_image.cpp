@@ -15,17 +15,14 @@
 #include <ppp/ui/widget_util/card/card_widget_util.hpp>
 #include <ppp/ui/widget_util/widget_spinner.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 
 #include <ppp/profile/profile.hpp>
 
-CardImage::CardImage(CardViewModel* view_model,
-                     const fs::path& card_name,
-                     const Project& project,
-                     CardImageWidgetParams params)
-    : WidgetWithCardSize{ GetCardWidgetAspectRatio(project, params.m_Rotation, params.m_BleedEdge) }
+CardImage::CardImage(CardViewModel* view_model)
+    : WidgetWithCardSize{ view_model->GetCardAspectRatio() }
     , m_ViewModel{ *view_model }
-    , m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
 
@@ -60,94 +57,20 @@ CardImage::CardImage(CardViewModel* view_model,
     }
 
     setStyleSheet("QLabel{ background-color: transparent; }");
-    Refresh(card_name, project, params);
-}
-
-void CardImage::Refresh(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
-{
-    TRACY_AUTO_SCOPE();
-
-    ClearChildren();
-
-    setToolTip(ToQString(card_name));
-
-    m_CardName = card_name;
-    m_OriginalParams = params;
-
-    RefreshSize(project);
-
-    m_FullBleed = project.CardFullBleed();
-    m_CornerRadius = project.CardCornerRadius();
-
-    m_IsExternalCard = project.IsCardExternal(card_name);
-    m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
-    m_HasClearBackside = project.HasClearBacksideImage(card_name);
-    m_HasNonDefaultBackside = project.HasNonDefaultBacksideImage(card_name);
-    m_BadAspectRatio = project.HasBadAspectRatio(card_name);
-    m_BleedType = project.GetCardBleedType(card_name);
-    m_BadAspectRatioHandling = project.GetCardBadAspectRatioHandling(card_name);
-
-    const bool has_image{ project.HasPreview(card_name) };
-
-    {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(set_pixmap);
-        TRACY_SCOPE_INFO_FMT("Card: \"{}\"", has_image ? card_name.string().c_str() : "<none>");
-
-        Image image{
-            [&]()
-            {
-                if (has_image)
-                {
-                    return GetImage(project.GetPreview(card_name));
-                }
-                else
-                {
-                    return GetEmptyImage();
-                }
-            }()
-        };
-        setPixmap(FinalizePixmap(std::move(image)));
-    }
-
     setScaledContents(true);
 
-    setMinimumWidth(params.m_MinimumWidth.value);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardNameChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAspectRatioChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(MinimumWidthChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PixmapChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardWarningChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SpinnerVisibleChanged);
 
-    if (has_image)
-    {
-        const auto& preview{ project.m_Data.m_Previews.at(card_name) };
-        const bool bad_aspect_ration{ preview.m_BadAspectRatio };
-        const bool bad_rotation{ preview.m_BadRotation };
-        const bool bad_format{ bad_aspect_ration || bad_rotation };
-        if (bad_format)
-        {
-            AddBadFormatWarning(preview);
-        }
-    }
-    else
-    {
-        m_Spinner->setVisible(true);
-    }
-
-    QObject::connect(&project, &Project::PreviewRemoved, this, &CardImage::PreviewRemoved);
-    QObject::connect(&project, &Project::PreviewUpdated, this, &CardImage::PreviewUpdated);
-    QObject::connect(&project, &Project::CardBacksideChanged, this, &CardImage::CardBacksideChanged);
-    QObject::connect(&project, &Project::BacksideEnabledChanged, this, [this](bool enabled)
-                     { m_BacksideEnabled = enabled; });
-}
-
-void CardImage::RefreshSize(const Project& project)
-{
-    WidgetWithCardSize::RefreshSize(
-        GetCardWidgetAspectRatio(project,
-                                 m_OriginalParams.m_Rotation,
-                                 m_OriginalParams.m_BleedEdge));
-    m_FullBleed = project.CardFullBleed();
+    m_ViewModel.EmitDefaults();
 }
 
 void CardImage::EnableContextMenu(bool enable,
-                                  Project& project,
+                                  Project& /* project */,
                                   CardContextMenuFeatures features)
 {
     if (enable && contextMenuPolicy() != Qt::ContextMenuPolicy::CustomContextMenu)
@@ -178,8 +101,8 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_RemoveExternalCardAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::RemoveExternalCard, this, std::ref(project)));
+                             &m_ViewModel,
+                             &CardViewModel::RemoveExternalCard);
         }
 
         if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
@@ -191,12 +114,12 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_ClearBacksideAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ClearBackside, this, std::ref(project)));
+                             &m_ViewModel,
+                             &CardViewModel::ClearBackside);
             QObject::connect(m_ResetBacksideAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ResetBackside, this, std::ref(project)));
+                             &m_ViewModel,
+                             &CardViewModel::ResetBackside);
         }
 
         if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
@@ -210,16 +133,16 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_InferBleedAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::Infer));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBleedType, &m_ViewModel, BleedType::Infer));
             QObject::connect(m_ForceFullBleedAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::FullBleed));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBleedType, &m_ViewModel, BleedType::FullBleed));
             QObject::connect(m_ForceNoBleedAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBleedType, this, std::ref(project), BleedType::NoBleed));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBleedType, &m_ViewModel, BleedType::NoBleed));
         }
 
         if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
@@ -235,20 +158,20 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_FixRatioIgnoreAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Ignore));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBadAspectRatioHandling, &m_ViewModel, BadAspectRatioHandling::Ignore));
             QObject::connect(m_FixRatioExpandAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Expand));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBadAspectRatioHandling, &m_ViewModel, BadAspectRatioHandling::Expand));
             QObject::connect(m_FixRatioCropAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Crop));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBadAspectRatioHandling, &m_ViewModel, BadAspectRatioHandling::Crop));
             QObject::connect(m_FixRatioStretchAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::ChangeBadAspectRatioHandling, this, std::ref(project), BadAspectRatioHandling::Stretch));
+                             &m_ViewModel,
+                             std::bind_front(&CardViewModel::ChangeBadAspectRatioHandling, &m_ViewModel, BadAspectRatioHandling::Stretch));
         }
 
         if (IsSet(features, CardContextMenuFeatures::RemoveExternal))
@@ -260,12 +183,14 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_RotateLeftAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::RotateImageLeft, this, std::ref(project)));
+                             &m_ViewModel,
+                             [this]()
+                             { m_ViewModel.RotateImageLeft(pixmap()); });
             QObject::connect(m_RotateRightAction,
                              &QAction::triggered,
-                             this,
-                             std::bind_front(&CardImage::RotateImageRight, this, std::ref(project)));
+                             &m_ViewModel,
+                             [this]()
+                             { m_ViewModel.RotateImageRight(pixmap()); });
         }
 
         if (IsSet(features, CardContextMenuFeatures::SkipSlot))
@@ -275,8 +200,8 @@ void CardImage::EnableContextMenu(bool enable,
 
             QObject::connect(m_SkipSlotAction,
                              &QAction::triggered,
-                             this,
-                             &CardImage::SkipThisSlot);
+                             &m_ViewModel,
+                             &CardViewModel::SkipThisSlot);
         }
     }
     else if (!enable)
@@ -285,158 +210,41 @@ void CardImage::EnableContextMenu(bool enable,
     }
 }
 
-void CardImage::PreviewRemoved(const fs::path& card_name)
+void CardImage::CardNameChanged(const fs::path& card_name)
 {
-    if (m_CardName == card_name)
-    {
-        TRACY_AUTO_SCOPE();
-
-        RefreshSize(m_Project);
-
-        setPixmap(FinalizePixmap(GetEmptyImage()));
-
-        m_BadAspectRatio = false;
-
-        ClearChildren();
-
-        m_Spinner->setVisible(true);
-    }
+    setToolTip(ToQString(card_name));
 }
 
-void CardImage::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
+void CardImage::CardAspectRatioChanged(float aspect_ratio)
 {
-    if (m_CardName == card_name)
-    {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_INFO_FMT("Card: \"{}\"", card_name.string().c_str());
-
-        RefreshSize(m_Project);
-
-        m_BadAspectRatio = preview.m_BadAspectRatio;
-
-        ClearChildren();
-
-        setPixmap(FinalizePixmap(GetImage(preview)));
-
-        const bool bad_aspect_ration{ preview.m_BadAspectRatio };
-        const bool bad_rotation{ preview.m_BadRotation };
-        const bool bad_format{ bad_aspect_ration || bad_rotation };
-        if (bad_format)
-        {
-            AddBadFormatWarning(preview);
-        }
-    }
+    WidgetWithCardSize::ChangeAspectRatio(aspect_ratio);
 }
 
-void CardImage::CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside)
+void CardImage::MinimumWidthChanged(Pixel minimum_width)
 {
-    if (m_CardName == card_name)
-    {
-        m_HasClearBackside = !backside.has_value();
-        m_HasNonDefaultBackside = m_HasClearBackside || !backside.value().get().empty();
-    }
+    setMinimumWidth(minimum_width / 1_pix);
 }
 
-Image CardImage::GetImage(const ImagePreview& preview) const
+void CardImage::PixmapChanged(const QPixmap& pixmap)
 {
-    TRACY_AUTO_SCOPE();
+    setPixmap(pixmap);
+}
 
-    if (m_OriginalParams.m_BleedEdge > 0_mm)
+void CardImage::CardWarningChanged(const QString& warning)
+{
+    if (warning.isEmpty())
     {
-        if (m_OriginalParams.m_RoundedCorners)
-        {
-            const auto finalize_image{
-                [&, this](const Image& base_image)
-                {
-                    return UncropImage(base_image,
-                                       m_CardName,
-                                       m_Project.CardSize(),
-                                       m_OriginalParams.m_BleedEdge,
-                                       UncropMode::Transparent)
-                        .Rotate(m_OriginalParams.m_Rotation);
-                }
-            };
-            if (m_Project.IsCardRoundedRect())
-            {
-                return finalize_image(
-                    preview.m_CroppedImage
-                        .RoundCorners(m_Project.CardSize(), m_CornerRadius));
-            }
-            else if (m_Project.IsCardSvg())
-            {
-                return finalize_image(
-                    preview.m_CroppedImage
-                        .Mirror(false, m_OriginalParams.m_Backside)
-                        .ClipSvg(m_Project.CardSvgData())
-                        .Mirror(false, m_OriginalParams.m_Backside));
-            }
-        }
-        return CropImage(preview.m_UncroppedImage,
-                         m_CardName,
-                         m_Project.CardSize(),
-                         m_FullBleed,
-                         m_OriginalParams.m_BleedEdge,
-                         6800_dpi)
-            .Rotate(m_OriginalParams.m_Rotation);
+        m_Warning->setVisible(false);
     }
     else
     {
-        if (m_OriginalParams.m_RoundedCorners)
-        {
-            if (m_Project.IsCardRoundedRect())
-            {
-                return preview
-                    .m_CroppedImage
-                    .RoundCorners(m_Project.CardSize(), m_CornerRadius)
-                    .Rotate(m_OriginalParams.m_Rotation);
-            }
-            else if (m_Project.IsCardSvg())
-            {
-                return preview
-                    .m_CroppedImage
-                    .Mirror(false, m_OriginalParams.m_Backside)
-                    .ClipSvg(m_Project.CardSvgData())
-                    .Mirror(false, m_OriginalParams.m_Backside)
-                    .Rotate(m_OriginalParams.m_Rotation);
-            }
-        }
-
-        return preview
-            .m_CroppedImage
-            .Rotate(m_OriginalParams.m_Rotation);
+        m_Warning->setVisible(true);
+        m_Warning->setToolTip(warning);
     }
 }
-
-Image CardImage::GetEmptyImage() const
+void CardImage::SpinnerVisibleChanged(bool spinner_visible)
 {
-    TRACY_AUTO_SCOPE();
-
-    const auto width{ 512_pix };
-    const auto height{ heightForWidth(width / 1_pix) * 1_pix };
-    return Image::PlainColor({ width, height }, ColorRGBA8{ 0x80, 0x80, 0x80, 0xff });
-}
-
-QPixmap CardImage::FinalizePixmap(Image image) const
-{
-    TRACY_AUTO_SCOPE();
-
-    return StoreIntoQtPixmap(image);
-}
-
-void CardImage::AddBadFormatWarning(const ImagePreview& preview)
-{
-    TRACY_AUTO_SCOPE();
-
-    if (preview.m_BadRotation)
-    {
-        m_Warning->setToolTip("Bad rotation. Use the rotate button to fix this.");
-    }
-    else
-    {
-        m_Warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
-    }
-
-    m_Warning->setVisible(true);
+    m_Spinner->setVisible(spinner_visible);
 }
 
 void CardImage::ContextMenuRequested(QPoint pos)
@@ -453,133 +261,67 @@ void CardImage::ContextMenuRequested(QPoint pos)
         }
     };
 
-    if (m_IsExternalCard && m_RemoveExternalCardAction != nullptr)
-    {
-        begin_section();
-        menu->addAction(m_RemoveExternalCardAction);
-    }
-
-    if (m_BacksideEnabled && (!m_HasClearBackside || m_HasNonDefaultBackside) && m_ClearBacksideAction != nullptr)
-    {
-        begin_section();
-        if (!m_HasClearBackside)
+    const auto visible{ m_ViewModel.GetVisibleContextMenuEntries() };
+    const auto enabled{ m_ViewModel.GetEnabledContextMenuEntries() };
+    auto add_item{
+        [&](auto* item, auto flag)
         {
-            menu->addAction(m_ClearBacksideAction);
+            if (IsSet(visible, flag) && item != nullptr)
+            {
+                menu->addAction(item);
+                item->setEnabled(IsSet(enabled, flag));
+            }
         }
-        if (m_HasNonDefaultBackside)
-        {
-            menu->addAction(m_ResetBacksideAction);
-        }
+    };
+
+    using enum CardContextMenuEntries;
+
+    if (IsSet(visible, RemoveExternal) && m_RemoveExternalCardAction != nullptr)
+    {
+        begin_section();
+        add_item(m_RemoveExternalCardAction, RemoveExternal);
     }
 
-    if (m_InferBleedAction != nullptr)
+    if (IsSet(visible, Backside) && m_ClearBacksideAction != nullptr)
+    {
+        begin_section();
+        add_item(m_ClearBacksideAction, ClearBackside);
+        add_item(m_ResetBacksideAction, ResetBackside);
+    }
+
+    if (IsSet(visible, BleedType) && m_InferBleedAction != nullptr)
     {
         begin_section();
 
-        menu->addAction(m_InferBleedAction);
-        menu->addAction(m_ForceFullBleedAction);
-        menu->addAction(m_ForceNoBleedAction);
-
-        m_InferBleedAction->setEnabled(m_BleedType != BleedType::Infer);
-        m_ForceFullBleedAction->setEnabled(m_BleedType != BleedType::FullBleed);
-        m_ForceNoBleedAction->setEnabled(m_BleedType != BleedType::NoBleed);
+        add_item(m_InferBleedAction, InferBleed);
+        add_item(m_ForceFullBleedAction, ForceFullBleed);
+        add_item(m_ForceNoBleedAction, ForceNoBleed);
     }
 
-    if (m_FixRatioIgnoreAction != nullptr)
-    {
-        if (m_BadAspectRatio || m_BadAspectRatioHandling != BadAspectRatioHandling::Default)
-        {
-            begin_section();
-
-            menu->addAction(m_FixRatioIgnoreAction);
-            menu->addAction(m_FixRatioExpandAction);
-            menu->addAction(m_FixRatioCropAction);
-            menu->addAction(m_FixRatioStretchAction);
-
-            m_FixRatioIgnoreAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Ignore);
-            m_FixRatioExpandAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Expand);
-            m_FixRatioCropAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Crop);
-            m_FixRatioStretchAction->setEnabled(m_BadAspectRatioHandling != BadAspectRatioHandling::Stretch);
-        }
-    }
-
-    if (m_RotateLeftAction != nullptr)
+    if (IsSet(visible, BadRatioHandling) && m_FixRatioIgnoreAction != nullptr)
     {
         begin_section();
 
-        menu->addAction(m_RotateLeftAction);
-        menu->addAction(m_RotateRightAction);
+        add_item(m_FixRatioIgnoreAction, RatioIgnore);
+        add_item(m_FixRatioExpandAction, RatioExpand);
+        add_item(m_FixRatioCropAction, RatioCrop);
+        add_item(m_FixRatioStretchAction, RatioStretch);
     }
 
-    if (m_SkipSlotAction != nullptr)
+    if (IsSet(visible, RotateImage) && m_RotateLeftAction != nullptr)
     {
         begin_section();
 
-        menu->addAction(m_SkipSlotAction);
+        add_item(m_RotateLeftAction, RotateLeft);
+        add_item(m_RotateRightAction, RotateRight);
+    }
+
+    if (IsSet(visible, SkipSlot) && m_SkipSlotAction != nullptr)
+    {
+        begin_section();
+
+        add_item(m_SkipSlotAction, SkipSlot);
     }
 
     menu->popup(mapToGlobal(pos));
-}
-
-void CardImage::RemoveExternalCard(Project& project)
-{
-    project.RemoveExternalCard(m_CardName);
-}
-
-void CardImage::ClearBackside(Project& project)
-{
-    project.ClearBacksideImage(m_CardName);
-}
-
-void CardImage::ResetBackside(Project& project)
-{
-    project.SetBacksideImage(m_CardName, "");
-}
-
-void CardImage::ChangeBleedType(Project& project, BleedType bleed_type)
-{
-    m_BleedType = bleed_type;
-    project.SetCardBleedType(m_CardName, bleed_type);
-}
-
-void CardImage::ChangeBadAspectRatioHandling(Project& project, BadAspectRatioHandling ratio_handling)
-{
-    m_BadAspectRatioHandling = ratio_handling;
-    project.SetCardBadAspectRatioHandling(m_CardName, ratio_handling);
-}
-
-void CardImage::RotateImageLeft(Project& project)
-{
-    if (project.RotateCardLeft(m_CardName))
-    {
-        const auto pixmap{ this->pixmap() };
-        const auto rotated{
-            pixmap
-                .transformed(QTransform().rotate(-90))
-                .scaled(pixmap.size())
-        };
-        setPixmap(rotated);
-    }
-}
-
-void CardImage::RotateImageRight(Project& project)
-{
-    if (project.RotateCardRight(m_CardName))
-    {
-        const auto pixmap{ this->pixmap() };
-        const auto rotated{
-            pixmap
-                .transformed(QTransform().rotate(90))
-                .scaled(pixmap.size())
-        };
-        setPixmap(rotated);
-    }
-}
-
-void CardImage::ClearChildren()
-{
-    TRACY_AUTO_SCOPE();
-
-    m_Warning->setVisible(false);
-    m_Spinner->setVisible(false);
 }

@@ -24,6 +24,7 @@
 #include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ppp/ui/view_models/view_model_blank_card.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 
 #include <ppp/profile/profile.hpp>
@@ -198,7 +199,8 @@ class CardWidget : public QFrame
 
         if (auto* image_widget{ dynamic_cast<CardImage*>(m_ImageWidget) })
         {
-            image_widget->RefreshSize(project);
+            (void)image_widget;
+            // image_widget->RefreshSize(project);
         }
         else if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
         {
@@ -216,21 +218,22 @@ class CardWidget : public QFrame
     {
         TRACY_AUTO_SCOPE();
 
-        auto* card_image{ new CardImage{
-            // TODO: Proper MVVM
-            new CardViewModel{ m_CardName, CardViewParams{}, project },
-            m_CardName,
-            project,
-            CardImageWidgetParams{} } };
+        // TODO: Proper MVVM
+        auto* card_view_model{ new CardViewModel{ m_CardName, CardViewParams{}, project } };
+
+        auto* card_image{ new CardImage{ card_view_model } };
         card_image->EnableContextMenu(true, project);
 
         if (m_BacksideEnabled)
         {
+            auto* backside_view_model{ new CardViewModel{ m_Backside.value_or("__back.jpeg"), CardViewParams{}, project } };
+            auto* blank_view_model{ new BlankCardViewModel{ CardViewParams{}, project } };
+
             auto* backside_image{
                 new ClearableCardImage{
-                    project,
-                    m_Backside,
-                    true,
+                    backside_view_model,
+                    blank_view_model,
+                    !m_Backside.has_value(),
                 }
             };
             auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };

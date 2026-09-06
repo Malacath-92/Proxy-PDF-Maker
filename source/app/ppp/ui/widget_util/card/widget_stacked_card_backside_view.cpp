@@ -44,14 +44,20 @@ void StackedCardBacksideView::RefreshBackside(OptionalImageRef backside)
 {
     TRACY_AUTO_SCOPE();
 
-    m_Backside->Refresh(backside, true);
+    if (backside.has_value())
+    {
+        m_Backside->SetCardName(backside.value());
+    }
+    else{
+        m_Backside->Clear();
+    }
 
     RefreshSizes(rect().size());
 }
 
-void StackedCardBacksideView::RefreshSize(const Project& project)
+void StackedCardBacksideView::RefreshSize(const Project& /* project */)
 {
-    m_Image->RefreshSize(project);
+    // m_Image->RefreshSize(project);
 
     /*if (auto* image_widget{ dynamic_cast<CardImage*>(m_Backside) })
     {

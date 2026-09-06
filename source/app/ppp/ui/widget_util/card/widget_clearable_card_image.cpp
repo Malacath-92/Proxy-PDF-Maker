@@ -10,43 +10,22 @@
 
 #include <ppp/profile/profile.hpp>
 
-ClearableCardImage::ClearableCardImage(const Project& project,
-                                       OptionalImageRef card_name,
-                                       bool backside)
-    : WidgetWithCardSize{ GetCardWidgetAspectRatio(project, Rotation::None, 0_mm) }
-    , m_Project{ project }
+ClearableCardImage::ClearableCardImage(CardViewModel* card_view_model,
+                                       BlankCardViewModel* blank_view_model,
+                                       bool clear)
+    : WidgetWithCardSize{ card_view_model->GetCardAspectRatio() }
+    , m_CardViewModel{ card_view_model }
 {
     TRACY_AUTO_SCOPE();
 
-    const auto fallback_backside{ "__back.jpg"_p };
-    const auto& default_card_name{ card_name.value_or(std::ref(fallback_backside)) };
-    m_CardImage = new CardImage{
-        // TODO: Proper MVVM
-        new CardViewModel{ default_card_name,
-                           CardViewParams{
-                               .m_Backside = backside,
-                               .m_MinimumWidth{ c_MinimumWidth },
-                           },
-                           project },
-        default_card_name,
-        project,
-        CardImageWidgetParams{
-            .m_Backside = backside,
-            .m_MinimumWidth{ c_MinimumWidth },
-        },
-    };
-    m_ClearImage = new BlankCardImage{
-        m_Project,
-        CardImageWidgetParams{
-            .m_MinimumWidth{ c_MinimumWidth },
-        },
-    };
+    m_CardImage = new CardImage{ card_view_model };
+    m_ClearImage = new BlankCardImage{ blank_view_model };
 
     addWidget(m_CardImage);
     addWidget(m_ClearImage);
-    setCurrentWidget(card_name.has_value()
-                         ? static_cast<QLabel*>(m_CardImage)
-                         : static_cast<QLabel*>(m_ClearImage));
+    setCurrentWidget(clear
+                         ? static_cast<QLabel*>(m_ClearImage)
+                         : static_cast<QLabel*>(m_CardImage));
 
     setMinimumWidth(c_MinimumWidth.value);
     setMinimumHeight(heightForWidth(c_MinimumWidth.value));
@@ -58,25 +37,14 @@ ClearableCardImage::ClearableCardImage(const Project& project,
     setSizePolicy(pm);
 }
 
-void ClearableCardImage::Refresh(OptionalImageRef card_name,
-                                 bool backside)
+void ClearableCardImage::Clear()
 {
     TRACY_AUTO_SCOPE();
-
-    const bool has_backside{ card_name.has_value() };
-    if (has_backside)
-    {
-        const auto& default_card_name{ card_name.value() };
-        m_CardImage->Refresh(default_card_name,
-                             m_Project,
-                             CardImageWidgetParams{
-                                 .m_Backside = backside,
-                                 .m_MinimumWidth{ c_MinimumWidth },
-                             });
-        setCurrentWidget(m_CardImage);
-    }
-    else
-    {
-        setCurrentWidget(m_ClearImage);
-    }
+    setCurrentWidget(m_ClearImage);
+}
+void ClearableCardImage::SetCardName(const fs::path& card_name)
+{
+    TRACY_AUTO_SCOPE();
+    m_CardViewModel->SetCardName(card_name);
+    setCurrentWidget(m_CardImage);
 }

@@ -7,20 +7,12 @@
 
 #include <ppp/ui/view_models/view_model_card.hpp>
 
-PrintPreviewCardImage::PrintPreviewCardImage(const fs::path& card_name,
-                                             const Project& project,
-                                             CardImageWidgetParams params,
+PrintPreviewCardImage::PrintPreviewCardImage(CardViewModel* view_model,
                                              size_t idx,
                                              QWidget* companion,
                                              std::optional<ClipRect> clip_rect,
                                              Size widget_size)
-    : CardImage{
-        // TODO: Proper MVVM
-        new CardViewModel{ card_name, CardViewParams{ std::bit_cast<CardViewParams>(params) }, project },
-        card_name,
-        project,
-        params,
-    }
+    : CardImage{ view_model }
     , m_Index{ idx }
     , m_Companion{ companion }
     , m_ClipRect{ clip_rect }

@@ -25,17 +25,10 @@ class SelectableCard : public QFrame
     Q_OBJECT
 
   public:
-    SelectableCard(const fs::path& card_name, const Project& project)
+    SelectableCard(CardViewModel* view_model)
+        : m_ViewModel{ view_model }
     {
-        m_CardImage = new CardImage{
-            // TODO: Proper MVVM
-            new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80 } }, project },
-            card_name,
-            project,
-            CardImageWidgetParams{
-                .m_MinimumWidth{ 80 },
-            },
-        };
+        m_CardImage = new CardImage{ view_model };
 
         auto* this_layout{ new QVBoxLayout };
         this_layout->addWidget(m_CardImage);
@@ -76,7 +69,7 @@ class SelectableCard : public QFrame
 
     const fs::path& GetCardName() const
     {
-        return m_CardImage->GetCardName();
+        return m_ViewModel->GetCardName();
     }
     virtual void enterEvent(QEnterEvent* event) override
     {
@@ -107,6 +100,7 @@ class SelectableCard : public QFrame
     }
 
   private:
+    CardViewModel* m_ViewModel;
     CardImage* m_CardImage{ nullptr };
     bool m_Selected{ false };
 };
@@ -116,7 +110,7 @@ class SelectableCardGrid : public QWidget
     Q_OBJECT
 
   public:
-    SelectableCardGrid(const Project& project,
+    SelectableCardGrid(Project& project,
                        std::span<const fs::path> ignored_images)
     {
         // Make all cards and dummies ahead of time
@@ -130,7 +124,8 @@ class SelectableCardGrid : public QWidget
                     continue;
                 }
 
-                auto* card_widget{ new SelectableCard{ card_name, project } };
+                auto* card_view_model{ new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80_pix } }, project } };
+                auto* card_widget{ new SelectableCard{ card_view_model } };
                 card_widget->installEventFilter(this);
                 m_Cards.push_back({ card_widget, ToQString(card_name).toLower() });
             }
@@ -310,7 +305,7 @@ class SelectableCardGrid : public QWidget
 };
 
 ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
-                                   const Project& project,
+                                   Project& project,
                                    std::span<const fs::path> ignored_images)
     : PopupBase{ parent }
 {

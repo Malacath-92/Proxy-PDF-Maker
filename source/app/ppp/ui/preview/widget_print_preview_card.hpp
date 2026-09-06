@@ -6,14 +6,14 @@
 
 #include <ppp/ui/widget_util/widget_card.hpp>
 
+class CardViewModel;
+
 class PrintPreviewCardImage : public CardImage
 {
     Q_OBJECT
 
   public:
-    PrintPreviewCardImage(const fs::path& card_name,
-                          const Project& project,
-                          CardImageWidgetParams params,
+    PrintPreviewCardImage(CardViewModel* view_model,
                           size_t idx,
                           QWidget* companion,
                           std::optional<ClipRect> clip_rect,

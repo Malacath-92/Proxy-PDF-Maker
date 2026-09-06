@@ -4,45 +4,34 @@
 
 #include <ppp/ui/widget_util/card/card_widget_util.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
+#include <ppp/ui/view_models/view_model_blank_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
-BlankCardImage::BlankCardImage(const Project& project, CardImageWidgetParams params)
-    : WidgetWithCardSize{ GetCardWidgetAspectRatio(project, params.m_Rotation, params.m_BleedEdge) }
+BlankCardImage::BlankCardImage(BlankCardViewModel* view_model)
+    : WidgetWithCardSize{ view_model->GetCardAspectRatio() }
+    , m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
+    m_ViewModel.setParent(this);
+
     setStyleSheet("QLabel{ background-color: transparent; }");
-
-    const auto card_size{ project.CardSizeWithBleed() };
-    const auto bleed_edge{ project.m_Data.m_BleedEdge };
-
-    const auto width{ 512_pix };
-    const auto height{ heightForWidth(width / 1_pix) * 1_pix };
-    const auto img{
-        [&](const Image& img)
-        {
-            if (params.m_RoundedCorners && bleed_edge == 0_mm)
-            {
-                if (project.IsCardRoundedRect())
-                {
-                    return img
-                        .RoundCorners(card_size, project.CardCornerRadius())
-                        .Rotate(params.m_Rotation);
-                }
-                else if (project.IsCardSvg())
-                {
-                    return img
-                        .ClipSvg(project.CardSvgData())
-                        .Rotate(params.m_Rotation);
-                }
-            }
-            return img
-                .Rotate(params.m_Rotation);
-        }(Image::PlainColor({ width, height }, ColorRGBA8{ 0xff, 0xff, 0xff, 0xff }))
-    };
-    setPixmap(StoreIntoQtPixmap(img));
-
     setScaledContents(true);
 
-    setMinimumWidth(params.m_MinimumWidth.value);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(MinimumWidthChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PixmapChanged);
+
+    m_ViewModel.EmitDefaults();
+}
+
+void BlankCardImage::MinimumWidthChanged(Pixel minimum_width)
+{
+    setMinimumWidth(minimum_width / 1_pix);
+}
+
+void BlankCardImage::PixmapChanged(const QPixmap& pixmap)
+{
+    setPixmap(pixmap);
 }

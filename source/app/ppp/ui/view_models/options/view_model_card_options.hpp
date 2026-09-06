@@ -8,6 +8,9 @@
 class Project;
 class Config;
 
+class CardViewModel;
+class BlankCardViewModel;
+
 struct DefaultDataRequirements;
 
 class CardOptionsViewModel : public QObject
@@ -74,6 +77,9 @@ class CardOptionsViewModel : public QObject
   private:
     void EmitDefaults();
 
+    CardViewModel* MakeBacksideCardViewModel();
+    BlankCardViewModel* MakeBlankCardViewModel();
+
     DefaultDataRequirements GetDefaultDataRequirements() const;
     bool GetAdvancedMode() const;
     Unit GetBaseUnit() const;
@@ -84,7 +90,7 @@ class CardOptionsViewModel : public QObject
     Length GetTotalBleed() const;
 
     // TODO: KillMe
-    const Project& GetProject() const;
+    Project& GetProject() const;
 
     Project& m_Project;
     const Config& m_Cfg;

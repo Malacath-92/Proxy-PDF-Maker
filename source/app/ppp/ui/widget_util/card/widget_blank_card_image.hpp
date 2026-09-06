@@ -6,10 +6,18 @@
 #include <ppp/ui/widget_util/card/widget_with_card_size.hpp>
 
 class Project;
+class BlankCardViewModel;
 
 class BlankCardImage : public WidgetWithCardSize<QLabel>
 {
   public:
-    BlankCardImage(const Project& project,
-                   CardImageWidgetParams params = CardImageWidgetParams{});
+    BlankCardImage(BlankCardViewModel* view_model);
+
+  private slots:
+    void MinimumWidthChanged(Pixel minimum_width);
+
+    void PixmapChanged(const QPixmap& pixmap);
+
+  private:
+    BlankCardViewModel& m_ViewModel;
 };
