@@ -95,7 +95,7 @@ class CardImage : public WidgetWithCardSize<QLabel>
     BleedType m_BleedType{ BleedType::Default };
     BadAspectRatioHandling m_BadAspectRatioHandling{ BadAspectRatioHandling::Default };
 
-    QWidget* m_Warning{ nullptr };
+    QLabel* m_Warning{ nullptr };
     QWidget* m_Spinner{ nullptr };
 
     QAction* m_RemoveExternalCardAction{ nullptr };

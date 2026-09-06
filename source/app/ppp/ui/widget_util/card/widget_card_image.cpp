@@ -24,8 +24,29 @@ CardImage::CardImage(const fs::path& card_name, const Project& project, CardImag
     TRACY_AUTO_SCOPE();
 
     {
+        static constexpr int c_WarningSize{ 24 };
+        const static QPixmap s_WarningPixmap{
+            []()
+            {
+                QCommonStyle style{};
+                return style
+                    .standardIcon(QStyle::StandardPixmap::SP_MessageBoxWarning)
+                    .pixmap(c_WarningSize);
+            }()
+        };
+
+        m_Warning = new QLabel;
+        m_Warning->setPixmap(s_WarningPixmap);
+        m_Warning->setFixedWidth(c_WarningSize);
+        m_Warning->setFixedHeight(c_WarningSize);
+        m_Warning->setVisible(false);
+
+        m_Spinner = new SpinnerWidget;
+
         auto* layout{ new QVBoxLayout };
+        layout->addWidget(m_Warning, 0, Qt::AlignLeft);
         layout->addStretch();
+        layout->addWidget(m_Spinner, 0, Qt::AlignCenter);
         layout->addStretch();
         setLayout(layout);
     }
@@ -98,12 +119,7 @@ void CardImage::Refresh(const fs::path& card_name, const Project& project, CardI
     }
     else
     {
-        auto* spinner{ new SpinnerWidget };
-
-        QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
-        layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
-
-        m_Spinner = spinner;
+        m_Spinner->setVisible(true);
     }
 
     QObject::connect(&project, &Project::PreviewRemoved, this, &CardImage::PreviewRemoved);
@@ -275,12 +291,7 @@ void CardImage::PreviewRemoved(const fs::path& card_name)
 
         ClearChildren();
 
-        auto* spinner{ new SpinnerWidget };
-
-        QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
-        layout->insertWidget(1, spinner, 0, Qt::AlignCenter);
-
-        m_Spinner = spinner;
+        m_Spinner->setVisible(true);
     }
 }
 
@@ -408,34 +419,16 @@ void CardImage::AddBadFormatWarning(const ImagePreview& preview)
 {
     TRACY_AUTO_SCOPE();
 
-    static constexpr int c_WarningSize{ 24 };
-    const static QPixmap s_WarningPixmap{
-        []()
-        {
-            QCommonStyle style{};
-            return style
-                .standardIcon(QStyle::StandardPixmap::SP_MessageBoxWarning)
-                .pixmap(c_WarningSize);
-        }()
-    };
-
-    auto* format_warning{ new QLabel };
-    format_warning->setPixmap(s_WarningPixmap);
     if (preview.m_BadRotation)
     {
-        format_warning->setToolTip("Bad rotation. Use the rotate button to fix this.");
+        m_Warning->setToolTip("Bad rotation. Use the rotate button to fix this.");
     }
     else
     {
-        format_warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
+        m_Warning->setToolTip("Bad aspect ratio. Check image file or change card size.");
     }
-    format_warning->setFixedWidth(c_WarningSize);
-    format_warning->setFixedHeight(c_WarningSize);
 
-    QVBoxLayout* layout{ static_cast<QVBoxLayout*>(this->layout()) };
-    layout->insertWidget(0, format_warning, 0, Qt::AlignLeft);
-
-    m_Warning = format_warning;
+    m_Warning->setVisible(true);
 }
 
 void CardImage::ContextMenuRequested(QPoint pos)
@@ -579,19 +572,6 @@ void CardImage::ClearChildren()
 {
     TRACY_AUTO_SCOPE();
 
-    auto* layout{ static_cast<QVBoxLayout*>(this->layout()) };
-
-    if (m_Warning != nullptr)
-    {
-        layout->removeWidget(m_Warning);
-        delete m_Warning;
-        m_Warning = nullptr;
-    }
-
-    if (m_Spinner != nullptr)
-    {
-        layout->removeWidget(m_Spinner);
-        delete m_Spinner;
-        m_Spinner = nullptr;
-    }
+    m_Warning->setVisible(false);
+    m_Spinner->setVisible(false);
 }
