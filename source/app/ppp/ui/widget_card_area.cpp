@@ -24,6 +24,8 @@
 #include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 class CardWidget : public QFrame
@@ -214,7 +216,12 @@ class CardWidget : public QFrame
     {
         TRACY_AUTO_SCOPE();
 
-        auto* card_image{ new CardImage{ m_CardName, project, CardImageWidgetParams{} } };
+        auto* card_image{ new CardImage{
+            // TODO: Proper MVVM
+            new CardViewModel{ m_CardName, CardViewParams{}, project },
+            m_CardName,
+            project,
+            CardImageWidgetParams{} } };
         card_image->EnableContextMenu(true, project);
 
         if (m_BacksideEnabled)

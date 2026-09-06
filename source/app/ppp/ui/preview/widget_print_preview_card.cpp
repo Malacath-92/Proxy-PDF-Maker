@@ -5,6 +5,8 @@
 #include <QMouseEvent>
 #include <QPainter>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 PrintPreviewCardImage::PrintPreviewCardImage(const fs::path& card_name,
                                              const Project& project,
                                              CardImageWidgetParams params,
@@ -13,6 +15,8 @@ PrintPreviewCardImage::PrintPreviewCardImage(const fs::path& card_name,
                                              std::optional<ClipRect> clip_rect,
                                              Size widget_size)
     : CardImage{
+        // TODO: Proper MVVM
+        new CardViewModel{ card_name, CardViewParams{ std::bit_cast<CardViewParams>(params) }, project },
         card_name,
         project,
         params,

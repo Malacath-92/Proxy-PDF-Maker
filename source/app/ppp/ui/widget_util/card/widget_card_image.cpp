@@ -15,13 +15,21 @@
 #include <ppp/ui/widget_util/card/card_widget_util.hpp>
 #include <ppp/ui/widget_util/widget_spinner.hpp>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
-CardImage::CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params)
+CardImage::CardImage(CardViewModel* view_model,
+                     const fs::path& card_name,
+                     const Project& project,
+                     CardImageWidgetParams params)
     : WidgetWithCardSize{ GetCardWidgetAspectRatio(project, params.m_Rotation, params.m_BleedEdge) }
+    , m_ViewModel{ *view_model }
     , m_Project{ project }
 {
     TRACY_AUTO_SCOPE();
+
+    m_ViewModel.setParent(this);
 
     {
         static constexpr int c_WarningSize{ 24 };

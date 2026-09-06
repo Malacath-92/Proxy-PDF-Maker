@@ -15,6 +15,8 @@ class QAction;
 class Project;
 struct ImagePreview;
 
+class CardViewModel;
+
 enum class CardContextMenuFeatures
 {
     RemoveExternal = Bit(0),
@@ -34,7 +36,10 @@ class CardImage : public WidgetWithCardSize<QLabel>
     Q_OBJECT
 
   public:
-    CardImage(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
+    CardImage(CardViewModel* view_model,
+              const fs::path& card_name,
+              const Project& project,
+              CardImageWidgetParams params);
 
     void Refresh(const fs::path& card_name, const Project& project, CardImageWidgetParams params);
     void RefreshSize(const Project& project);
@@ -79,6 +84,8 @@ class CardImage : public WidgetWithCardSize<QLabel>
     void SkipThisSlot();
 
   private:
+    CardViewModel& m_ViewModel;
+
     const Project& m_Project;
 
     fs::path m_CardName;

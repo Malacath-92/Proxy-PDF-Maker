@@ -18,6 +18,8 @@
 
 #include <ppp/ui/widget_util/widget_card.hpp>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 class SelectableCard : public QFrame
 {
     Q_OBJECT
@@ -26,6 +28,8 @@ class SelectableCard : public QFrame
     SelectableCard(const fs::path& card_name, const Project& project)
     {
         m_CardImage = new CardImage{
+            // TODO: Proper MVVM
+            new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80 } }, project },
             card_name,
             project,
             CardImageWidgetParams{
@@ -40,6 +44,7 @@ class SelectableCard : public QFrame
         setFrameShape(Shape::StyledPanel);
         setFrameShadow(Shadow::Raised);
         setLineWidth(5);
+        setStyleSheet("QFrame{ background-color: transparent; }");
 
         setMinimumWidth(m_CardImage->minimumWidth() + lineWidth() * 2);
     }

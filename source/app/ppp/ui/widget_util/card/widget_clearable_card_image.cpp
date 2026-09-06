@@ -6,6 +6,8 @@
 #include <ppp/ui/widget_util/card/widget_blank_card_image.hpp>
 #include <ppp/ui/widget_util/card/widget_card_image.hpp>
 
+#include <ppp/ui/view_models/view_model_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 ClearableCardImage::ClearableCardImage(const Project& project,
@@ -19,6 +21,13 @@ ClearableCardImage::ClearableCardImage(const Project& project,
     const auto fallback_backside{ "__back.jpg"_p };
     const auto& default_card_name{ card_name.value_or(std::ref(fallback_backside)) };
     m_CardImage = new CardImage{
+        // TODO: Proper MVVM
+        new CardViewModel{ default_card_name,
+                           CardViewParams{
+                               .m_Backside = backside,
+                               .m_MinimumWidth{ c_MinimumWidth },
+                           },
+                           project },
         default_card_name,
         project,
         CardImageWidgetParams{
