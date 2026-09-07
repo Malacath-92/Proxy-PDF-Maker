@@ -18,6 +18,7 @@
 
 #include <ppp/ui/widget_util/widget_card.hpp>
 
+#include <ppp/ui/view_models/popups/view_model_image_browse_popup.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 
 class SelectableCard : public QFrame
@@ -110,21 +111,19 @@ class SelectableCardGrid : public QWidget
     Q_OBJECT
 
   public:
-    SelectableCardGrid(Project& project,
-                       std::span<const fs::path> ignored_images)
+    SelectableCardGrid(const ImageBrowseViewModel& view_model)
     {
         // Make all cards and dummies ahead of time
         {
-            for (auto& card_info : project.GetCards())
+            for (auto& card_info : view_model.GetCards())
             {
                 const auto& card_name{ card_info.m_Name };
-                if (std::ranges::contains(ignored_images, card_name) ||
-                    card_info.m_Transient)
+                if (view_model.IsCardIgnored(card_name) || card_info.m_Transient)
                 {
                     continue;
                 }
 
-                auto* card_view_model{ new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80_pix } }, project } };
+                auto* card_view_model{ view_model.MakeCardViewModel(card_name) };
                 auto* card_widget{ new SelectableCard{ card_view_model } };
                 card_widget->installEventFilter(this);
                 m_Cards.push_back({ card_widget, ToQString(card_name).toLower() });
@@ -305,10 +304,12 @@ class SelectableCardGrid : public QWidget
 };
 
 ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
-                                   Project& project,
-                                   std::span<const fs::path> ignored_images)
+                                   ImageBrowseViewModel* view_model)
     : PopupBase{ parent }
+    , m_ViewModel{ *view_model }
 {
+    view_model->setParent(this);
+
     m_AutoCenter = false;
     m_AutoCenterOnShow = false;
 
@@ -318,28 +319,30 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     m_Filter = new QLineEdit;
     m_Filter->setPlaceholderText("Filter");
 
-    const auto& cards{ project.GetCards() };
-    const auto num_valid_ignored_images{
-        std::ranges::count_if(ignored_images, [&](const auto& img)
-                              { return project.HasCard(img); })
-    };
-    const auto num_valid_images{
-        std::ranges::count_if(cards,
-                              [&](const auto& img)
-                              { return !img.m_Transient; })
-    };
-    const auto has_cards{ num_valid_images > num_valid_ignored_images };
+    // const auto& cards{ project.GetCards() };
+    // const auto num_valid_ignored_images{
+    //     std::ranges::count_if(ignored_images, [&](const auto& img)
+    //                           { return project.HasCard(img); })
+    // };
+    // const auto num_valid_images{
+    //     std::ranges::count_if(cards,
+    //                           [&](const auto& img)
+    //                           { return !img.m_Transient; })
+    // };
+    // const auto has_cards{ num_valid_images > num_valid_ignored_images };
+    const auto has_cards{ m_ViewModel.HasCards() };
 
     QWidget* grid{ nullptr };
     if (has_cards)
     {
-        m_Grid = new SelectableCardGrid{ project, ignored_images };
+        m_Grid = new SelectableCardGrid{ m_ViewModel };
         grid = m_Grid;
     }
     else
     {
-        auto* error_label{ new QLabel{ num_valid_images == 0 ? "No cards loaded..."
-                                                             : "No other cards loaded..." } };
+        const auto has_ignored_cards{ m_ViewModel.HasIgnoredCards() };
+        auto* error_label{ new QLabel{ !has_ignored_cards ? "No cards loaded..."
+                                                          : "No other cards loaded..." } };
         error_label->setAlignment(Qt::AlignmentFlag::AlignCenter);
         grid = error_label;
     }

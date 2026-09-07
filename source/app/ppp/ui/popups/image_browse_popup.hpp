@@ -2,9 +2,11 @@
 
 #include <ppp/ui/popups/popups.hpp>
 
+#include <ppp/project/project_types.hpp>
+
 class QLineEdit;
 
-class Project;
+class ImageBrowseViewModel;
 class SelectableCardGrid;
 
 class ImageBrowsePopup : public PopupBase
@@ -13,8 +15,7 @@ class ImageBrowsePopup : public PopupBase
 
   public:
     ImageBrowsePopup(QWidget* parent,
-                     Project& project,
-                     std::span<const fs::path> ignored_images = {});
+                     ImageBrowseViewModel* view_model);
 
     std::optional<fs::path> Show();
 
@@ -29,6 +30,8 @@ class ImageBrowsePopup : public PopupBase
 
   private:
     void CloseWithChoice(Choice choice);
+
+    const ImageBrowseViewModel& m_ViewModel;
 
     QLineEdit* m_Filter{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };

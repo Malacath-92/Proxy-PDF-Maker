@@ -24,6 +24,7 @@
 #include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
+#include <ppp/ui/view_models/popups/view_model_image_browse_popup.hpp>
 #include <ppp/ui/view_models/view_model_blank_card.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 
@@ -241,7 +242,8 @@ class CardWidget : public QFrame
             auto backside_choose{
                 [this, &project]()
                 {
-                    ImageBrowsePopup image_browser{ window(), project, { &m_CardName, 1 } };
+                    auto* image_browser_view_model{ new ImageBrowseViewModel{ project, { &m_CardName, 1 } } };
+                    ImageBrowsePopup image_browser{ window(), image_browser_view_model };
                     image_browser.setWindowTitle(QString{ "Choose backside for %1" }.arg(ToQString(m_CardName)));
                     if (const auto backside_choice{ image_browser.Show() })
                     {

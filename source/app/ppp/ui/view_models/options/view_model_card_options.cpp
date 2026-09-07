@@ -7,6 +7,7 @@
 
 #include <ppp/ui/default_project_value_actions.hpp>
 
+#include <ppp/ui/view_models/popups/view_model_image_browse_popup.hpp>
 #include <ppp/ui/view_models/view_model_blank_card.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 
@@ -110,16 +111,20 @@ void CardOptionsViewModel::EmitDefaults()
     CornersChanged(m_Project.m_Data.m_Corners);
 }
 
-CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel()
+CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel() const
 {
     return new CardViewModel{ m_Project.m_Data.m_BacksideDefault.value_or("__back.jpeg"),
                               CardViewParams{ .m_MinimumWidth{ 60_pix } },
-                              m_Project };
+                              static_cast<const Project&>(m_Project) };
 }
-BlankCardViewModel* CardOptionsViewModel::MakeBlankCardViewModel()
+BlankCardViewModel* CardOptionsViewModel::MakeBlankCardViewModel() const
 {
     return new BlankCardViewModel{ CardViewParams{ .m_MinimumWidth{ 60_pix } },
                                    m_Project };
+}
+ImageBrowseViewModel* CardOptionsViewModel::MakeImageBrowserViewModel() const
+{
+    return new ImageBrowseViewModel{ m_Project };
 }
 
 DefaultDataRequirements CardOptionsViewModel::GetDefaultDataRequirements() const

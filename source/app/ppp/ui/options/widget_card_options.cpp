@@ -192,7 +192,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     auto pick_backside{
         [this]()
         {
-            ImageBrowsePopup image_browser{ window(), m_ViewModel.GetProject() };
+            ImageBrowsePopup image_browser{ window(), m_ViewModel.MakeImageBrowserViewModel() };
             image_browser.setWindowTitle("Choose default backside");
 
             if (const auto default_backside_choice{ image_browser.Show() })

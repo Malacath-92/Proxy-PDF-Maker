@@ -10,6 +10,7 @@ class Config;
 
 class CardViewModel;
 class BlankCardViewModel;
+class ImageBrowseViewModel;
 
 struct DefaultDataRequirements;
 
@@ -77,8 +78,9 @@ class CardOptionsViewModel : public QObject
   private:
     void EmitDefaults();
 
-    CardViewModel* MakeBacksideCardViewModel();
-    BlankCardViewModel* MakeBlankCardViewModel();
+    CardViewModel* MakeBacksideCardViewModel() const;
+    BlankCardViewModel* MakeBlankCardViewModel() const;
+    ImageBrowseViewModel* MakeImageBrowserViewModel() const;
 
     DefaultDataRequirements GetDefaultDataRequirements() const;
     bool GetAdvancedMode() const;
