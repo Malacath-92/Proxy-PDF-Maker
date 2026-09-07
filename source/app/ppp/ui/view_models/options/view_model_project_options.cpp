@@ -205,7 +205,6 @@ bool ProjectOptionsViewModel::IsCurrentProject(const fs::path& project_path) con
     auto& application{ *ppApp };
     const auto current_project_path{ application.GetProjectPath() };
     return project_path == current_project_path;
-
 }
 
 NewProjectPopupViewModel* ProjectOptionsViewModel::MakeProjectPopupViewModel() const

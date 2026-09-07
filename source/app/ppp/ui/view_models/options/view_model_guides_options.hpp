@@ -72,7 +72,7 @@ class GuidesOptionsViewModel : public QObject
     bool GetCornerGuidesEnabled() const;
     Length GetBleedEdge() const;
     Length GetEnvelopeBleedEdge() const;
-    
+
     Project& m_Project;
     const Config& m_Cfg;
 };

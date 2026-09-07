@@ -48,7 +48,8 @@ void StackedCardBacksideView::RefreshBackside(OptionalImageRef backside)
     {
         m_Backside->SetCardName(backside.value());
     }
-    else{
+    else
+    {
         m_Backside->Clear();
     }
 

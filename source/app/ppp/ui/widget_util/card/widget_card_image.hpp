@@ -46,7 +46,7 @@ class CardImage : public WidgetWithCardSize<QLabel>
     void CardNameChanged(const fs::path& card_name);
 
     void CardAspectRatioChanged(float aspect_ratio);
-    
+
     void MinimumWidthChanged(Pixel minimum_width);
 
     void PixmapChanged(const QPixmap& pixmap);

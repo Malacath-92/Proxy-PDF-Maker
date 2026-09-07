@@ -207,7 +207,7 @@ PagePreview::PagePreview(Project& project,
                 project,
             },
         };
-        
+
         auto* image_widget{
             new PrintPreviewCardImage{
                 image_view_model,

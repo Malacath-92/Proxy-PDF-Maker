@@ -26,10 +26,10 @@ class ProjectOptionsViewModel : public QObject
   private slots:
     void ChangeProjectName(const QString& project_name);
     void ChangeProjectsRoot(const QString& projects_root);
-    
+
     bool VerifyNewProjectOptions(const NewProjectPopupViewModel& view_model) const;
     void CreateNewProject(const NewProjectPopupViewModel& view_model);
-    
+
     void SaveProject() const;
 
     bool VerifyLoadProject() const;
