@@ -91,9 +91,6 @@ class CardOptionsViewModel : public QObject
     Length GetFullBleed() const;
     Length GetTotalBleed() const;
 
-    // TODO: KillMe
-    Project& GetProject() const;
-
     Project& m_Project;
     const Config& m_Cfg;
 };

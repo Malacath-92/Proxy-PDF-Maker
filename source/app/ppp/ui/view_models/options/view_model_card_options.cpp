@@ -157,8 +157,3 @@ Length CardOptionsViewModel::GetTotalBleed() const
     return m_Project.m_Data.m_BleedEdge +
            m_Project.m_Data.m_EnvelopeBleedEdge;
 }
-
-Project& CardOptionsViewModel::GetProject() const
-{
-    return m_Project;
-}
