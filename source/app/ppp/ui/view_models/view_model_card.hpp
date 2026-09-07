@@ -4,6 +4,7 @@
 
 #include <ppp/util.hpp>
 #include <ppp/util/bit_field.hpp>
+#include <ppp/util/flexible_ref.hpp>
 
 #include <ppp/project/project_types.hpp>
 
@@ -52,7 +53,7 @@ class CardViewModel : public QObject
   public:
     CardViewModel(fs::path card_name,
                   CardViewParams params,
-                  Project& project);
+                  FlexibleRef<Project> project);
 
     void SetCardName(const fs::path& card_name);
     const fs::path& GetCardName() const;
@@ -106,5 +107,5 @@ class CardViewModel : public QObject
     fs::path m_CardName;
     CardViewParams m_ViewParams;
 
-    Project& m_Project;
+    FlexibleRef<Project> m_Project;
 };
