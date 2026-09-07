@@ -5,6 +5,8 @@
 #include <ppp/config.hpp>
 #include <ppp/image.hpp>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/project/image_ops.hpp>
 #include <ppp/project/project.hpp>
 
@@ -192,6 +194,11 @@ void CardViewModel::RemoveExternalCard()
     {
         project->RemoveExternalCard(m_CardName);
     }
+    else
+    {
+        LogWarning("Attempted to remove external card {} but could not.",
+                   m_CardName.string());
+    }
 }
 
 void CardViewModel::ClearBackside()
@@ -200,12 +207,22 @@ void CardViewModel::ClearBackside()
     {
         project->ClearBacksideImage(m_CardName);
     }
+    else
+    {
+        LogWarning("Attempted to clear backside of card {} but could not.",
+                   m_CardName.string());
+    }
 }
 void CardViewModel::ResetBackside()
 {
     if (auto* project{ m_Project.TryGetMutable() })
     {
         project->SetBacksideImage(m_CardName, "");
+    }
+    else
+    {
+        LogWarning("Attempted to reset backside of card {} but could not.",
+                   m_CardName.string());
     }
 }
 
@@ -215,12 +232,22 @@ void CardViewModel::ChangeBleedType(BleedType bleed_type)
     {
         project->SetCardBleedType(m_CardName, bleed_type);
     }
+    else
+    {
+        LogWarning("Attempted to change bleed type of card {} but could not.",
+                   m_CardName.string());
+    }
 }
 void CardViewModel::ChangeBadAspectRatioHandling(BadAspectRatioHandling ratio_handling)
 {
     if (auto* project{ m_Project.TryGetMutable() })
     {
         project->SetCardBadAspectRatioHandling(m_CardName, ratio_handling);
+    }
+    else
+    {
+        LogWarning("Attempted to change aspect ratio handling of card {} but could not.",
+                   m_CardName.string());
     }
 }
 
@@ -238,6 +265,11 @@ void CardViewModel::RotateImageLeft(const QPixmap& pixmap)
             PixmapChanged(rotated);
         }
     }
+    else
+    {
+        LogWarning("Attempted to rotate card {} but could not.",
+                   m_CardName.string());
+    }
 }
 void CardViewModel::RotateImageRight(const QPixmap& pixmap)
 {
@@ -252,6 +284,11 @@ void CardViewModel::RotateImageRight(const QPixmap& pixmap)
             };
             PixmapChanged(rotated);
         }
+    }
+    else
+    {
+        LogWarning("Attempted to rotate card {} but could not.",
+                   m_CardName.string());
     }
 }
 
