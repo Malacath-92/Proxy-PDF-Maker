@@ -184,6 +184,7 @@ class Project : public QObject
     std::optional<CardInfo> EatCard(const fs::path& card_name);
 
     bool HasExternalCards() const;
+    uint32_t CountExternalCards() const;
 
     fs::path GetCardImagePath(const fs::path& card_name) const;
     bool IsCardExternal(const fs::path& card_name) const;
@@ -205,6 +206,10 @@ class Project : public QObject
     uint32_t SetCardCount(const fs::path& card_name, uint32_t num);
     uint32_t IncrementCardCount(const fs::path& card_name);
     uint32_t DecrementCardCount(const fs::path& card_name);
+
+    void DecrementAllCardCounts();
+    void IncrementAllCardCounts();
+    void ResetAllCardCounts();
 
     void CardOrderChanged();
     void CardOrderDirectionChanged();
@@ -330,6 +335,7 @@ class Project : public QObject
 
     bool AddExternalCard(const fs::path& absolute_image_path);
     bool RemoveExternalCard(const fs::path& card_name);
+    void RemoveAllExternalCards();
 
     void AvailableCardSizesChanged(const CardSizes& card_sizes);
     void AvailablePageSizesChanged(const PageSizes& page_sizes);
@@ -340,6 +346,7 @@ class Project : public QObject
     void FailedAddingExternalCard(const fs::path& absolute_image_path);
     void ExternalCardAdded(const fs::path& absolute_image_path);
     void ExternalCardRemoved(const fs::path& absolute_image_path);
+    void HasExternalCardsChanged(bool has_external_cards);
 
     void OutputFilenameChanged(const fs::path& output_filename);
     void PageHeaderEnabledChanged(bool page_header_enabled);
@@ -395,6 +402,8 @@ class Project : public QObject
     void PreviewRemoved(const fs::path& card_name);
     void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
 
+    void CardCountChanged(const fs::path& card_name, uint32_t count);
+    void CardBacksideShortEdgeChanged(const fs::path& card_name, bool card_backside_short_edge);
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
     void CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside);
     void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);

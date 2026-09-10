@@ -218,7 +218,6 @@ PagePreview::PagePreview(Project& project,
             },
         };
         image_widget->EnableContextMenu(true,
-                                        project,
                                         CardContextMenuFeatures::Default | CardContextMenuFeatures::SkipSlot);
         image_widget->installEventFilter(event_filter);
 

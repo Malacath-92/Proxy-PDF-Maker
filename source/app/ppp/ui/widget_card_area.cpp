@@ -9,7 +9,6 @@
 #include <QIntValidator>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QResizeEvent>
 #include <QScrollArea>
 #include <QScrollBar>
 
@@ -24,30 +23,28 @@
 #include <ppp/ui/popups/decklist_popup.hpp>
 #include <ppp/ui/popups/image_browse_popup.hpp>
 
-#include <ppp/ui/view_models/popups/view_model_image_browse_popup.hpp>
-#include <ppp/ui/view_models/view_model_blank_card.hpp>
-#include <ppp/ui/view_models/view_model_card.hpp>
+#include <ppp/ui/view_models/util.hpp>
+#include <ppp/ui/view_models/view_model_card_area.hpp>
+#include <ppp/ui/view_models/view_model_card_area_card.hpp>
 
 #include <ppp/profile/profile.hpp>
 
-class CardWidget : public QFrame
+class CardAreaCardWidget : public QFrame
 {
     Q_OBJECT
 
   public:
-    CardWidget(const fs::path& card_name, Project& project)
-        : m_CardName{ card_name }
-        , m_BacksideEnabled{ project.m_Data.m_BacksideEnabled }
-        , m_Backside{ project.GetBacksideImage(card_name) }
+    CardAreaCardWidget(CardAreaCardViewModel* view_model)
+        : m_ViewModel{ *view_model }
     {
         TRACY_AUTO_SCOPE();
 
-        const uint32_t initial_number{ card_name.empty() ? 1 : project.GetCardCount(card_name) };
+        m_ViewModel.setParent(this);
 
-        auto* number_edit{ new QLineEdit };
-        number_edit->setValidator(new QIntValidator{ 0, 999, this });
-        number_edit->setText(QString{}.setNum(initial_number));
-        number_edit->setFixedWidth(40);
+        m_NumberEdit = new QLineEdit;
+        m_NumberEdit->setValidator(new QIntValidator{ 0, 999, this });
+        m_NumberEdit->setText("0");
+        m_NumberEdit->setFixedWidth(40);
 
         auto* decrement_button{ new QPushButton{ "-" } };
         decrement_button->setToolTip("Remove one");
@@ -60,9 +57,10 @@ class CardWidget : public QFrame
         auto* number_layout{ new QHBoxLayout };
         number_layout->addStretch();
         number_layout->addWidget(decrement_button);
-        number_layout->addWidget(number_edit);
+        number_layout->addWidget(m_NumberEdit);
         number_layout->addWidget(increment_button);
         number_layout->addStretch();
+
         {
             QMargins margins{ number_layout->contentsMargins() };
             margins.setLeft(0);
@@ -70,341 +68,224 @@ class CardWidget : public QFrame
             number_layout->setContentsMargins(margins);
         }
 
-        auto* number_area{ new QWidget };
-        number_area->setLayout(number_layout);
-        number_area->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-        number_area->setMaximumHeight(number_area->sizeHint().height());
+        m_NumberArea = new QWidget;
+        m_NumberArea->setLayout(number_layout);
+        m_NumberArea->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+        m_NumberArea->setMaximumHeight(m_NumberArea->sizeHint().height());
 
-        QWidget* card_widget{ MakeCardWidget(project) };
-        m_ExtraOptions = MakeExtraOptions(project);
+        MakeCardWidget();
+        MakeWithBacksideWidget();
+        MakeExtraOptions();
 
         auto* this_layout{ new QVBoxLayout };
-        this_layout->addWidget(card_widget);
-        this_layout->addWidget(number_area);
-        if (m_ExtraOptions != nullptr)
-        {
-            this_layout->addWidget(m_ExtraOptions);
-        }
+        this_layout->addWidget(m_CardWidget);
+        this_layout->addWidget(m_NumberArea);
+        this_layout->addWidget(m_ExtraOptions);
         setLayout(this_layout);
 
-        QObject::connect(number_edit,
+        QObject::connect(m_NumberEdit,
                          &QLineEdit::editingFinished,
-                         this,
-                         std::bind_front(&CardWidget::EditNumber, this, std::ref(project)));
+                         &m_ViewModel,
+                         [this]()
+                         {
+                             m_ViewModel.SetCardCount(m_NumberEdit->text());
+                         });
         QObject::connect(decrement_button,
                          &QPushButton::clicked,
-                         this,
-                         std::bind_front(&CardWidget::DecrementNumber, this, std::ref(project)));
+                         &m_ViewModel,
+                         &CardAreaCardViewModel::DecrementCard);
         QObject::connect(increment_button,
                          &QPushButton::clicked,
-                         this,
-                         std::bind_front(&CardWidget::IncrementNumber, this, std::ref(project)));
-
-        m_ImageWidget = card_widget;
-        m_NumberEdit = number_edit;
-        m_NumberArea = number_area;
+                         &m_ViewModel,
+                         &CardAreaCardViewModel::IncrementCard);
 
         const auto margins{ layout()->contentsMargins() };
-        const auto minimum_img_width{ card_widget->minimumWidth() };
+        const auto minimum_img_width{ m_CardWidget->minimumWidth() };
         const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
-        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
+        setMinimumSize(minimum_width, CardAreaCardWidget::heightForWidth(minimum_width));
 
         setFrameShape(Shape::Box);
         setFrameShadow(Shadow::Raised);
+
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideEnabledChanged);
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(CardCountChanged);
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(CardBacksideShortEdgeChanged);
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(CardBacksideChanged);
+
+        m_ViewModel.EmitDefaults();
     }
 
     virtual bool hasHeightForWidth() const override
     {
         return true;
     }
-
     virtual int heightForWidth(int width) const override
     {
         const auto margins{ layout()->contentsMargins() };
         const auto spacing{ layout()->spacing() };
 
+        const auto* img_widget{
+            m_CardWidget->isVisible() ? static_cast<QWidget*>(m_CardWidget)
+                                      : m_WithBacksideWidget
+        };
+
         const auto img_width{ width - margins.left() - margins.right() };
-        const auto img_height{ m_ImageWidget->heightForWidth(img_width) };
+        const auto img_height{ img_widget->heightForWidth(img_width) };
 
-        auto additional_widgets{ m_NumberArea->height() + spacing };
-        if (m_ExtraOptions != nullptr)
-        {
-            additional_widgets += m_ExtraOptions->height() + spacing;
-        }
+        const auto number_area{ m_NumberArea->height() + spacing };
+        const auto extra_options{ m_ExtraOptions->isVisible()
+                                      ? m_ExtraOptions->height() + spacing
+                                      : 0 };
 
-        const auto height{ img_height + additional_widgets + margins.top() + margins.bottom() };
+        const auto height{ img_height + number_area + extra_options + margins.top() + margins.bottom() };
         return height;
     }
 
-    void ApplyNumber(Project& project, int64_t number)
-    {
-        number = std::max(number, int64_t{ 0 });
-        uint32_t final_number{ project.SetCardCount(m_CardName, static_cast<uint32_t>(number)) };
-        m_NumberEdit->setText(QString{}.setNum(final_number));
-    }
-
-    virtual void Refresh(Project& project)
-    {
-        TRACY_AUTO_SCOPE();
-
-        const bool backside_enabled_changed{ m_BacksideEnabled != project.m_Data.m_BacksideEnabled };
-        const auto new_backside{ project.GetBacksideImage(m_CardName) };
-        const bool backside_changed{ m_Backside != new_backside };
-
-        m_BacksideEnabled = project.m_Data.m_BacksideEnabled;
-        m_Backside = new_backside;
-
-        if (backside_enabled_changed)
-        {
-            auto* card_widget{ MakeCardWidget(project) };
-            layout()->replaceWidget(m_ImageWidget, card_widget);
-            std::swap(card_widget, m_ImageWidget);
-            delete card_widget;
-
-            auto* extra_options{ MakeExtraOptions(project) };
-            if (m_ExtraOptions == nullptr)
-            {
-                static_cast<QVBoxLayout*>(layout())->addWidget(extra_options);
-                m_ExtraOptions = extra_options;
-            }
-            else if (extra_options == nullptr)
-            {
-                layout()->removeWidget(m_ExtraOptions);
-                delete m_ExtraOptions;
-                m_ExtraOptions = nullptr;
-            }
-            else
-            {
-                layout()->replaceWidget(m_ExtraOptions, extra_options);
-                std::swap(extra_options, m_ExtraOptions);
-                delete extra_options;
-            }
-        }
-        else if (backside_changed)
-        {
-            if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
-            {
-                stacked_widget->RefreshBackside(project.m_Data.m_BacksideDefault);
-            }
-        }
-
-        const auto margins{ layout()->contentsMargins() };
-        const auto minimum_img_width{ m_ImageWidget->minimumWidth() };
-        const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
-        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
-    }
-
-    virtual void RefreshSize(Project& project)
-    {
-        TRACY_AUTO_SCOPE();
-
-        if (auto* image_widget{ dynamic_cast<CardImage*>(m_ImageWidget) })
-        {
-            (void)image_widget;
-            // image_widget->RefreshSize(project);
-        }
-        else if (auto* stacked_widget{ dynamic_cast<StackedCardBacksideView*>(m_ImageWidget) })
-        {
-            stacked_widget->RefreshSize(project);
-        }
-
-        const auto margins{ layout()->contentsMargins() };
-        const auto minimum_img_width{ m_ImageWidget->minimumWidth() };
-        const auto minimum_width{ std::max(minimum_img_width + margins.left() + margins.right(), 160) };
-        setMinimumSize(minimum_width, CardWidget::heightForWidth(minimum_width));
-    }
-
   private:
-    QWidget* MakeCardWidget(Project& project)
+    void MakeCardWidget()
     {
         TRACY_AUTO_SCOPE();
 
-        // TODO: Proper MVVM
-        auto* card_view_model{ new CardViewModel{ m_CardName, CardViewParams{}, project } };
+        auto* card_view_model{ m_ViewModel.MakeCardViewModel() };
+
+        m_CardWidget = new CardImage{ card_view_model };
+        m_CardWidget->EnableContextMenu(true);
+        m_CardWidget->setVisible(false);
+    }
+    void MakeWithBacksideWidget()
+    {
+        TRACY_AUTO_SCOPE();
+
+        auto* card_view_model{ m_ViewModel.MakeCardViewModel() };
 
         auto* card_image{ new CardImage{ card_view_model } };
-        card_image->EnableContextMenu(true, project);
+        card_image->EnableContextMenu(true);
 
-        if (m_BacksideEnabled)
-        {
-            auto* backside_view_model{ new CardViewModel{ m_Backside.value_or("__back.jpeg"), CardViewParams{}, project } };
-            auto* blank_view_model{ new BlankCardViewModel{ CardViewParams{}, project } };
+        auto* backside_view_model{ m_ViewModel.MakeBacksideCardViewModel() };
+        auto* blank_view_model{ m_ViewModel.MakeBlankCardViewModel() };
 
-            auto* backside_image{
-                new ClearableCardImage{
-                    backside_view_model,
-                    blank_view_model,
-                    !m_Backside.has_value(),
-                }
-            };
-            auto* stacked_widget{ new StackedCardBacksideView{ card_image, backside_image } };
-
-            auto backside_choose{
-                [this, &project]()
-                {
-                    auto* image_browser_view_model{ new ImageBrowseViewModel{ project, { &m_CardName, 1 } } };
-                    ImageBrowsePopup image_browser{ window(), image_browser_view_model };
-                    image_browser.setWindowTitle(QString{ "Choose backside for %1" }.arg(ToQString(m_CardName)));
-                    if (const auto backside_choice{ image_browser.Show() })
-                    {
-                        const auto& backside{ backside_choice.value() };
-                        project.SetBacksideImage(m_CardName, backside);
-                    }
-                    else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
-                    {
-                        project.ClearBacksideImage(m_CardName);
-                    }
-                    else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
-                    {
-                        project.SetBacksideImageDefault(m_CardName);
-                    }
-                }
-            };
-
-            if (!m_CardName.empty())
-            {
-                QObject::connect(&project,
-                                 &Project::CardBacksideChanged,
-                                 stacked_widget,
-                                 [this, stacked_widget, &project](const fs::path& card_name, OptionalImageRef backside)
-                                 {
-                                     if (m_CardName == card_name)
-                                     {
-                                         if (backside.has_value() && backside.value() == ""_p)
-                                         {
-                                             stacked_widget->RefreshBackside(project.m_Data.m_BacksideDefault);
-                                         }
-                                         else
-                                         {
-                                             stacked_widget->RefreshBackside(backside);
-                                         }
-                                     }
-                                 });
-                QObject::connect(stacked_widget,
-                                 &StackedCardBacksideView::BacksideClicked,
-                                 this,
-                                 backside_choose);
+        auto* backside_image{
+            new ClearableCardImage{
+                backside_view_model,
+                blank_view_model,
+                !m_ViewModel.HasBackside(),
             }
+        };
+        m_WithBacksideWidget = new StackedCardBacksideView{ card_image, backside_image };
+        m_WithBacksideWidget->setVisible(false);
 
-            return stacked_widget;
-        }
-        else
-        {
-            return card_image;
-        }
+        auto backside_choose{
+            [this]()
+            {
+                auto* image_browser_view_model{ m_ViewModel.MakeImageBrowseViewModel() };
+                ImageBrowsePopup image_browser{ window(), image_browser_view_model };
+                image_browser.setWindowTitle(QString{ "Choose backside for %1" }.arg(ToQString(m_ViewModel.GetCardName())));
+
+                if (const auto backside_choice{ image_browser.Show() })
+                {
+                    const auto& backside{ backside_choice.value() };
+                    m_ViewModel.SetBacksideImage(backside);
+                }
+                else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Clear)
+                {
+                    m_ViewModel.ClearBacksideImage();
+                }
+                else if (image_browser.GetChoice() == ImageBrowsePopup::Choice::Reset)
+                {
+                    m_ViewModel.SetBacksideImageDefault();
+                }
+            }
+        };
+
+        QObject::connect(m_WithBacksideWidget,
+                         &StackedCardBacksideView::BacksideClicked,
+                         this,
+                         backside_choose);
     }
-
-    QWidget* MakeExtraOptions(Project& project)
+    void MakeExtraOptions()
     {
-        if (!m_BacksideEnabled)
-        {
-            return nullptr;
-        }
-
         TRACY_AUTO_SCOPE();
 
-        std::vector<QWidget*> extra_options{};
+        m_BacksideShortEdge = new QCheckBox{ "Sideways" };
+        m_BacksideShortEdge->setChecked(false);
+        m_BacksideShortEdge->setToolTip("Determines whether to flip backside on short edge");
 
-        if (m_BacksideEnabled)
-        {
-            const bool is_short_edge{ project.HasCardBacksideShortEdge(m_CardName) };
-
-            auto* short_edge_checkbox{ new QCheckBox{ "Sideways" } };
-            short_edge_checkbox->setChecked(is_short_edge);
-            short_edge_checkbox->setToolTip("Determines whether to flip backside on short edge");
-
-            QObject::connect(short_edge_checkbox,
-                             &QCheckBox::checkStateChanged,
-                             this,
-                             std::bind_front(&CardWidget::SetShortEdge, this, std::ref(project)));
-
-            extra_options.push_back(short_edge_checkbox);
-        }
+        QObject::connect(m_BacksideShortEdge,
+                         &QCheckBox::checkStateChanged,
+                         &m_ViewModel,
+                         &CardAreaCardViewModel::SetCardBacksideShortEdge);
 
         auto* extra_options_layout{ new QHBoxLayout };
         extra_options_layout->addStretch();
-        for (QWidget* option : extra_options)
-        {
-            extra_options_layout->addWidget(option);
-        }
+        extra_options_layout->addWidget(m_BacksideShortEdge);
         extra_options_layout->addStretch();
         extra_options_layout->setContentsMargins(0, 0, 0, 0);
 
-        auto* extra_options_area{ new QWidget };
-        extra_options_area->setLayout(extra_options_layout);
-        extra_options_area->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-        extra_options_area->setMaximumHeight(extra_options_area->sizeHint().height());
-
-        return extra_options_area;
+        m_ExtraOptions = new QWidget;
+        m_ExtraOptions->setLayout(extra_options_layout);
+        m_ExtraOptions->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+        m_ExtraOptions->setMaximumHeight(m_ExtraOptions->sizeHint().height());
     }
 
-  public slots:
-    virtual void EditNumber(Project& project)
+  private slots:
+    void BacksideEnabledChanged(bool backside_enabled)
     {
-        ApplyNumber(project, m_NumberEdit->text().toLongLong());
+        auto* vbox_layout{ static_cast<QVBoxLayout*>(layout()) };
+        auto* first_item{ vbox_layout->itemAt(0) };
+        first_item->widget()->setVisible(false);
+        vbox_layout->removeItem(first_item);
+        if (backside_enabled)
+        {
+            vbox_layout->insertWidget(0, m_WithBacksideWidget);
+            m_WithBacksideWidget->setVisible(true);
+            m_ExtraOptions->setVisible(true);
+        }
+        else
+        {
+            vbox_layout->insertWidget(0, m_CardWidget);
+            m_CardWidget->setVisible(true);
+            m_ExtraOptions->setVisible(false);
+        }
     }
-
-    virtual void IncrementNumber(Project& project)
+    void CardCountChanged(uint32_t count)
     {
-        const auto number{ static_cast<int64_t>(project.GetCardCount(m_CardName)) + 1 };
-        ApplyNumber(project, number);
+        m_NumberEdit->setText(QString{}.setNum(count));
     }
-
-    virtual void DecrementNumber(Project& project)
+    void CardBacksideShortEdgeChanged(bool card_backside_short_edge)
     {
-        const auto number{ static_cast<int64_t>(project.GetCardCount(m_CardName)) - 1 };
-        ApplyNumber(project, number);
+        m_BacksideShortEdge->setChecked(card_backside_short_edge);
     }
-
-    virtual void SetShortEdge(Project& project, Qt::CheckState s)
+    void CardBacksideChanged(OptionalImageRef backside)
     {
-        project.SetCardBacksideShortEdge(m_CardName,
-                                         s == Qt::CheckState::Checked);
+        m_WithBacksideWidget->RefreshBackside(backside);
     }
-
-  protected:
-    fs::path m_CardName;
 
   private:
-    bool m_BacksideEnabled{ false };
-    std::optional<fs::path> m_Backside{};
+    CardAreaCardViewModel& m_ViewModel;
 
-    QWidget* m_ImageWidget{ nullptr };
+    CardImage* m_CardWidget{ nullptr };
+    StackedCardBacksideView* m_WithBacksideWidget;
     QLineEdit* m_NumberEdit{ nullptr };
     QWidget* m_NumberArea{ nullptr };
     QWidget* m_ExtraOptions{ nullptr };
+    QCheckBox* m_BacksideShortEdge{ nullptr };
 };
 
-class DummyCardWidget : public CardWidget
+class DummyCardWidget : public CardAreaCardWidget
 {
     Q_OBJECT
 
   public:
-    DummyCardWidget(const fs::path& card_name, Project& project)
-        : CardWidget{ "", project }
+    DummyCardWidget(CardAreaCardViewModel* view_model)
+        : CardAreaCardWidget{ view_model }
     {
         TRACY_AUTO_SCOPE();
-
-        m_CardName = card_name;
 
         auto sp_retain{ sizePolicy() };
         sp_retain.setRetainSizeWhenHidden(true);
         setSizePolicy(sp_retain);
         hide();
     }
-
-    // clang-format off
-    virtual void Refresh(Project&) override {}
-    virtual void RefreshSize(Project&) override {}
-    // clang-format on
-
-  private slots:
-    // clang-format off
-    virtual void EditNumber(Project&) override {}
-    virtual void IncrementNumber(Project&) override {}
-    virtual void DecrementNumber(Project&) override {}
-    virtual void SetShortEdge(Project&, Qt::CheckState) override {}
-    // clang-format on
 };
 
 class CardGrid : public QWidget
@@ -412,11 +293,10 @@ class CardGrid : public QWidget
     Q_OBJECT
 
   public:
-    CardGrid(Project& project,
-             uint32_t display_columns)
-        : m_Project{ project }
+    CardGrid(CardAreaViewModel& view_model)
+        : m_ViewModel{ view_model }
     {
-        FullRefresh(display_columns);
+        FullRefresh();
     }
 
     int TotalWidthFromItemWidth(int item_width) const
@@ -444,62 +324,40 @@ class CardGrid : public QWidget
         return static_cast<int>(height);
     }
 
-    void BacksideEnabledChanged()
-    {
-        FullRefresh(m_Columns);
-    }
-
-    void BacksideDefaultChanged()
-    {
-        for (const auto& [card_name, card_widget] : m_Cards)
-        {
-            card_widget->Refresh(m_Project);
-        }
-    }
-
-    void CardSizeChanged()
-    {
-        for (const auto& [card_name, card_widget] : m_Cards)
-        {
-            card_widget->RefreshSize(m_Project);
-        }
-    }
-
-    void FullRefresh(uint32_t display_columns)
+    void FullRefresh()
     {
         TRACY_AUTO_SCOPE();
 
-        const auto cols{ display_columns };
+        const auto cols{ m_ViewModel.GetDisplayColumns() };
         for (size_t j = m_Dummies.size(); j < cols; j++)
         {
             fs::path card_name{ fmt::format("__dummy__{}", j) };
-            auto* dummy{ new DummyCardWidget{ card_name, m_Project } };
+            auto* dummy{ new DummyCardWidget{ m_ViewModel.MakeCardViewModel(card_name) } };
             m_Dummies.push_back(dummy);
         }
 
         {
-            std::unordered_map<fs::path, CardWidget*> old_cards{
+            std::unordered_map<fs::path, CardAreaCardWidget*> old_cards{
                 std::move(m_Cards)
             };
             m_Cards = {};
 
             auto eat_or_make_card{
-                [this, &old_cards](const fs::path& card_name) -> CardWidget*
+                [this, &old_cards](const fs::path& card_name) -> CardAreaCardWidget*
                 {
                     auto it{ old_cards.find(card_name) };
                     if (it == old_cards.end())
                     {
-                        return new CardWidget{ card_name, m_Project };
+                        return new CardAreaCardWidget{ m_ViewModel.MakeCardViewModel(card_name) };
                     }
 
-                    CardWidget* card{ it->second };
+                    CardAreaCardWidget* card{ it->second };
                     old_cards.erase(it);
-                    card->Refresh(m_Project);
                     return card;
                 }
             };
 
-            for (const auto& card_info : m_Project.GetCards())
+            for (const auto& card_info : m_ViewModel.GetCards())
             {
                 const bool hidden{ card_info.m_Hidden > 0 };
                 if (hidden)
@@ -518,10 +376,10 @@ class CardGrid : public QWidget
             }
         }
 
-        ApplyFilter(m_CurrentFilter, display_columns);
+        ApplyFilter(m_CurrentFilter);
     }
 
-    void ApplyFilter(const QString& filter, uint32_t display_columns)
+    void ApplyFilter(const QString& filter)
     {
         TRACY_AUTO_SCOPE();
         TRACY_SCOPE_INFO_FMT("Filter: \"{}\"", filter.isEmpty() ? "<none>" : filter.toStdString().c_str());
@@ -553,7 +411,7 @@ class CardGrid : public QWidget
         this_layout->setContentsMargins(9, 9, 9, 9);
         setLayout(this_layout);
 
-        const auto cols{ display_columns };
+        const auto cols{ m_ViewModel.GetDisplayColumns() };
 
         const QString filter_lower{ filter.toLower() };
         size_t i{ 0 };
@@ -562,7 +420,7 @@ class CardGrid : public QWidget
             TRACY_AUTO_SCOPE();
             TRACY_SCOPE_NAME(filter_cards);
 
-            for (const auto& card_info : m_Project.GetCards())
+            for (const auto& card_info : m_ViewModel.GetCards())
             {
                 const auto& card_name{ card_info.m_Name };
                 if (!m_Cards.contains(card_name))
@@ -632,7 +490,6 @@ class CardGrid : public QWidget
 
         setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
         setMinimumHeight(heightForWidth(minimumWidth()));
-        setFixedHeight(heightForWidth(size().width()));
     }
 
     int MaximumColumnsFromAvailableWidth(int available_width) const
@@ -641,17 +498,6 @@ class CardGrid : public QWidget
             m_FirstItem->minimumWidth()
         };
         return available_width / image_minimum_size;
-    }
-
-    bool SetCardCount(const fs::path& card_name, uint32_t card_count) const
-    {
-        auto it{ m_Cards.find(card_name) };
-        if (it != m_Cards.end())
-        {
-            it->second->ApplyNumber(m_Project, static_cast<int64_t>(card_count));
-            return true;
-        }
-        return false;
     }
 
     bool HasCard(const fs::path& card_name) const
@@ -664,17 +510,17 @@ class CardGrid : public QWidget
         return !m_Cards.empty();
     }
 
-    std::unordered_map<fs::path, CardWidget*>& GetCards()
+    std::unordered_map<fs::path, CardAreaCardWidget*>& GetCards()
     {
         return m_Cards;
     }
 
   private:
-    Project& m_Project;
+    CardAreaViewModel& m_ViewModel;
 
-    std::unordered_map<fs::path, CardWidget*> m_Cards;
-    std::vector<CardWidget*> m_Dummies;
-    CardWidget* m_FirstItem;
+    std::unordered_map<fs::path, CardAreaCardWidget*> m_Cards;
+    std::vector<CardAreaCardWidget*> m_Dummies;
+    CardAreaCardWidget* m_FirstItem;
 
     uint32_t m_Columns;
     uint32_t m_Rows;
@@ -684,36 +530,36 @@ class CardGrid : public QWidget
 
 class CardScrollArea : public QScrollArea
 {
+    Q_OBJECT
+
   public:
-    CardScrollArea(Project& project, uint32_t display_columns);
+    CardScrollArea(CardAreaViewModel& view_model);
 
     CardGrid& GetGrid()
     {
         return *m_Grid;
     }
 
-    void FullRefresh(uint32_t display_columns);
-    void RefreshGridSize();
+    void FullRefresh();
 
     int MaximumColumnsFromAvailableWidth(int available_width) const;
 
-    void ApplyFilter(const QString& filter, uint32_t display_columns);
+    void ApplyFilter(const QString& filter);
 
   private:
     int ComputeMinimumWidth() const;
 
     virtual void showEvent(QShowEvent* event) override;
-    virtual void resizeEvent(QResizeEvent* event) override;
 
+    const CardAreaViewModel& m_ViewModel;
     CardGrid* m_Grid;
 };
 
-CardScrollArea::CardScrollArea(Project& project,
-                               uint32_t display_columns)
+CardScrollArea::CardScrollArea(CardAreaViewModel& view_model)
+    : m_ViewModel{ view_model }
+    , m_Grid{ new CardGrid{ view_model } }
 {
     TRACY_AUTO_SCOPE();
-
-    m_Grid = new CardGrid{ project, display_columns };
 
     setWidgetResizable(true);
     setFrameShape(QFrame::Shape::NoFrame);
@@ -722,11 +568,10 @@ CardScrollArea::CardScrollArea(Project& project,
     setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOn);
 }
 
-void CardScrollArea::FullRefresh(uint32_t display_columns)
+void CardScrollArea::FullRefresh()
 {
-    m_Grid->FullRefresh(display_columns);
+    m_Grid->FullRefresh();
     setMinimumWidth(ComputeMinimumWidth());
-    RefreshGridSize();
 }
 
 int CardScrollArea::MaximumColumnsFromAvailableWidth(int available_width) const
@@ -739,18 +584,9 @@ int CardScrollArea::MaximumColumnsFromAvailableWidth(int available_width) const
     return m_Grid->MaximumColumnsFromAvailableWidth(available_width);
 }
 
-void CardScrollArea::RefreshGridSize()
+void CardScrollArea::ApplyFilter(const QString& filter)
 {
-    TRACY_AUTO_SCOPE();
-
-    const auto width{ size().width() };
-    const auto height{ m_Grid->heightForWidth(width) };
-    m_Grid->setFixedHeight(height);
-}
-
-void CardScrollArea::ApplyFilter(const QString& filter, uint32_t display_columns)
-{
-    m_Grid->ApplyFilter(filter, display_columns);
+    m_Grid->ApplyFilter(filter);
 }
 
 int CardScrollArea::ComputeMinimumWidth() const
@@ -764,21 +600,21 @@ void CardScrollArea::showEvent(QShowEvent* event)
 {
     QScrollArea::showEvent(event);
     setMinimumWidth(ComputeMinimumWidth());
-    RefreshGridSize();
 }
 
-void CardScrollArea::resizeEvent(QResizeEvent* event)
-{
-    QScrollArea::resizeEvent(event);
-    RefreshGridSize();
-}
-
-CardArea::CardArea(Project& project,
-                   uint32_t display_columns)
-    : m_Project{ project }
-    , m_DisplayColumns{ display_columns }
+CardArea::CardArea(CardAreaViewModel* view_model)
+    : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
+
+    m_ViewModel.setParent(this);
+
+    m_RefreshTimer.setSingleShot(true);
+    m_RefreshTimer.setInterval(50);
+    QObject::connect(&m_RefreshTimer,
+                     &QTimer::timeout,
+                     this,
+                     &CardArea::FullRefresh);
 
     {
         TRACY_AUTO_SCOPE();
@@ -788,7 +624,7 @@ CardArea::CardArea(Project& project,
         auto* onboarding_line_2{ new QLabel{
             QString(
                 "To start either add images into the <a href=\"file:///%1\">image folder</a>, drag-and-drop")
-                .arg(ToQString(project.m_Data.m_ImageDir).replace(' ', "%20")),
+                .arg(m_ViewModel.GetImageDir().replace(' ', "%20")),
         } };
         auto* onboarding_line_3{ new QLabel{
             "images onto the app, or enable one of the <a href=\"#plugins\">plugins</a>.",
@@ -878,51 +714,21 @@ CardArea::CardArea(Project& project,
         m_Header = new QWidget;
         m_Header->setLayout(header_layout);
 
-        m_RemoveExternalCards->setVisible(project.HasExternalCards());
-
-        auto dec_number{
-            [this, &project]()
-            {
-                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
-                {
-                    card->DecrementNumber(project);
-                }
-            }
-        };
-
-        auto inc_number{
-            [this, &project]()
-            {
-                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
-                {
-                    card->IncrementNumber(project);
-                }
-            }
-        };
-
-        auto reset_number{
-            [this, &project]()
-            {
-                for (auto& [_, card] : m_ScrollArea->GetGrid().GetCards())
-                {
-                    card->ApplyNumber(project, 0);
-                }
-            }
-        };
-
         auto open_decklist{
-            [this, &project]()
+            [this]()
             {
                 window()->setEnabled(false);
                 {
-                    DecklistPopup decklist_popup{ nullptr, m_Project };
+                    // TODO: No Project
+                    auto& project{ m_ViewModel.m_Project };
+                    DecklistPopup decklist_popup{ nullptr, project };
 
                     QObject::connect(
                         &decklist_popup,
                         &DecklistPopup::DecklistChanged,
                         [this, &project](const std::unordered_map<fs::path, uint32_t>& decklist)
                         {
-                            for (const auto& card : m_Project.m_Data.m_Cards)
+                            for (const auto& card : project.m_Data.m_Cards)
                             {
                                 const auto card_count{
                                     [&]()
@@ -944,15 +750,7 @@ CardArea::CardArea(Project& project,
                                     }()
                                 };
 
-                                const auto& grid{ m_ScrollArea->GetGrid() };
-                                if (grid.HasCard(card.m_Name))
-                                {
-                                    grid.SetCardCount(card.m_Name, card_count);
-                                }
-                                else
-                                {
-                                    project.SetCardCount(card.m_Name, card_count);
-                                }
+                                project.SetCardCount(card.m_Name, card_count);
                             }
                         });
 
@@ -965,35 +763,22 @@ CardArea::CardArea(Project& project,
         auto apply_filter{
             [this](const QString& text)
             {
-                m_ScrollArea->ApplyFilter(text, m_DisplayColumns);
-            }
-        };
-
-        auto remove_all_external{
-            [this, &project]()
-            {
-                for (auto& card : m_Project.m_Data.m_Cards)
-                {
-                    if (card.m_ExternalPath.has_value())
-                    {
-                        project.RemoveExternalCard(card.m_Name);
-                    }
-                }
+                m_ScrollArea->ApplyFilter(text);
             }
         };
 
         QObject::connect(global_decrement_button,
                          &QPushButton::clicked,
-                         this,
-                         dec_number);
+                         &m_ViewModel,
+                         &CardAreaViewModel::DecrementAllCards);
         QObject::connect(global_increment_button,
                          &QPushButton::clicked,
-                         this,
-                         inc_number);
+                         &m_ViewModel,
+                         &CardAreaViewModel::DecrementAllCards);
         QObject::connect(global_set_zero_button,
                          &QPushButton::clicked,
-                         this,
-                         reset_number);
+                         &m_ViewModel,
+                         &CardAreaViewModel::ResetAllCards);
         QObject::connect(global_decklist_button,
                          &QPushButton::clicked,
                          this,
@@ -1004,11 +789,11 @@ CardArea::CardArea(Project& project,
                          apply_filter);
         QObject::connect(m_RemoveExternalCards,
                          &QPushButton::clicked,
-                         this,
-                         remove_all_external);
+                         &m_ViewModel,
+                         &CardAreaViewModel::RemoveAllExternalCards);
     }
 
-    m_ScrollArea = new CardScrollArea{ project, m_DisplayColumns };
+    m_ScrollArea = new CardScrollArea{ m_ViewModel };
 
     auto* card_area_layout{ new QVBoxLayout };
     card_area_layout->addWidget(m_OnboardingHint);
@@ -1022,48 +807,33 @@ CardArea::CardArea(Project& project,
     m_Header->setVisible(grid.HasCards());
     m_ScrollArea->setVisible(grid.HasCards());
 
-    m_RefreshTimer.setSingleShot(true);
-    m_RefreshTimer.setInterval(50);
-    QObject::connect(&m_RefreshTimer,
-                     &QTimer::timeout,
+    QObject::connect(&m_ViewModel,
+                     &CardAreaViewModel::RequestRefresh,
                      this,
-                     [this]()
-                     {
-                         m_ScrollArea->FullRefresh(m_DisplayColumns);
+                     &CardArea::QueueRefresh);
 
-                         const auto& grid{ m_ScrollArea->GetGrid() };
-                         m_OnboardingHint->setVisible(!grid.HasCards());
-                         m_Header->setVisible(grid.HasCards());
-                         m_ScrollArea->setVisible(grid.HasCards());
-                     });
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(HasExternalCardsChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAdded);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardRemoved);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardRenamed);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardVisibilityChanged);
+
+    m_ViewModel.EmitDefaults();
 }
 
-void CardArea::NewProjectOpened()
+int CardArea::MaximumColumnsFromAvailableWidth(int available_width) const
 {
-    FullRefresh();
+    const auto margins{ contentsMargins() };
+    available_width -= layout()->spacing() +
+                       margins.left() +
+                       margins.right();
+    return m_ScrollArea->MaximumColumnsFromAvailableWidth(available_width);
 }
 
-void CardArea::ImageDirChanged()
+void CardArea::CardSizeChanged(Size /* card_size */)
 {
-    FullRefresh();
-}
-
-void CardArea::BacksideEnabledChanged()
-{
-    auto& grid{ m_ScrollArea->GetGrid() };
-    grid.BacksideEnabledChanged();
-}
-
-void CardArea::BacksideDefaultChanged()
-{
-    auto& grid{ m_ScrollArea->GetGrid() };
-    grid.BacksideDefaultChanged();
-}
-
-void CardArea::CardSizeChanged()
-{
-    auto& grid{ m_ScrollArea->GetGrid() };
-    grid.CardSizeChanged();
+    // TODO: Get rid of this!!!
 
     // This is the stupidest code I have ever written...
     // Nothing that should usually be working to make sure widget's size
@@ -1079,51 +849,31 @@ void CardArea::CardSizeChanged()
     }
 }
 
-void CardArea::DisplayColumnsChanged(uint32_t display_columns)
+void CardArea::HasExternalCardsChanged(bool has_external_cards)
 {
-    if (m_DisplayColumns != display_columns)
-    {
-        m_DisplayColumns = display_columns;
-        FullRefresh();
-    }
-}
-
-void CardArea::CardOrderChanged()
-{
-    FullRefresh();
-}
-
-void CardArea::CardOrderDirectionChanged()
-{
-    FullRefresh();
+    m_RemoveExternalCards->setVisible(has_external_cards);
 }
 
 void CardArea::CardAdded(const fs::path& card_name)
 {
-    m_RemoveExternalCards->setVisible(m_Project.HasExternalCards());
-
     const auto& grid{ m_ScrollArea->GetGrid() };
     if (grid.HasCard(card_name))
     {
         return;
     }
 
-    FullRefresh();
+    QueueRefresh();
 }
-
 void CardArea::CardRemoved(const fs::path& card_name)
 {
-    m_RemoveExternalCards->setVisible(m_Project.HasExternalCards());
-
     const auto& grid{ m_ScrollArea->GetGrid() };
     if (!grid.HasCard(card_name))
     {
         return;
     }
 
-    FullRefresh();
+    QueueRefresh();
 }
-
 void CardArea::CardRenamed(const fs::path& old_card_name, const fs::path& /*new_card_name*/)
 {
     const auto& grid{ m_ScrollArea->GetGrid() };
@@ -1132,34 +882,34 @@ void CardArea::CardRenamed(const fs::path& old_card_name, const fs::path& /*new_
         return;
     }
 
-    FullRefresh();
+    QueueRefresh();
 }
-
 void CardArea::CardVisibilityChanged(const fs::path& card_name, bool visible)
 {
     const auto& grid{ m_ScrollArea->GetGrid() };
     if (visible && !grid.HasCard(card_name))
     {
-        FullRefresh();
+        QueueRefresh();
     }
     else if (!visible && grid.HasCard(card_name))
     {
-        FullRefresh();
+        QueueRefresh();
     }
 }
 
 void CardArea::FullRefresh()
 {
-    m_RefreshTimer.start();
+    m_ScrollArea->FullRefresh();
+
+    const auto& grid{ m_ScrollArea->GetGrid() };
+    m_OnboardingHint->setVisible(!grid.HasCards());
+    m_Header->setVisible(grid.HasCards());
+    m_ScrollArea->setVisible(grid.HasCards());
 }
 
-int CardArea::MaximumColumnsFromAvailableWidth(int available_width) const
+void CardArea::QueueRefresh()
 {
-    const auto margins{ contentsMargins() };
-    available_width -= layout()->spacing() +
-                       margins.left() +
-                       margins.right();
-    return m_ScrollArea->MaximumColumnsFromAvailableWidth(available_width);
+    m_RefreshTimer.start();
 }
 
 #include <widget_card_area.moc>

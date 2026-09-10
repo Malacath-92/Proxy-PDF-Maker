@@ -44,6 +44,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/ui/view_models/options/view_model_print_options.hpp>
 #include <ppp/ui/view_models/options/view_model_project_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
+#include <ppp/ui/view_models/view_model_card_area.hpp>
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/options/widget_actions.hpp>
@@ -253,6 +254,8 @@ int main(int argc, char** argv)
     QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
 
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
+    auto* card_area_view_model{ new CardAreaViewModel{ project, config } };
+
     auto* project_options_view_model{ new ProjectOptionsViewModel{ project, config } };
     auto* print_options_view_model{ new PrintOptionsViewModel{ project, config } };
     auto* guides_options_view_model{ new GuidesOptionsViewModel{ project, config } };
@@ -260,7 +263,7 @@ int main(int argc, char** argv)
     auto* global_options_view_model{ new GlobalOptionsViewModel{ config } };
 
     auto* actions{ new ActionsWidget{ actions_view_model } };
-    auto* card_area{ new CardArea{ project, config.m_DisplayColumns } };
+    auto* card_area{ new CardArea{ card_area_view_model } };
     auto* print_preview{ new PrintPreview{ project, config } };
     auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
 
@@ -273,7 +276,7 @@ int main(int argc, char** argv)
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, &cropper, &Cropper::PauseWork);
     QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, &cropper, &Cropper::RestartWork);
-    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area, &CardArea::FullRefresh);
+    QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area_view_model, &CardAreaViewModel::RequestRefresh);
 
     QObject::connect(
         &plugin_router,
@@ -339,7 +342,7 @@ int main(int argc, char** argv)
                     tabs->MaximumColumnsFromAvailableWidth(tabs_leftover_width)
                 };
 
-                config.SetMaxDisplayColumns(maximum_columns);
+                config.SetMaxDisplayColumns(maximum_columns - 1);
             }
         };
 
@@ -383,6 +386,35 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_CONFIG(PdfBackendChanged);
 
 #undef FORWARD_SIGNAL_FROM_CONFIG
+    }
+
+    {
+        TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(connect_signals_card_area_view_model);
+
+#define FORWARD_SIGNAL_FROM_CONFIG(sig) \
+    FORWARD_SIGNAL_FROM_TO(config, *card_area_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_CONFIG(DisplayColumnsChanged);
+        FORWARD_SIGNAL_FROM_CONFIG(CardOrderChanged);
+        FORWARD_SIGNAL_FROM_CONFIG(CardOrderDirectionChanged);
+
+#undef FORWARD_SIGNAL_FROM_CONFIG
+
+#define FORWARD_SIGNAL_FROM_PROJECT(sig) \
+    FORWARD_SIGNAL_FROM_TO(project, *card_area_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_PROJECT(NewProjectOpened);
+        FORWARD_SIGNAL_FROM_PROJECT(ImageDirChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CardSizeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(HasExternalCardsChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CardVisibilityChanged);
+
+#undef FORWARD_SIGNAL_FROM_PROJECT
+
+        QObject::connect(&card_provider, &CardProvider::CardAdded, card_area_view_model, &CardAreaViewModel::CardAdded);
+        QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area_view_model, &CardAreaViewModel::CardRemoved);
+        QObject::connect(&card_provider, &CardProvider::CardRenamed, card_area_view_model, &CardAreaViewModel::CardRenamed);
     }
 
     {
@@ -553,27 +585,6 @@ int main(int argc, char** argv)
         QObject::connect(&config, &Config::BasePreviewWidthChanged, &card_provider, &CardProvider::BasePreviewWidthChanged);
         QObject::connect(&config, &Config::NoCropModeChanged, &card_provider, &CardProvider::NoCropModeChanged);
         QObject::connect(&config, &Config::MaxDPIChanged, &card_provider, &CardProvider::MaxDPIChanged);
-    }
-
-    {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(connect_signals_card_area);
-
-        QObject::connect(&card_provider, &CardProvider::CardAdded, card_area, &CardArea::CardAdded);
-        QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area, &CardArea::CardRemoved);
-        QObject::connect(&card_provider, &CardProvider::CardRenamed, card_area, &CardArea::CardRenamed);
-
-        QObject::connect(&project, &Project::CardVisibilityChanged, card_area, &CardArea::CardVisibilityChanged);
-
-        QObject::connect(&project, &Project::ImageDirChanged, card_area, &CardArea::ImageDirChanged);
-        QObject::connect(&project, &Project::NewProjectOpened, card_area, &CardArea::NewProjectOpened);
-        QObject::connect(&project, &Project::BacksideEnabledChanged, card_area, &CardArea::BacksideEnabledChanged);
-        QObject::connect(&project, &Project::BacksideDefaultChanged, card_area, &CardArea::BacksideDefaultChanged);
-        QObject::connect(&project, &Project::CardBacksideChanged, card_area, &CardArea::FullRefresh);
-        QObject::connect(&project, &Project::CardSizeChanged, card_area, &CardArea::CardSizeChanged);
-        QObject::connect(&config, &Config::DisplayColumnsChanged, card_area, &CardArea::DisplayColumnsChanged);
-        QObject::connect(&config, &Config::CardOrderChanged, card_area, &CardArea::CardOrderChanged);
-        QObject::connect(&config, &Config::CardOrderDirectionChanged, card_area, &CardArea::CardOrderDirectionChanged);
     }
 
     {

@@ -895,6 +895,12 @@ bool Project::HasExternalCards() const
                                [](const auto& card)
                                { return !card.m_Transient && card.m_ExternalPath.has_value(); });
 }
+uint32_t Project::CountExternalCards() const
+{
+    return std::ranges::count_if(m_Data.m_Cards,
+                                 [](const auto& card)
+                                 { return !card.m_Transient && card.m_ExternalPath.has_value(); });
+}
 
 fs::path Project::GetCardImagePath(const fs::path& card_name) const
 {
@@ -1056,6 +1062,7 @@ uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
             {
                 RemoveCardFromList(card_name);
             }
+            CardCountChanged(card_name, card->m_Num);
 
             return clamped_num;
         }
@@ -1072,6 +1079,7 @@ uint32_t Project::IncrementCardCount(const fs::path& card_name)
         {
             ++card->m_Num;
             AppendCardToList(card_name);
+            CardCountChanged(card_name, card->m_Num);
             return card->m_Num;
         }
     }
@@ -1088,11 +1096,22 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
         {
             --card->m_Num;
             RemoveCardFromList(card_name);
+            CardCountChanged(card_name, card->m_Num);
             return card->m_Num;
         }
     }
 
     return 0;
+}
+
+void Project::DecrementAllCardCounts()
+{
+}
+void Project::IncrementAllCardCounts()
+{
+}
+void Project::ResetAllCardCounts()
+{
 }
 
 void Project::CardOrderChanged()
@@ -2041,6 +2060,7 @@ void Project::SetCardBacksideShortEdge(const fs::path& card_name, bool has_backs
     if (auto* card{ FindCard(card_name) })
     {
         card->m_BacksideShortEdge = has_backside_short_edge;
+        CardBacksideShortEdgeChanged(card_name, has_backside_short_edge);
     }
 }
 
@@ -2844,10 +2864,15 @@ bool Project::AddExternalCard(const fs::path& absolute_image_path)
     }
     else
     {
+        const bool has_external_cards{ HasExternalCards() };
         auto& card{ CardAdded(card_name) };
         card.m_LastWriteTime = TryGetLastWriteTime(absolute_image_path),
         card.m_ExternalPath = absolute_image_path;
         ExternalCardAdded(absolute_image_path);
+        if (has_external_cards != HasExternalCards())
+        {
+            HasExternalCardsChanged(true);
+        }
         return true;
     }
 }
@@ -2856,14 +2881,30 @@ bool Project::RemoveExternalCard(const fs::path& card_name)
 {
     if (IsCardExternal(card_name))
     {
+        const bool has_external_cards{ HasExternalCards() };
         const fs::path absolute_image_path{
             FindCard(card_name)->m_ExternalPath.value()
         };
         CardRemoved(card_name);
         ExternalCardRemoved(absolute_image_path);
+        if (has_external_cards != HasExternalCards())
+        {
+            HasExternalCardsChanged(false);
+        }
         return true;
     }
     return false;
+}
+
+void Project::RemoveAllExternalCards()
+{
+    for (auto& card : m_Data.m_Cards)
+    {
+        if (card.m_ExternalPath.has_value())
+        {
+            RemoveExternalCard(card.m_Name);
+        }
+    }
 }
 
 void Project::AvailableCardSizesChanged(const CardSizes& card_sizes)

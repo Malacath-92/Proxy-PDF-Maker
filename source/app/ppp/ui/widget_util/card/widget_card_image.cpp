@@ -70,7 +70,6 @@ CardImage::CardImage(CardViewModel* view_model)
 }
 
 void CardImage::EnableContextMenu(bool enable,
-                                  Project& /* project */,
                                   CardContextMenuFeatures features)
 {
     if (enable && contextMenuPolicy() != Qt::ContextMenuPolicy::CustomContextMenu)

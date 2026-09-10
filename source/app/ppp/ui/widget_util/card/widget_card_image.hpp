@@ -39,7 +39,6 @@ class CardImage : public WidgetWithCardSize<QLabel>
     CardImage(CardViewModel* view_model);
 
     void EnableContextMenu(bool enable,
-                           Project& project,
                            CardContextMenuFeatures features = CardContextMenuFeatures::Default);
 
   private slots:

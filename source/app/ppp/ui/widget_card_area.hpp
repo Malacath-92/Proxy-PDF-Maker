@@ -1,33 +1,32 @@
 #pragma once
 
-#include <QTimer>
 #include <QWidget>
+#include <QTimer>
 
 #include <ppp/util.hpp>
+
+#include <ppp/project/project_types.hpp>
 
 class QLineEdit;
 class QPushButton;
 
-class Project;
 class CardScrollArea;
+
+class CardAreaViewModel;
 
 class CardArea : public QWidget
 {
     Q_OBJECT
 
   public:
-    CardArea(Project& project,
-             uint32_t display_columns);
+    CardArea(CardAreaViewModel* view_model);
 
-  public slots:
-    void NewProjectOpened();
-    void ImageDirChanged();
-    void BacksideEnabledChanged();
-    void BacksideDefaultChanged();
-    void CardSizeChanged();
-    void DisplayColumnsChanged(uint32_t display_columns);
-    void CardOrderChanged();
-    void CardOrderDirectionChanged();
+    int MaximumColumnsFromAvailableWidth(int available_width) const;
+
+  private slots:
+    void CardSizeChanged(Size card_size);
+
+    void HasExternalCardsChanged(bool has_external_cards);
 
     void CardAdded(const fs::path& card_name);
     void CardRemoved(const fs::path& card_name);
@@ -35,16 +34,17 @@ class CardArea : public QWidget
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
 
-    void FullRefresh();
-
-    int MaximumColumnsFromAvailableWidth(int available_width) const;
-
   signals:
     void RequestOpenPluginsWindow();
 
   private:
-    const Project& m_Project;
-    uint32_t m_DisplayColumns;
+    void FullRefresh();
+
+    void QueueRefresh();
+  
+    CardAreaViewModel& m_ViewModel;
+
+    QTimer m_RefreshTimer;
 
     QWidget* m_OnboardingHint;
 
@@ -52,9 +52,4 @@ class CardArea : public QWidget
     QPushButton* m_RemoveExternalCards;
     QLineEdit* m_Filter;
     CardScrollArea* m_ScrollArea;
-
-    // We use a timer whenever we do a full refresh
-    // to avoid cases where we get multiple requests
-    // in quick succession
-    QTimer m_RefreshTimer;
 };
