@@ -48,6 +48,8 @@ class CardAreaViewModel : public QObject
     void CardRemoved(const fs::path& card_name);
     void CardRenamed(const fs::path& old_card_name, const fs::path& new_card_name);
 
+    void CardSortingChanged();
+
   signals:
     void RequestRefresh();
 

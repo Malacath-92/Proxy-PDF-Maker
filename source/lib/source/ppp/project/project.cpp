@@ -1117,11 +1117,13 @@ void Project::ResetAllCardCounts()
 void Project::CardOrderChanged()
 {
     std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
+    CardSortingChanged();
 }
 
 void Project::CardOrderDirectionChanged()
 {
     std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
+    CardSortingChanged();
 }
 
 void Project::RestoreCardsOrder()
@@ -2018,6 +2020,12 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         card->m_Backside = std::move(backside_image);
 
         CardBacksideChanged(card_name, card->m_Backside.value());
+
+        if (m_Cfg.m_CardOrder == CardOrder::Backside)
+        {
+            std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
+            CardSortingChanged();
+        }
 
         const bool old_backside_shown{ old_backside.has_value() ? UnhideCard(old_backside.value()) : false };
         const bool new_backside_hidden{ HideCard(card->m_Backside.value()) };

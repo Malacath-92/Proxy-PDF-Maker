@@ -412,6 +412,8 @@ class Project : public QObject
 
     void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
+    void CardSortingChanged();
+
   public:
     ProjectData m_Data;
     const Config& m_Cfg;

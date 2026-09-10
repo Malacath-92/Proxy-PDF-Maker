@@ -22,6 +22,7 @@ CardAreaViewModel::CardAreaViewModel(Project& project,
     QObject::connect(this, &CardAreaViewModel::CardOrderDirectionChanged, &CardAreaViewModel::RequestRefresh);
     QObject::connect(this, &CardAreaViewModel::NewProjectOpened, &CardAreaViewModel::RequestRefresh);
     QObject::connect(this, &CardAreaViewModel::ImageDirChanged, &CardAreaViewModel::RequestRefresh);
+    QObject::connect(this, &CardAreaViewModel::CardSortingChanged, &CardAreaViewModel::RequestRefresh);
 }
 
 CardAreaCardViewModel* CardAreaViewModel::MakeCardViewModel(const fs::path& card_name) const

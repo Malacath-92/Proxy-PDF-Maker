@@ -408,6 +408,7 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_PROJECT(ImageDirChanged);
         FORWARD_SIGNAL_FROM_PROJECT(HasExternalCardsChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardVisibilityChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(CardSortingChanged);
 
 #undef FORWARD_SIGNAL_FROM_PROJECT
 
@@ -627,6 +628,7 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
+        QObject::connect(&project, &Project::CardSortingChanged, print_preview, &PrintPreview::CardOrderChanged);
 
         QObject::connect(&config, &Config::ColorCubeChanged, print_preview, &PrintPreview::RequestRefresh);
         QObject::connect(&config, &Config::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);
