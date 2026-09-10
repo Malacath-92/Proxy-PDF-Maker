@@ -1,7 +1,7 @@
 #pragma once
 
-#include <QWidget>
 #include <QTimer>
+#include <QWidget>
 
 #include <ppp/util.hpp>
 
@@ -39,7 +39,7 @@ class CardArea : public QWidget
     void FullRefresh();
 
     void QueueRefresh();
-  
+
     CardAreaViewModel& m_ViewModel;
 
     QTimer m_RefreshTimer;

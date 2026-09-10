@@ -2,8 +2,8 @@
 
 #include <QObject>
 
-#include <ppp/util.hpp>
 #include <ppp/project/project_types.hpp>
+#include <ppp/util.hpp>
 
 class Project;
 
@@ -46,7 +46,7 @@ class CardAreaCardViewModel : public QObject
     void IncrementCard();
     void SetCardCount(const QString& count);
     void SetCardBacksideShortEdge(Qt::CheckState backside_short_edge);
-    
+
     void SetBacksideImage(const fs::path& backside_name);
     void ClearBacksideImage();
     void SetBacksideImageDefault();
