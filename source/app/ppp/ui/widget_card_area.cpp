@@ -171,7 +171,7 @@ class CardAreaCardWidget : public QFrame
                 !m_ViewModel.HasBackside(),
             }
         };
-        m_WithBacksideWidget = new StackedCardBacksideView{ card_image, backside_image };
+        m_WithBacksideWidget = new StackedCardBacksideView{ m_ViewModel.MakeBlankCardViewModel(), card_image, backside_image };
         m_WithBacksideWidget->setVisible(false);
 
         auto backside_choose{

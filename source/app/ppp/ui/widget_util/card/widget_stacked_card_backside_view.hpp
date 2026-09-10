@@ -9,17 +9,26 @@
 class CardImage;
 class ClearableCardImage;
 
+class BlankCardViewModel;
+
 class StackedCardBacksideView : public WidgetWithCardSize<QStackedWidget>
 {
     Q_OBJECT
 
   public:
-    StackedCardBacksideView(CardImage* image, ClearableCardImage* backside);
+    StackedCardBacksideView(BlankCardViewModel* view_model,
+                            CardImage* image,
+                            ClearableCardImage* backside);
 
     void RefreshBackside(OptionalImageRef backside);
 
   signals:
     void BacksideClicked();
+
+  private slots:
+    void CardAspectRatioChanged(float aspect_ratio);
+
+    void MinimumWidthChanged(Pixel minimum_width);
 
   private:
     void RefreshSizes(QSize size);
@@ -28,6 +37,8 @@ class StackedCardBacksideView : public WidgetWithCardSize<QStackedWidget>
     virtual void mouseMoveEvent(QMouseEvent* event) override;
     virtual void leaveEvent(QEvent* event) override;
     virtual void mouseReleaseEvent(QMouseEvent* event) override;
+
+    BlankCardViewModel& m_ViewModel;
 
     CardImage* m_Image;
 

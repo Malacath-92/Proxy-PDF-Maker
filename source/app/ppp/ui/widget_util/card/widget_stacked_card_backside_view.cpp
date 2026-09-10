@@ -7,37 +7,50 @@
 #include <ppp/ui/widget_util/card/widget_card_image.hpp>
 #include <ppp/ui/widget_util/card/widget_clearable_card_image.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
+#include <ppp/ui/view_models/view_model_blank_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
-StackedCardBacksideView::StackedCardBacksideView(CardImage* image, ClearableCardImage* backside)
+StackedCardBacksideView::StackedCardBacksideView(BlankCardViewModel* view_model,
+                                                 CardImage* image,
+                                                 ClearableCardImage* backside)
     : WidgetWithCardSize{ image->GetAspectRatio() }
+    , m_ViewModel{ *view_model }
     , m_Image{ image }
     , m_Backside{ backside }
 {
     TRACY_AUTO_SCOPE();
 
-    backside->setToolTip("Choose individual Backside");
+    m_ViewModel.setParent(this);
+
+    m_Backside->setToolTip("Choose individual Backside");
 
     auto* backside_layout{ new QHBoxLayout };
     backside_layout->addStretch();
-    backside_layout->addWidget(backside, 0, Qt::AlignmentFlag::AlignBottom);
+    backside_layout->addWidget(m_Backside, 0, Qt::AlignmentFlag::AlignBottom);
     backside_layout->setContentsMargins(0, 0, 0, 0);
 
     m_BacksideContainer = new QWidget{ this };
     m_BacksideContainer->setLayout(backside_layout);
 
-    image->setMouseTracking(true);
-    backside->setMouseTracking(true);
+    m_Image->setMouseTracking(true);
+    m_Backside->setMouseTracking(true);
     m_BacksideContainer->setMouseTracking(true);
     setMouseTracking(true);
 
-    addWidget(image);
+    addWidget(m_Image);
     addWidget(m_BacksideContainer);
 
     auto* this_layout{ static_cast<QStackedLayout*>(layout()) };
     this_layout->setStackingMode(QStackedLayout::StackingMode::StackAll);
-    this_layout->setAlignment(image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
-    this_layout->setAlignment(backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
+    this_layout->setAlignment(m_Image, Qt::AlignmentFlag::AlignTop | Qt::AlignmentFlag::AlignLeft);
+    this_layout->setAlignment(m_Backside, Qt::AlignmentFlag::AlignBottom | Qt::AlignmentFlag::AlignRight);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAspectRatioChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(MinimumWidthChanged);
+
+    m_ViewModel.EmitDefaults(false);
 }
 
 void StackedCardBacksideView::RefreshBackside(OptionalImageRef backside)
@@ -54,6 +67,16 @@ void StackedCardBacksideView::RefreshBackside(OptionalImageRef backside)
     }
 
     RefreshSizes(rect().size());
+}
+
+void StackedCardBacksideView::CardAspectRatioChanged(float aspect_ratio)
+{
+    WidgetWithCardSize::ChangeAspectRatio(aspect_ratio);
+}
+
+void StackedCardBacksideView::MinimumWidthChanged(Pixel minimum_width)
+{
+    setMinimumWidth(minimum_width / 1_pix);
 }
 
 void StackedCardBacksideView::RefreshSizes(QSize size)
