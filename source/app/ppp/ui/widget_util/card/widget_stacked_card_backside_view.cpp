@@ -56,20 +56,6 @@ void StackedCardBacksideView::RefreshBackside(OptionalImageRef backside)
     RefreshSizes(rect().size());
 }
 
-void StackedCardBacksideView::RefreshSize(const Project& /* project */)
-{
-    // m_Image->RefreshSize(project);
-
-    /*if (auto* image_widget{ dynamic_cast<CardImage*>(m_Backside) })
-    {
-        image_widget->RefreshSize(project);
-    }
-    else if (auto* blank_widget{ dynamic_cast<BlankCardImage*>(m_Backside) })
-    {
-        blank_widget->RefreshSize(project);
-    }*/
-}
-
 void StackedCardBacksideView::RefreshSizes(QSize size)
 {
     const auto width{ size.width() };

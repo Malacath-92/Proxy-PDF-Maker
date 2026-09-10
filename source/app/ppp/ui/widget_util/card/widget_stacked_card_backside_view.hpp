@@ -17,7 +17,6 @@ class StackedCardBacksideView : public WidgetWithCardSize<QStackedWidget>
     StackedCardBacksideView(CardImage* image, ClearableCardImage* backside);
 
     void RefreshBackside(OptionalImageRef backside);
-    void RefreshSize(const Project& project);
 
   signals:
     void BacksideClicked();
