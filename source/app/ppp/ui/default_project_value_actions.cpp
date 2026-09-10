@@ -76,7 +76,7 @@ nlohmann::json GetDefault(std::string_view path,
                           const DefaultDataRequirements& config_reqs)
 {
     const auto* app{ ppApp };
-    const auto user_default_value{ app->GetProjectDefault(path) };
+    const auto user_default_value(app->GetProjectDefault(path));
     if (!user_default_value.is_null())
     {
         return user_default_value;
@@ -91,7 +91,7 @@ nlohmann::json GetDefault(std::string_view path,
                     config_reqs.m_DefaultPageSize,
                 }))
         };
-        const auto app_default_value{ GetJsonValue(app_default_json, path) };
+        const auto app_default_value(GetJsonValue(app_default_json, path));
         return app_default_value;
     }
 }
