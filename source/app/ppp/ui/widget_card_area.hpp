@@ -24,8 +24,6 @@ class CardArea : public QWidget
     int MaximumColumnsFromAvailableWidth(int available_width) const;
 
   private slots:
-    void CardSizeChanged(Size card_size);
-
     void HasExternalCardsChanged(bool has_external_cards);
 
     void CardAdded(const fs::path& card_name);

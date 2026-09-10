@@ -406,7 +406,6 @@ int main(int argc, char** argv)
 
         FORWARD_SIGNAL_FROM_PROJECT(NewProjectOpened);
         FORWARD_SIGNAL_FROM_PROJECT(ImageDirChanged);
-        FORWARD_SIGNAL_FROM_PROJECT(CardSizeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(HasExternalCardsChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardVisibilityChanged);
 

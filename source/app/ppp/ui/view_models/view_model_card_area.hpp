@@ -40,8 +40,6 @@ class CardAreaViewModel : public QObject
     void NewProjectOpened(const ProjectData& old_data, const ProjectData& new_data);
     void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
-    void CardSizeChanged(Size card_size);
-
     void HasExternalCardsChanged(bool has_external_cards);
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);

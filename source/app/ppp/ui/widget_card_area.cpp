@@ -812,7 +812,6 @@ CardArea::CardArea(CardAreaViewModel* view_model)
                      this,
                      &CardArea::QueueRefresh);
 
-    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(HasExternalCardsChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAdded);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardRemoved);
@@ -829,24 +828,6 @@ int CardArea::MaximumColumnsFromAvailableWidth(int available_width) const
                        margins.left() +
                        margins.right();
     return m_ScrollArea->MaximumColumnsFromAvailableWidth(available_width);
-}
-
-void CardArea::CardSizeChanged(Size /* card_size */)
-{
-    // TODO: Get rid of this!!!
-
-    // This is the stupidest code I have ever written...
-    // Nothing that should usually be working to make sure widget's size
-    // changes trickled down to this scroll area will work here (or I am
-    // just stupid) so we just wiggle the window as that at least forces
-    // the recalculation of the grid
-    auto* window{ this->window() };
-    if (window)
-    {
-        const auto current_size{ window->size() };
-        window->resize(current_size.width(), current_size.height() - 1);
-        window->resize(current_size);
-    }
 }
 
 void CardArea::HasExternalCardsChanged(bool has_external_cards)
