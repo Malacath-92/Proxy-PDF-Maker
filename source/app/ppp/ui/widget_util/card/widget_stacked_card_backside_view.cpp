@@ -36,6 +36,13 @@ StackedCardBacksideView::StackedCardBacksideView(BlankCardViewModel* view_model,
 
     m_Image->setMouseTracking(true);
     m_Backside->setMouseTracking(true);
+    for (auto& child : m_Backside->children())
+    {
+        if (auto* child_widget{ dynamic_cast<QWidget*>(child) })
+        {
+            child_widget->setMouseTracking(true);
+        }
+    }
     m_BacksideContainer->setMouseTracking(true);
     setMouseTracking(true);
 
