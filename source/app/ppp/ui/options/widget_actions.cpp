@@ -134,6 +134,14 @@ void ActionsWidget::RenderButtonPressed() const
     TRACY_AUTO_SCOPE();
 
     auto* main_window{ static_cast<PrintProxyPrepMainWindow*>(window()) };
+    main_window->setEnabled(false);
+
+    if (!m_ViewModel.VerifyProject())
+    {
+        main_window->setEnabled(true);
+        return;
+    }
+
     GenericPopup render_window{ nullptr, "Rendering PDF..." };
 
     bool do_error_toast{ false };
@@ -160,7 +168,6 @@ void ActionsWidget::RenderButtonPressed() const
         }
     };
 
-    main_window->setEnabled(false);
     render_window.ShowDuringWork(render_work);
     main_window->setEnabled(true);
 

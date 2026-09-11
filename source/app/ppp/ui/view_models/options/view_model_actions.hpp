@@ -35,6 +35,8 @@ class ActionsViewModel : public QObject
   private:
     void EmitDefaults();
 
+    bool VerifyProject() const;
+
     Project& m_Project;
     const Config& m_Cfg;
 };

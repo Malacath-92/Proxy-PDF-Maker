@@ -135,15 +135,11 @@ void CardViewModel::ThisPreviewUpdated(const ImagePreview& preview)
     const auto pixmap{ StoreIntoQtPixmap(image) };
     PixmapChanged(pixmap);
 
-    const bool bad_aspect_ration{ preview.m_BadAspectRatio };
+    const bool bad_aspect_ratio{ preview.m_BadAspectRatio };
     const bool bad_rotation{ preview.m_BadRotation };
-    if (bad_rotation)
+    if (bad_rotation || bad_aspect_ratio)
     {
-        CardWarningChanged("Bad rotation. Use the rotate button to fix this.");
-    }
-    else if (bad_aspect_ration)
-    {
-        CardWarningChanged("Bad aspect ratio. Check image file or change card size.");
+        CardWarningChanged(GetCardWarning(bad_aspect_ratio, bad_rotation));
     }
     else
     {

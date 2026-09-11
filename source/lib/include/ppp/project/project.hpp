@@ -192,6 +192,8 @@ class Project : public QObject
     bool HideCard(const fs::path& card_name);
     bool UnhideCard(const fs::path& card_name);
 
+    bool IsCardRendered(const fs::path& card_name) const;
+
     Image::Rotation GetCardRotation(const fs::path& card_name) const;
     bool RotateCardLeft(const fs::path& card_name);
     bool RotateCardRight(const fs::path& card_name);

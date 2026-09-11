@@ -1,5 +1,7 @@
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
 
+#include <QMessageBox>
+
 #include <ppp/app.hpp>
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
@@ -9,6 +11,8 @@
 #include <ppp/svg/generate.hpp>
 
 #include <ppp/project/project.hpp>
+
+#include <ppp/ui/widget_util/card/card_widget_util.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -57,4 +61,40 @@ void ActionsViewModel::OpenImagesFolder() const
 void ActionsViewModel::EmitDefaults()
 {
     PdfBackendChanged(m_Cfg.m_Backend);
+}
+
+bool ActionsViewModel::VerifyProject() const
+{
+    QString warnings;
+    for (const auto& [card_name, preview] : m_Project.m_Data.m_Previews)
+    {
+        const bool bad_aspect_ratio{ preview.m_BadAspectRatio };
+        const bool bad_rotation{ preview.m_BadRotation };
+        if ((bad_rotation || bad_aspect_ratio) && m_Project.IsCardRendered(card_name))
+        {
+            const char* warning{ GetCardWarning(bad_aspect_ratio, bad_rotation, false) };
+            warnings += QString{ "    %1: %2\n" }.arg(card_name.string()).arg(warning);
+        }
+    }
+
+    if (!warnings.isEmpty())
+    {
+        warnings.removeLast();
+
+        const auto response{
+            QMessageBox::question(
+                nullptr,
+                "Image Warnings",
+                QString{ "Project contains the following warnings:\n"
+                         "%1\n"
+                         "Are you sure you want to render it?" }
+                    .arg(warnings))
+        };
+        if (response == QMessageBox::StandardButton::No)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }

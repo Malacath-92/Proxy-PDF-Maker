@@ -12,3 +12,5 @@ float GetCardWidgetAspectRatio(const Project& project,
                                Length bleed_edge);
 
 QPixmap StoreIntoQtPixmap(const Image& img);
+
+const char* GetCardWarning(bool bad_aspect_ratio, bool bad_rotation, bool include_hint = true);

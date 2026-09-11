@@ -960,6 +960,44 @@ bool Project::UnhideCard(const fs::path& card_name)
     return false;
 }
 
+bool Project::IsCardRendered(const fs::path& card_name) const
+{
+    if (const auto* card{ FindCard(card_name) })
+    {
+        if (card->m_Transient)
+        {
+            return false;
+        }
+
+        if (card->m_Num > 0 && card->m_Hidden == 0)
+        {
+            return true;
+        }
+
+        if (card->m_Hidden > 0)
+        {
+            if (m_Data.m_BacksideDefault == card_name)
+            {
+                return true;
+            }
+
+            for (const auto& card_info : m_Data.m_Cards)
+            {
+                if (card_info.m_Backside == card_name &&
+                    !card->m_Transient &&
+                    card->m_Num > 0 &&
+                    card->m_Hidden == 0)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    return false;
+}
+
 Image::Rotation Project::GetCardRotation(const fs::path& card_name) const
 {
     if (const auto* card{ FindCard(card_name) })

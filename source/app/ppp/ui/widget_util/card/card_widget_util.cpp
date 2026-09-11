@@ -44,3 +44,27 @@ QPixmap StoreIntoQtPixmap(const Image& img)
         return QPixmap{ img_impl.cols, img_impl.rows };
     }
 }
+
+const char* GetCardWarning(bool bad_aspect_ratio, bool bad_rotation, bool include_hint)
+{
+    if (include_hint)
+    {
+        if (bad_rotation)
+        {
+            return "Bad rotation. Use the rotate button to fix this.";
+        }
+        else if (bad_aspect_ratio)
+        {
+            return "Bad aspect ratio. Check image file or change card size.";
+        }
+    }
+    else if (bad_rotation)
+    {
+        return "Bad rotation";
+    }
+    else if (bad_aspect_ratio)
+    {
+        return "Bad aspect ratio";
+    }
+    return nullptr;
+}
