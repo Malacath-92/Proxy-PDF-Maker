@@ -726,7 +726,7 @@ CardArea::CardArea(CardAreaViewModel* view_model)
                     QObject::connect(
                         &decklist_popup,
                         &DecklistPopup::DecklistChanged,
-                        [this, &project](const std::unordered_map<fs::path, uint32_t>& decklist)
+                        [&project](const std::unordered_map<fs::path, uint32_t>& decklist)
                         {
                             for (const auto& card : project.m_Data.m_Cards)
                             {
