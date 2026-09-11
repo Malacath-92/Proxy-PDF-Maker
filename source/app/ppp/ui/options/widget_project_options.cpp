@@ -14,6 +14,7 @@
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/main_window.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 #include <ppp/ui/popups/new_project_popup.hpp>
 
 #include <ppp/ui/view_models/options/view_model_project_options.hpp>
@@ -29,13 +30,14 @@ ProjectOptionsWidget::ProjectOptionsWidget(ProjectOptionsViewModel* view_model)
     setObjectName("Project");
     m_ViewModel.setParent(this);
 
-    m_ProjectName = new QLineEdit{ "Project Name" };
+    auto* project_name{ new LineEditWithLabel{ "Project Name", "Project Name" } };
+    m_ProjectName = project_name->GetWidget();
     auto* new_button{ new QPushButton{ "New Project" } };
     auto* save_button{ new QPushButton{ "Save Project" } };
     auto* load_button{ new QPushButton{ "Load Project" } };
 
     auto* layout{ new QGridLayout };
-    layout->addWidget(m_ProjectName, 0, 0, 1, 2);
+    layout->addWidget(project_name, 0, 0, 1, 2);
     layout->addWidget(new_button, 1, 0, 1, 2);
     layout->addWidget(save_button, 2, 0);
     layout->addWidget(load_button, 2, 1);
