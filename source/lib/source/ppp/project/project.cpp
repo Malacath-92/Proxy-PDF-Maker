@@ -897,9 +897,10 @@ bool Project::HasExternalCards() const
 }
 uint32_t Project::CountExternalCards() const
 {
-    return std::ranges::count_if(m_Data.m_Cards,
-                                 [](const auto& card)
-                                 { return !card.m_Transient && card.m_ExternalPath.has_value(); });
+    return static_cast<uint32_t>(
+        std::ranges::count_if(m_Data.m_Cards,
+                              [](const auto& card)
+                              { return !card.m_Transient && card.m_ExternalPath.has_value(); }));
 }
 
 fs::path Project::GetCardImagePath(const fs::path& card_name) const
