@@ -14,6 +14,7 @@ NewProjectPopupViewModel::NewProjectPopupViewModel(const Config& config)
     , m_ImageFolder{ ppApp->GetProjectsFolder() / "images" }
     , m_CardSize{ ToQString(GetDefaultCardSize()) }
     , m_PaperSize{ ToQString(GetDefaultPageSize()) }
+    , m_ClearImages{ false }
 {
 }
 

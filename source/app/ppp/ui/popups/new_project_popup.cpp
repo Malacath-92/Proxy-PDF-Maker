@@ -67,6 +67,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         };
 
         m_ClearImages = new QCheckBox{ "Clear Image Folder" };
+        m_ClearImages->setChecked(m_ViewModel.ClearImages());
 
         auto* options_layout{ new QVBoxLayout };
         options_layout->addWidget(project_name);
