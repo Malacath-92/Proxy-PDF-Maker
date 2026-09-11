@@ -124,7 +124,12 @@ void CardAreaCardViewModel::IncrementCard()
 }
 void CardAreaCardViewModel::SetCardCount(const QString& count)
 {
-    const auto num{ qMax(0, count.toLong()) };
+    const auto num{
+        static_cast<uint32_t>(
+            qMin(
+                qMax(0, count.toLong()),
+                static_cast<long>(std::numeric_limits<uint32_t>::max()))),
+    };
     m_Project.SetCardCount(m_CardName, num);
 }
 void CardAreaCardViewModel::SetCardBacksideShortEdge(Qt::CheckState backside_short_edge)
