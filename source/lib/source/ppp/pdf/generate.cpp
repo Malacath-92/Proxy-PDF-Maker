@@ -186,11 +186,22 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
         {
             if (config.m_NoCropMode)
             {
-                if (fs::exists(project.m_Data.m_UncropDir / card_name))
+                switch (project.GetCardBleedType(card_name))
                 {
+                case BleedType::Infer:
+                    if (fs::exists(project.m_Data.m_UncropDir / card_name))
+                    {
+                        return project.m_Data.m_UncropDir / card_name;
+                    }
+                    [[fallthrough]];
+                case BleedType::FullBleed:
+                    return project.GetCardImagePath(card_name);
+                    break;
+                case BleedType::NoBleed:
                     return project.m_Data.m_UncropDir / card_name;
                 }
-                return project.GetCardImagePath(card_name);
+
+                std::unreachable();
             }
             return output_dir / card_name;
         }
