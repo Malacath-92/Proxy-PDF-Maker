@@ -14,8 +14,8 @@
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/main_window.hpp>
-#include <ppp/ui/widget_util/widget_label.hpp>
 #include <ppp/ui/popups/new_project_popup.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/ui/view_models/options/view_model_project_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
