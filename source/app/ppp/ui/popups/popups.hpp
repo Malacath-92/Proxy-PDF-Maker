@@ -13,6 +13,7 @@
 class QLabel;
 
 class PrintProxyPrepMainWindow;
+class Project;
 
 enum class FileDialogType
 {
@@ -94,7 +95,8 @@ class AboutPopup : public PopupBase
     Q_OBJECT
 
   public:
-    AboutPopup(QWidget* parent);
+    AboutPopup(QWidget* parent,
+               const Project& project);
 
     void keyReleaseEvent(QKeyEvent* event) override;
 };

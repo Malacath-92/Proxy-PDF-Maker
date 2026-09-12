@@ -64,6 +64,8 @@ class PrintProxyPrepApplication
 
     void SetProjectsRoot(fs::path projects_root);
 
+    void SetProject(const class Project& project);
+
     void SetTheme(std::string theme);
     const std::string& GetTheme() const;
 
@@ -103,6 +105,7 @@ class PrintProxyPrepApplication
     bool m_HasMigratedResourcesFromCwd{ false };
 
     fs::path m_ProjectPath;
+    const Project* m_Project{ nullptr };
     std::string m_Theme{ "Default" };
 
     mutable TRACY_DECLARE_MUTEX(std::mutex, m_CubesMutex);

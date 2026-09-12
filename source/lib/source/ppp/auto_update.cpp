@@ -25,13 +25,11 @@
 
 #include <fmt/format.h>
 
-#include <archive.h>
-#include <archive_entry.h>
-
 #include <ppp/github_request.hpp>
 #include <ppp/qt_util.hpp>
 #include <ppp/util.hpp>
 #include <ppp/util/log.hpp>
+#include <ppp/util/zip.hpp>
 #include <ppp/version.hpp>
 
 namespace fs = std::filesystem;
@@ -48,159 +46,6 @@ constexpr char c_AutoUpdateBackupOldVersion[]{ AUTO_UPDATE_ARG_START "backup" };
 constexpr char c_AutoUpdateCopyNewVersion[]{ AUTO_UPDATE_ARG_START "execute" };
 constexpr char c_AutoUpdateCleanup[]{ AUTO_UPDATE_ARG_START "cleanup" };
 #undef AUTO_UPDATE_ARG_START
-
-class UnzipWorker : public QObject, public QRunnable
-{
-    Q_OBJECT
-
-  public:
-    UnzipWorker(QByteArray archive_data,
-                fs::path output_folder)
-        : m_ArchiveData{ std::move(archive_data) }
-        , m_OutputFolder{ std::move(output_folder) }
-    {
-    }
-
-    virtual void run() override
-    {
-        if (m_ArchiveData.isEmpty())
-        {
-            Failed();
-            return;
-        }
-
-        if (!fs::exists(m_OutputFolder))
-        {
-            fs::create_directories(m_OutputFolder);
-        }
-
-        auto* reader{ archive_read_new() };
-        AtScopeExit reader_deleter{ std::bind_front(archive_read_free, reader) };
-        auto* writer{ archive_write_disk_new() };
-        AtScopeExit writer_deleter{ std::bind_front(archive_write_free, writer) };
-
-        if (reader == nullptr || writer == nullptr)
-        {
-            Failed();
-            return;
-        }
-
-        // Enable formats (.zip and .tar) and filters (.gz compression)
-        archive_read_support_format_tar(reader);
-        archive_read_support_format_zip(reader);
-        archive_read_support_filter_gzip(reader);
-
-        static constexpr int c_Flags{
-            ARCHIVE_EXTRACT_TIME | ARCHIVE_EXTRACT_PERM | ARCHIVE_EXTRACT_ACL
-        };
-        archive_write_disk_set_options(writer, c_Flags);
-        archive_write_disk_set_standard_lookup(writer);
-
-        if (archive_read_open_memory(reader, m_ArchiveData.data(), m_ArchiveData.size()) != ARCHIVE_OK)
-        {
-            Failed();
-            return;
-        }
-
-        archive_entry* entry;
-        while (archive_read_next_header(reader, &entry) == ARCHIVE_OK)
-        {
-            const auto current_path{ archive_entry_pathname(entry) };
-            const auto full_output_path{ m_OutputFolder / current_path };
-            const auto full_output_path_str{ full_output_path.string() };
-            archive_entry_set_pathname(entry, full_output_path_str.c_str());
-
-            const auto write_header_res{ archive_write_header(writer, entry) };
-            if (write_header_res < ARCHIVE_OK)
-            {
-                Failed("Failed writing file header while extracting file from archive.");
-                return;
-            }
-
-            // Extract the file content by streaming data blocks from reader to writer
-            if (archive_entry_size(entry) > 0)
-            {
-                const void* buff;
-                size_t size;
-                int64_t offset;
-
-                while (true)
-                {
-                    const auto read_block_res{
-                        archive_read_data_block(reader, &buff, &size, &offset)
-                    };
-                    if (read_block_res == ARCHIVE_EOF)
-                    {
-                        break;
-                    }
-                    if (read_block_res < ARCHIVE_OK)
-                    {
-                        Failed("Failed reading data from archive.");
-                        return;
-                    }
-
-                    const auto write_block_res{
-                        archive_write_data_block(writer, buff, size, offset)
-                    };
-                    if (write_block_res < ARCHIVE_OK)
-                    {
-                        Failed("Failed writing data from archive to disk.");
-                        break;
-                    }
-                }
-            }
-
-            archive_write_finish_entry(writer);
-        }
-
-        Succeeded();
-    }
-
-    enum class Conclusion
-    {
-        Pending,
-        Failed,
-        Success,
-    };
-    Conclusion GetConclusion() const
-    {
-        return m_Conclusion;
-    }
-    bool HasError() const
-    {
-        return !m_Error.empty();
-    }
-    const std::string& GetError() const
-    {
-        return m_Error;
-    }
-
-  signals:
-    void Done();
-
-  private:
-    void Failed()
-    {
-        m_Conclusion = Conclusion::Failed;
-        Done();
-    }
-    void Failed(std::string error)
-    {
-        m_Conclusion = Conclusion::Failed;
-        m_Error = std::move(error);
-        Done();
-    }
-    void Succeeded()
-    {
-        m_Conclusion = Conclusion::Success;
-        Done();
-    }
-
-    QByteArray m_ArchiveData;
-    fs::path m_OutputFolder;
-    Conclusion m_Conclusion = Conclusion::Pending;
-    std::string m_Error;
-};
 
 bool AutoUpdateDownloadRelease(std::string_view version)
 {

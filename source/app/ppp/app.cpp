@@ -196,6 +196,11 @@ void PrintProxyPrepApplication::SetProjectsRoot(fs::path projects_root)
     ProjectPathChanged(m_ProjectPath);
 }
 
+void PrintProxyPrepApplication::SetProject(const Project& project)
+{
+    m_Project = &project;
+}
+
 void PrintProxyPrepApplication::SetTheme(std::string theme)
 {
     m_Theme = std::move(theme);
@@ -327,7 +332,7 @@ bool PrintProxyPrepApplication::notify(QObject* object, QEvent* event)
             // ... but only open the About window on the release
             if (key_event->type() == QEvent::Type::KeyRelease)
             {
-                static_cast<PrintProxyPrepMainWindow*>(m_MainWindow)->OpenAboutPopup();
+                static_cast<PrintProxyPrepMainWindow*>(m_MainWindow)->OpenAboutPopup(*m_Project);
             }
             return true;
         }

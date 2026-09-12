@@ -222,6 +222,8 @@ int main(int argc, char** argv)
     Project project{ config, app.GetProjectsFolder(), app.GetBasePdfsFolder() };
     const bool project_load_success{ project.Load(app.GetProjectPath()) };
 
+    app.SetProject(project);
+
     const auto project_backup_folder{ g_ExeDir / "_project_backup" };
     if (!project_load_success && fs::exists(app.GetProjectPath()))
     {

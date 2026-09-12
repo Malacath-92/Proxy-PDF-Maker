@@ -69,14 +69,14 @@ PrintProxyPrepMainWindow::PrintProxyPrepMainWindow(QWidget* tabs,
     }
 }
 
-void PrintProxyPrepMainWindow::OpenAboutPopup()
+void PrintProxyPrepMainWindow::OpenAboutPopup(const Project& project)
 {
     if (!isEnabled())
     {
         return;
     }
 
-    AboutPopup about{ nullptr };
+    AboutPopup about{ nullptr, project };
 
     setEnabled(false);
     about.Show();
