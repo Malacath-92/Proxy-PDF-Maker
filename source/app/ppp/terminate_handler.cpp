@@ -1,8 +1,5 @@
 #include <ppp/terminate_handler.hpp>
 
-#include <cpptrace/cpptrace.hpp>
-#include <cpptrace/from_current.hpp>
-
 #include <ppp/util/log.hpp>
 
 void CppTraceTerminateHandler()
@@ -11,19 +8,17 @@ void CppTraceTerminateHandler()
     {
         if (const auto current_exception{ std::current_exception() })
         {
-            const auto trace{ cpptrace::generate_trace() };
-
             try
             {
                 std::rethrow_exception(current_exception);
             }
             catch (const std::exception& e)
             {
-                LogError("Unhandled exception: {}\n{}", e.what(), trace.to_string());
+                LogError("Unhandled exception: {}", e.what());
             }
             catch (...)
             {
-                LogError("Unhandled exception: <unknown exception>\n{}", trace.to_string());
+                LogError("Unhandled exception: <unknown exception>");
             }
         }
         else
