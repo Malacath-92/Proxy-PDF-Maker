@@ -1,5 +1,7 @@
 #include <ppp/terminate_handler.hpp>
 
+#include <exception>
+
 #include <ppp/util/log.hpp>
 
 void CppTraceTerminateHandler()
