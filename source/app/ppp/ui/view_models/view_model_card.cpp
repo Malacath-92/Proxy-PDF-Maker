@@ -21,8 +21,29 @@ CardViewModel::CardViewModel(fs::path card_name,
     , m_ViewParams{ params }
     , m_Project{ project }
 {
-    QObject::connect(&project.Get(), &Project::PreviewRemoved, this, &CardViewModel::PreviewRemoved);
-    QObject::connect(&project.Get(), &Project::PreviewUpdated, this, &CardViewModel::PreviewUpdated);
+    const auto& connect_signals{
+        [this](const fs::path& card_name, ProjectCardSignaller* sig)
+        {
+            if (card_name == m_CardName)
+            {
+                QObject::connect(sig, &ProjectCardSignaller::PreviewRemoved, this, &CardViewModel::PreviewRemoved);
+                QObject::connect(sig, &ProjectCardSignaller::PreviewUpdated, this, &CardViewModel::PreviewUpdated);
+            }
+        }
+    };
+
+    if (m_Project.Get().m_CardSignallers.contains(m_CardName))
+    {
+        connect_signals(m_CardName, m_Project.Get().m_CardSignallers.at(m_CardName).get());
+    }
+    else
+    {
+        QObject::connect(
+            &m_Project.Get(),
+            &Project::CardSignallerAdded,
+            this,
+            connect_signals);
+    }
 
     QObject::connect(&project.Get(), &Project::CardSizeChanged, this, &CardViewModel::CardSizeChanged);
 }
@@ -35,11 +56,11 @@ void CardViewModel::SetCardName(const fs::path& card_name)
     const bool has_image{ m_Project->HasPreview(m_CardName) };
     if (has_image)
     {
-        ThisPreviewUpdated(m_Project->GetPreview(m_CardName));
+        PreviewUpdated(m_Project->GetPreview(m_CardName));
     }
     else
     {
-        ThisPreviewRemoved();
+        PreviewRemoved();
     }
 }
 const fs::path& CardViewModel::GetCardName() const
@@ -52,12 +73,7 @@ float CardViewModel::GetCardAspectRatio() const
     return GetCardWidgetAspectRatio(m_Project.Get(), m_ViewParams.m_Rotation, m_ViewParams.m_BleedEdge);
 }
 
-void CardViewModel::CardSizeChanged(Size /* card_size */)
-{
-    CardAspectRatioChanged(GetCardAspectRatio());
-}
-
-void CardViewModel::ThisPreviewUpdated(const ImagePreview& preview)
+void CardViewModel::PreviewUpdated(const ImagePreview& preview)
 {
     const auto get_image{
         [&]()
@@ -148,15 +164,7 @@ void CardViewModel::ThisPreviewUpdated(const ImagePreview& preview)
 
     SpinnerVisibleChanged(false);
 }
-void CardViewModel::PreviewUpdated(const fs::path& card_name, const ImagePreview& preview)
-{
-    if (m_CardName == card_name)
-    {
-        ThisPreviewUpdated(preview);
-    }
-}
-
-void CardViewModel::ThisPreviewRemoved()
+void CardViewModel::PreviewRemoved()
 {
     const auto get_empty_image{
         [this]()
@@ -176,12 +184,10 @@ void CardViewModel::ThisPreviewRemoved()
 
     SpinnerVisibleChanged(true);
 }
-void CardViewModel::PreviewRemoved(const fs::path& card_name)
+
+void CardViewModel::CardSizeChanged(Size /* card_size */)
 {
-    if (m_CardName == card_name)
-    {
-        ThisPreviewRemoved();
-    }
+    CardAspectRatioChanged(GetCardAspectRatio());
 }
 
 void CardViewModel::RemoveExternalCard()
@@ -299,11 +305,11 @@ void CardViewModel::EmitDefaults()
     const bool has_image{ m_Project->HasPreview(m_CardName) };
     if (has_image)
     {
-        ThisPreviewUpdated(m_Project->GetPreview(m_CardName));
+        PreviewUpdated(m_Project->GetPreview(m_CardName));
     }
     else
     {
-        ThisPreviewRemoved();
+        PreviewRemoved();
     }
 }
 

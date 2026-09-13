@@ -51,6 +51,9 @@ class CardAreaCardViewModel : public QObject
     void ClearBacksideImage();
     void SetBacksideImageDefault();
 
+    void ThisBacksideDefaultChanged(OptionalImageRef backside_default);
+    void ThisCardBacksideChanged(OptionalImageRef backside);
+
   private:
     void EmitDefaults();
 

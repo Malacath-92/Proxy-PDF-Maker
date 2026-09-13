@@ -15,62 +15,48 @@ CardAreaCardViewModel::CardAreaCardViewModel(const fs::path& card_name,
 {
     TRACY_AUTO_SCOPE();
 
+    const auto& connect_signals{
+        [this](const fs::path& card_name, ProjectCardSignaller* sig)
+        {
+            if (card_name == m_CardName)
+            {
+                QObject::connect(sig,
+                                 &ProjectCardSignaller::CardCountChanged,
+                                 this,
+                                 &CardAreaCardViewModel::CardCountChanged);
+                QObject::connect(sig,
+                                 &ProjectCardSignaller::CardBacksideShortEdgeChanged,
+                                 this,
+                                 &CardAreaCardViewModel::CardBacksideShortEdgeChanged);
+                QObject::connect(sig,
+                                 &ProjectCardSignaller::CardBacksideChanged,
+                                 this,
+                                 &CardAreaCardViewModel::ThisCardBacksideChanged);
+            }
+        }
+    };
+
+    if (m_Project.m_CardSignallers.contains(m_CardName))
+    {
+        connect_signals(m_CardName, m_Project.m_CardSignallers.at(m_CardName).get());
+    }
+    else
+    {
+        QObject::connect(
+            &m_Project,
+            &Project::CardSignallerAdded,
+            this,
+            connect_signals);
+    }
+
     QObject::connect(&m_Project,
                      &Project::BacksideEnabledChanged,
                      this,
                      &CardAreaCardViewModel::BacksideEnabledChanged);
     QObject::connect(&m_Project,
-                     &Project::CardCountChanged,
-                     this,
-                     [this](const fs::path& card_name, uint32_t count)
-                     {
-                         if (m_CardName == card_name)
-                         {
-                             CardCountChanged(count);
-                         }
-                     });
-    QObject::connect(&m_Project,
-                     &Project::CardBacksideShortEdgeChanged,
-                     this,
-                     [this](const fs::path& card_name, bool backside_short_edge)
-                     {
-                         if (m_CardName == card_name)
-                         {
-                             CardBacksideShortEdgeChanged(backside_short_edge);
-                         }
-                     });
-    QObject::connect(&m_Project,
-                     &Project::CardBacksideChanged,
-                     this,
-                     [this](const fs::path& card_name, OptionalImageRef backside)
-                     {
-                         if (m_CardName == card_name)
-                         {
-                             if (backside.has_value() && backside.value() == ""_p)
-                             {
-                                 CardBacksideChanged(m_Project.m_Data.m_BacksideDefault);
-                             }
-                             else
-                             {
-                                 CardBacksideChanged(backside);
-                             }
-                         }
-                     });
-    QObject::connect(&m_Project,
                      &Project::BacksideDefaultChanged,
                      this,
-                     [this](OptionalImageRef backside_default)
-                     {
-                         const auto backside{ m_Project.GetBacksideImage(m_CardName) };
-                         if (backside.has_value() && backside.value() == ""_p)
-                         {
-                             CardBacksideChanged(backside_default);
-                         }
-                         else
-                         {
-                             CardBacksideChanged(backside);
-                         }
-                     });
+                     &CardAreaCardViewModel::ThisBacksideDefaultChanged);
 }
 
 const fs::path& CardAreaCardViewModel::GetCardName() const
@@ -150,6 +136,23 @@ void CardAreaCardViewModel::SetBacksideImageDefault()
     m_Project.SetBacksideImageDefault(m_CardName);
 }
 
+void CardAreaCardViewModel::ThisBacksideDefaultChanged(OptionalImageRef /* backside_default */)
+{
+    const auto backside{ m_Project.GetBacksideImage(m_CardName) };
+    ThisCardBacksideChanged(backside);
+}
+void CardAreaCardViewModel::ThisCardBacksideChanged(OptionalImageRef backside)
+{
+    if (backside.has_value() && backside.value() == ""_p)
+    {
+        CardBacksideChanged(m_Project.m_Data.m_BacksideDefault);
+    }
+    else
+    {
+        CardBacksideChanged(backside);
+    }
+}
+
 void CardAreaCardViewModel::EmitDefaults()
 {
     TRACY_AUTO_SCOPE();
@@ -160,12 +163,5 @@ void CardAreaCardViewModel::EmitDefaults()
     CardBacksideShortEdgeChanged(m_Project.HasCardBacksideShortEdge(m_CardName));
 
     const auto backside{ m_Project.GetBacksideImage(m_CardName) };
-    if (backside.has_value() && backside.value() == ""_p)
-    {
-        CardBacksideChanged(m_Project.m_Data.m_BacksideDefault);
-    }
-    else
-    {
-        CardBacksideChanged(backside);
-    }
+    ThisCardBacksideChanged(backside);
 }

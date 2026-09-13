@@ -138,6 +138,23 @@ struct ProjectData
 
 class JsonProvider;
 
+class ProjectCardSignaller : public QObject
+{
+    Q_OBJECT
+
+  signals:
+    void PreviewRemoved();
+    void PreviewUpdated(const ImagePreview& preview);
+
+    void CardCountChanged(uint32_t count);
+    void CardBacksideShortEdgeChanged(bool card_backside_short_edge);
+    void CardVisibilityChanged(bool visible);
+    void CardBacksideChanged(OptionalImageRef backside);
+    void CardRotationChanged(Image::Rotation rotation);
+    void CardBleedTypeChanged(BleedType bleed_type);
+    void CardBadAspectRatioHandlingChanged(BadAspectRatioHandling ratio_handling);
+};
+
 class Project : public QObject
 {
     Q_OBJECT
@@ -401,25 +418,18 @@ class Project : public QObject
 
     void CornersChanged(CardCorners corners);
 
-    void PreviewRemoved(const fs::path& card_name);
-    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
-
-    void CardCountChanged(const fs::path& card_name, uint32_t count);
-    void CardBacksideShortEdgeChanged(const fs::path& card_name, bool card_backside_short_edge);
-    void CardVisibilityChanged(const fs::path& card_name, bool visible);
-    void CardBacksideChanged(const fs::path& card_name, OptionalImageRef backside);
-    void CardRotationChanged(const fs::path& card_name, Image::Rotation rotation);
-    void CardBleedTypeChanged(const fs::path& card_name, BleedType bleed_type);
-    void CardBadAspectRatioHandlingChanged(const fs::path& card_name, BadAspectRatioHandling ratio_handling);
-
     void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
     void CardSortingChanged();
+
+    void CardSignallerAdded(const fs::path& card_name, ProjectCardSignaller* signaller);
 
   public:
     ProjectData m_Data;
     const Config& m_Cfg;
     bool m_PendingStalePreviewCleanup{ false };
+
+    std::unordered_map<fs::path, std::unique_ptr<ProjectCardSignaller>> m_CardSignallers;
 
   private:
     Project(const Project&) = delete;

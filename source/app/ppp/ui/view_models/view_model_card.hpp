@@ -78,13 +78,10 @@ class CardViewModel : public QObject
     void SpinnerVisibleChanged(bool spinner_visible);
 
   public slots:
+    void PreviewUpdated(const ImagePreview& preview);
+    void PreviewRemoved();
+
     void CardSizeChanged(Size card_size);
-
-    void ThisPreviewUpdated(const ImagePreview& preview);
-    void PreviewUpdated(const fs::path& card_name, const ImagePreview& preview);
-
-    void ThisPreviewRemoved();
-    void PreviewRemoved(const fs::path& card_name);
 
   private slots:
     void RemoveExternalCard();

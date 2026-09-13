@@ -254,10 +254,25 @@ int main(int argc, char** argv)
     QObject::connect(&card_provider, &CardProvider::CardRemoved, &cropper, &Cropper::CardRemoved);
     QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
 
-    QObject::connect(&project, &Project::CardRotationChanged, &cropper, &Cropper::CardModified);
-    QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
-    QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
-
+    QObject::connect(
+        &project,
+        &Project::CardSignallerAdded,
+        &cropper,
+        [&cropper](const fs::path& card_name, ProjectCardSignaller* sig)
+        {
+            QObject::connect(sig,
+                             &ProjectCardSignaller::CardRotationChanged,
+                             &cropper,
+                             std::bind_front(&Cropper::CardModified, &cropper, card_name));
+            QObject::connect(sig,
+                             &ProjectCardSignaller::CardBleedTypeChanged,
+                             &cropper,
+                             std::bind_front(&Cropper::CardModified, &cropper, card_name));
+            QObject::connect(sig,
+                             &ProjectCardSignaller::CardBadAspectRatioHandlingChanged,
+                             &cropper,
+                             std::bind_front(&Cropper::CardModified, &cropper, card_name));
+        });
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
     auto* card_area_view_model{ new CardAreaViewModel{ project, config } };
 
@@ -412,7 +427,17 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_PROJECT(NewProjectOpened);
         FORWARD_SIGNAL_FROM_PROJECT(ImageDirChanged);
         FORWARD_SIGNAL_FROM_PROJECT(HasExternalCardsChanged);
-        FORWARD_SIGNAL_FROM_PROJECT(CardVisibilityChanged);
+        QObject::connect(
+            &project,
+            &Project::CardSignallerAdded,
+            card_area_view_model,
+            [card_area_view_model](const fs::path& card_name, ProjectCardSignaller* sig)
+            {
+                QObject::connect(sig,
+                                 &ProjectCardSignaller::CardVisibilityChanged,
+                                 card_area_view_model,
+                                 std::bind_front(&CardAreaViewModel::CardVisibilityChanged, card_area_view_model, card_name));
+            });
         FORWARD_SIGNAL_FROM_PROJECT(CardSortingChanged);
 
 #undef FORWARD_SIGNAL_FROM_PROJECT

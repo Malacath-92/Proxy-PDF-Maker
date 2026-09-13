@@ -454,10 +454,6 @@ int main(int argc, char** raw_argv)
     QObject::connect(&card_provider, &CardProvider::CardRemoved, &cropper, &Cropper::CardRemoved);
     QObject::connect(&card_provider, &CardProvider::CardModified, &cropper, &Cropper::CardModified);
 
-    QObject::connect(&project, &Project::CardRotationChanged, &cropper, &Cropper::CardModified);
-    QObject::connect(&project, &Project::CardBleedTypeChanged, &cropper, &Cropper::CardModified);
-    QObject::connect(&project, &Project::CardBadAspectRatioHandlingChanged, &cropper, &Cropper::CardModified);
-
     // Write preview to project and forward to widgets
     // clang-format off
     QObject::connect(&cropper, &Cropper::PreviewUpdated, &project, 
