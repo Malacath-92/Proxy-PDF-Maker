@@ -425,5 +425,3 @@ AutoUpdatePhase* ResolveAutoUpdatePhase(std::span<char*> argv)
 
     return nullptr;
 }
-
-#include "auto_update.moc"
