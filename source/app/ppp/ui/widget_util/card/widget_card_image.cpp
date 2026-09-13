@@ -275,20 +275,20 @@ void CardImage::ContextMenuRequested(QPoint pos)
 
     using enum CardContextMenuEntries;
 
-    if (IsSet(visible, RemoveExternal) && m_RemoveExternalCardAction != nullptr)
+    if (IsAnySet(visible, RemoveExternal) && m_RemoveExternalCardAction != nullptr)
     {
         begin_section();
         add_item(m_RemoveExternalCardAction, RemoveExternal);
     }
 
-    if (IsSet(visible, Backside) && m_ClearBacksideAction != nullptr)
+    if (IsAnySet(visible, Backside) && m_ClearBacksideAction != nullptr)
     {
         begin_section();
         add_item(m_ClearBacksideAction, ClearBackside);
         add_item(m_ResetBacksideAction, ResetBackside);
     }
 
-    if (IsSet(visible, BleedType) && m_InferBleedAction != nullptr)
+    if (IsAnySet(visible, BleedType) && m_InferBleedAction != nullptr)
     {
         begin_section();
 
@@ -297,7 +297,7 @@ void CardImage::ContextMenuRequested(QPoint pos)
         add_item(m_ForceNoBleedAction, ForceNoBleed);
     }
 
-    if (IsSet(visible, BadRatioHandling) && m_FixRatioIgnoreAction != nullptr)
+    if (IsAnySet(visible, BadRatioHandling) && m_FixRatioIgnoreAction != nullptr)
     {
         begin_section();
 
@@ -307,7 +307,7 @@ void CardImage::ContextMenuRequested(QPoint pos)
         add_item(m_FixRatioStretchAction, RatioStretch);
     }
 
-    if (IsSet(visible, RotateImage) && m_RotateLeftAction != nullptr)
+    if (IsAnySet(visible, RotateImage) && m_RotateLeftAction != nullptr)
     {
         begin_section();
 
@@ -315,7 +315,7 @@ void CardImage::ContextMenuRequested(QPoint pos)
         add_item(m_RotateRightAction, RotateRight);
     }
 
-    if (IsSet(visible, SkipSlot) && m_SkipSlotAction != nullptr)
+    if (IsAnySet(visible, SkipSlot) && m_SkipSlotAction != nullptr)
     {
         begin_section();
 
