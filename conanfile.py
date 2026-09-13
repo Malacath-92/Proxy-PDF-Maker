@@ -36,6 +36,9 @@ class ProxyPDF(ConanFile):
         # Find executable without QCoreApplication
         self.requires("whereami/cci.20220112")
 
+        # Termination handling with stack trace
+        self.requires("cpptrace/1.0.4")
+
         # Profiling
         self.requires("tracy/0.13.1")
 

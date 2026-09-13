@@ -32,6 +32,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/cubes.hpp>
 #include <ppp/data_migration.hpp>
 #include <ppp/style.hpp>
+#include <ppp/terminate_handler.hpp>
 #include <ppp/version_check.hpp>
 
 #include <ppp/qt_util.hpp>
@@ -107,6 +108,8 @@ int main(int argc, char** argv)
     };
 
     Log main_log{ log_flags, Log::c_MainLogName };
+
+    RegisterTerminateHandler();
 
     app.LoadState();
     SetStyle(app.GetTheme());
