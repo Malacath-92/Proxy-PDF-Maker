@@ -623,8 +623,7 @@ CardArea::CardArea(CardAreaViewModel* view_model)
         auto* onboarding_line_1{ new QLabel{ "No images are loaded..." } };
         auto* onboarding_line_2{ new QLabel{
             QString(
-                "To start either add images into the <a href=\"file:///%1\">image folder</a>, drag-and-drop")
-                .arg(m_ViewModel.GetImageDir().replace(' ', "%20")),
+                "To start either add images into the <a href=\"#images\">image folder</a>, drag-and-drop"),
         } };
         auto* onboarding_line_3{ new QLabel{
             "images onto the app, or enable one of the <a href=\"#plugins\">plugins</a>.",
@@ -648,12 +647,11 @@ CardArea::CardArea(CardAreaViewModel* view_model)
         m_OnboardingHint->setLayout(onboarding_layout);
 
         auto image_folder_link_activated{
-            [](const QString& link)
+            [this](const QString& link)
             {
-                const auto url{ QUrl::fromUserInput(link) };
-                if (url.isValid())
+                if (link == "#images")
                 {
-                    QDesktopServices::openUrl(url);
+                    m_ViewModel.OpenImageFolder();
                 }
             }
         };
@@ -662,7 +660,7 @@ CardArea::CardArea(CardAreaViewModel* view_model)
             {
                 if (link == "#plugins")
                 {
-                    RequestOpenPluginsWindow();
+                    m_ViewModel.OpenPluginsWindow();
                 }
             }
         };

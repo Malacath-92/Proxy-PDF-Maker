@@ -32,9 +32,6 @@ class CardArea : public QWidget
 
     void CardVisibilityChanged(const fs::path& card_name, bool visible);
 
-  signals:
-    void RequestOpenPluginsWindow();
-
   private:
     void FullRefresh();
 

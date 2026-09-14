@@ -69,3 +69,12 @@ QString CardAreaViewModel::GetImageDir() const
 {
     return ToQString(m_Project.m_Data.m_ImageDir);
 }
+
+void CardAreaViewModel::OpenImageFolder() const
+{
+    OpenFolder(m_Project.m_Data.m_ImageDir);
+}
+void CardAreaViewModel::OpenPluginsWindow() const
+{
+    RequestOpenPluginsWindow();
+}

@@ -30,6 +30,9 @@ class CardAreaViewModel : public QObject
     uint32_t GetDisplayColumns() const;
     QString GetImageDir() const;
 
+    void OpenImageFolder() const;
+    void OpenPluginsWindow() const;
+
   signals:
     // forward
 
@@ -51,7 +54,8 @@ class CardAreaViewModel : public QObject
     void CardSortingChanged();
 
   signals:
-    void RequestRefresh();
+    void RequestRefresh() const;
+    void RequestOpenPluginsWindow() const;
 
   private slots:
     void DecrementAllCards();
