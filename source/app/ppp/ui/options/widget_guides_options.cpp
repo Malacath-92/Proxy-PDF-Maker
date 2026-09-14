@@ -260,6 +260,8 @@ void GuidesOptionsWidget::AdvancedModeChanged(bool advanced_mode)
     m_GuidesOffsetSpin->parentWidget()->setVisible(advanced_mode);
     m_GuidesLengthSpin->parentWidget()->setVisible(advanced_mode);
     m_GuidesThicknessSpin->parentWidget()->setVisible(advanced_mode);
+
+    updateGeometry();
 }
 
 void GuidesOptionsWidget::ExportExactGuidesChanged(bool export_exact_guides)

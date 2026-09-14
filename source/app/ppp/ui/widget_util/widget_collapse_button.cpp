@@ -27,6 +27,16 @@ CollapseButton::CollapseButton(QWidget* handled_widget, bool collapsed)
     m_Animation->setDuration(300);
     m_Animator.addAnimation(m_Animation);
 
+    QObject::connect(m_Animation,
+                     &QPropertyAnimation::finished,
+                     [this]()
+                     {
+                         if (m_HandledWidget->maximumHeight() > 0)
+                         {
+                             m_HandledWidget->setMaximumHeight(QWIDGETSIZE_MAX);
+                         }
+                     });
+
     if (collapsed)
     {
         setChecked(false);
