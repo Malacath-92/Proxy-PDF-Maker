@@ -307,6 +307,14 @@ class CardGrid : public QWidget
         return item_width * m_Columns + margins.left() + margins.right() + spacing * (m_Columns - 1);
     }
 
+    int TotalHeightFromItemHeight(int item_width) const
+    {
+        const auto margins{ layout()->contentsMargins() };
+        const auto spacing{ layout()->spacing() };
+
+        return item_width * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1);
+    }
+    
     virtual bool hasHeightForWidth() const override
     {
         return true;
@@ -322,6 +330,17 @@ class CardGrid : public QWidget
 
         const auto height{ item_height * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1) };
         return static_cast<int>(height);
+    }
+
+    void resizeEvent(QResizeEvent* event)
+    {
+        QWidget::resizeEvent(event);
+
+        const auto expectedHeight{ this->heightForWidth(this->width()) };
+        if (this->height() != expectedHeight)
+        {
+            this->setFixedHeight(expectedHeight);
+        }
     }
 
     void FullRefresh()
@@ -489,7 +508,7 @@ class CardGrid : public QWidget
         TRACY_AUTO_SCOPE();
 
         setMinimumWidth(TotalWidthFromItemWidth(m_FirstItem->minimumWidth()));
-        setMinimumHeight(heightForWidth(minimumWidth()));
+        setMinimumHeight(TotalHeightFromItemHeight(m_FirstItem->heightForWidth(m_FirstItem->minimumWidth())));
     }
 
     int MaximumColumnsFromAvailableWidth(int available_width) const
