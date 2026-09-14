@@ -772,7 +772,7 @@ CardArea::CardArea(CardAreaViewModel* view_model)
         QObject::connect(global_increment_button,
                          &QPushButton::clicked,
                          &m_ViewModel,
-                         &CardAreaViewModel::DecrementAllCards);
+                         &CardAreaViewModel::IncrementAllCards);
         QObject::connect(global_set_zero_button,
                          &QPushButton::clicked,
                          &m_ViewModel,

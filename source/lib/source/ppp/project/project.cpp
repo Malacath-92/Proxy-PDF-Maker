@@ -1145,12 +1145,24 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
 
 void Project::DecrementAllCardCounts()
 {
+    for (auto& card : m_Data.m_Cards)
+    {
+        DecrementCardCount(card.m_Name);
+    }
 }
 void Project::IncrementAllCardCounts()
 {
+    for (auto& card : m_Data.m_Cards)
+    {
+        IncrementCardCount(card.m_Name);
+    }
 }
 void Project::ResetAllCardCounts()
 {
+    for (auto& card : m_Data.m_Cards)
+    {
+        SetCardCount(card.m_Name, 0);
+    }
 }
 
 void Project::CardOrderChanged()
