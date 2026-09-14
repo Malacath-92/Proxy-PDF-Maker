@@ -27,7 +27,10 @@ void ActionsViewModel::RenderDocument() const
 {
     TRACY_AUTO_SCOPE();
 
-    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project, m_Cfg) };
+    const auto& application{ *ppApp };
+    const auto& outputs_folder{ application.GetOutputsFolder() };
+    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project, m_Cfg, outputs_folder) };
+    OpenFolder(outputs_folder);
     OpenFile(frontside_path);
     if (backside_path.has_value())
     {

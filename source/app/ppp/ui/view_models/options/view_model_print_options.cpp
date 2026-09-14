@@ -41,7 +41,8 @@ bool PrintOptionsViewModel::DoRenderAlignmentTest() const
 
     try
     {
-        const auto file_path{ GenerateTestPdf(m_Project, m_Cfg) };
+        const auto& application{ *ppApp };
+        const auto file_path{ GenerateTestPdf(m_Project, m_Cfg, application.GetOutputsFolder()) };
         OpenFile(file_path);
     }
     catch (const std::exception& e)

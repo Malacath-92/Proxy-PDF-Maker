@@ -47,6 +47,7 @@ PrintProxyPrepApplication::PrintProxyPrepApplication(int& argc, char** argv)
         c_EnsureExists(data_folder);
     }
     c_EnsureExists(GetProjectsFolder());
+    c_EnsureExists(GetOutputsFolder());
     c_EnsureExists(GetCacheFolder());
 
     m_ProjectPath = GetProjectsFolder() / "proj.json";
@@ -83,6 +84,10 @@ fs::path PrintProxyPrepApplication::GetProjectsFolder() const
 {
     const auto documents_dir{ QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) };
     return QDir{ documents_dir }.filesystemPath() / "Proxy Projects";
+}
+fs::path PrintProxyPrepApplication::GetOutputsFolder() const
+{
+    return GetProjectsFolder() / "Outputs";
 }
 fs::path PrintProxyPrepApplication::GetCacheFolder() const
 {

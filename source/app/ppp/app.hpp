@@ -38,6 +38,7 @@ class PrintProxyPrepApplication
     fs::path GetConfigFolder() const;
     fs::path GetDataFolder() const;
     fs::path GetProjectsFolder() const;
+    fs::path GetOutputsFolder() const;
     fs::path GetCacheFolder() const;
 
     fs::path GetCubesFolder() const;

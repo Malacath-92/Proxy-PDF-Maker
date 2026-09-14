@@ -163,7 +163,7 @@ uint32_t QueueImageCacheWork(PdfDocument* frontside_pdf,
     return static_cast<uint32_t>(image_cache_work.size());
 }
 
-PdfResults GeneratePdf(const Project& project, const Config& config)
+PdfResults GeneratePdf(const Project& project, const Config& config, const fs::path& output_folder)
 {
     TRACY_AUTO_SCOPE();
 
@@ -507,7 +507,7 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
         }
     }
 
-    const auto frontside_pdf_name{ project.m_Data.m_FileName.string() };
+    const auto frontside_pdf_name{ (output_folder / project.m_Data.m_FileName).string() };
     const auto backside_pdf_name{ frontside_pdf_name + "_backside" };
 
     const auto draw_image{
@@ -836,7 +836,7 @@ PdfResults GeneratePdf(const Project& project, const Config& config)
     };
 }
 
-fs::path GenerateTestPdf(const Project& project, const Config& config)
+fs::path GenerateTestPdf(const Project& project, const Config& config, const fs::path& output_folder)
 {
     const auto page_size{ project.ComputePageSize() };
     const auto [page_width, page_height]{ page_size.pod() };
@@ -953,5 +953,5 @@ fs::path GenerateTestPdf(const Project& project, const Config& config)
         back_page->DrawSolidLine(top_line, line_style);
     }
 
-    return pdf->Write("alignment.pdf", false);
+    return pdf->Write(output_folder / "alignment.pdf", false);
 }

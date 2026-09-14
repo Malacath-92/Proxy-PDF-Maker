@@ -473,7 +473,7 @@ int main(int argc, char** raw_argv)
                          &project,
                          [&]
                          {
-                             GeneratePdf(project, config);
+                             GeneratePdf(project, config, ".");
                              app.quit();
                          });
     }
@@ -494,7 +494,7 @@ int main(int argc, char** raw_argv)
 
         if (cli.m_Render)
         {
-            GeneratePdf(project, config);
+            GeneratePdf(project, config, ".");
         }
 
         return 0;
