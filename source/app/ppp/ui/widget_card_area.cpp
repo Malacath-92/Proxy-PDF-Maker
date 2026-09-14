@@ -332,14 +332,14 @@ class CardGrid : public QWidget
         return static_cast<int>(height);
     }
 
-    void resizeEvent(QResizeEvent* event)
+    virtual void resizeEvent(QResizeEvent* event) override
     {
         QWidget::resizeEvent(event);
 
-        const auto expectedHeight{ this->heightForWidth(this->width()) };
-        if (this->height() != expectedHeight)
+        const auto expected_height{ this->heightForWidth(this->width()) };
+        if (this->height() != expected_height)
         {
-            this->setFixedHeight(expectedHeight);
+            this->setFixedHeight(expected_height);
         }
     }
 
