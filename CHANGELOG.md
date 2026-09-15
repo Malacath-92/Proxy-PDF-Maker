@@ -6,6 +6,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-??-09
+
+### Added
+- In the `F1` popup there is a new button added that automatically zips up the current project and all config to make it easier to report a bug.
+- When encountering a crash the app will now try to log a callstack before shutting down, which hopefully make it easier to diagnose crashes.
+- When rendering a project that contains image with warnings the user will now be notified of that and is given the option to cancel.
+- A new advanced option named `Underlay PDF` was added, which put a given base PDF on top of the empty page before rendering cards on top. This is similar to `Base PDF` but you don't lose control over the size of the page.
+
+### Changed
+- Projects, resources, logs, and config files are now stored in standard folders as opposed to next to the app. This affects only the GUI app, not the CLI. On first startup you will be prompted to migrate all that data, just press yes and move on with your life.
+- The actions buttons (`Open Images`, `Set Image Folder`, `Render PDF`) have been moved to the corner of the main card area so they are always visible without taking space from the options.
+- The `New Project` button will now open a popup where you can pick a few core options for the new project, everything else will be reset to default (respecting user-selected defaults).
+- The `MtG Card Downloader` plugin is sped up significantly with both Scryfall and MPCFill as a source.
+- The cropper threads should be significantly faster now when they don't have work to do.
+- Loading a project now uses a drop-down instead of opening a file browser.
+
+### Fixed
+- All known cases where custom card shapes would not correctly be clipped have been fixed.
+- The card preview now shows a white page in all themes.
+- Resetting an option that is defined by a nested value (such as spacing) will no longer result in a crash.
+- It is no longer possible to increase the amount of display columns so much that a maximized window will be forced to resize.
+- The `MtG Card Downloader` plugin now works again with both Scryfall and MPCFill as a source.
+- The `MtG Card Downloader` will no longer crash when being given an MPCFill xml file with gaps.
+- PDF files now correctly declare their color space to be sRGB, which fixes display issues on screens with a non-sRGB color space.
+- The `MtG Card Downloader` plugin will no longer deadlock when the cropper is still working as the plugin is opened.
+- While running the Nightly build, on startup when checking for an update, the app will only check if there is a newer Nightly build, ignoring any stable releases. 
+- On first startup, the app will no longer error from not having a project to open.
+- There will no longer be a crash on shutdown when there are still previews being generated.
+
+### Removed
+- All styles other than `Default`, and `Fusion` were removed and replaced with several `Breeze` styles. This lets you pick a dark theme irrespective of the system's theme.
+
 ## [1.9.0] - 2026-10-07
 
 ### Added
