@@ -29,7 +29,11 @@ inline void UpdateComboBox(QComboBox* combo_box,
 
     if (std::ranges::contains(options, default_option))
     {
-        combo_box->setCurrentText(ToQString(default_option));
+        const auto current_option{ combo_box->currentText().toStdString() };
+        if (!std::ranges::contains(options, current_option))
+        {
+            combo_box->setCurrentText(ToQString(default_option));
+        }
     }
 }
 
