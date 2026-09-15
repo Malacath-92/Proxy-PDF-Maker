@@ -42,7 +42,7 @@ The following is an outline for creating your first project:
 - Set the amount you want for each card by pressing the `+` or `-` buttons for each card.
 - Open the preview by pressing it in the top-left corner of the app window and verify everything is as you want.
 - Press the `Render PDF` button in the top-right corner that will appear once the loading bar is done.
-- Wait for rendering to be finished, the rendered pdf should be opened automatically.
+- Wait for rendering to be finished, the rendered pdf should be opened automatically, along with the folder in which the pdf was saved.
 
 From here you have to explore the different options the app has to offer on the right-hand side. Be sure to always have the preview open while changing values there so you know how the final pdf will be affected.
 
@@ -87,6 +87,7 @@ On the top-left you can switch over to the `Preview`, which shows you a preview 
 If you right-click a card in either the Card Grid or the Print Preview you will open the card's context menu. In this menu you will see various options for the card:
 - _Remove External Card_: Removes the card from the project. **Only visible if the card is an external card.**
 - _Reset Backside_: Resets the backside for this card back to the default. **Only visible if the card has a non-default backside and backsides are enabled.**
+- _Clear Backside_: Clears the backside, that is make it white. **Only visible if the card has a non-default backside and backsides are enabled.**
 - Bleed Options:
     - _Infer Input Bleed_: Default setting. The app will try to determine whether the image has a bleed edge or not.
     - _Assume Full Bleed_: The image has a full bleed edge.
@@ -94,9 +95,12 @@ If you right-click a card in either the Card Grid or the Print Preview you will 
 - Aspect Ratio Options: **Only visible if the image has an unexpected aspect ratio**
     - _Reset Aspect Ratio_: Reset the aspect ratio to the images original aspect ratio.
     - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+    - _Fix Aspect Ratio: Expand_: Expands the image in one dimension to make it have the expected aspect ratio.
+    - _Fix Aspect Ratio: Crop_: Crops the image in one dimension to make it have the expected aspect ratio.
     - _Fix Aspect Ratio: Stretch_: Stretches the image in one dimension to make it have the expected aspect ratio.
 - _Rotate Left_: Rotates the image by 90 degrees counter-clockwise.
 - _Rotate Right_: Rotates the image by 90 degrees clockwise.
+- _Skip Slot_: Skips the slot this card is in on the generated pdf. **Only visible while looking at the preview.**
 
 ## Options
 The right panel contains all the options for printing. Those that are self-explanatory (i.e. PDF Filename, Paper Size, Orientation) are skipped here. Also note that all options that affect the generated pdf will be reflected in the print preview, so keep that open while changing the settings to get an idea of what you are doing.
@@ -107,8 +111,28 @@ The right panel contains all the options for printing. Those that are self-expla
 > [!NOTE]
 > Some options are hidden by default and are only visible when enabling `Advanced Mode`, all such options are marked.
 
+### Project
+
+#### Project Name
+This is the name of the project, which will correspond to the file name when saved.
+
+#### New Project
+This button will open a popup which lets you pick a couple options for the new project. All other options will be set to the default. When creating a new project you will be warned if the current project is not saved.
+
+#### Save Project
+Will directly save the project, nothing more to it.
+
+#### Load Project
+Opens a drop-down showing all projects you have previously saved.
+
 ### Print Options
-These options control the format of the output, both the final pdf as well as the cropped images.
+These options control the format of the output, both the final pdf as well as the in-app images.
+
+#### Alignment Test
+Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned.
+
+#### Render Header
+Renders a header with the name of the pdf, the current page, and the total pages.
 
 #### Card Size
 The options for this are defined in `config.ini`, but can be edited via a popup that appears when pressing the <img src="res/edit.png" alt="edit" width="15"/> button next to it. The different columns are explained below.
@@ -144,10 +168,13 @@ Determines the size of a page in the generated pdf. Page sizes are defined in `c
 The `Fit` option for paper size will fit exactly `A` times `B` cards, without any margins whatsoever. The choice of `A` and `B` is made in the option that will appear below the `Paper Size` option once `Fit` is selected. Check out the preview for an idea of how this ends up.
 
 ##### Paper Size: Base Pdf
-It will load all pdf files inside the folder `res/base_pdfs` and present them in the drop-down below. When rendering the first page of the selected pdf will be used as a base for each page in the output. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically.
+Presents all base DPF files a drop-down below. When rendering your PDF the first page of the selected pdf will be used as a base for each page in the output and to determine the page size. This is useful for example when using an automatic cutting machine to add registration marks to each page automatically. To add a base PDF simply drag-and-drop a `.pdf` file onto the main window, the dropdown will update automatically.
 
-#### Cards Size
-Gives you information about how big the cards will be once printed, this is the full grid per-page. Not the individual cards.
+#### Underlay PDF [Advanced Mode]
+Renders the chosen base PDF in the middle of each page. This is similar to the `Base PDF` option, without controlling the page size.
+
+#### Page Size & Cards Size
+Gives you information about the size of the page and how big all the cards will be once printed, this is the full grid per-page. Not the individual cards.
 
 #### Margin Mode [Advanced Mode]
 Determines how the margins are determined, giving the following options:
@@ -168,7 +195,7 @@ This option is only relevant if you print with backsides, in which case it is us
 ### Guides Options
 
 #### Export Exact Guides [Advanced Mode]
-Enables exporting an `.svg` file next to the exported `.pdf` which contains exact guides of the cards, including rounded corners. These can for example be imported into software that operates automatic cutting machines (e.g. Silhouette Studio).
+Enables exporting an `.svg` file next to the exported `.pdf` which contains exact guides of the cards, including rounded corners (or custom shapes). These can for example be imported into software that operates automatic cutting machines (e.g. Silhouette Studio).
 
 #### Enable Guides
 Enables cutting guides, by default those are black-white guides. They are always in the corners of the cards to mark the exact size of a card.
@@ -202,7 +229,7 @@ This determines how thick the guides are, it defaults to 1 point, which is equiv
 #### Bleed Edge
 Instead of printing cards perfectly cropped to card size this option will leave a small amount of bleed edge. This emulates the real printing process and thus makes it easier to cut without having adjacent cards visible on slight miscuts at the cost of more ink usage.
 
-#### Bleed Edge
+#### Envelope
 This is essentially the same as `Bleed Edge`, except that it is added around all the cards as opposed to individual cards.
 
 #### Card Spacing
@@ -255,36 +282,22 @@ Dropdown of all color cubes found in the folder `res/cubes`, which have to be `.
 Determines the resolution of previews in the card grid and the page preview. Smaller numbers result in faster cropping but worse previews.
 
 #### Theme
-Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Predefined themes are:
-- Default (OS specific)
-- Fusion
-- Material Dark
-- Darkeum
-- Combinear
+Choose a theme from among all themes found in the folder `res/styles`, which have to be `.qss` files. Changing the theme may require restarting the app.
 
 #### Plugins
 Opens a window with all available game-specific plugins. Use the checkboxes to enable or disable the plugins.
 
 ## Actions
-At the top of the options you can see an untitled section, which are all buttons that perform various actions.
-
-### Render PDF
-When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
-
-### Save Project
-Saves your project (which includes _all_ settings except for those under `Global Config`), lets you choose any filename to save to such that you have multiple projects ready to go. The last saved project will be auto-opened the next time you start the app.
-
-### Load Project
-Loads a project previously saved via `Save Project`.
-
-### Set Image Folder
-Lets you choose a folder in which you have your images, this is saved with the project.
+At the top of the app to the left of the options you can see an untitled section, which are all buttons that perform various actions.
 
 ### Open Images
 Opens the image folder for this project in a file explorer.
 
-### Alignment Test
-Generates a small two-page pdf file which you can print and then use to verify your settings. The two settings you have to verify are that you are printing at the right scale and that front- and backsides are well aligned.
+### Set Image Folder
+Lets you choose a folder in which you have your images, this is saved with the project.
+
+### Render PDF
+When you're done getting your print setup, hit this button and it will make your PDF and open it up for you. Hopefully you can handle yourself from there.
 
 # CLI
 The app also ships with `proxy_pdf_cli`, which is a command line interface to run cropping and generation. If you don't know what this means then this is probably not for you. With all the features available in the app it should be possible to generate sheets without large amounts of effort. But it's possible to change all project properties via the CLI, please refer to `--help` for more details.
