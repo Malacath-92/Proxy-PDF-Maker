@@ -133,7 +133,7 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     };
     EnableOptionWidgetForDefaults(m_Orientation->GetWidget(), config_reqs, "orientation");
 
-    auto* paper_info{ new LabelWithLabel{ "", SizeToString({ 15_mm, 42_mm }, base_unit) } };
+    auto* paper_info{ new LabelWithLabel{ "Page Size", SizeToString({ 15_mm, 42_mm }, base_unit) } };
     m_PaperInfo = paper_info->GetWidget();
 
     auto* cards_info{ new LabelWithLabel{ "Cards Size", SizeToString({ 15_mm, 42_mm }, base_unit) } };
