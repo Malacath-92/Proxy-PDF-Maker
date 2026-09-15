@@ -460,6 +460,7 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_PROJECT(PageSizeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(PageSizeChoiceChanged);
         FORWARD_SIGNAL_FROM_PROJECT(BasePdfChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(UnderlayPdfChanged);
         FORWARD_SIGNAL_FROM_PROJECT(CardsSizeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(PageMarginsModeChanged);
         FORWARD_SIGNAL_FROM_PROJECT(PageMarginsChanged);

@@ -36,6 +36,7 @@ class PrintOptionsWidget : public QWidget
     void AvailableCardSizesChanged(const CardSizes& card_sizes);
     void AvailablePageSizesChanged(const PageSizes& page_sizes);
     void AvailableBasePdfsChanged(std::span<const std::string> base_pdfs);
+    void AvailableUnderlayPdfsChanged(std::span<const std::string> underlay_pdfs);
 
     void OutputFilenameChanged(const fs::path& output_filename);
     void PageHeaderEnabledChanged(bool page_header_enabled);
@@ -43,6 +44,7 @@ class PrintOptionsWidget : public QWidget
     void PageSizeChanged(Size page_size);
     void PageSizeChoiceChanged(std::string_view page_size_choice);
     void BasePdfChanged(std::string_view base_pdf);
+    void UnderlayPdfChanged(std::optional<std::string_view> underlay_pdf);
     void CardsSizeChanged(Size cards_size);
     void PageMarginsModeChanged(MarginsMode margins_mode);
     void PageMarginsChanged(Margins margins);
@@ -66,6 +68,7 @@ class PrintOptionsWidget : public QWidget
     QComboBox* m_CardSize{ nullptr };
     QComboBox* m_PaperSize{ nullptr };
     ComboBoxWithLabel* m_BasePdf{ nullptr };
+    ComboBoxWithLabel* m_UnderlayPdf{ nullptr };
     QComboBox* m_CardOrientation{ nullptr };
     WidgetWithLabel* m_CardsLayoutVertical{ nullptr };
     QDoubleSpinBox* m_CardsWidthVertical{ nullptr };

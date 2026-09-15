@@ -612,42 +612,41 @@ PoDoFoDocument::PoDoFoDocument(const Project& project,
 
     m_ImageCache = std::make_unique<PoDoFoImageCache>(*this, project, config);
 
-    const auto base_pdf_path{ project.GetBasePdfPath() };
-    if (base_pdf_path.has_value() && fs::exists(base_pdf_path.value()))
-    {
-        // Load base-pdf
-        PoDoFo::PdfMemDocument temp_document;
-        temp_document.Load(base_pdf_path.value().string());
-
-        // Copy pages into our own pdf
-        m_BaseDocument.reset(new PoDoFo::PdfMemDocument);
-        m_BaseDocument->GetPages().InsertDocumentPageAt(0, temp_document, 0); // front-page
-
-        if (m_Project.m_Data.m_BacksideEnabled)
+    const auto load_base_pdf{
+        [this](const fs::path& pdf_path) -> std::unique_ptr<PoDoFo::PdfMemDocument>
         {
-            // Do all user-declared transformations on the backside page
-            m_BaseDocument->GetPages().InsertDocumentPageAt(1, temp_document, 0); // back-page
-            auto& backside_page{ m_BaseDocument->GetPages().GetPageAt(1) };
+            // Load base-pdf
+            PoDoFo::PdfMemDocument temp_document;
+            temp_document.Load(pdf_path.string());
 
-            const PoDoFo::PdfString prepend{
-                [this, &backside_page]() -> PoDoFo::PdfString
-                {
-                    const auto page_width{ backside_page.GetRectRaw().GetWidth() };
-                    const auto page_height{ backside_page.GetRectRaw().GetHeight() };
-                    const Offset pivot{
-                        1_pts * page_width / 2,
-                        1_pts * page_height / 2,
-                    };
-                    return MakeTransformString(m_Project.m_Data.m_BacksideOffset,
-                                               m_Project.m_Data.m_BacksideRotation,
-                                               pivot);
-                }()
-            };
+            // Copy pages into our own pdf
+            auto document{ std::make_unique<PoDoFo::PdfMemDocument>() };
+            document->GetPages().InsertDocumentPageAt(0, temp_document, 0); // front-page
 
-            WrapPage(backside_page, prepend, "");
-        }
+            if (m_Project.m_Data.m_BacksideEnabled)
+            {
+                // Do all user-declared transformations on the backside page
+                document->GetPages().InsertDocumentPageAt(1, temp_document, 0); // back-page
+                auto& backside_page{ document->GetPages().GetPageAt(1) };
 
-        {
+                const PoDoFo::PdfString prepend{
+                    [this, &backside_page]() -> PoDoFo::PdfString
+                    {
+                        const auto page_width{ backside_page.GetRectRaw().GetWidth() };
+                        const auto page_height{ backside_page.GetRectRaw().GetHeight() };
+                        const Offset pivot{
+                            1_pts * page_width / 2,
+                            1_pts * page_height / 2,
+                        };
+                        return MakeTransformString(m_Project.m_Data.m_BacksideOffset,
+                                                   m_Project.m_Data.m_BacksideRotation,
+                                                   pivot);
+                    }()
+                };
+
+                WrapPage(backside_page, prepend, "");
+            }
+
             // Some pdf files, most likely written by Cairo, have a transform at the start of the page
             // that is not wrapped with q/Q, since the assumption is that the pdf won't be edited. To
             // be able to put new stuff into the pdf we wrap the whole page in a q/Q pair
@@ -690,12 +689,91 @@ PoDoFoDocument::PoDoFoDocument(const Project& project,
                 }
             };
 
-            contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(0));
+            contain_naked_transforms(document->GetPages().GetPageAt(0));
 
             if (m_Project.m_Data.m_BacksideEnabled)
             {
-                contain_naked_transforms(m_BaseDocument->GetPages().GetPageAt(1));
+                contain_naked_transforms(document->GetPages().GetPageAt(1));
             }
+
+            return document;
+        }
+    };
+
+    const auto base_pdf_path{ project.GetBasePdfPath() };
+    if (base_pdf_path.has_value() && fs::exists(base_pdf_path.value()))
+    {
+        m_BaseDocument = load_base_pdf(base_pdf_path.value());
+    }
+
+    const auto underlay_pdf_path{ project.GetUnderlayPdfPath() };
+    if (underlay_pdf_path.has_value() && fs::exists(underlay_pdf_path.value()))
+    {
+        const auto copy_contents{
+            [](PoDoFo::PdfMemDocument& src_document,
+               uint32_t src_index,
+               PoDoFo::PdfMemDocument& dest_document,
+               uint32_t dest_index)
+            {
+                auto& src_page{ src_document.GetPages().GetPageAt(src_index) };
+                auto& dest_page{ dest_document.GetPages().GetPageAt(dest_index) };
+
+                const auto src_rect{ src_page.GetCropBox() };
+                const auto dest_rect{ dest_page.GetCropBox() };
+
+                auto x_form{
+                    dest_document.CreateXObjectForm(src_rect)
+                };
+                if (x_form == nullptr)
+                {
+                    return;
+                }
+                x_form->FillFromPage(src_page);
+
+                const auto src_width{ src_rect.Width };
+                const auto src_height{ src_rect.Height };
+                const auto dest_width{ dest_rect.Width };
+                const auto dest_height{ dest_rect.Height };
+
+                const auto dest_x{ (dest_width - src_width) / 2.0 - src_rect.X };
+                const auto dest_y{ (dest_height - src_height) / 2.0 - src_rect.Y };
+
+                PoDoFo::PdfPainter painter;
+                painter.SetCanvas(dest_page);
+                painter.DrawXObject(*x_form, dest_x, dest_y);
+                painter.FinishDrawing();
+            }
+        };
+
+        if (m_BaseDocument == nullptr)
+        {
+            m_BaseDocument = std::make_unique<PoDoFo::PdfMemDocument>();
+
+            const auto page_size{ m_Project.ComputePageSize() };
+            m_BaseDocument->GetPages().CreatePageAt(
+                0,
+                PoDoFo::Rect(
+                    0.0,
+                    0.0,
+                    ToPoDoFoPoints(page_size.x),
+                    ToPoDoFoPoints(page_size.y)));
+            if (m_Project.m_Data.m_BacksideEnabled)
+            {
+                m_BaseDocument->GetPages().CreatePageAt(
+                    1,
+                    PoDoFo::Rect(
+                        0.0,
+                        0.0,
+                        ToPoDoFoPoints(page_size.x),
+                        ToPoDoFoPoints(page_size.y)));
+            }
+        }
+
+        const auto underlay_pdf{ load_base_pdf(underlay_pdf_path.value()) };
+        copy_contents(*underlay_pdf, 0, *m_BaseDocument, 0);
+        if (m_Project.m_Data.m_BacksideEnabled)
+        {
+            copy_contents(*underlay_pdf, 1, *m_BaseDocument, 1);
         }
     }
 }

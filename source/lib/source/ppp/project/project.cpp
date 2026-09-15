@@ -467,6 +467,18 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         m_Data.m_BasePdf = get_value("base_pdf");
+        {
+            // no-{}
+            const auto underlay_pdf(get_value("underlay_pdf"));
+            if (!underlay_pdf.is_null())
+            {
+                m_Data.m_UnderlayPdf = underlay_pdf;
+            }
+            else
+            {
+                m_Data.m_UnderlayPdf = std::nullopt;
+            }
+        }
         m_Data.m_Orientation = magic_enum::enum_cast<PageOrientation>(get_value("orientation").get_ref<const std::string&>())
                                    .value_or(PageOrientation::Portrait);
         {
@@ -759,6 +771,10 @@ std::string Project::DumpToJson(const ProjectData& data)
     json["card_size"] = data.m_CardSizeChoice;
     json["page_size"] = data.m_PageSize;
     json["base_pdf"] = data.m_BasePdf;
+    if (data.m_UnderlayPdf.has_value())
+    {
+        json["underlay_pdf"] = data.m_UnderlayPdf.value();
+    }
     json["margins_mode"] = magic_enum::enum_name(data.m_MarginsMode);
     if (data.m_CustomMargins.has_value())
     {
@@ -1598,7 +1614,7 @@ void Project::SetBasePdf(std::string base_pdf)
     if (m_Data.m_PageSize == Config::c_BasePDFSize &&
         m_Data.m_BasePdf != base_pdf)
     {
-        m_Data.m_BasePdf = base_pdf;
+        m_Data.m_BasePdf = std::move(base_pdf);
 
         CacheCardLayout();
 
@@ -1607,6 +1623,14 @@ void Project::SetBasePdf(std::string base_pdf)
 
         PageMarginsChanged(ComputeMargins());
         MaxPageMarginsChanged(ComputeMaxMargins());
+    }
+}
+void Project::SetUnderlayPdf(std::string underlay_pdf)
+{
+    if (m_Data.m_UnderlayPdf != underlay_pdf)
+    {
+        m_Data.m_UnderlayPdf = std::move(underlay_pdf);
+        UnderlayPdfChanged(m_Data.m_UnderlayPdf);
     }
 }
 void Project::SetPageOrientation(PageOrientation page_orientation)
@@ -2219,6 +2243,10 @@ std::optional<fs::path> Project::GetBasePdfPath() const
 {
     return m_Data.GetBasePdfPath();
 }
+std::optional<fs::path> Project::GetUnderlayPdfPath() const
+{
+    return m_Data.GetUnderlayPdfPath();
+}
 
 Size Project::ComputePageSize() const
 {
@@ -2553,6 +2581,14 @@ std::optional<fs::path> ProjectData::GetBasePdfPath() const
     if (infer_size)
     {
         return (m_BasePdfsFolder / m_BasePdf).replace_extension(".pdf");
+    }
+    return std::nullopt;
+}
+std::optional<fs::path> ProjectData::GetUnderlayPdfPath() const
+{
+    if (m_UnderlayPdf.has_value())
+    {
+        return (m_BasePdfsFolder / m_UnderlayPdf.value()).replace_extension(".pdf");
     }
     return std::nullopt;
 }

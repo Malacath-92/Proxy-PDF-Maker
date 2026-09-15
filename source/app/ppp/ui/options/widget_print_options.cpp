@@ -123,6 +123,11 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     };
     EnableOptionWidgetForDefaults(m_BasePdf->GetWidget(), config_reqs, "base_pdf");
 
+    m_UnderlayPdf = new ComboBoxWithLabel{
+        "&Underlay Pdf", m_ViewModel.GetUnderlayPdfNames(), "Underlay Pdf"
+    };
+    EnableOptionWidgetForDefaults(m_UnderlayPdf->GetWidget(), config_reqs, "underlay_pdf");
+
     m_Orientation = new ComboBoxWithLabel{
         "&Orientation", magic_enum::enum_names<PageOrientation>(), magic_enum::enum_name(PageOrientation::Portrait)
     };
@@ -233,6 +238,7 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     layout->addWidget(card_size);
     layout->addWidget(paper_size);
     layout->addWidget(m_BasePdf);
+    layout->addWidget(m_UnderlayPdf);
     layout->addWidget(m_Orientation);
     layout->addWidget(paper_info);
     layout->addWidget(cards_info);
@@ -299,6 +305,10 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
                      &QComboBox::currentTextChanged,
                      &m_ViewModel,
                      &PrintOptionsViewModel::ChangeBasePdf);
+    QObject::connect(m_UnderlayPdf->GetWidget(),
+                     &QComboBox::currentTextChanged,
+                     &m_ViewModel,
+                     &PrintOptionsViewModel::ChangeUnderlayPdf);
     QObject::connect(m_MarginsMode,
                      &QComboBox::currentTextChanged,
                      &m_ViewModel,
@@ -385,12 +395,14 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
     FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailableCardSizesChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailablePageSizesChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailableBasePdfsChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(AvailableUnderlayPdfsChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(OutputFilenameChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageHeaderEnabledChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChoiceChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageSizeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageSizeChoiceChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BasePdfChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(UnderlayPdfChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsSizeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsModeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(PageMarginsChanged);
@@ -407,6 +419,8 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
 void PrintOptionsWidget::AdvancedModeChanged(bool advanced_mode)
 {
     // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
+    // m_UnderlayPdf->setVisible(advanced_mode);
+    m_UnderlayPdf->setVisible(false); // Requires PoDoFo/1.12 or newer to function properly
     m_LeftMarginSpin->parentWidget()->setVisible(advanced_mode);
     m_TopMarginSpin->parentWidget()->setVisible(advanced_mode);
     m_RightMarginSpin->parentWidget()->setVisible(advanced_mode);
@@ -437,6 +451,13 @@ void PrintOptionsWidget::AvailableBasePdfsChanged(std::span<const std::string> b
         m_BasePdf->GetWidget(),
         base_pdfs,
         m_BasePdf->GetWidget()->currentText().toStdString());
+}
+void PrintOptionsWidget::AvailableUnderlayPdfsChanged(std::span<const std::string> underlay_pdfs)
+{
+    UpdateComboBox(
+        m_UnderlayPdf->GetWidget(),
+        underlay_pdfs,
+        m_UnderlayPdf->GetWidget()->currentText().toStdString());
 }
 
 void PrintOptionsWidget::OutputFilenameChanged(const fs::path& output_filename)
@@ -491,6 +512,13 @@ void PrintOptionsWidget::BasePdfChanged(std::string_view base_pdf)
     base_pdf_widget->blockSignals(true);
     base_pdf_widget->setCurrentText(ToQString(base_pdf));
     base_pdf_widget->blockSignals(false);
+}
+void PrintOptionsWidget::UnderlayPdfChanged(std::optional<std::string_view> underlay_pdf)
+{
+    auto* underlay_pdf_widget{ m_UnderlayPdf->GetWidget() };
+    underlay_pdf_widget->blockSignals(true);
+    underlay_pdf_widget->setCurrentText(ToQString(underlay_pdf.value_or("None")));
+    underlay_pdf_widget->blockSignals(false);
 }
 void PrintOptionsWidget::CardsSizeChanged(Size cards_size)
 {

@@ -58,6 +58,7 @@ struct ProjectData
     std::string m_CardSizeChoice;
     std::string m_PageSize;
     std::string m_BasePdf{ "None" };
+    std::optional<std::string> m_UnderlayPdf{ std::nullopt };
     fs::path m_BasePdfsFolder;
 
     // Margin mode is the user-selected edit-mode of margins
@@ -107,6 +108,7 @@ struct ProjectData
                                  CardOrientation orientation) const;
 
     std::optional<fs::path> GetBasePdfPath() const;
+    std::optional<fs::path> GetUnderlayPdfPath() const;
 
     Size ComputePageSize(const ConfigData& config) const;
     Size ComputeExactBordersSize(const ConfigData& config) const;
@@ -252,6 +254,7 @@ class Project : public QObject
     void SetCardOrientation(CardOrientation card_orientation);
     void SetPageSizeChoice(std::string page_size_choice);
     void SetBasePdf(std::string base_pdf);
+    void SetUnderlayPdf(std::string underlay_pdf);
     void SetPageOrientation(PageOrientation page_orientation);
     void SetFlipPageOn(FlipPageOn flip_page_on);
 
@@ -298,6 +301,7 @@ class Project : public QObject
     bool CacheCardLayout();
 
     std::optional<fs::path> GetBasePdfPath() const;
+    std::optional<fs::path> GetUnderlayPdfPath() const;
 
     Size ComputePageSize() const;
     Size ComputeExactBordersSize() const;
@@ -375,6 +379,7 @@ class Project : public QObject
     void CardOrientationChanged(CardOrientation card_orientation);
     void PageSizeChoiceChanged(std::string_view page_size_choice);
     void BasePdfChanged(std::string_view base_pdf);
+    void UnderlayPdfChanged(std::optional<std::string_view> base_pdf);
     void PageSizeChanged(Size page_size);
     void PageOrientationChanged(PageOrientation page_orientation);
     void FlipPageOnChanged(FlipPageOn flip_page_on);

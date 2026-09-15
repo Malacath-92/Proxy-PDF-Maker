@@ -33,6 +33,8 @@ void PrintOptionsViewModel::BasePdfAdded()
 {
     const auto available_base_pdfs{ GetBasePdfNames() };
     AvailableBasePdfsChanged(available_base_pdfs);
+    const auto available_underlay_pdfs{ GetUnderlayPdfNames() };
+    AvailableUnderlayPdfsChanged(available_underlay_pdfs);
 }
 
 bool PrintOptionsViewModel::DoRenderAlignmentTest() const
@@ -82,6 +84,10 @@ void PrintOptionsViewModel::ChangePageSizeChoice(QString page_size_choice)
 void PrintOptionsViewModel::ChangeBasePdf(QString base_pdf)
 {
     m_Project.SetBasePdf(base_pdf.toStdString());
+}
+void PrintOptionsViewModel::ChangeUnderlayPdf(QString underlay_pdf)
+{
+    m_Project.SetUnderlayPdf(underlay_pdf.toStdString());
 }
 void PrintOptionsViewModel::ChangePageMarginsMode(QString margins_mode)
 {
@@ -202,6 +208,28 @@ std::vector<std::string> PrintOptionsViewModel::GetBasePdfNames() const
         std::array{ ".pdf"_p });
 
     return base_pdf_names;
+}
+std::vector<std::string> PrintOptionsViewModel::GetUnderlayPdfNames() const
+{
+    TRACY_AUTO_SCOPE();
+
+    auto& application{ *ppApp };
+
+    std::vector<std::string> underlay_pdf_names{ "None" };
+
+    ForEachFile(
+        application.GetBasePdfsFolder(),
+        [&](const fs::path& file_name)
+        {
+            std::string base_name{ file_name.stem().string() };
+            if (!std::ranges::contains(underlay_pdf_names, base_name))
+            {
+                underlay_pdf_names.push_back(std::move(base_name));
+            }
+        },
+        std::array{ ".pdf"_p });
+
+    return underlay_pdf_names;
 }
 
 Size PrintOptionsViewModel::GetCardsSize() const

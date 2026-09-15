@@ -30,6 +30,7 @@ class PrintOptionsViewModel : public QObject
     void AvailableCardSizesChanged(const CardSizes& card_sizes);
     void AvailablePageSizesChanged(const PageSizes& page_sizes);
     void AvailableBasePdfsChanged(std::span<const std::string> base_pdfs);
+    void AvailableUnderlayPdfsChanged(std::span<const std::string> underlay_pdfs);
 
     void OutputFilenameChanged(const fs::path& output_filename);
     void PageHeaderEnabledChanged(bool page_header_enabled);
@@ -37,6 +38,7 @@ class PrintOptionsViewModel : public QObject
     void PageSizeChanged(Size page_size);
     void PageSizeChoiceChanged(std::string_view page_size_choice);
     void BasePdfChanged(std::string_view base_pdf);
+    void UnderlayPdfChanged(std::optional<std::string_view> underlay_pdf);
     void CardsSizeChanged(Size cards_size);
     void PageMarginsModeChanged(MarginsMode margins_mode);
     void PageMarginsChanged(Margins margins);
@@ -63,6 +65,7 @@ class PrintOptionsViewModel : public QObject
     void ChangeCardSizeChoice(QString card_size_choice);
     void ChangePageSizeChoice(QString page_size_choice);
     void ChangeBasePdf(QString base_pdf);
+    void ChangeUnderlayPdf(QString underlay_pdf);
     void ChangePageMarginsMode(QString margins_mode);
     void ChangePageMargin(Margin margin, Length value);
     void ChangeCardOrientation(QString card_orientation);
@@ -84,8 +87,8 @@ class PrintOptionsViewModel : public QObject
     const PageSizes& GetPageSizes() const;
     const PageSizes& GetDefaultPageSizes() const;
 
-    std::vector<std::string_view> GetAvailablePageSizes() const;
     std::vector<std::string> GetBasePdfNames() const;
+    std::vector<std::string> GetUnderlayPdfNames() const;
 
     Size GetCardsSize() const;
     std::string_view GetPageSizeChoice() const;
