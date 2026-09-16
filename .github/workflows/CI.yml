@@ -38,15 +38,30 @@ jobs:
         if: ${{ startsWith(inputs.os, 'MacOS') }}
         run: |
           echo "Disk space before cleanup"
-          df -h
+          df -h /System/Volumes/Data
           
-          sudo rm -rf /usr/local/share/android-sdk
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/hostedtoolcache
-          sudo rm -rf /usr/share/dotnet
+          if [ -d "/Users/runner/Library/Android" ]; then
+            echo "Deleting Android SDK..."
+            sudo rm -rf /Users/runner/Library/Android
+          fi
+          
+          echo "Available Xcode installations:"
+          ls -d /Applications/Xcode_* 2>/dev/null || echo "Keine zusätzlichen Xcode-Versionen gefunden"
+          
+          echo "Deleting all Xcode-Versionen other than 16..."
+          sudo find /Applications -name "Xcode_*" -maxdepth 1 -mindepth 1 | grep -v "Xcode_16" | xargs sudo rm -rf
+
+          echo "Clearing Homebrew..."
+          brew cleanup
+          sudo rm -rf "$(brew --cache)"
+
+          if [ -d "/opt/hostedtoolcache" ]; then
+            echo "Clearing Hosted Tool Cache..."
+            sudo rm -rf /opt/hostedtoolcache
+          fi
           
           echo "Disk space after cleanup"
-          df -h
+          df -h /System/Volumes/Data
 
       - uses: actions/checkout@v4
         with:
