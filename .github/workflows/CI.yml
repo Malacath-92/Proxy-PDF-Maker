@@ -34,9 +34,20 @@ jobs:
         with:
           tool-cache: false
 
+      - name: Maximize Build Space
+        if: ${{ startsWith(inputs.os, 'MacOS') }}
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
       - uses: actions/checkout@v4
         with:
           submodules: True
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with:
