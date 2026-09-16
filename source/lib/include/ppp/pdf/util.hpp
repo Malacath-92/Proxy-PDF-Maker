@@ -5,7 +5,6 @@
 
 #include <dla/vector.h>
 
-#include <ppp/image.hpp>
 #include <ppp/project/card_info.hpp>
 
 class Project;
@@ -26,7 +25,7 @@ struct PageImageTransform
 {
     Position m_Position;
     Size m_Size;
-    Image::Rotation m_Rotation;
+    Rotation m_Rotation;
     CardTransform m_Card;
     std::optional<ClipRect> m_ClipRect;
 };
@@ -55,3 +54,5 @@ PageImageTransforms ComputeBacksideTransforms(
 
 std::vector<Page> DistributeCardsToPages(const Project& project);
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);
+
+class Image RenderPdf(const fs::path& pdf_path);

@@ -36,6 +36,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/version_check.hpp>
 
 #include <ppp/qt_util.hpp>
+#include <ppp/render_pdf.hpp>
 #include <ppp/util/log.hpp>
 
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
@@ -108,6 +109,8 @@ int main(int argc, char** argv)
     };
 
     Log main_log{ log_flags, Log::c_MainLogName };
+
+    const auto destroy_pdfium{ InitPdfRenderer() };
 
     RegisterTerminateHandler();
 

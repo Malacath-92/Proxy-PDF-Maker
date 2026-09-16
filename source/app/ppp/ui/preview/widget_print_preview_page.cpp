@@ -6,6 +6,9 @@
 #include <QVBoxLayout>
 
 #include <ppp/project/project.hpp>
+#include <ppp/render_pdf.hpp>
+
+#include <ppp/ui/widget_util/card/card_widget_util.hpp>
 
 #include <ppp/ui/preview/widget_print_preview_card.hpp>
 
@@ -15,12 +18,22 @@
 
 #include <ppp/ui/view_models/view_model_card.hpp>
 
-class PageBackground : public QWidget
+class PageBackground : public QLabel
 {
   public:
-    PageBackground(Size page_size)
+    PageBackground(std::optional<fs::path> base_pdf,
+                   Size page_size)
         : m_PageRatio{ page_size.x / page_size.y }
     {
+        if (base_pdf.has_value())
+        {
+            if (const auto base_image{ RenderPdf(base_pdf.value()) })
+            {
+                setPixmap(StoreIntoQtPixmap(base_image));
+                setScaledContents(true);
+            }
+        }
+
         QSizePolicy policy = sizePolicy();
         policy.setHeightForWidth(true);
         setSizePolicy(policy);
@@ -40,6 +53,12 @@ class PageBackground : public QWidget
     {
         QPainter painter{ this };
         painter.fillRect(rect(), Qt::white);
+
+        const auto pixmap{ this->pixmap() };
+        if (!pixmap.isNull())
+        {
+            painter.drawPixmap(rect(), pixmap);
+        }
     }
 
   private:
@@ -107,13 +126,13 @@ class PageImageContainer : public QWidget
 };
 
 PagePreview::PagePreview(Project& project,
-                         QObject* event_filter,
-                         const Page& page,
-                         const PageImageTransforms& transforms,
+                         QObject* /*event_filter*/,
+                         const Page& /*page*/,
+                         const PageImageTransforms& /*transforms*/,
                          Params params)
 {
     {
-        auto* bg_widget{ new PageBackground{ params.m_PageSize } };
+        auto* bg_widget{ new PageBackground{ project.GetBasePdfPath(), params.m_PageSize } };
 
         auto* bg_layout{ new QVBoxLayout };
         bg_layout->setContentsMargins(0, 0, 0, 0);
@@ -123,151 +142,151 @@ PagePreview::PagePreview(Project& project,
         setLayout(bg_layout);
     }
 
-    const auto total_bleed_edge{
-        params.m_IsBackside
-            ? project.m_Data.m_BleedEdge +
-                  project.m_Data.m_EnvelopeBleedEdge +
-                  project.m_Data.m_BacksideExtraBleedEdge
-            : project.m_Data.m_BleedEdge +
-                  project.m_Data.m_EnvelopeBleedEdge
-    };
-    const bool rounded_corners{
-        project.m_Data.m_Corners == CardCorners::Rounded &&
-        total_bleed_edge == 0_mm
-    };
+    // const auto total_bleed_edge{
+    //     params.m_IsBackside
+    //         ? project.m_Data.m_BleedEdge +
+    //               project.m_Data.m_EnvelopeBleedEdge +
+    //               project.m_Data.m_BacksideExtraBleedEdge
+    //         : project.m_Data.m_BleedEdge +
+    //               project.m_Data.m_EnvelopeBleedEdge
+    // };
+    // const bool rounded_corners{
+    //     project.m_Data.m_Corners == CardCorners::Rounded &&
+    //     total_bleed_edge == 0_mm
+    // };
 
-    m_ImageContainer = new PageImageContainer{ transforms, params.m_PageSize };
-    m_ImageContainer->setParent(this);
+    // m_ImageContainer = new PageImageContainer{ transforms, params.m_PageSize };
+    // m_ImageContainer->setParent(this);
 
-    for (size_t i = 0; i < page.m_Images.size(); ++i)
-    {
-        const auto& [card_name, backside_short_edge, index, slot]{
-            page.m_Images[i]
-        };
-        const auto& [position, size, base_rotation, card, clip_rect]{
-            transforms[i]
-        };
+    // for (size_t i = 0; i < page.m_Images.size(); ++i)
+    //{
+    //     const auto& [card_name, backside_short_edge, index, slot]{
+    //         page.m_Images[i]
+    //     };
+    //     const auto& [position, size, base_rotation, card, clip_rect]{
+    //         transforms[i]
+    //     };
 
-        if (!card_name.has_value())
-        {
-            continue;
-        }
+    //    if (!card_name.has_value())
+    //    {
+    //        continue;
+    //    }
 
-        const auto widget_clip_rect{
-            clip_rect.and_then([position](const auto& clip_rect)
-                               { return std::optional{
-                                     ClipRect{
-                                         clip_rect.m_Position - position,
-                                         clip_rect.m_Size }
-                                 }; })
-        };
+    //    const auto widget_clip_rect{
+    //        clip_rect.and_then([position](const auto& clip_rect)
+    //                           { return std::optional{
+    //                                 ClipRect{
+    //                                     clip_rect.m_Position - position,
+    //                                     clip_rect.m_Size }
+    //                             }; })
+    //    };
 
-        const auto rotation{
-            [=]()
-            {
-                if (!backside_short_edge || !params.m_IsBackside)
-                {
-                    return base_rotation; // NOLINT
-                }
+    //    const auto rotation{
+    //        [=]()
+    //        {
+    //            if (!backside_short_edge || !params.m_IsBackside)
+    //            {
+    //                return base_rotation; // NOLINT
+    //            }
 
-                switch (base_rotation) // NOLINT
-                {
-                default:
-                case Image::Rotation::None:
-                    return Image::Rotation::Degree180;
-                case Image::Rotation::Degree90:
-                    return Image::Rotation::Degree270;
-                case Image::Rotation::Degree180:
-                    return Image::Rotation::None;
-                case Image::Rotation::Degree270:
-                    return Image::Rotation::Degree90;
-                }
-            }()
-        };
+    //            switch (base_rotation) // NOLINT
+    //            {
+    //            default:
+    //            case Image::Rotation::None:
+    //                return Image::Rotation::Degree180;
+    //            case Image::Rotation::Degree90:
+    //                return Image::Rotation::Degree270;
+    //            case Image::Rotation::Degree180:
+    //                return Image::Rotation::None;
+    //            case Image::Rotation::Degree270:
+    //                return Image::Rotation::Degree90;
+    //            }
+    //        }()
+    //    };
 
-        auto* image_companion{ new QWidget };
-        image_companion->setVisible(false);
-        image_companion->setStyleSheet("background-color: purple;");
+    //    auto* image_companion{ new QWidget };
+    //    image_companion->setVisible(false);
+    //    image_companion->setStyleSheet("background-color: purple;");
 
-        const auto bleed_edge{
-            params.m_NoCropMode
-                ? project.CardFullBleed()
-                : total_bleed_edge,
-        };
+    //    const auto bleed_edge{
+    //        params.m_NoCropMode
+    //            ? project.CardFullBleed()
+    //            : total_bleed_edge,
+    //    };
 
-        auto* image_view_model{
-            new CardViewModel{
-                card_name.value(),
-                CardViewParams{
-                    .m_RoundedCorners = rounded_corners,
-                    .m_Backside = params.m_IsBackside,
-                    .m_Rotation = rotation,
-                    .m_BleedEdge{ bleed_edge },
-                },
-                project,
-            },
-        };
+    //    auto* image_view_model{
+    //        new CardViewModel{
+    //            card_name.value(),
+    //            CardViewParams{
+    //                .m_RoundedCorners = rounded_corners,
+    //                .m_Backside = params.m_IsBackside,
+    //                .m_Rotation = rotation,
+    //                .m_BleedEdge{ bleed_edge },
+    //            },
+    //            project,
+    //        },
+    //    };
 
-        auto* image_widget{
-            new PrintPreviewCardImage{
-                image_view_model,
-                index,
-                image_companion,
-                widget_clip_rect,
-                size,
-            },
-        };
-        image_widget->EnableContextMenu(true,
-                                        CardContextMenuFeatures::Default | CardContextMenuFeatures::SkipSlot);
-        image_widget->installEventFilter(event_filter);
+    //    auto* image_widget{
+    //        new PrintPreviewCardImage{
+    //            image_view_model,
+    //            index,
+    //            image_companion,
+    //            widget_clip_rect,
+    //            size,
+    //        },
+    //    };
+    //    image_widget->EnableContextMenu(true,
+    //                                    CardContextMenuFeatures::Default | CardContextMenuFeatures::SkipSlot);
+    //    image_widget->installEventFilter(event_filter);
 
-        QObject::connect(image_widget,
-                         &PrintPreviewCardImage::DragStarted,
-                         this,
-                         &PagePreview::DragStarted);
-        QObject::connect(image_widget,
-                         &PrintPreviewCardImage::DragFinished,
-                         this,
-                         &PagePreview::DragFinished);
-        QObject::connect(image_widget,
-                         &PrintPreviewCardImage::ReorderCards,
-                         this,
-                         &PagePreview::ReorderCards);
+    //    QObject::connect(image_widget,
+    //                     &PrintPreviewCardImage::DragStarted,
+    //                     this,
+    //                     &PagePreview::DragStarted);
+    //    QObject::connect(image_widget,
+    //                     &PrintPreviewCardImage::DragFinished,
+    //                     this,
+    //                     &PagePreview::DragFinished);
+    //    QObject::connect(image_widget,
+    //                     &PrintPreviewCardImage::ReorderCards,
+    //                     this,
+    //                     &PagePreview::ReorderCards);
 
-        QObject::connect(image_view_model,
-                         &CardViewModel::SkipThisSlot,
-                         this,
-                         [&project, this, slot]()
-                         {
-                             project.m_Data.m_SkippedLayoutSlots.push_back(slot);
-                             RequestRefresh();
-                         });
+    //    QObject::connect(image_view_model,
+    //                     &CardViewModel::SkipThisSlot,
+    //                     this,
+    //                     [&project, this, slot]()
+    //                     {
+    //                         project.m_Data.m_SkippedLayoutSlots.push_back(slot);
+    //                         RequestRefresh();
+    //                     });
 
-        m_ImageContainer->AddImage(image_widget, image_companion);
-    }
+    //    m_ImageContainer->AddImage(image_widget, image_companion);
+    //}
 
     if (project.m_Data.m_EnableGuides && (!params.m_IsBackside || project.m_Data.m_BacksideEnableGuides))
     {
-        m_Guides = new GuidesOverlay{ project, transforms };
-        m_Guides->setParent(this);
+        // m_Guides = new GuidesOverlay{ project, transforms };
+        // m_Guides->setParent(this);
     }
 
     if (project.m_Data.m_ExportExactGuides)
     {
-        m_Borders = new BordersOverlay{ project, transforms, params.m_IsBackside };
-        m_Borders->setParent(this);
+        // m_Borders = new BordersOverlay{ project, transforms, params.m_IsBackside };
+        // m_Borders->setParent(this);
     }
 
     if (project.m_Data.m_MarginsMode != MarginsMode::Auto)
     {
-        m_Margins = new MarginsOverlay{ project, params.m_IsBackside };
-        m_Margins->setParent(this);
+        // m_Margins = new MarginsOverlay{ project, params.m_IsBackside };
+        // m_Margins->setParent(this);
     }
 }
 
 void PagePreview::resizeEvent(QResizeEvent* event)
 {
-    m_ImageContainer->resize(event->size());
+    // m_ImageContainer->resize(event->size());
 
     if (m_Guides != nullptr)
     {
