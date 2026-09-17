@@ -2,6 +2,10 @@
 
 #include <optional>
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QList>
 #include <QRegularExpression>
 
@@ -10,8 +14,11 @@ class DecklistParser
   public:
     virtual ~DecklistParser() = default;
 
-    bool Verify(const QString& decklist) const;
-    std::vector<DecklistCard> Parse(const QString& decklist) const;
+    virtual bool Verify(const QString& decklist) const;
+    virtual std::vector<DecklistCard> Parse(const QString& decklist) const;
+
+  protected:
+    static QString MakeFileName(const DecklistCard& card);
 
   private:
     virtual bool IsValidLine(const QString& line) const = 0;
@@ -104,6 +111,26 @@ class MoxfieldParser final : public DecklistParser
     };
 };
 
+/*
+  "object": "deck",
+  "id": "fbef0384-d613-47c2-ba2b-3aab2c2d353e",
+  ...
+  "entries": {
+    ...
+  }
+}
+*/
+class ScryfallParser final : public DecklistParser
+{
+  public:
+    virtual bool Verify(const QString& decklist) const override;
+    virtual std::vector<DecklistCard> Parse(const QString& decklist) const override;
+
+  private:
+    virtual bool IsValidLine(const QString& line) const override;
+    virtual std::optional<DecklistCard> LineToCard(const QString& line) const override;
+};
+
 template<class FunT>
 auto ForEachLine(const QString& text, auto default_return, FunT&& fun)
 {
@@ -168,40 +195,42 @@ std::vector<DecklistCard> DecklistParser::Parse(const QString& decklist) const
         {
             if (auto card{ LineToCard(line) })
             {
-                auto make_file_name{
-                    [](const DecklistCard& card)
-                    {
-                        if (card.m_Set.has_value())
-                        {
-                            if (card.m_CollectorNumber.has_value())
-                            {
-                                return QString{ "%1 (%2) %3.png" }
-                                    .arg(card.m_Name)
-                                    .arg(card.m_Set.value())
-                                    .arg(card.m_CollectorNumber.value())
-                                    .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-                            }
-                            else
-                            {
-                                return QString{ "%1 (%2).png" }
-                                    .arg(card.m_Name)
-                                    .arg(card.m_Set.value())
-                                    .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-                            }
-                        }
-                        else
-                        {
-                            return QString{ "%1.png" }
-                                .arg(card.m_Name)
-                                .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
-                        }
-                    }
-                };
-                card->m_FileName = make_file_name(card.value());
+                if (card->m_FileName.isEmpty())
+                {
+                    card->m_FileName = MakeFileName(card.value());
+                }
                 cards_list.push_back(std::move(card).value());
             }
         });
     return cards_list;
+}
+
+QString DecklistParser::MakeFileName(const DecklistCard& card)
+{
+    if (card.m_Set.has_value())
+    {
+        if (card.m_CollectorNumber.has_value())
+        {
+            return QString{ "%1 (%2) %3.png" }
+                .arg(card.m_Name)
+                .arg(card.m_Set.value())
+                .arg(card.m_CollectorNumber.value())
+                .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
+        }
+        else
+        {
+            return QString{ "%1 (%2).png" }
+                .arg(card.m_Name)
+                .arg(card.m_Set.value())
+                .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
+        }
+    }
+    else
+    {
+        return QString{ "%1.png" }
+            .arg(card.m_Name)
+            .replace(QRegularExpression{ R"([\\/:*?\"<>|])" }, "");
+    }
 }
 
 uint32_t DecklistParser::SkipLinesAfter(const QString&) const
@@ -383,6 +412,108 @@ std::optional<DecklistCard> MoxfieldParser::LineToCard(const QString& line) cons
     return std::nullopt;
 }
 
+bool ScryfallParser::Verify(const QString& decklist) const
+{
+    const auto doc{ QJsonDocument::fromJson(decklist.toUtf8()) };
+    if (doc["object"] != "deck")
+    {
+        return false;
+    }
+
+    if (!doc["entries"].isObject())
+    {
+        return false;
+    }
+
+    const auto entries{ doc["entries"].toObject() };
+    for (auto& key : entries.keys())
+    {
+        if (!entries[key].isArray())
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+std::vector<DecklistCard> ScryfallParser::Parse(const QString& decklist) const
+{
+    std::vector<DecklistCard> cards_list;
+
+    const auto doc{ QJsonDocument::fromJson(decklist.toUtf8()) };
+
+    const auto entries{ doc["entries"].toObject() };
+    for (auto& key : entries.keys())
+    {
+        const QJsonArray list(entries[key].toArray());
+
+        for (const auto& entry : list)
+        {
+            const auto entry_obj{ entry.toObject() };
+            if (!entry_obj.contains("card_digest") || !entry_obj["card_digest"].isObject())
+            {
+                continue;
+            }
+
+            const auto card_digest{ entry_obj["card_digest"].toObject() };
+
+            const auto name{ card_digest["name"].toString("") };
+            if (name.isEmpty())
+            {
+                continue;
+            }
+
+            const auto amount{ entry_obj["count"].toInt(-1) };
+            if (amount < 0)
+            {
+                continue;
+            }
+
+            DecklistCard decklist_card{
+                .m_Name{ name },
+                .m_FileName{},
+                .m_Amount{ static_cast<uint32_t>(amount) },
+                .m_Set{ std::nullopt },
+                .m_CollectorNumber{ std::nullopt },
+            };
+
+            if (card_digest.contains("set"))
+            {
+                const auto set{ card_digest["set"].toString("") };
+                if (!set.isEmpty())
+                {
+                    decklist_card.m_Set = set;
+                }
+            }
+
+            if (card_digest.contains("collector_number"))
+            {
+                const auto collector_number{ card_digest["collector_number"].toString("") };
+                if (!collector_number.isEmpty())
+                {
+                    decklist_card.m_CollectorNumber = collector_number;
+                }
+            }
+
+            decklist_card.m_FileName = MakeFileName(decklist_card);
+
+            cards_list.push_back(std::move(decklist_card));
+        }
+    }
+
+    return cards_list;
+}
+
+// Stubs: Not used for Scryfall json format
+bool ScryfallParser::IsValidLine(const QString& /* line */) const
+{
+    return false;
+}
+std::optional<DecklistCard> ScryfallParser::LineToCard(const QString& /* line */) const
+{
+    return {};
+}
+
 std::vector<DecklistCard> ParseDecklist(DecklistType type, const QString& decklist)
 {
     switch (type)
@@ -401,6 +532,8 @@ std::vector<DecklistCard> ParseDecklist(DecklistType type, const QString& deckli
         return ArchidektParser{}.Parse(decklist);
     case DecklistType::Moxfield:
         return MoxfieldParser{}.Parse(decklist);
+    case DecklistType::Scryfall:
+        return ScryfallParser{}.Parse(decklist);
     }
 
     return {};
@@ -408,7 +541,11 @@ std::vector<DecklistCard> ParseDecklist(DecklistType type, const QString& deckli
 
 DecklistType InferDecklistType(const QString& decklist)
 {
-    if (MoxfieldParser{}.Verify(decklist))
+    if (ScryfallParser{}.Verify(decklist))
+    {
+        return DecklistType::Scryfall;
+    }
+    else if (MoxfieldParser{}.Verify(decklist))
     {
         return DecklistType::Moxfield;
     }

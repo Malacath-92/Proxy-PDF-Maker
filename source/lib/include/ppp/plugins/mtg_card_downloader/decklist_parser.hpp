@@ -11,6 +11,7 @@ enum class DecklistType
     MTGA,
     Archidekt,
     Moxfield,
+    Scryfall,
 };
 
 struct DecklistCard
