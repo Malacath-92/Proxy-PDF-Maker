@@ -472,7 +472,7 @@ std::vector<DecklistCard> ScryfallParser::Parse(const QString& decklist) const
             DecklistCard decklist_card{
                 .m_Name{ name },
                 .m_FileName{},
-                .m_Amount{ static_cast<uint32_t>(amount) },
+                .m_Amount = static_cast<uint32_t>(amount),
                 .m_Set{ std::nullopt },
                 .m_CollectorNumber{ std::nullopt },
             };
