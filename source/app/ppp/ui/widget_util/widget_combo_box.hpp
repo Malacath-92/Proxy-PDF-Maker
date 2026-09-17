@@ -17,6 +17,8 @@ inline void UpdateComboBox(QComboBox* combo_box,
                            RangeOfStringLike auto options,
                            StringLike auto default_option)
 {
+    const auto previous_value{ combo_box->currentText() };
+
     combo_box->blockSignals(true);
     combo_box->clear();
 
@@ -27,13 +29,13 @@ inline void UpdateComboBox(QComboBox* combo_box,
 
     combo_box->blockSignals(false);
 
-    if (std::ranges::contains(options, default_option))
+    if (std::ranges::contains(options, previous_value.toStdString()))
     {
-        const auto current_option{ combo_box->currentText().toStdString() };
-        if (!std::ranges::contains(options, current_option))
-        {
-            combo_box->setCurrentText(ToQString(default_option));
-        }
+        combo_box->setCurrentText(previous_value);
+    }
+    else if (std::ranges::contains(options, default_option))
+    {
+        combo_box->setCurrentText(ToQString(default_option));
     }
 }
 
