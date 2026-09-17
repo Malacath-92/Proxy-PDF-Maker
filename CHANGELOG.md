@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In the `F1` popup there is a new button added that automatically zips up the current project and all config to make it easier to report a bug.
 - When encountering a crash the app will now try to log a callstack before shutting down, which hopefully make it easier to diagnose crashes.
 - When rendering a project that contains image with warnings the user will now be notified of that and is given the option to cancel.
-- A new advanced option named `Underlay PDF` was added, which put a given base PDF on top of the empty page before rendering cards on top. This is similar to `Base PDF` but you don't lose control over the size of the page.
+- A new advanced option named `Underlay PDF` was added, which put a given base PDF on top of the empty page before rendering cards on top. This is sisimilarmilar to `Base PDF` but you don't lose control over the size of the page.
+- The `MtG Card Downloader` plugin now also accepts a Scyfall decklist in the `.json` format.
 
 ### Changed
 - Projects, resources, logs, and config files are now stored in standard folders as opposed to next to the app. This affects only the GUI app, not the CLI. On first startup you will be prompted to migrate all that data, just press yes and move on with your life.
