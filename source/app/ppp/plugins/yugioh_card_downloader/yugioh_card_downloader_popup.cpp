@@ -21,6 +21,8 @@ YuGiOhDownloaderPopup::YuGiOhDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
+    m_TextInput->setPlaceholderText("Paste a decklist ydk or ydke decklist");
+
     m_Settings = new QCheckBox{ "Adjust Settings" };
     m_Settings->setChecked(true);
 

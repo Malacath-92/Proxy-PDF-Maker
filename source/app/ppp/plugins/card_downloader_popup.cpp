@@ -120,7 +120,6 @@ CardDownloaderPopup::CardDownloaderPopup(QWidget* parent,
     setWindowFlags(Qt::WindowType::Dialog);
 
     m_TextInput = new DecklistTextEdit;
-    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), MPC Autofill xml, or a Scryfall query prepended with $");
 
     m_Hint = new QLabel;
     m_Hint->setVisible(false);

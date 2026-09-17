@@ -26,6 +26,10 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
+    m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), "
+                                    " Scryfall decklist json, MPC Autofill xml, "
+                                    "or a Scryfall query prepended with $");
+
     m_Settings = new QCheckBox{ "Adjust Settings" };
     m_Settings->setChecked(true);
 
