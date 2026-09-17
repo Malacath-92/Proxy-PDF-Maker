@@ -1,7 +1,5 @@
 #include <ppp/ui/popups/decklist_popup.hpp>
 
-#include <ranges>
-
 #include <QApplication>
 
 #include <QAbstractItemView>
@@ -16,9 +14,7 @@
 #include <QToolTip>
 #include <QVBoxLayout>
 
-#include <ppp/qt_util.hpp>
-
-#include <ppp/project/project.hpp>
+#include <ppp/ui/view_models/popups/view_model_decklist_popup.hpp>
 
 template<class FunT>
 static auto ForEachCardInList(const QString& decklist,
@@ -39,14 +35,8 @@ static auto ForEachCardInList(const QString& decklist,
 class CardNameModel : public QAbstractListModel
 {
   public:
-    CardNameModel(const Project& project)
-        : m_Strings{ project.m_Data.m_Cards |
-                     std::views::filter(std::not_fn(&CardInfo::m_Transient)) |
-                     std::views::filter(std::not_fn(&CardInfo::m_Hidden)) |
-                     std::views::transform(&CardInfo::m_Name) |
-                     std::views::transform(&fs::path::filename) |
-                     std::views::transform(QOverload<const fs::path&>::of(&ToQString)) |
-                     std::ranges::to<QList>() }
+    CardNameModel(QList<QString> all_cards)
+        : m_Strings{ std::move(all_cards) }
     {
     }
 
@@ -108,9 +98,9 @@ class DecklistHighlighter : public QSyntaxHighlighter
 {
   public:
     DecklistHighlighter(QTextDocument* parent,
-                        const Project& project)
+                        const DecklistPopupViewModel& view_model)
         : QSyntaxHighlighter{ parent }
-        , m_Project{ project }
+        , m_ViewModel{ view_model }
     {
     }
 
@@ -131,8 +121,8 @@ class DecklistHighlighter : public QSyntaxHighlighter
             if (card_match.isValid() && card_match.capturedLength() > 0)
             {
                 QTextCharFormat card_format{};
-                const auto card_name{ card_match.captured().toStdString() };
-                if (m_Project.HasCard(card_name) || m_Project.HasCardByStem(card_name))
+                const auto card_name{ card_match.captured() };
+                if (m_ViewModel.HasCard(card_name))
                 {
                     card_format.setFontItalic(true);
                 }
@@ -158,20 +148,20 @@ class DecklistHighlighter : public QSyntaxHighlighter
     }
 
   private:
-    const Project& m_Project;
+    const DecklistPopupViewModel& m_ViewModel;
 };
 
-LocalDecklistTextEdit::LocalDecklistTextEdit(const Project& project)
+LocalDecklistTextEdit::LocalDecklistTextEdit(const DecklistPopupViewModel& view_model)
     : QTextEdit{}
-    , m_Completer{ MakeCompleter(project) }
-    , m_Highlighter{ new DecklistHighlighter{ document(), project } }
+    , m_Completer{ MakeCompleter(view_model) }
+    , m_Highlighter{ new DecklistHighlighter{ document(), view_model } }
 {
     setMouseTracking(true);
 }
-LocalDecklistTextEdit::LocalDecklistTextEdit(const Project& project, const QString& text)
+LocalDecklistTextEdit::LocalDecklistTextEdit(const DecklistPopupViewModel& view_model, const QString& text)
     : QTextEdit{ text }
-    , m_Completer{ MakeCompleter(project) }
-    , m_Highlighter{ new DecklistHighlighter{ document(), project } }
+    , m_Completer{ MakeCompleter(view_model) }
+    , m_Highlighter{ new DecklistHighlighter{ document(), view_model } }
 {
     setMouseTracking(true);
 }
@@ -289,7 +279,7 @@ void LocalDecklistTextEdit::keyPressEvent(QKeyEvent* e)
     }
 }
 
-QCompleter* LocalDecklistTextEdit::MakeCompleter(const Project& project)
+QCompleter* LocalDecklistTextEdit::MakeCompleter(const DecklistPopupViewModel& view_model)
 {
     auto* completer{ new QCompleter{ this } };
     completer->setWidget(this);
@@ -298,7 +288,7 @@ QCompleter* LocalDecklistTextEdit::MakeCompleter(const Project& project)
     completer->setCompletionMode(QCompleter::PopupCompletion);
     completer->setCaseSensitivity(Qt::CaseInsensitive);
 
-    auto* model{ new CardNameModel{ project } };
+    auto* model{ new CardNameModel{ view_model.GetAllCards() } };
     completer->setModel(model);
 
     QObject::connect(completer,
@@ -335,10 +325,12 @@ void LocalDecklistTextEdit::Complete(const QString& completion)
     setTextCursor(tc);
 }
 
-DecklistPopup::DecklistPopup(QWidget* parent,
-                             const Project& project)
+DecklistPopup::DecklistPopup(DecklistPopupViewModel* view_model,
+                             QWidget* parent)
     : PopupBase{ parent }
 {
+    view_model->setParent(this);
+
     m_AutoCenter = false;
     m_PersistGeometry = true;
 
@@ -346,17 +338,14 @@ DecklistPopup::DecklistPopup(QWidget* parent,
     setWindowTitle("Amounts from Decklist");
     setObjectName("DecklistPopup");
 
-    m_Text = new LocalDecklistTextEdit{ project };
+    m_Text = new LocalDecklistTextEdit{ *view_model };
     m_Text->setPlaceholderText("1x Sol Ring\n3x Arcane Signet");
-    for (const auto& card : project.m_Data.m_Cards)
+    for (const auto& [card_name, amount] : view_model->GetCardsInList())
     {
-        if (card.m_Num > 0 && card.m_Hidden == 0)
-        {
-            m_Text->append(
-                QString{ "%1x %2" }
-                    .arg(card.m_Num)
-                    .arg(ToQString(card.m_Name.filename())));
-        }
+        m_Text->append(
+            QString{ "%1x %2" }
+                .arg(amount)
+                .arg(card_name));
     }
 
     auto* ok_button{ new QPushButton{ "OK" } };
@@ -394,6 +383,12 @@ DecklistPopup::DecklistPopup(QWidget* parent,
                      &QPushButton::clicked,
                      this,
                      &QDialog::close);
+
+    QObject::connect(
+        this,
+        &DecklistPopup::DecklistChanged,
+        view_model,
+        &DecklistPopupViewModel::ChangeDecklist);
 }
 
 DecklistPopup::~DecklistPopup()

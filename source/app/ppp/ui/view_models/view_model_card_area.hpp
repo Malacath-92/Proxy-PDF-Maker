@@ -11,6 +11,7 @@ class Project;
 struct ProjectData;
 
 class CardAreaCardViewModel;
+class DecklistPopupViewModel;
 
 class CardAreaViewModel : public QObject
 {
@@ -24,6 +25,7 @@ class CardAreaViewModel : public QObject
                       const Config& config);
 
     CardAreaCardViewModel* MakeCardViewModel(const fs::path& card_name) const;
+    DecklistPopupViewModel* MakeDecklistPopupViewModel() const;
 
     const CardContainer& GetCards() const;
 

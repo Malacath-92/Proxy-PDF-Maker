@@ -736,41 +736,8 @@ CardArea::CardArea(CardAreaViewModel* view_model)
             {
                 window()->setEnabled(false);
                 {
-                    // TODO: No Project
-                    auto& project{ m_ViewModel.m_Project };
-                    DecklistPopup decklist_popup{ nullptr, project };
-
-                    QObject::connect(
-                        &decklist_popup,
-                        &DecklistPopup::DecklistChanged,
-                        [&project](const std::unordered_map<fs::path, uint32_t>& decklist)
-                        {
-                            for (const auto& card : project.m_Data.m_Cards)
-                            {
-                                const auto card_count{
-                                    [&]()
-                                    {
-                                        auto it{ decklist.find(card.m_Name) };
-                                        if (it == decklist.end())
-                                        {
-                                            it = decklist.find(card.Stem());
-                                        }
-
-                                        if (it != decklist.end())
-                                        {
-                                            return it->second;
-                                        }
-                                        else
-                                        {
-                                            return 0u;
-                                        }
-                                    }()
-                                };
-
-                                project.SetCardCount(card.m_Name, card_count);
-                            }
-                        });
-
+                    auto* decklist_view_model{ m_ViewModel.MakeDecklistPopupViewModel() };
+                    DecklistPopup decklist_popup{ decklist_view_model };
                     decklist_popup.Show();
                 }
                 window()->setEnabled(true);
