@@ -84,13 +84,12 @@ nlohmann::json GetDefault(std::string_view path,
     else
     {
         // TODO: Get json-value of app-default per-value rather than the whole project
-        const auto app_default_json{
+        const auto app_default_json(
             nlohmann::json::parse(
                 Project::DumpToJson(ProjectData{
                     config_reqs.m_DefaultCardSize,
                     config_reqs.m_DefaultPageSize,
-                }))
-        };
+                })));
         const auto app_default_value(GetJsonValue(app_default_json, path));
         return app_default_value;
     }
