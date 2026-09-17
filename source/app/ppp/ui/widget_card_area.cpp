@@ -314,7 +314,7 @@ class CardGrid : public QWidget
 
         return item_width * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1);
     }
-    
+
     virtual bool hasHeightForWidth() const override
     {
         return true;
