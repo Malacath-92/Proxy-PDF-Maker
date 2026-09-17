@@ -5,23 +5,21 @@
 
 #include <ppp/pdf/util.hpp>
 
-class Project;
+class BordersOverlayViewModel;
 
 class BordersOverlay : public QWidget
 {
   public:
-    BordersOverlay(const Project& project,
-                   const PageImageTransforms& transforms,
-                   bool is_backside);
+    BordersOverlay(BordersOverlayViewModel* view_model,
+                   const PageImageTransforms& transforms);
 
     virtual void paintEvent(QPaintEvent* event) override;
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
   private:
-    const Project& m_Project;
+    const BordersOverlayViewModel& m_ViewModel;
     const PageImageTransforms& m_Transforms;
-    const bool m_IsBackside;
 
     QPainterPath m_CardBorder;
 };

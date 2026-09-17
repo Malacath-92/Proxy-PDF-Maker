@@ -2,29 +2,34 @@
 
 #include <QResizeEvent>
 
-#include <ppp/project/project.hpp>
 #include <ppp/svg/generate.hpp>
 
-GuidesOverlay::GuidesOverlay(const Project& project, const PageImageTransforms& transforms)
-    : m_Project{ project }
+#include <ppp/ui/view_models/overlays/view_model_guides_overlay.hpp>
+#include <ppp/ui/view_models/util.hpp>
+
+GuidesOverlay::GuidesOverlay(GuidesOverlayViewModel* view_model, const PageImageTransforms& transforms)
+    : m_ViewModel{ *view_model }
     , m_Transforms{ transforms }
 {
-    const auto& [darker_color, lighter_color]{
-        CategorizeColors(project.m_Data.m_GuidesColorA,
-                         project.m_Data.m_GuidesColorB)
-    };
+    view_model->setParent(this);
 
-    m_PenOne.setColor(QColor{ darker_color.r, darker_color.g, darker_color.b });
-    m_PenTwo.setColor(QColor{ lighter_color.r, lighter_color.g, lighter_color.b });
     m_PenTwo.setDashPattern({ 2.0f, 4.0f });
 
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(Redraw);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesColorsChanged);
 }
 
 void GuidesOverlay::paintEvent(QPaintEvent* /*event*/)
 {
+    if (!m_ViewModel.ShouldDrawGuides())
+    {
+        return;
+    }
+
     QPainter painter{ this };
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
@@ -40,18 +45,38 @@ void GuidesOverlay::paintEvent(QPaintEvent* /*event*/)
 void GuidesOverlay::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    RedrawLines(event->size());
+}
 
-    const dla::ivec2 size{ event->size().width(), event->size().height() };
-    const auto pixel_ratio{ size / m_Project.ComputePageSize() };
+void GuidesOverlay::GuidesColorsChanged(ColorRGB8 color_a, ColorRGB8 color_b)
+{
+    const auto& [darker_color, lighter_color]{
+        CategorizeColors(color_a, color_b)
+    };
+
+    m_PenOne.setColor(QColor{ darker_color.r, darker_color.g, darker_color.b });
+    m_PenTwo.setColor(QColor{ lighter_color.r, lighter_color.g, lighter_color.b });
+
+    update();
+}
+void GuidesOverlay::Redraw()
+{
+    RedrawLines(size());
+}
+
+void GuidesOverlay::RedrawLines(QSize qsize)
+{
+    const dla::ivec2 size{ qsize.width(), qsize.height() };
+    const auto pixel_ratio{ size / m_ViewModel.GetPageSize() };
 
     const auto guides_width{
-        static_cast<int>(m_Project.m_Data.m_GuidesThickness * pixel_ratio.x)
+        static_cast<int>(m_ViewModel.GetGuidesThickness() * pixel_ratio.x)
     };
     m_PenOne.setWidth(guides_width);
     m_PenTwo.setWidth(guides_width);
 
-    const auto line_length{ m_Project.m_Data.m_GuidesLength * pixel_ratio };
-    const auto offset{ -m_Project.m_Data.m_GuidesOffset * pixel_ratio };
+    const auto line_length{ m_ViewModel.GetGuidesLength() * pixel_ratio };
+    const auto offset{ -m_ViewModel.GetGuidesOffset() * pixel_ratio };
 
     m_SolidLines.clear();
     m_DashedLines.clear();
@@ -61,8 +86,10 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
         return;
     }
 
-    if (m_Project.m_Data.m_CornerGuides)
+    if (m_ViewModel.ShouldDrawCornerGuides())
     {
+        const bool cross_guides{ m_ViewModel.ShouldDrawCrossGuides() };
+
         for (const auto& transform : m_Transforms)
         {
             const auto top_left_corner{ transform.m_Card.m_Position * pixel_ratio };
@@ -90,49 +117,49 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
                                top_left_pos.y,
                                top_left_pos.x + line_length.x,
                                top_left_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
             draw_guide(QLineF{ top_left_pos.x,
                                top_left_pos.y,
                                top_left_pos.x,
                                top_left_pos.y + line_length.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
 
             draw_guide(QLineF{ top_right_pos.x,
                                top_right_pos.y,
                                top_right_pos.x - line_length.x,
                                top_right_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
             draw_guide(QLineF{ top_right_pos.x,
                                top_right_pos.y,
                                top_right_pos.x,
                                top_right_pos.y + line_length.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
 
             draw_guide(QLineF{ bottom_right_pos.x,
                                bottom_right_pos.y,
                                bottom_right_pos.x - line_length.x,
                                bottom_right_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
             draw_guide(QLineF{ bottom_right_pos.x,
                                bottom_right_pos.y,
                                bottom_right_pos.x,
                                bottom_right_pos.y - line_length.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
 
             draw_guide(QLineF{ bottom_left_pos.x,
                                bottom_left_pos.y,
                                bottom_left_pos.x + line_length.x,
                                bottom_left_pos.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
             draw_guide(QLineF{ bottom_left_pos.x,
                                bottom_left_pos.y,
                                bottom_left_pos.x,
                                bottom_left_pos.y - line_length.y },
-                       m_Project.m_Data.m_CrossGuides);
+                       cross_guides);
         }
     }
 
-    if (m_Project.m_Data.m_ExtendedGuides)
+    if (m_ViewModel.ShouldDrawExtendedGuides())
     {
         static constexpr auto c_Precision{ 0.1_pts };
 
@@ -166,8 +193,8 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
             }
         }
 
-        const auto bleed{ m_Project.m_Data.m_BleedEdge };
-        const auto envelope_bleed{ m_Project.m_Data.m_EnvelopeBleedEdge };
+        const auto bleed{ m_ViewModel.GetBleedEdge() };
+        const auto envelope_bleed{ m_ViewModel.GetEnvelopeBleedEdge() };
         const auto extended_off{ offset + (bleed + envelope_bleed + 1_mm) * pixel_ratio };
         const auto x_min{ std::ranges::min(unique_x) * c_Precision * pixel_ratio.x - extended_off.x };
         const auto x_max{ std::ranges::max(unique_x) * c_Precision * pixel_ratio.x + extended_off.y };
@@ -188,4 +215,6 @@ void GuidesOverlay::resizeEvent(QResizeEvent* event)
             m_SolidLines.push_back(QLineF{ x_max, real_y, static_cast<float>(size.x), real_y });
         }
     }
+
+    update();
 }

@@ -3,16 +3,17 @@
 #include <QPainter>
 #include <QResizeEvent>
 
-#include <ppp/project/project.hpp>
 #include <ppp/svg/generate.hpp>
 
-BordersOverlay::BordersOverlay(const Project& project,
-                               const PageImageTransforms& transforms,
-                               bool is_backside)
-    : m_Project{ project }
+#include <ppp/ui/view_models/overlays/view_model_borders_overlay.hpp>
+
+BordersOverlay::BordersOverlay(BordersOverlayViewModel* view_model,
+                               const PageImageTransforms& transforms)
+    : m_ViewModel{ *view_model }
     , m_Transforms{ transforms }
-    , m_IsBackside{ is_backside }
 {
+    view_model->setParent(this);
+
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -30,41 +31,17 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
 
     const dla::ivec2 size{ event->size().width(), event->size().height() };
-    const auto page_size{ m_Project.ComputePageSize() };
+    const auto page_size{ m_ViewModel.GetPageSize() };
     const auto pixel_ratio{ size / page_size };
 
-    const auto corner_radius{ m_Project.CardCornerRadius() * pixel_ratio };
+    const auto corner_radius{ m_ViewModel.GetCardCornerRadius() * pixel_ratio };
 
     m_CardBorder.clear();
 
-    if (m_Project.m_Data.m_BleedEdge > 0_mm ||
-        m_Project.m_Data.m_EnvelopeBleedEdge > 0_mm)
+    if (m_ViewModel.ShouldDrawOuterBorder())
     {
-        const auto margins{
-            [&]()
-            {
-                auto margins{ m_Project.ComputeMargins() };
-                if (m_IsBackside)
-                {
-                    if (m_Project.m_Data.m_FlipOn == FlipPageOn::LeftEdge)
-                    {
-                        std::swap(margins.m_Left, margins.m_Right);
-                    }
-                    else
-                    {
-                        std::swap(margins.m_Top, margins.m_Bottom);
-                    }
-
-                    const auto backside_offset{ m_Project.m_Data.m_BacksideOffset };
-                    margins.m_Left -= backside_offset.x;
-                    margins.m_Right += backside_offset.x;
-                    margins.m_Top -= backside_offset.y;
-                    margins.m_Bottom += backside_offset.y;
-                }
-                return margins;
-            }()
-        };
-        const auto cards_size{ m_Project.ComputeCardsSize() };
+        const auto margins{ m_ViewModel.GetPageMargins() };
+        const auto cards_size{ m_ViewModel.GetCardsSize() };
         const Size available_space{
             page_size.x - margins.m_Left - margins.m_Right,
             page_size.y - margins.m_Top - margins.m_Bottom,
@@ -85,16 +62,11 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
 
     for (const auto& transform : m_Transforms)
     {
-        if (m_Project.IsCardSvg())
+        if (m_ViewModel.ShouldDrawCardSvg())
         {
-            DrawSvgToPainterPath(m_CardBorder,
-                                 m_Project.CardSvgData(),
-                                 transform.m_Card.m_Position,
-                                 transform.m_Card.m_Size,
-                                 false,
-                                 m_IsBackside,
-                                 transform.m_Rotation,
-                                 1.0f / pixel_ratio);
+            m_ViewModel.DrawCardSvg(m_CardBorder,
+                                    transform,
+                                    1.0f / pixel_ratio);
         }
         else
         {
@@ -107,7 +79,7 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
                 card_size.x,
                 card_size.y,
             };
-            if (m_Project.IsCardRoundedRect())
+            if (m_ViewModel.ShouldDrawRoundedRect())
             {
                 m_CardBorder.addRoundedRect(rect, corner_radius.x, corner_radius.y);
             }

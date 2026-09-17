@@ -3,20 +3,19 @@
 #include <QPainterPath>
 #include <QWidget>
 
-class Project;
+class MarginsOverlayViewModel;
 
 class MarginsOverlay : public QWidget
 {
   public:
-    MarginsOverlay(const Project& project, bool is_backside);
+    MarginsOverlay(MarginsOverlayViewModel* view_model);
 
     virtual void paintEvent(QPaintEvent* event) override;
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
   private:
-    const Project& m_Project;
-    const bool m_IsBackside;
+    const MarginsOverlayViewModel& m_ViewModel;
 
     QPainterPath m_Margins;
 };

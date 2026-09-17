@@ -7,23 +7,20 @@
 
 #include <ppp/pdf/util.hpp>
 
-class Project;
-class Config;
+class QPushButton;
+
 class PagePreview;
+
+class PrintPreviewViewModel;
 
 class PrintPreview : public QScrollArea
 {
     Q_OBJECT
 
   public:
-    PrintPreview(Project& project,
-                 const Config& config);
+    PrintPreview(PrintPreviewViewModel* view_model);
 
     void Refresh();
-    void RequestRefresh();
-
-    void CardOrderChanged();
-    void CardOrderDirectionChanged();
 
     virtual void wheelEvent(QWheelEvent* event) override;
     virtual void keyPressEvent(QKeyEvent* event) override;
@@ -33,9 +30,11 @@ class PrintPreview : public QScrollArea
     virtual void dragEnterEvent(QDragEnterEvent* event) override;
     virtual void dragMoveEvent(QDragMoveEvent* event) override;
 
-  signals:
-    void RestoreCardsOrder();
-    void ReorderCards(size_t from, size_t to);
+  private slots:
+    void RequestRefresh();
+
+    void CardsManuallySortedChanged(bool is_manually_sorted);
+    void SlotsSkippedChanged(bool slots_skipped);
 
   private:
     void GoToPage(uint32_t page);
@@ -44,8 +43,7 @@ class PrintPreview : public QScrollArea
 
     int ComputeDragScrollDiff() const;
 
-    Project& m_Project;
-    const Config& m_Cfg;
+    PrintPreviewViewModel& m_ViewModel;
 
     bool m_Dragging{ false };
     bool m_DraggingStarted{ false };
@@ -56,11 +54,9 @@ class PrintPreview : public QScrollArea
     PageImageTransforms m_FrontsideTransforms;
     PageImageTransforms m_BacksideTransforms;
 
-    // We use a timer whenever we do a full refresh
-    // to avoid cases where we get multiple requests
-    // in quick succession
-    QTimer m_RefreshTimer;
-
     std::optional<uint32_t> m_TargetPage{ std::nullopt };
     QTimer m_NumberTypeTimer;
+
+    QPushButton* m_RestoreCardOrder;
+    QPushButton* m_RestoreAllSlots;
 };

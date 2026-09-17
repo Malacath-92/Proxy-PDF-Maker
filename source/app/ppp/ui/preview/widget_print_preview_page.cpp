@@ -17,6 +17,7 @@
 #include <ppp/ui/preview/overlays/widget_margins_overlay.hpp>
 
 #include <ppp/ui/view_models/view_model_card.hpp>
+#include <ppp/ui/view_models/view_model_page_preview.hpp>
 
 class PageBackground : public QLabel
 {
@@ -34,7 +35,7 @@ class PageBackground : public QLabel
             }
         }
 
-        QSizePolicy policy = sizePolicy();
+        QSizePolicy policy{ sizePolicy() };
         policy.setHeightForWidth(true);
         setSizePolicy(policy);
     }
@@ -125,14 +126,15 @@ class PageImageContainer : public QWidget
     std::vector<PrintPreviewCardImage*> m_Images;
 };
 
-PagePreview::PagePreview(Project& project,
+PagePreview::PagePreview(PagePreviewViewModel* view_model,
                          QObject* event_filter,
                          const Page& page,
-                         const PageImageTransforms& transforms,
-                         Params params)
+                         const PageImageTransforms& transforms)
 {
+    view_model->setParent(this);
+
     {
-        auto* bg_widget{ new PageBackground{ project.GetBasePdfPath(), params.m_PageSize } };
+        auto* bg_widget{ new PageBackground{ view_model->GetBasePdfPath(), view_model->GetPageSize() } };
 
         auto* bg_layout{ new QVBoxLayout };
         bg_layout->setContentsMargins(0, 0, 0, 0);
@@ -142,20 +144,9 @@ PagePreview::PagePreview(Project& project,
         setLayout(bg_layout);
     }
 
-    const auto total_bleed_edge{
-        params.m_IsBackside
-            ? project.m_Data.m_BleedEdge +
-                  project.m_Data.m_EnvelopeBleedEdge +
-                  project.m_Data.m_BacksideExtraBleedEdge
-            : project.m_Data.m_BleedEdge +
-                  project.m_Data.m_EnvelopeBleedEdge
-    };
-    const bool rounded_corners{
-        project.m_Data.m_Corners == CardCorners::Rounded &&
-        total_bleed_edge == 0_mm
-    };
+    const bool is_backside{ view_model->IsBackside() };
 
-    m_ImageContainer = new PageImageContainer{ transforms, params.m_PageSize };
+    m_ImageContainer = new PageImageContainer{ transforms, view_model->GetPageSize() };
     m_ImageContainer->setParent(this);
 
     for (size_t i = 0; i < page.m_Images.size(); ++i)
@@ -184,7 +175,7 @@ PagePreview::PagePreview(Project& project,
         const auto rotation{
             [=]()
             {
-                if (!backside_short_edge || !params.m_IsBackside)
+                if (!backside_short_edge || !is_backside)
                 {
                     return base_rotation; // NOLINT
                 }
@@ -208,24 +199,7 @@ PagePreview::PagePreview(Project& project,
         image_companion->setVisible(false);
         image_companion->setStyleSheet("background-color: purple;");
 
-        const auto bleed_edge{
-            params.m_NoCropMode
-                ? project.CardFullBleed()
-                : total_bleed_edge,
-        };
-
-        auto* image_view_model{
-            new CardViewModel{
-                card_name.value(),
-                CardViewParams{
-                    .m_RoundedCorners = rounded_corners,
-                    .m_Backside = params.m_IsBackside,
-                    .m_Rotation = rotation,
-                    .m_BleedEdge{ bleed_edge },
-                },
-                project,
-            },
-        };
+        auto* image_view_model{ view_model->MakeCardViewModel(card_name.value(), rotation) };
 
         auto* image_widget{
             new PrintPreviewCardImage{
@@ -248,38 +222,33 @@ PagePreview::PagePreview(Project& project,
                          &PrintPreviewCardImage::DragFinished,
                          this,
                          &PagePreview::DragFinished);
+
         QObject::connect(image_widget,
                          &PrintPreviewCardImage::ReorderCards,
-                         this,
-                         &PagePreview::ReorderCards);
-
+                         view_model,
+                         &PagePreviewViewModel::ReorderCards);
         QObject::connect(image_view_model,
                          &CardViewModel::SkipThisSlot,
-                         this,
-                         [&project, this, slot]()
-                         {
-                             project.m_Data.m_SkippedLayoutSlots.push_back(slot);
-                             RequestRefresh();
-                         });
+                         view_model,
+                         std::bind_front(&PagePreviewViewModel::SkipSlot, view_model, slot));
 
         m_ImageContainer->AddImage(image_widget, image_companion);
     }
 
-    if (project.m_Data.m_EnableGuides && (!params.m_IsBackside || project.m_Data.m_BacksideEnableGuides))
-    {
-        m_Guides = new GuidesOverlay{ project, transforms };
-        m_Guides->setParent(this);
-    }
+    m_Guides = new GuidesOverlay{ view_model->MakeGuidesOverlayViewModel(), transforms };
+    m_Guides->setParent(this);
 
-    if (project.m_Data.m_ExportExactGuides)
+    // TODO: Instantiate unconditionally and then connect signals for faster update
+    if (view_model->ShowExactBorders())
     {
-        m_Borders = new BordersOverlay{ project, transforms, params.m_IsBackside };
+        m_Borders = new BordersOverlay{ view_model->MakeBordersOverlayViewModel(is_backside), transforms };
         m_Borders->setParent(this);
     }
 
-    if (project.m_Data.m_MarginsMode != MarginsMode::Auto)
+    // TODO: Instantiate unconditionally and then connect signals for faster update
+    if (view_model->ShowMargins())
     {
-        m_Margins = new MarginsOverlay{ project, params.m_IsBackside };
+        m_Margins = new MarginsOverlay{ view_model->MakeMarginsOverlayViewModel(is_backside) };
         m_Margins->setParent(this);
     }
 }
@@ -287,11 +256,7 @@ PagePreview::PagePreview(Project& project,
 void PagePreview::resizeEvent(QResizeEvent* event)
 {
     m_ImageContainer->resize(event->size());
-
-    if (m_Guides != nullptr)
-    {
-        m_Guides->resize(event->size());
-    }
+    m_Guides->resize(event->size());
 
     if (m_Borders != nullptr)
     {

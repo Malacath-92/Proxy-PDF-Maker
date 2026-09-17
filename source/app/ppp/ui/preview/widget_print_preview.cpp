@@ -20,6 +20,9 @@
 #include <ppp/ui/preview/widget_print_preview_card.hpp>
 #include <ppp/ui/preview/widget_print_preview_page.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
+#include <ppp/ui/view_models/view_model_print_preview.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 class PreviewScrollBar : public QScrollBar
@@ -65,22 +68,12 @@ class PreviewScrollBar : public QScrollBar
     }
 };
 
-PrintPreview::PrintPreview(Project& project,
-                           const Config& config)
-    : m_Project{ project }
-    , m_Cfg{ config }
+PrintPreview::PrintPreview(PrintPreviewViewModel* view_model)
+    : m_ViewModel{ *view_model }
 {
     TRACY_AUTO_SCOPE();
 
-    m_RefreshTimer.setSingleShot(true);
-    m_RefreshTimer.setInterval(50);
-    QObject::connect(&m_RefreshTimer,
-                     &QTimer::timeout,
-                     this,
-                     [this]()
-                     {
-                         Refresh();
-                     });
+    m_ViewModel.setParent(this);
 
     Refresh();
 
@@ -116,6 +109,10 @@ PrintPreview::PrintPreview(Project& project,
                      {
                          m_TargetPage.reset();
                      });
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(RequestRefresh);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardsManuallySortedChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SlotsSkippedChanged);
 }
 
 void PrintPreview::Refresh()
@@ -133,8 +130,7 @@ void PrintPreview::Refresh()
         delete current_widget;
     }
 
-    const auto raw_pages{ DistributeCardsToPages(m_Project) };
-    const auto page_size{ m_Project.ComputePageSize() };
+    const auto raw_pages{ m_ViewModel.GetFrontsidePages() };
 
     // Show empty preview when no cards can fit on the page
     if (raw_pages.empty())
@@ -151,15 +147,10 @@ void PrintPreview::Refresh()
 
         empty_layout->addWidget(empty_label);
         empty_layout->addWidget(new PagePreview{
-            m_Project,
+            m_ViewModel.MakePagePreviewViewModel(false),
             nullptr,
             Page{},
             m_FrontsideTransforms,
-            PagePreview::Params{
-                .m_PageSize{ page_size },
-                .m_IsBackside = false,
-                .m_NoCropMode = m_Cfg.m_NoCropMode,
-            },
         });
 
         auto* empty_widget{ new QWidget };
@@ -172,7 +163,7 @@ void PrintPreview::Refresh()
         return;
     }
 
-    m_FrontsideTransforms = ComputeTransforms(m_Project, m_Cfg.m_NoCropMode);
+    m_FrontsideTransforms = m_ViewModel.GetFrontsideTransforms();
 
     struct TempPage
     {
@@ -189,13 +180,11 @@ void PrintPreview::Refresh()
                                         }; }) |
                 std::ranges::to<std::vector>() };
 
-    if (m_Project.m_Data.m_BacksideEnabled)
+    if (m_ViewModel.HasBacksides())
     {
-        m_BacksideTransforms = ComputeBacksideTransforms(m_Project,
-                                                         m_FrontsideTransforms,
-                                                         m_Cfg.m_NoCropMode);
+        m_BacksideTransforms = m_ViewModel.GetBacksideTransforms(m_BacksideTransforms);
 
-        const auto raw_backside_pages{ MakeBacksidePages(m_Project, raw_pages) };
+        const auto raw_backside_pages{ m_ViewModel.GetBacksidePages(raw_pages) };
         const auto backside_pages{ raw_backside_pages |
                                    std::views::transform([this](const Page& page)
                                                          { return TempPage{
@@ -217,15 +206,10 @@ void PrintPreview::Refresh()
             [&, this](const TempPage& page)
             {
                 return new PagePreview{
-                    m_Project,
+                    m_ViewModel.MakePagePreviewViewModel(page.m_Backside),
                     this,
                     page.m_Page,
                     page.m_Transforms.get(),
-                    PagePreview::Params{
-                        .m_PageSize{ page_size },
-                        .m_IsBackside = page.m_Backside,
-                        .m_NoCropMode = m_Cfg.m_NoCropMode,
-                    }
                 };
             }) |
         std::ranges::to<std::vector>()
@@ -250,54 +234,39 @@ void PrintPreview::Refresh()
                              m_Dragging = false;
                              m_DragScrollTimer.stop();
                          });
-        QObject::connect(page,
-                         &PagePreview::ReorderCards,
-                         this,
-                         &PrintPreview::ReorderCards);
-        QObject::connect(page,
-                         &PagePreview::RequestRefresh,
-                         this,
-                         &PrintPreview::RequestRefresh);
     }
 
-    auto* restore_order_button{ new QPushButton{ "Restore Original Order" } };
-    QObject::connect(restore_order_button,
+    m_RestoreCardOrder = new QPushButton{ "Restore Original Order" };
+    QObject::connect(m_RestoreCardOrder,
                      &QPushButton::clicked,
-                     this,
-                     &PrintPreview::RestoreCardsOrder);
+                     &m_ViewModel,
+                     &PrintPreviewViewModel::RestoreCardsOrder);
     {
-        QSizePolicy size_policy{ restore_order_button->sizePolicy() };
+        QSizePolicy size_policy{ m_RestoreCardOrder->sizePolicy() };
         size_policy.setRetainSizeWhenHidden(true);
-        restore_order_button->setSizePolicy(size_policy);
+        m_RestoreCardOrder->setSizePolicy(size_policy);
     }
 
-    auto* restore_all_slots{ new QPushButton{ "Restore All Slots" } };
-    QObject::connect(restore_all_slots,
+    m_RestoreAllSlots = new QPushButton{ "Restore All Slots" };
+    QObject::connect(m_RestoreAllSlots,
                      &QPushButton::clicked,
-                     this,
-                     [this]()
-                     {
-                         m_Project.m_Data.m_SkippedLayoutSlots.clear();
-                         RequestRefresh();
-                     });
+                     &m_ViewModel,
+                     &PrintPreviewViewModel::RestoreAllSlots);
     {
-        QSizePolicy size_policy{ restore_all_slots->sizePolicy() };
+        QSizePolicy size_policy{ m_RestoreAllSlots->sizePolicy() };
         size_policy.setRetainSizeWhenHidden(true);
-        restore_all_slots->setSizePolicy(size_policy);
+        m_RestoreAllSlots->setSizePolicy(size_policy);
     }
 
     auto* header_layout{ new QHBoxLayout };
     header_layout->setContentsMargins(0, 0, 0, 0);
     header_layout->addWidget(new QLabel{ "Only a preview; Quality is lower than final render" });
-    header_layout->addWidget(restore_order_button);
-    header_layout->addWidget(restore_all_slots);
+    header_layout->addWidget(m_RestoreCardOrder);
+    header_layout->addWidget(m_RestoreAllSlots);
     header_layout->addStretch();
 
     auto* header{ new QWidget };
     header->setLayout(header_layout);
-
-    restore_order_button->setVisible(m_Project.IsManuallySorted());
-    restore_all_slots->setVisible(!m_Project.m_Data.m_SkippedLayoutSlots.empty());
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(header);
@@ -313,27 +282,8 @@ void PrintPreview::Refresh()
     setWidget(pages_widget);
 
     verticalScrollBar()->setValue(current_scroll);
-}
 
-void PrintPreview::RequestRefresh()
-{
-    m_RefreshTimer.start();
-}
-
-void PrintPreview::CardOrderChanged()
-{
-    if (!m_Project.IsManuallySorted())
-    {
-        RequestRefresh();
-    }
-}
-
-void PrintPreview::CardOrderDirectionChanged()
-{
-    if (!m_Project.IsManuallySorted())
-    {
-        RequestRefresh();
-    }
+    m_ViewModel.EmitDefaults();
 }
 
 void PrintPreview::wheelEvent(QWheelEvent* event)
@@ -439,6 +389,20 @@ void PrintPreview::dragMoveEvent(QDragMoveEvent* event)
             m_DraggingStarted = true;
         }
     }
+}
+
+void PrintPreview::RequestRefresh()
+{
+    Refresh();
+}
+
+void PrintPreview::CardsManuallySortedChanged(bool is_manually_sorted)
+{
+    m_RestoreCardOrder->setVisible(is_manually_sorted);
+}
+void PrintPreview::SlotsSkippedChanged(bool slots_skipped)
+{
+    m_RestoreAllSlots->setVisible(slots_skipped);
 }
 
 void PrintPreview::GoToPage(uint32_t page)

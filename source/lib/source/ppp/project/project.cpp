@@ -1185,17 +1185,29 @@ void Project::CardOrderChanged()
 {
     std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
     CardSortingChanged();
+    if (!IsManuallySorted())
+    {
+        RenderSortingChanged();
+    }
 }
 
 void Project::CardOrderDirectionChanged()
 {
     std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
     CardSortingChanged();
+    if (!IsManuallySorted())
+    {
+        RenderSortingChanged();
+    }
 }
 
 void Project::RestoreCardsOrder()
 {
-    m_Data.m_CardsList.clear();
+    if (!m_Data.m_CardsList.empty())
+    {
+        RenderSortingChanged();
+        m_Data.m_CardsList.clear();
+    }
 }
 
 bool Project::ReorderCards(size_t from, size_t to)
@@ -1224,7 +1236,27 @@ bool Project::ReorderCards(size_t from, size_t to)
     const auto to_it{ m_Data.m_CardsList.begin() + to };
     m_Data.m_CardsList.insert(to_it, from_card);
 
+    RenderSortingChanged();
+
     return true;
+}
+
+void Project::SkipSlot(size_t slot)
+{
+    if (!std::ranges::contains(m_Data.m_SkippedLayoutSlots, slot))
+    {
+        m_Data.m_SkippedLayoutSlots.push_back(slot);
+        SkippedSlotsChanged(m_Data.m_SkippedLayoutSlots);
+    }
+}
+
+void Project::RestoreAllSlots()
+{
+    if (!m_Data.m_SkippedLayoutSlots.empty())
+    {
+        m_Data.m_SkippedLayoutSlots.clear();
+        SkippedSlotsChanged(m_Data.m_SkippedLayoutSlots);
+    }
 }
 
 CardInfo& Project::CardAdded(const fs::path& card_name)
@@ -2111,6 +2143,10 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         {
             std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
             CardSortingChanged();
+            if (!IsManuallySorted())
+            {
+                RenderSortingChanged();
+            }
         }
 
         const bool old_backside_shown{ old_backside.has_value() ? UnhideCard(old_backside.value()) : false };
@@ -2225,7 +2261,6 @@ bool Project::CacheCardLayout()
     if (card_layout_changed)
     {
         m_Data.m_SkippedLayoutSlots.clear();
-
         if (card_layout_vertical_changed)
         {
             CardsLayoutVerticalChanged(m_Data.m_CardLayoutVertical);

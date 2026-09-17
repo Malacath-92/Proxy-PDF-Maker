@@ -238,6 +238,9 @@ class Project : public QObject
     void RestoreCardsOrder();
     bool ReorderCards(size_t from, size_t to);
 
+    void SkipSlot(size_t slot);
+    void RestoreAllSlots();
+
     bool HasPreview(const fs::path& card_name) const;
     bool HasBadAspectRatio(const fs::path& card_name) const;
     bool HasBadRotation(const fs::path& card_name) const;
@@ -426,6 +429,9 @@ class Project : public QObject
     void ImageDirChanged(const fs::path& old_path, const fs::path& new_path);
 
     void CardSortingChanged();
+    void RenderSortingChanged();
+
+    void SkippedSlotsChanged(std::span<const size_t> skipped_slots);
 
     void CardSignallerAdded(const fs::path& card_name, ProjectCardSignaller* signaller);
 

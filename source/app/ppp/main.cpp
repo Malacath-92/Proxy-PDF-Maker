@@ -47,6 +47,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/ui/view_models/options/view_model_project_options.hpp>
 #include <ppp/ui/view_models/util.hpp>
 #include <ppp/ui/view_models/view_model_card_area.hpp>
+#include <ppp/ui/view_models/view_model_print_preview.hpp>
 
 #include <ppp/ui/main_window.hpp>
 #include <ppp/ui/options/widget_actions.hpp>
@@ -278,6 +279,7 @@ int main(int argc, char** argv)
         });
     auto* actions_view_model{ new ActionsViewModel{ project, config } };
     auto* card_area_view_model{ new CardAreaViewModel{ project, config } };
+    auto* print_preview_view_model{ new PrintPreviewViewModel{ project, config } };
 
     auto* project_options_view_model{ new ProjectOptionsViewModel{ project, config } };
     auto* print_options_view_model{ new PrintOptionsViewModel{ project, config } };
@@ -287,7 +289,7 @@ int main(int argc, char** argv)
 
     auto* actions{ new ActionsWidget{ actions_view_model } };
     auto* card_area{ new CardArea{ card_area_view_model } };
-    auto* print_preview{ new PrintPreview{ project, config } };
+    auto* print_preview{ new PrintPreview{ print_preview_view_model } };
     auto* tabs{ new MainTabs{ actions, card_area, print_preview } };
 
     auto* project_options{ new ProjectOptionsWidget{ project_options_view_model } };
@@ -448,6 +450,54 @@ int main(int argc, char** argv)
         QObject::connect(&card_provider, &CardProvider::CardAdded, card_area_view_model, &CardAreaViewModel::CardAdded);
         QObject::connect(&card_provider, &CardProvider::CardRemoved, card_area_view_model, &CardAreaViewModel::CardRemoved);
         QObject::connect(&card_provider, &CardProvider::CardRenamed, card_area_view_model, &CardAreaViewModel::CardRenamed);
+    }
+
+    {
+        TRACY_AUTO_SCOPE();
+        TRACY_SCOPE_NAME(connect_signals_print_preview_view_model);
+
+#define FORWARD_SIGNAL_FROM_CONFIG(sig) \
+    FORWARD_SIGNAL_FROM_TO(config, *print_preview_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_CONFIG(CardOrderChanged);
+        FORWARD_SIGNAL_FROM_CONFIG(CardOrderDirectionChanged);
+
+#undef FORWARD_SIGNAL_FROM_CONFIG
+
+#define FORWARD_SIGNAL_FROM_PROJECT(sig) \
+    FORWARD_SIGNAL_FROM_TO(project, *print_preview_view_model, sig)
+
+        FORWARD_SIGNAL_FROM_PROJECT(RenderSortingChanged);
+
+#undef FORWARD_SIGNAL_FROM_PROJECT
+
+        QObject::connect(&project, &Project::ImageDirChanged, print_preview_view_model, &PrintPreviewViewModel::ImmediateRefresh);
+        QObject::connect(&project, &Project::NewProjectOpened, print_preview_view_model, &PrintPreviewViewModel::ImmediateRefresh);
+
+        QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&card_provider, &CardProvider::CardRenamed, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+
+        QObject::connect(&project, &Project::CardSizeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::PageSizeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::PageOrientationChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::PageMarginsChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::CardsLayoutVerticalChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::CardsLayoutHorizontalChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::FlipPageOnChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+
+        QObject::connect(&project, &Project::ExportExactGuidesChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+
+        QObject::connect(&project, &Project::BleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::SpacingChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::CornersChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::BacksideEnabledChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+
+        QObject::connect(&config, &Config::ColorCubeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
     }
 
     {
@@ -623,54 +673,6 @@ int main(int argc, char** argv)
 
     {
         TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(connect_signals_preview);
-
-        // TODO: Fine-tune these connections to reduce amount of pointless work
-        QObject::connect(&project, &Project::ImageDirChanged, print_preview, &PrintPreview::Refresh);
-
-        QObject::connect(&project, &Project::NewProjectOpened, print_preview, &PrintPreview::Refresh);
-
-        QObject::connect(&card_provider, &CardProvider::CardAdded, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&card_provider, &CardProvider::CardRemoved, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&card_provider, &CardProvider::CardRenamed, print_preview, &PrintPreview::RequestRefresh);
-
-        QObject::connect(&project, &Project::CardSizeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::PageSizeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::PageOrientationChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::PageMarginsChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CardsLayoutVerticalChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CardsLayoutHorizontalChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::FlipPageOnChanged, print_preview, &PrintPreview::RequestRefresh);
-
-        QObject::connect(&project, &Project::ExportExactGuidesChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::BacksideGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CornerGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CrossGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::ExtendedGuidesEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesColorAChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesColorBChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesLengthChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::GuidesThicknessChanged, print_preview, &PrintPreview::RequestRefresh);
-
-        QObject::connect(&project, &Project::BleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::SpacingChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CornersChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::BacksideEnabledChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&project, &Project::CardSortingChanged, print_preview, &PrintPreview::CardOrderChanged);
-
-        QObject::connect(&config, &Config::ColorCubeChanged, print_preview, &PrintPreview::RequestRefresh);
-        QObject::connect(&config, &Config::CardOrderChanged, print_preview, &PrintPreview::CardOrderChanged);
-        QObject::connect(&config, &Config::CardOrderDirectionChanged, print_preview, &PrintPreview::CardOrderDirectionChanged);
-    }
-
-    {
-        TRACY_AUTO_SCOPE();
         TRACY_SCOPE_NAME(connect_signals_new_project);
 
         QObject::connect(&app, &PrintProxyPrepApplication::ProjectPathChanged, project_options_view_model, &ProjectOptionsViewModel::ProjectPathChanged);
@@ -728,50 +730,6 @@ int main(int argc, char** argv)
         QObject::connect(main_window, &PrintProxyPrepMainWindow::PdfDropped, print_options_view_model, &PrintOptionsViewModel::BasePdfAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::ColorCubeDropped, global_options_view_model, &GlobalOptionsViewModel::ColorCubeAdded);
         QObject::connect(main_window, &PrintProxyPrepMainWindow::StyleDropped, global_options_view_model, &GlobalOptionsViewModel::StyleAdded);
-    }
-
-    {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(connect_signals_card_order);
-
-        QObject::connect(
-            print_preview,
-            &PrintPreview::RestoreCardsOrder,
-            &project,
-            [&]()
-            {
-                project.RestoreCardsOrder();
-                print_preview->RequestRefresh();
-            },
-            Qt::ConnectionType::QueuedConnection);
-        QObject::connect(
-            print_preview,
-            &PrintPreview::ReorderCards,
-            &project,
-            [&](size_t from, size_t to)
-            {
-                if (project.ReorderCards(from, to))
-                {
-                    print_preview->RequestRefresh();
-                }
-                else
-                {
-                    // clang-formt off
-                    QString message{
-                        QString{
-                            "Failed reordering cards, moving %1 to %2",
-                        }
-                            .arg(from)
-                            .arg(to)
-                    };
-                    // clang-formt on
-                    main_window->Toast(
-                        ToastType::Error,
-                        "Drag-and-Drop Error",
-                        std::move(message));
-                }
-            },
-            Qt::ConnectionType::QueuedConnection);
     }
 
     {
