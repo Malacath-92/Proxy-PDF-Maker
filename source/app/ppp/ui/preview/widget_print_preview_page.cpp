@@ -236,33 +236,17 @@ PagePreview::PagePreview(PagePreviewViewModel* view_model,
     m_Guides = new GuidesOverlay{ view_model->MakeGuidesOverlayViewModel(), transforms };
     m_Guides->setParent(this);
 
-    // TODO: Instantiate unconditionally and then connect signals for faster update
-    if (view_model->ShowExactBorders())
-    {
-        m_Borders = new BordersOverlay{ view_model->MakeBordersOverlayViewModel(is_backside), transforms };
-        m_Borders->setParent(this);
-    }
+    m_Borders = new BordersOverlay{ view_model->MakeBordersOverlayViewModel(is_backside), transforms };
+    m_Borders->setParent(this);
 
-    // TODO: Instantiate unconditionally and then connect signals for faster update
-    if (view_model->ShowMargins())
-    {
-        m_Margins = new MarginsOverlay{ view_model->MakeMarginsOverlayViewModel(is_backside) };
-        m_Margins->setParent(this);
-    }
+    m_Margins = new MarginsOverlay{ view_model->MakeMarginsOverlayViewModel(is_backside) };
+    m_Margins->setParent(this);
 }
 
 void PagePreview::resizeEvent(QResizeEvent* event)
 {
     m_ImageContainer->resize(event->size());
     m_Guides->resize(event->size());
-
-    if (m_Borders != nullptr)
-    {
-        m_Borders->resize(event->size());
-    }
-
-    if (m_Margins != nullptr)
-    {
-        m_Margins->resize(event->size());
-    }
+    m_Borders->resize(event->size());
+    m_Margins->resize(event->size());
 }

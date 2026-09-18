@@ -6,6 +6,7 @@
 #include <ppp/svg/generate.hpp>
 
 #include <ppp/ui/view_models/overlays/view_model_margins_overlay.hpp>
+#include <ppp/ui/view_models/util.hpp>
 
 MarginsOverlay::MarginsOverlay(MarginsOverlayViewModel* view_model)
     : m_ViewModel{ *view_model }
@@ -15,10 +16,17 @@ MarginsOverlay::MarginsOverlay(MarginsOverlayViewModel* view_model)
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(Redraw);
 }
 
 void MarginsOverlay::paintEvent(QPaintEvent* /*event*/)
 {
+    if (!m_ViewModel.ShouldDrawMargins())
+    {
+        return;
+    }
+
     QPainter painter{ this };
     DrawSvg(painter, m_Margins, QColor{ 0, 0, 255 });
     painter.end();
@@ -26,7 +34,18 @@ void MarginsOverlay::paintEvent(QPaintEvent* /*event*/)
 
 void MarginsOverlay::resizeEvent(QResizeEvent* event)
 {
-    const dla::ivec2 size{ event->size().width(), event->size().height() };
+    DrawLines(event->size());
+}
+
+void MarginsOverlay::Redraw()
+{
+    DrawLines(size());
+    update();
+}
+
+void MarginsOverlay::DrawLines(const QSize& qsize)
+{
+    const dla::ivec2 size{ qsize.width(), qsize.height() };
     const auto raw_page_size{ m_ViewModel.GetPageSize() };
     const auto raw_page_margins{ m_ViewModel.GetPageMargins() };
     const auto pixel_ratio{ size.x / raw_page_size.x };

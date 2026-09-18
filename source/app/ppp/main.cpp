@@ -489,8 +489,6 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::CardsLayoutHorizontalChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::FlipPageOnChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
 
-        QObject::connect(&project, &Project::ExportExactGuidesChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
-
         QObject::connect(&project, &Project::BleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::EnvelopeBleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::SpacingChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);

@@ -11,10 +11,12 @@ struct PageImageTransform;
 
 class BordersOverlayViewModel : public QObject
 {
+    Q_OBJECT
   public:
     BordersOverlayViewModel(const Project& project,
                             bool is_backside);
 
+    bool ShouldDrawBorders() const;
     bool ShouldDrawOuterBorder() const;
     bool ShouldDrawRoundedRect() const;
     bool ShouldDrawCardSvg() const;
@@ -27,6 +29,9 @@ class BordersOverlayViewModel : public QObject
     void DrawCardSvg(QPainterPath& painter_path,
                      const PageImageTransform& transform,
                      Size size) const;
+
+  signals:
+    void Redraw();
 
   private:
     const Project& m_Project;

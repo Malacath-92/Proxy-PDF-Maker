@@ -87,15 +87,6 @@ bool PagePreviewViewModel::IsBackside() const
     return m_IsBackside;
 }
 
-bool PagePreviewViewModel::ShowExactBorders() const
-{
-    return m_Project.m_Data.m_ExportExactGuides;
-}
-bool PagePreviewViewModel::ShowMargins() const
-{
-    return m_Project.m_Data.m_MarginsMode != MarginsMode::Auto;
-}
-
 void PagePreviewViewModel::ReorderCards(size_t from, size_t to)
 {
     m_Project.ReorderCards(from, to);

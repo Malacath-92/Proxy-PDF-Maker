@@ -6,6 +6,7 @@
 #include <ppp/svg/generate.hpp>
 
 #include <ppp/ui/view_models/overlays/view_model_borders_overlay.hpp>
+#include <ppp/ui/view_models/util.hpp>
 
 BordersOverlay::BordersOverlay(BordersOverlayViewModel* view_model,
                                const PageImageTransforms& transforms)
@@ -17,10 +18,17 @@ BordersOverlay::BordersOverlay(BordersOverlayViewModel* view_model,
     setAttribute(Qt::WA_NoSystemBackground);
     setAttribute(Qt::WA_TranslucentBackground);
     setAttribute(Qt::WA_TransparentForMouseEvents);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(Redraw);
 }
 
 void BordersOverlay::paintEvent(QPaintEvent* /*event*/)
 {
+    if (!m_ViewModel.ShouldDrawBorders())
+    {
+        return;
+    }
+
     QPainter painter{ this };
     DrawSvg(painter, m_CardBorder);
     painter.end();
@@ -89,4 +97,9 @@ void BordersOverlay::resizeEvent(QResizeEvent* event)
             }
         }
     }
+}
+
+void BordersOverlay::Redraw()
+{
+    update();
 }

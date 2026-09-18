@@ -14,7 +14,12 @@ class MarginsOverlay : public QWidget
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
+  private slots:
+    void Redraw();
+
   private:
+    void DrawLines(const QSize& size);
+
     const MarginsOverlayViewModel& m_ViewModel;
 
     QPainterPath m_Margins;

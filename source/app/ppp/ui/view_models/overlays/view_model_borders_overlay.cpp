@@ -10,8 +10,13 @@ BordersOverlayViewModel::BordersOverlayViewModel(const Project& project,
     : m_Project{ project }
     , m_IsBackside{ is_backside }
 {
+    QObject::connect(&project, &Project::ExportExactGuidesChanged, this, &BordersOverlayViewModel::Redraw);
 }
 
+bool BordersOverlayViewModel::ShouldDrawBorders() const
+{
+    return m_Project.m_Data.m_ExportExactGuides;
+}
 bool BordersOverlayViewModel::ShouldDrawOuterBorder() const
 {
     return m_Project.m_Data.m_BleedEdge > 0_mm ||

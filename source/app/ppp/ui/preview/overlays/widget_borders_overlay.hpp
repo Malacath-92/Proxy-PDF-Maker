@@ -17,6 +17,9 @@ class BordersOverlay : public QWidget
 
     virtual void resizeEvent(QResizeEvent* event) override;
 
+  private slots:
+    void Redraw();
+
   private:
     const BordersOverlayViewModel& m_ViewModel;
     const PageImageTransforms& m_Transforms;

@@ -7,6 +7,13 @@ MarginsOverlayViewModel::MarginsOverlayViewModel(const Project& project,
     : m_Project{ project }
     , m_IsBackside{ is_backside }
 {
+    QObject::connect(&project, &Project::PageMarginsModeChanged, this, &MarginsOverlayViewModel::Redraw);
+    QObject::connect(&project, &Project::PageMarginsChanged, this, &MarginsOverlayViewModel::Redraw);
+}
+
+bool MarginsOverlayViewModel::ShouldDrawMargins() const
+{
+    return m_Project.m_Data.m_MarginsMode != MarginsMode::Auto;
 }
 
 Size MarginsOverlayViewModel::GetPageSize() const
