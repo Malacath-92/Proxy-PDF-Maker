@@ -161,19 +161,8 @@ void PrintPreviewViewModel::RenderPageBackground()
             }
             else
             {
-                const auto scale_factor{ static_cast<float>(m_PageBackground.width()) / underlay_pixmap.width() };
-                if (scale_factor > 1.0f)
-                {
-                    const auto target_width_px{ qRound(underlay_pixmap.width() * scale_factor) };
-                    const auto target_height_px{ qRound(underlay_pixmap.height() * scale_factor) };
-                    underlay_pixmap = underlay_pixmap.scaled(target_width_px, target_height_px);
-                }
-                else
-                {
-                    const auto target_width_px{ qRound(m_PageBackground.width() * scale_factor) };
-                    const auto target_height_px{ qRound(m_PageBackground.height() * scale_factor) };
-                    m_PageBackground = m_PageBackground.scaled(target_width_px, target_height_px);
-                }
+                // We could scale here if the pixmaps had a different resolution, but RenderPdf
+                // generates pixmaps with a fixed resolution
             }
 
             const auto x{ (m_PageBackground.width() - underlay_pixmap.width()) / 2 };
