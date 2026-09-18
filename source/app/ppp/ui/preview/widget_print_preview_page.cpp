@@ -30,8 +30,7 @@ class PageBackground : public QLabel
         {
             if (const auto base_image{ RenderPdf(base_pdf.value()) })
             {
-                setPixmap(StoreIntoQtPixmap(base_image));
-                setScaledContents(true);
+                m_Background = StoreIntoQtPixmap(base_image);
             }
         }
 
@@ -55,15 +54,15 @@ class PageBackground : public QLabel
         QPainter painter{ this };
         painter.fillRect(rect(), Qt::white);
 
-        const auto pixmap{ this->pixmap() };
-        if (!pixmap.isNull())
+        if (!m_Background.isNull())
         {
-            painter.drawPixmap(rect(), pixmap);
+            painter.drawPixmap(rect(), m_Background);
         }
     }
 
   private:
     float m_PageRatio;
+    QPixmap m_Background;
 };
 
 class PageImageContainer : public QWidget

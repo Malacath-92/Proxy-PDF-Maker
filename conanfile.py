@@ -19,7 +19,10 @@ class ProxyPDF(ConanFile):
         self.requires("nlohmann_json/3.11.3")
 
         # PDF Write/Read
-        self.requires("podofo/1.0.3")
+        self.requires("podofo/1.1.2")
+
+        # PDF Rendering
+        self.requires("pdfium/95.0.4629")
 
         # String Formatting
         self.requires("fmt/12.1.0")
@@ -43,11 +46,8 @@ class ProxyPDF(ConanFile):
         self.requires("catch2/3.7.1")
 
         # Conflict Resolution
-        self.requires("zstd/1.5.7", override=True)
-        self.requires("openjpeg/2.5.2", override=True)
+        self.requires("openjpeg/2.5.4", override=True)
         self.requires("icu/74.2", override=True)
-        self.requires("libjpeg/9f", override=True)
-        self.requires("abseil/20260107.1", override=True)
         self.requires("freetype/2.14.3", override=True)
 
     def configure(self):

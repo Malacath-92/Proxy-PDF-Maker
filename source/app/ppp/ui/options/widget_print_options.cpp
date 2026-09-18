@@ -419,8 +419,7 @@ PrintOptionsWidget::PrintOptionsWidget(PrintOptionsViewModel* view_model)
 void PrintOptionsWidget::AdvancedModeChanged(bool advanced_mode)
 {
     // Always enabled: m_PrintOutput, m_RenderHeader, m_CardSize, m_PaperSize, m_BasePdf, m_Orientation, m_SizeInfo
-    // m_UnderlayPdf->setVisible(advanced_mode);
-    m_UnderlayPdf->setVisible(false); // Requires PoDoFo/1.12 or newer to function properly
+    m_UnderlayPdf->setVisible(advanced_mode);
     m_LeftMarginSpin->parentWidget()->setVisible(advanced_mode);
     m_TopMarginSpin->parentWidget()->setVisible(advanced_mode);
     m_RightMarginSpin->parentWidget()->setVisible(advanced_mode);
