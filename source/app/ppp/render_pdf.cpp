@@ -64,7 +64,7 @@ Image RenderPdf(const fs::path& pdf_path)
 
     FPDFBitmap_FillRect(bitmap, 0, 0, width, height, 0x00FFFFFF);
     FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, 0, FPDF_ANNOT);
-    
+
     auto* buffer{ FPDFBitmap_GetBuffer(bitmap) };
     const auto stride{ FPDFBitmap_GetStride(bitmap) };
 
