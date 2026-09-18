@@ -507,8 +507,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
         }
     }
 
-    const auto frontside_pdf_name{ (output_folder / project.m_Data.m_FileName).string() };
-    const auto backside_pdf_name{ frontside_pdf_name + "_backside" };
+    const auto frontside_pdf_path{ (output_folder / project.m_Data.m_FileName).string() };
+    const auto backside_pdf_path{ frontside_pdf_path + "_backside" };
+
+    const auto frontside_pdf_name{ fs::path{ frontside_pdf_path }.stem().string() };
+    const auto backside_pdf_name{ fs::path{ backside_pdf_path }.stem().string() };
 
     const auto draw_image{
         [&](PdfPage* page,
@@ -821,18 +824,18 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
         }
     }
 
-    auto frontside_pdf_path{ frontside_pdf->Write(frontside_pdf_name, config.m_VersionOutput) };
+    auto frontside_pdf_full_path{ frontside_pdf->Write(frontside_pdf_path, config.m_VersionOutput) };
 
-    const auto actual_backside_pdf_name{ frontside_pdf_path.stem().string() + "_backside" };
-    auto backside_pdf_path{
+    const auto actual_backside_pdf_path{ frontside_pdf_full_path.stem().string() + "_backside" };
+    auto backside_pdf_full_path{
         backside_pdf != frontside_pdf.get() && backside_pdf != nullptr
-            ? std::optional{ backside_pdf->Write(actual_backside_pdf_name, false) }
+            ? std::optional{ backside_pdf->Write(actual_backside_pdf_path, false) }
             : std::nullopt
     };
 
     return {
-        std::move(frontside_pdf_path),
-        std::move(backside_pdf_path),
+        std::move(frontside_pdf_full_path),
+        std::move(backside_pdf_full_path),
     };
 }
 
