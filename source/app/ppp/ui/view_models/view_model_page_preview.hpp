@@ -29,8 +29,6 @@ class PagePreviewViewModel : public QObject
     BordersOverlayViewModel* MakeBordersOverlayViewModel(bool is_backside) const;
     MarginsOverlayViewModel* MakeMarginsOverlayViewModel(bool is_backside) const;
 
-    std::optional<fs::path> GetBasePdfPath() const;
-
     Size GetPageSize() const;
     Length GetBleedEdge() const;
     bool HasRoundedCorners() const;
@@ -39,6 +37,12 @@ class PagePreviewViewModel : public QObject
     bool ShowExactBorders() const;
     bool ShowMargins() const;
 
+  signals:
+    // forward
+
+    // TODO: Shift the background
+    void PageBackgroundChanged(const QPixmap& background);
+
   public slots:
     void ReorderCards(size_t from, size_t to);
     void SkipSlot(size_t slot);
@@ -46,5 +50,6 @@ class PagePreviewViewModel : public QObject
   private:
     Project& m_Project;
     const Config& m_Cfg;
+
     const bool m_IsBackside;
 };

@@ -44,11 +44,6 @@ MarginsOverlayViewModel* PagePreviewViewModel::MakeMarginsOverlayViewModel(bool 
     return new MarginsOverlayViewModel{ m_Project, is_backside };
 }
 
-std::optional<fs::path> PagePreviewViewModel::GetBasePdfPath() const
-{
-    return m_Project.GetBasePdfPath();
-}
-
 Size PagePreviewViewModel::GetPageSize() const
 {
     return m_Project.ComputePageSize();

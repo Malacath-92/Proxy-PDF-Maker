@@ -468,6 +468,9 @@ int main(int argc, char** argv)
     FORWARD_SIGNAL_FROM_TO(project, *print_preview_view_model, sig)
 
         FORWARD_SIGNAL_FROM_PROJECT(RenderSortingChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(PageSizeChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(BasePdfChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(UnderlayPdfChanged);
 
 #undef FORWARD_SIGNAL_FROM_PROJECT
 
@@ -496,6 +499,8 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+
+        QObject::connect(&project, &Project::SkippedSlotsChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
 
         QObject::connect(&config, &Config::ColorCubeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
     }

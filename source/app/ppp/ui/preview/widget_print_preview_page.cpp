@@ -8,8 +8,6 @@
 #include <ppp/project/project.hpp>
 #include <ppp/render_pdf.hpp>
 
-#include <ppp/ui/widget_util/card/card_widget_util.hpp>
-
 #include <ppp/ui/preview/widget_print_preview_card.hpp>
 
 #include <ppp/ui/preview/overlays/widget_borders_overlay.hpp>
@@ -22,21 +20,18 @@
 class PageBackground : public QLabel
 {
   public:
-    PageBackground(std::optional<fs::path> base_pdf,
-                   Size page_size)
+    PageBackground(Size page_size)
         : m_PageRatio{ page_size.x / page_size.y }
     {
-        if (base_pdf.has_value())
-        {
-            if (const auto base_image{ RenderPdf(base_pdf.value()) })
-            {
-                m_Background = StoreIntoQtPixmap(base_image);
-            }
-        }
-
         QSizePolicy policy{ sizePolicy() };
         policy.setHeightForWidth(true);
         setSizePolicy(policy);
+    }
+
+    void SetPageBackgroud(const QPixmap& background)
+    {
+        m_Background = &background;
+        update();
     }
 
     virtual bool hasHeightForWidth() const override
@@ -54,15 +49,15 @@ class PageBackground : public QLabel
         QPainter painter{ this };
         painter.fillRect(rect(), Qt::white);
 
-        if (!m_Background.isNull())
+        if (m_Background != nullptr && !m_Background->isNull())
         {
-            painter.drawPixmap(rect(), m_Background);
+            painter.drawPixmap(rect(), *m_Background);
         }
     }
 
   private:
     float m_PageRatio;
-    QPixmap m_Background;
+    const QPixmap* m_Background;
 };
 
 class PageImageContainer : public QWidget
@@ -133,7 +128,11 @@ PagePreview::PagePreview(PagePreviewViewModel* view_model,
     view_model->setParent(this);
 
     {
-        auto* bg_widget{ new PageBackground{ view_model->GetBasePdfPath(), view_model->GetPageSize() } };
+        auto* bg_widget{ new PageBackground{ view_model->GetPageSize() } };
+        QObject::connect(view_model,
+                         &PagePreviewViewModel::PageBackgroundChanged,
+                         bg_widget,
+                         &PageBackground::SetPageBackgroud);
 
         auto* bg_layout{ new QVBoxLayout };
         bg_layout->setContentsMargins(0, 0, 0, 0);

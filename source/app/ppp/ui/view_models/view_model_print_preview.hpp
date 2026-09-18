@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPixmap>
 #include <QTimer>
 
 #include <ppp/pdf/util.hpp>
@@ -45,6 +46,8 @@ class PrintPreviewViewModel : public QObject
     void CardsManuallySortedChanged(bool is_manually_sorted);
     void SlotsSkippedChanged(bool slots_skipped);
 
+    void PageBackgroundChanged(const QPixmap& background);
+
   public slots:
     void CardOrderChanged();
     void CardOrderDirectionChanged();
@@ -53,9 +56,16 @@ class PrintPreviewViewModel : public QObject
 
     void SkippedSlotsChanged(std::span<const size_t> skipped_slots);
 
+    void PageSizeChanged();
+    void BasePdfChanged();
+    void UnderlayPdfChanged();
+
   private:
+    void RenderPageBackground();
+
     Project& m_Project;
     const Config& m_Cfg;
 
+    QPixmap m_PageBackground;
     QTimer m_RefreshTimer;
 };
