@@ -142,6 +142,7 @@ void PrintOptionsViewModel::EmitDefaults()
     PageSizeChanged(m_Project.ComputePageSize());
     PageSizeChoiceChanged(m_Project.m_Data.m_PageSize);
     BasePdfChanged(m_Project.m_Data.m_BasePdf);
+    UnderlayPdfChanged(m_Project.m_Data.m_UnderlayPdf);
     CardsSizeChanged(m_Project.ComputeCardsSize());
     PageMarginsModeChanged(m_Project.m_Data.m_MarginsMode);
     PageMarginsChanged(m_Project.ComputeMargins());
