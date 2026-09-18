@@ -22,7 +22,9 @@ class ProxyPDF(ConanFile):
         self.requires("podofo/1.1.2")
 
         # PDF Rendering
-        self.requires("pdfium/95.0.4629")
+        # Note: Does not build on MacOS
+        if self.settings.os in ["Windows", "Linux"]:
+            self.requires("pdfium/95.0.4629")
 
         # String Formatting
         self.requires("fmt/12.1.0")

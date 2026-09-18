@@ -1,5 +1,7 @@
 #include <ppp/render_pdf.hpp>
 
+#if __has_include(<fpdfview.h>)
+
 #include <fpdfview.h>
 
 #include <ppp/image.hpp>
@@ -23,7 +25,7 @@ PdfRendererDtor InitPdfRenderer()
     };
     FPDF_InitLibraryWithConfig(&config);
 
-    return {};
+    return PdfRendererDtor{};
 }
 
 Image RenderPdf(const fs::path& pdf_path)
@@ -71,3 +73,19 @@ Image RenderPdf(const fs::path& pdf_path)
     cv::Mat mat{ height, width, CV_8UC4, buffer, static_cast<size_t>(stride) };
     return Image{ mat.clone() };
 }
+
+#else
+
+PdfRendererDtor::~PdfRendererDtor() = default;
+
+PdfRendererDtor InitPdfRenderer()
+{
+    return PdfRendererDtor{};
+}
+
+Image RenderPdf(const fs::path& /* pdf_path */)
+{
+    return Image{};
+}
+
+#endif

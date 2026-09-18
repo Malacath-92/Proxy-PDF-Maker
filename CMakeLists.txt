@@ -103,7 +103,7 @@ find_package(magic_enum REQUIRED)
 find_package(onnxruntime REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(whereami REQUIRED)
-find_package(pdfium REQUIRED)
+find_package(pdfium QUIET)
 if (PPP_PROFILE)
 	find_package(tracy REQUIRED)
 endif()
@@ -365,9 +365,12 @@ target_link_libraries(proxy_pdf PRIVATE
 	breeze
 	qt_toast_lib
 	onnxruntime::onnxruntime
-	pdfium::pdfium
 	proxy_pdf_lib
 	proxy_pdf_dependencies)
+if(pdfium_FOUND)
+	target_link_libraries(proxy_pdf PRIVATE
+		pdfium::pdfium)
+endif()
 target_include_directories(proxy_pdf PRIVATE "source/app" "res")
 set_target_properties(proxy_pdf PROPERTIES
     VS_GLOBAL_RunCodeAnalysis false
