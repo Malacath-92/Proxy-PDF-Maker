@@ -182,7 +182,7 @@ void PrintPreview::Refresh()
 
     if (m_ViewModel.HasBacksides())
     {
-        m_BacksideTransforms = m_ViewModel.GetBacksideTransforms(m_BacksideTransforms);
+        m_BacksideTransforms = m_ViewModel.GetBacksideTransforms(m_FrontsideTransforms);
 
         const auto raw_backside_pages{ m_ViewModel.GetBacksidePages(raw_pages) };
         const auto backside_pages{ raw_backside_pages |
