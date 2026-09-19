@@ -76,6 +76,8 @@ Image RenderPdf(const fs::path& pdf_path)
 
 #else
 
+#include <ppp/image.hpp>
+
 PdfRendererDtor::~PdfRendererDtor() = default;
 
 PdfRendererDtor InitPdfRenderer()
