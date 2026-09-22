@@ -2,6 +2,8 @@
 
 #if __has_include(<fpdfview.h>)
 
+#include <ranges>
+
 #include <fpdfview.h>
 
 #include <ppp/image.hpp>
@@ -32,10 +34,19 @@ Image RenderPdf(const fs::path& pdf_path)
 {
     TRACY_AUTO_SCOPE();
 
+    using namespace std::string_view_literals;
+    static constexpr std::string_view c_WhitelistedNonExistant[]{
+        "None"sv,
+        "Empty A4"sv,
+    };
+
     FPDF_DOCUMENT doc{ FPDF_LoadDocument(pdf_path.string().c_str(), nullptr) };
     if (!doc)
     {
-        LogError("Failed to load document '{}'", pdf_path.string());
+        if (!std::ranges::contains(c_WhitelistedNonExistant, pdf_path.stem()))
+        {
+            LogError("Failed to load document '{}'", pdf_path.string());
+        }
         return {};
     }
 
