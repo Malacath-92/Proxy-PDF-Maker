@@ -8,12 +8,14 @@ class GlobalOptionsViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class GlobalOptionsWidget;
-
   public:
     GlobalOptionsViewModel(Config& config);
 
     void Init();
+
+    const std::unordered_map<std::string, bool>& GetPluginsState() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -51,7 +53,7 @@ class GlobalOptionsViewModel : public QObject
     void ColorCubeAdded();
     void StyleAdded();
 
-  private slots:
+  public slots:
     void ChangeAdvancedMode(Qt::CheckState advanced_mode);
 
     void ChangeNoCropMode(Qt::CheckState no_crop_mode);
@@ -86,9 +88,5 @@ class GlobalOptionsViewModel : public QObject
     void DisablePlugin(std::string_view plugin_name);
 
   private:
-    void EmitDefaults();
-
-    const std::unordered_map<std::string, bool>& GetPluginsState() const;
-
     Config& m_Cfg;
 };

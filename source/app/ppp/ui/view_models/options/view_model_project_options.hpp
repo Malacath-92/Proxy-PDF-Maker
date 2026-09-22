@@ -11,19 +11,24 @@ class NewProjectPopupViewModel;
 
 class ProjectOptionsViewModel : public QObject
 {
-    friend class ProjectOptionsWidget;
-
     Q_OBJECT
 
   public:
     ProjectOptionsViewModel(Project& project,
                             const Config& config);
 
+    fs::path GetProjectsRoot() const;
+    bool IsCurrentProject(const fs::path& project_path) const;
+
+    NewProjectPopupViewModel* MakeProjectPopupViewModel() const;
+
+    void EmitDefaults();
+
   signals:
     // forward
     void ProjectPathChanged(const fs::path& project_path);
 
-  private slots:
+  public slots:
     void ChangeProjectName(const QString& project_name);
     void ChangeProjectsRoot(const QString& projects_root);
 
@@ -36,13 +41,6 @@ class ProjectOptionsViewModel : public QObject
     void LoadProject(const fs::path& project_path);
 
   private:
-    void EmitDefaults();
-
-    fs::path GetProjectsRoot() const;
-    bool IsCurrentProject(const fs::path& project_path) const;
-
-    NewProjectPopupViewModel* MakeProjectPopupViewModel() const;
-
     Project& m_Project;
     const Config& m_Cfg;
 };

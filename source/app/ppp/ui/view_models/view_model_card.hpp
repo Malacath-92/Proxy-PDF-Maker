@@ -48,8 +48,6 @@ class CardViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class CardImage;
-
   public:
     CardViewModel(fs::path card_name,
                   CardViewParams params,
@@ -59,6 +57,11 @@ class CardViewModel : public QObject
     const fs::path& GetCardName() const;
 
     float GetCardAspectRatio() const;
+
+    CardContextMenuEntries GetVisibleContextMenuEntries() const;
+    CardContextMenuEntries GetEnabledContextMenuEntries() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -83,7 +86,6 @@ class CardViewModel : public QObject
 
     void CardSizeChanged(Size card_size);
 
-  private slots:
     void RemoveExternalCard();
 
     void ClearBackside();
@@ -96,11 +98,6 @@ class CardViewModel : public QObject
     void RotateImageRight(const QPixmap& pixmap);
 
   private:
-    void EmitDefaults();
-
-    CardContextMenuEntries GetVisibleContextMenuEntries() const;
-    CardContextMenuEntries GetEnabledContextMenuEntries() const;
-
     fs::path m_CardName;
     CardViewParams m_ViewParams;
 

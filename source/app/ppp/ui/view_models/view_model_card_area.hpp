@@ -17,9 +17,6 @@ class CardAreaViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class CardArea;
-    friend class CardAreaCardWidget;
-
   public:
     CardAreaViewModel(Project& project,
                       const Config& config);
@@ -34,6 +31,8 @@ class CardAreaViewModel : public QObject
 
     void OpenImageFolder() const;
     void OpenPluginsWindow() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -59,7 +58,7 @@ class CardAreaViewModel : public QObject
     void RequestRefresh() const;
     void RequestOpenPluginsWindow() const;
 
-  private slots:
+  public slots:
     void DecrementAllCards();
     void IncrementAllCards();
     void ResetAllCards();
@@ -67,8 +66,6 @@ class CardAreaViewModel : public QObject
     void RemoveAllExternalCards();
 
   private:
-    void EmitDefaults();
-
     Project& m_Project;
     const Config& m_Cfg;
 };

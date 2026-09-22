@@ -11,11 +11,13 @@ class ActionsViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class ActionsWidget;
-
   public:
     ActionsViewModel(Project& project,
                      const Config& config);
+
+    void EmitDefaults();
+
+    bool VerifyProject() const;
 
   signals:
     // forward
@@ -26,17 +28,13 @@ class ActionsViewModel : public QObject
 
     void PdfBackendChanged(PdfBackend backend);
 
-  private slots:
+  public slots:
     void RenderDocument() const;
     fs::path GetImageFolderBase() const;
     void SetImagesFolder(fs::path new_image_dir);
     void OpenImagesFolder() const;
 
   private:
-    void EmitDefaults();
-
-    bool VerifyProject() const;
-
     Project& m_Project;
     const Config& m_Cfg;
 };

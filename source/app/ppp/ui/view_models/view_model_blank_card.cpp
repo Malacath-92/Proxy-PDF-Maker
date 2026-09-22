@@ -28,11 +28,6 @@ float BlankCardViewModel::GetCardAspectRatio() const
     return GetCardWidgetAspectRatio(m_Project, m_ViewParams.m_Rotation, m_ViewParams.m_BleedEdge);
 }
 
-void BlankCardViewModel::CardSizeChanged(Size /* card_size */)
-{
-    CardAspectRatioChanged(GetCardAspectRatio());
-}
-
 void BlankCardViewModel::EmitDefaults(bool with_pixmap)
 {
     TRACY_AUTO_SCOPE();
@@ -72,4 +67,9 @@ void BlankCardViewModel::EmitDefaults(bool with_pixmap)
 
         PixmapChanged(StoreIntoQtPixmap(image));
     }
+}
+
+void BlankCardViewModel::CardSizeChanged(Size /* card_size */)
+{
+    CardAspectRatioChanged(GetCardAspectRatio());
 }

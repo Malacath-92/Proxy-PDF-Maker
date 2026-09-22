@@ -73,6 +73,135 @@ float CardViewModel::GetCardAspectRatio() const
     return GetCardWidgetAspectRatio(m_Project.Get(), m_ViewParams.m_Rotation, m_ViewParams.m_BleedEdge);
 }
 
+CardContextMenuEntries CardViewModel::GetVisibleContextMenuEntries() const
+{
+    CardContextMenuEntries visible_entries{ CardContextMenuEntries::None };
+
+    if (m_Project->IsCardExternal(m_CardName))
+    {
+        visible_entries |= CardContextMenuEntries::RemoveExternal;
+    }
+
+    if (m_Project->m_Data.m_BacksideEnabled)
+    {
+        const auto has_clear_backside{ m_Project->HasClearBacksideImage(m_CardName) };
+        if (!has_clear_backside)
+        {
+            visible_entries |= CardContextMenuEntries::ClearBackside;
+        }
+
+        const auto has_non_default_backside{ m_Project->HasNonDefaultBacksideImage(m_CardName) };
+        if (has_non_default_backside)
+        {
+            visible_entries |= CardContextMenuEntries::ResetBackside;
+        }
+    }
+
+    visible_entries |= CardContextMenuEntries::InferBleed;
+    visible_entries |= CardContextMenuEntries::ForceFullBleed;
+    visible_entries |= CardContextMenuEntries::ForceNoBleed;
+
+    {
+        const auto preview{ m_Project->GetPreview(m_CardName) };
+        const auto bad_aspect_ratio{ preview.m_BadAspectRatio ||
+                                     preview.m_BadRotation };
+        const auto bad_aspect_ratio_handling{
+            m_Project->GetCardBadAspectRatioHandling(m_CardName)
+        };
+
+        if (bad_aspect_ratio || bad_aspect_ratio_handling != BadAspectRatioHandling::Default)
+        {
+            visible_entries |= CardContextMenuEntries::RatioIgnore;
+            visible_entries |= CardContextMenuEntries::RatioExpand;
+            visible_entries |= CardContextMenuEntries::RatioCrop;
+            visible_entries |= CardContextMenuEntries::RatioStretch;
+        }
+    }
+
+    visible_entries |= CardContextMenuEntries::RotateLeft;
+    visible_entries |= CardContextMenuEntries::RotateRight;
+
+    visible_entries |= CardContextMenuEntries::SkipSlot;
+
+    return visible_entries;
+}
+CardContextMenuEntries CardViewModel::GetEnabledContextMenuEntries() const
+
+{
+    CardContextMenuEntries enabled_entries{ CardContextMenuEntries::None };
+
+    enabled_entries |= CardContextMenuEntries::RemoveExternal;
+
+    enabled_entries |= CardContextMenuEntries::ClearBackside;
+    enabled_entries |= CardContextMenuEntries::ResetBackside;
+
+    {
+        const auto bleed_type{ m_Project->GetCardBleedType(m_CardName) };
+
+        if (bleed_type != BleedType::Infer)
+        {
+            enabled_entries |= CardContextMenuEntries::InferBleed;
+        }
+        if (bleed_type != BleedType::FullBleed)
+        {
+            enabled_entries |= CardContextMenuEntries::ForceFullBleed;
+        }
+        if (bleed_type != BleedType::NoBleed)
+        {
+            enabled_entries |= CardContextMenuEntries::ForceNoBleed;
+        }
+    }
+
+    {
+        const auto bad_aspect_ratio_handling{
+            m_Project->GetCardBadAspectRatioHandling(m_CardName)
+        };
+
+        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Ignore)
+        {
+            enabled_entries |= CardContextMenuEntries::RatioIgnore;
+        }
+        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Expand)
+        {
+            enabled_entries |= CardContextMenuEntries::RatioExpand;
+        }
+        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Crop)
+        {
+            enabled_entries |= CardContextMenuEntries::RatioCrop;
+        }
+        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Stretch)
+        {
+            enabled_entries |= CardContextMenuEntries::RatioStretch;
+        }
+    }
+
+    enabled_entries |= CardContextMenuEntries::RotateLeft;
+    enabled_entries |= CardContextMenuEntries::RotateRight;
+
+    enabled_entries |= CardContextMenuEntries::SkipSlot;
+
+    return enabled_entries;
+}
+
+void CardViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    CardNameChanged(m_CardName);
+
+    MinimumWidthChanged(m_ViewParams.m_MinimumWidth);
+
+    const bool has_image{ m_Project->HasPreview(m_CardName) };
+    if (has_image)
+    {
+        PreviewUpdated(m_Project->GetPreview(m_CardName));
+    }
+    else
+    {
+        PreviewRemoved();
+    }
+}
+
 void CardViewModel::PreviewUpdated(const ImagePreview& preview)
 {
     const auto get_image{
@@ -292,133 +421,4 @@ void CardViewModel::RotateImageRight(const QPixmap& pixmap)
         LogWarning("Attempted to rotate card {} but could not.",
                    m_CardName.string());
     }
-}
-
-void CardViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    CardNameChanged(m_CardName);
-
-    MinimumWidthChanged(m_ViewParams.m_MinimumWidth);
-
-    const bool has_image{ m_Project->HasPreview(m_CardName) };
-    if (has_image)
-    {
-        PreviewUpdated(m_Project->GetPreview(m_CardName));
-    }
-    else
-    {
-        PreviewRemoved();
-    }
-}
-
-CardContextMenuEntries CardViewModel::GetVisibleContextMenuEntries() const
-{
-    CardContextMenuEntries visible_entries{ CardContextMenuEntries::None };
-
-    if (m_Project->IsCardExternal(m_CardName))
-    {
-        visible_entries |= CardContextMenuEntries::RemoveExternal;
-    }
-
-    if (m_Project->m_Data.m_BacksideEnabled)
-    {
-        const auto has_clear_backside{ m_Project->HasClearBacksideImage(m_CardName) };
-        if (!has_clear_backside)
-        {
-            visible_entries |= CardContextMenuEntries::ClearBackside;
-        }
-
-        const auto has_non_default_backside{ m_Project->HasNonDefaultBacksideImage(m_CardName) };
-        if (has_non_default_backside)
-        {
-            visible_entries |= CardContextMenuEntries::ResetBackside;
-        }
-    }
-
-    visible_entries |= CardContextMenuEntries::InferBleed;
-    visible_entries |= CardContextMenuEntries::ForceFullBleed;
-    visible_entries |= CardContextMenuEntries::ForceNoBleed;
-
-    {
-        const auto preview{ m_Project->GetPreview(m_CardName) };
-        const auto bad_aspect_ratio{ preview.m_BadAspectRatio ||
-                                     preview.m_BadRotation };
-        const auto bad_aspect_ratio_handling{
-            m_Project->GetCardBadAspectRatioHandling(m_CardName)
-        };
-
-        if (bad_aspect_ratio || bad_aspect_ratio_handling != BadAspectRatioHandling::Default)
-        {
-            visible_entries |= CardContextMenuEntries::RatioIgnore;
-            visible_entries |= CardContextMenuEntries::RatioExpand;
-            visible_entries |= CardContextMenuEntries::RatioCrop;
-            visible_entries |= CardContextMenuEntries::RatioStretch;
-        }
-    }
-
-    visible_entries |= CardContextMenuEntries::RotateLeft;
-    visible_entries |= CardContextMenuEntries::RotateRight;
-
-    visible_entries |= CardContextMenuEntries::SkipSlot;
-
-    return visible_entries;
-}
-CardContextMenuEntries CardViewModel::GetEnabledContextMenuEntries() const
-
-{
-    CardContextMenuEntries enabled_entries{ CardContextMenuEntries::None };
-
-    enabled_entries |= CardContextMenuEntries::RemoveExternal;
-
-    enabled_entries |= CardContextMenuEntries::ClearBackside;
-    enabled_entries |= CardContextMenuEntries::ResetBackside;
-
-    {
-        const auto bleed_type{ m_Project->GetCardBleedType(m_CardName) };
-
-        if (bleed_type != BleedType::Infer)
-        {
-            enabled_entries |= CardContextMenuEntries::InferBleed;
-        }
-        if (bleed_type != BleedType::FullBleed)
-        {
-            enabled_entries |= CardContextMenuEntries::ForceFullBleed;
-        }
-        if (bleed_type != BleedType::NoBleed)
-        {
-            enabled_entries |= CardContextMenuEntries::ForceNoBleed;
-        }
-    }
-
-    {
-        const auto bad_aspect_ratio_handling{
-            m_Project->GetCardBadAspectRatioHandling(m_CardName)
-        };
-
-        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Ignore)
-        {
-            enabled_entries |= CardContextMenuEntries::RatioIgnore;
-        }
-        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Expand)
-        {
-            enabled_entries |= CardContextMenuEntries::RatioExpand;
-        }
-        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Crop)
-        {
-            enabled_entries |= CardContextMenuEntries::RatioCrop;
-        }
-        if (bad_aspect_ratio_handling != BadAspectRatioHandling::Stretch)
-        {
-            enabled_entries |= CardContextMenuEntries::RatioStretch;
-        }
-    }
-
-    enabled_entries |= CardContextMenuEntries::RotateLeft;
-    enabled_entries |= CardContextMenuEntries::RotateRight;
-
-    enabled_entries |= CardContextMenuEntries::SkipSlot;
-
-    return enabled_entries;
 }

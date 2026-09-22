@@ -18,6 +18,45 @@ GlobalOptionsViewModel::GlobalOptionsViewModel(Config& config)
 {
 }
 
+const std::unordered_map<std::string, bool>& GlobalOptionsViewModel::GetPluginsState() const
+{
+    return m_Cfg.m_PluginsState;
+}
+
+void GlobalOptionsViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
+
+    NoCropModeChanged(m_Cfg.m_NoCropMode);
+
+    CheckVersionOnStartupChanged(m_Cfg.m_CheckVersionOnStartup);
+    ToastTimeoutMSChanged(m_Cfg.m_ToastTimeoutMS);
+
+    BasePreviewWidthChanged(m_Cfg.m_BasePreviewWidth);
+    MaxDPIChanged(m_Cfg.m_MaxDPI);
+
+    CardOrderChanged(m_Cfg.m_CardOrder);
+    CardOrderDirectionChanged(m_Cfg.m_CardOrderDirection);
+
+    MaxWorkerThreadsChanged(m_Cfg.m_MaxWorkerThreads);
+
+    DisplayColumnsChanged(m_Cfg.m_DisplayColumns);
+    MaxDisplayColumnsChanged(m_Cfg.m_MaxDisplayColumns);
+
+    ColorCubeChanged(m_Cfg.m_ColorCube);
+
+    VersionOutputChanged(m_Cfg.m_VersionOutput);
+
+    PdfBackendChanged(m_Cfg.m_Backend);
+    ImageCompressionChanged(m_Cfg.m_PdfImageCompression);
+    PngCompressionChanged(m_Cfg.m_PngCompression);
+    JpgQualityChanged(m_Cfg.m_JpgQuality);
+
+    BaseUnitChanged(m_Cfg.m_BaseUnit);
+}
+
 void GlobalOptionsViewModel::ChangeAdvancedMode(Qt::CheckState advanced_mode)
 {
     TRACY_AUTO_SCOPE();
@@ -139,43 +178,4 @@ void GlobalOptionsViewModel::DisablePlugin(std::string_view plugin_name)
 {
     TRACY_AUTO_SCOPE();
     m_Cfg.DisablePlugin(std::string{ plugin_name });
-}
-
-const std::unordered_map<std::string, bool>& GlobalOptionsViewModel::GetPluginsState() const
-{
-    return m_Cfg.m_PluginsState;
-}
-
-void GlobalOptionsViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
-
-    NoCropModeChanged(m_Cfg.m_NoCropMode);
-
-    CheckVersionOnStartupChanged(m_Cfg.m_CheckVersionOnStartup);
-    ToastTimeoutMSChanged(m_Cfg.m_ToastTimeoutMS);
-
-    BasePreviewWidthChanged(m_Cfg.m_BasePreviewWidth);
-    MaxDPIChanged(m_Cfg.m_MaxDPI);
-
-    CardOrderChanged(m_Cfg.m_CardOrder);
-    CardOrderDirectionChanged(m_Cfg.m_CardOrderDirection);
-
-    MaxWorkerThreadsChanged(m_Cfg.m_MaxWorkerThreads);
-
-    DisplayColumnsChanged(m_Cfg.m_DisplayColumns);
-    MaxDisplayColumnsChanged(m_Cfg.m_MaxDisplayColumns);
-
-    ColorCubeChanged(m_Cfg.m_ColorCube);
-
-    VersionOutputChanged(m_Cfg.m_VersionOutput);
-
-    PdfBackendChanged(m_Cfg.m_Backend);
-    ImageCompressionChanged(m_Cfg.m_PdfImageCompression);
-    PngCompressionChanged(m_Cfg.m_PngCompression);
-    JpgQualityChanged(m_Cfg.m_JpgQuality);
-
-    BaseUnitChanged(m_Cfg.m_BaseUnit);
 }

@@ -9,8 +9,6 @@ class Config;
 
 class NewProjectPopupViewModel : public QObject
 {
-    friend class NewProjectPopup;
-
   public:
     NewProjectPopupViewModel(const Config& config);
 
@@ -22,7 +20,13 @@ class NewProjectPopupViewModel : public QObject
     QString NewPaperSize() const;
     bool ClearImages() const;
 
-  private slots:
+    std::string GetDefaultCardSize() const;
+    const CardSizes& GetCardSizes() const;
+
+    std::string GetDefaultPageSize() const;
+    const PageSizes& GetPageSizes() const;
+
+  public slots:
     void Confirm();
 
     void ChangeProjectName(const QString& project_name);
@@ -32,12 +36,6 @@ class NewProjectPopupViewModel : public QObject
     void ChangeClearImages(Qt::CheckState clear_images);
 
   private:
-    std::string GetDefaultCardSize() const;
-    const CardSizes& GetCardSizes() const;
-
-    std::string GetDefaultPageSize() const;
-    const PageSizes& GetPageSizes() const;
-
     const Config& m_Cfg;
 
     bool m_Confirmed{ false };

@@ -15,9 +15,6 @@ class CardAreaCardViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class CardArea;
-    friend class CardAreaCardWidget;
-
   public:
     CardAreaCardViewModel(const fs::path& card_name,
                           Project& project);
@@ -31,6 +28,8 @@ class CardAreaCardViewModel : public QObject
     BlankCardViewModel* MakeBlankCardViewModel() const;
     ImageBrowseViewModel* MakeImageBrowseViewModel() const;
 
+    void EmitDefaults();
+
   signals:
     // forward
 
@@ -41,7 +40,7 @@ class CardAreaCardViewModel : public QObject
 
     void CardBacksideChanged(OptionalImageRef backside);
 
-  private slots:
+  public slots:
     void DecrementCard();
     void IncrementCard();
     void SetCardCount(const QString& count);
@@ -55,8 +54,6 @@ class CardAreaCardViewModel : public QObject
     void ThisCardBacksideChanged(OptionalImageRef backside);
 
   private:
-    void EmitDefaults();
-
     fs::path m_CardName;
     Project& m_Project;
 };

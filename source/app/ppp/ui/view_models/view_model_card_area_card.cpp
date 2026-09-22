@@ -100,6 +100,19 @@ ImageBrowseViewModel* CardAreaCardViewModel::MakeImageBrowseViewModel() const
     return new ImageBrowseViewModel{ m_Project, { &m_CardName, 1 } };
 }
 
+void CardAreaCardViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
+
+    CardCountChanged(m_Project.GetCardCount(m_CardName));
+    CardBacksideShortEdgeChanged(m_Project.HasCardBacksideShortEdge(m_CardName));
+
+    const auto backside{ m_Project.GetBacksideImage(m_CardName) };
+    ThisCardBacksideChanged(backside);
+}
+
 void CardAreaCardViewModel::DecrementCard()
 {
     m_Project.DecrementCardCount(m_CardName);
@@ -151,17 +164,4 @@ void CardAreaCardViewModel::ThisCardBacksideChanged(OptionalImageRef backside)
     {
         CardBacksideChanged(backside);
     }
-}
-
-void CardAreaCardViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
-
-    CardCountChanged(m_Project.GetCardCount(m_CardName));
-    CardBacksideShortEdgeChanged(m_Project.HasCardBacksideShortEdge(m_CardName));
-
-    const auto backside{ m_Project.GetBacksideImage(m_CardName) };
-    ThisCardBacksideChanged(backside);
 }

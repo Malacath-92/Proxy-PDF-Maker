@@ -17,11 +17,20 @@ class GuidesOptionsViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class GuidesOptionsWidget;
-
   public:
     GuidesOptionsViewModel(Project& project,
                            const Config& config);
+
+    DefaultDataRequirements GetDefaultDataRequirements() const;
+    bool GetAdvancedMode() const;
+    Unit GetBaseUnit() const;
+
+    std::optional<Length> GetCardCornerRadius() const;
+    bool GetCornerGuidesEnabled() const;
+    Length GetBleedEdge() const;
+    Length GetEnvelopeBleedEdge() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -48,7 +57,6 @@ class GuidesOptionsViewModel : public QObject
   public slots:
     void NewProjectOpened();
 
-  private slots:
     void ChangeExportExactGuides(Qt::CheckState export_exact_guides);
     void ChangeGuidesEnabled(Qt::CheckState guides_enabled);
     void ChangeBacksideGuidesEnabled(Qt::CheckState backside_guides_enabled);
@@ -62,17 +70,6 @@ class GuidesOptionsViewModel : public QObject
     void ChangeGuidesThickness(Length guides_thickness);
 
   private:
-    void EmitDefaults();
-
-    DefaultDataRequirements GetDefaultDataRequirements() const;
-    bool GetAdvancedMode() const;
-    Unit GetBaseUnit() const;
-
-    std::optional<Length> GetCardCornerRadius() const;
-    bool GetCornerGuidesEnabled() const;
-    Length GetBleedEdge() const;
-    Length GetEnvelopeBleedEdge() const;
-
     Project& m_Project;
     const Config& m_Cfg;
 };

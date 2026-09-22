@@ -40,31 +40,6 @@ const CardContainer& CardAreaViewModel::GetCards() const
     return m_Project.GetCards();
 }
 
-void CardAreaViewModel::DecrementAllCards()
-{
-    m_Project.DecrementAllCardCounts();
-}
-void CardAreaViewModel::IncrementAllCards()
-{
-    m_Project.IncrementAllCardCounts();
-}
-void CardAreaViewModel::ResetAllCards()
-{
-    m_Project.ResetAllCardCounts();
-}
-
-void CardAreaViewModel::RemoveAllExternalCards()
-{
-    m_Project.RemoveAllExternalCards();
-}
-
-void CardAreaViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    HasExternalCardsChanged(m_Project.HasExternalCards());
-}
-
 uint32_t CardAreaViewModel::GetDisplayColumns() const
 {
     return m_Cfg.m_DisplayColumns;
@@ -82,4 +57,29 @@ void CardAreaViewModel::OpenImageFolder() const
 void CardAreaViewModel::OpenPluginsWindow() const
 {
     RequestOpenPluginsWindow();
+}
+
+void CardAreaViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    HasExternalCardsChanged(m_Project.HasExternalCards());
+}
+
+void CardAreaViewModel::DecrementAllCards()
+{
+    m_Project.DecrementAllCardCounts();
+}
+void CardAreaViewModel::IncrementAllCards()
+{
+    m_Project.IncrementAllCardCounts();
+}
+void CardAreaViewModel::ResetAllCards()
+{
+    m_Project.ResetAllCardCounts();
+}
+
+void CardAreaViewModel::RemoveAllExternalCards()
+{
+    m_Project.RemoveAllExternalCards();
 }

@@ -12,13 +12,12 @@ class BlankCardViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class BlankCardImage;
-    friend class StackedCardBacksideView;
-
   public:
     BlankCardViewModel(CardViewParams params, const Project& project);
 
     float GetCardAspectRatio() const;
+
+    void EmitDefaults(bool with_pixmap = true);
 
   public slots:
     void CardSizeChanged(Size card_size);
@@ -31,8 +30,6 @@ class BlankCardViewModel : public QObject
     void PixmapChanged(const QPixmap& pixmap);
 
   private:
-    void EmitDefaults(bool with_pixmap = true);
-
     CardViewParams m_ViewParams;
 
     const Project& m_Project;

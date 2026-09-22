@@ -21,6 +21,72 @@ GuidesOptionsViewModel::GuidesOptionsViewModel(Project& project,
 {
 }
 
+DefaultDataRequirements GuidesOptionsViewModel::GetDefaultDataRequirements() const
+{
+    return DefaultDataRequirements{
+        std::string{ m_Cfg.GetFirstValidCardSize() },
+        std::string{ m_Cfg.GetFirstValidPageSize() },
+    };
+}
+bool GuidesOptionsViewModel::GetAdvancedMode() const
+{
+    return m_Cfg.m_AdvancedMode;
+}
+Unit GuidesOptionsViewModel::GetBaseUnit() const
+{
+    return m_Cfg.m_BaseUnit;
+}
+
+std::optional<Length> GuidesOptionsViewModel::GetCardCornerRadius() const
+{
+    if (m_Project.IsCardRoundedRect())
+    {
+        return m_Project.CardCornerRadius();
+    }
+    return std::nullopt;
+}
+bool GuidesOptionsViewModel::GetCornerGuidesEnabled() const
+{
+    return m_Project.m_Data.m_CornerGuides;
+}
+Length GuidesOptionsViewModel::GetBleedEdge() const
+{
+    return m_Project.m_Data.m_BleedEdge;
+}
+Length GuidesOptionsViewModel::GetEnvelopeBleedEdge() const
+{
+    return m_Project.m_Data.m_EnvelopeBleedEdge;
+}
+
+void GuidesOptionsViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
+    BaseUnitChanged(m_Cfg.m_BaseUnit);
+
+    ExportExactGuidesChanged(m_Project.m_Data.m_ExportExactGuides);
+    GuidesEnabledChanged(m_Project.m_Data.m_EnableGuides);
+    BacksideGuidesEnabledChanged(m_Project.m_Data.m_BacksideEnableGuides);
+    CornerGuidesEnabledChanged(m_Project.m_Data.m_CornerGuides);
+    CrossGuidesEnabledChanged(m_Project.m_Data.m_CrossGuides);
+    ExtendedGuidesEnabledChanged(m_Project.m_Data.m_ExtendedGuides);
+    GuidesColorAChanged(m_Project.m_Data.m_GuidesColorA);
+    GuidesColorBChanged(m_Project.m_Data.m_GuidesColorB);
+    GuidesOffsetChanged(m_Project.m_Data.m_GuidesOffset);
+    GuidesLengthChanged(m_Project.m_Data.m_GuidesLength);
+    GuidesThicknessChanged(m_Project.m_Data.m_GuidesThickness);
+
+    CardSizeChanged(m_Project.CardSize());
+    BleedEdgeChanged(m_Project.m_Data.m_BleedEdge);
+    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
+}
+
+void GuidesOptionsViewModel::NewProjectOpened()
+{
+    EmitDefaults();
+}
+
 void GuidesOptionsViewModel::ChangeExportExactGuides(Qt::CheckState export_exact_guides)
 {
     TRACY_AUTO_SCOPE();
@@ -86,70 +152,4 @@ void GuidesOptionsViewModel::ChangeGuidesThickness(Length guides_thickness)
     TRACY_AUTO_SCOPE();
 
     m_Project.SetGuidesThickness(guides_thickness);
-}
-
-void GuidesOptionsViewModel::NewProjectOpened()
-{
-    EmitDefaults();
-}
-
-void GuidesOptionsViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
-    BaseUnitChanged(m_Cfg.m_BaseUnit);
-
-    ExportExactGuidesChanged(m_Project.m_Data.m_ExportExactGuides);
-    GuidesEnabledChanged(m_Project.m_Data.m_EnableGuides);
-    BacksideGuidesEnabledChanged(m_Project.m_Data.m_BacksideEnableGuides);
-    CornerGuidesEnabledChanged(m_Project.m_Data.m_CornerGuides);
-    CrossGuidesEnabledChanged(m_Project.m_Data.m_CrossGuides);
-    ExtendedGuidesEnabledChanged(m_Project.m_Data.m_ExtendedGuides);
-    GuidesColorAChanged(m_Project.m_Data.m_GuidesColorA);
-    GuidesColorBChanged(m_Project.m_Data.m_GuidesColorB);
-    GuidesOffsetChanged(m_Project.m_Data.m_GuidesOffset);
-    GuidesLengthChanged(m_Project.m_Data.m_GuidesLength);
-    GuidesThicknessChanged(m_Project.m_Data.m_GuidesThickness);
-
-    CardSizeChanged(m_Project.CardSize());
-    BleedEdgeChanged(m_Project.m_Data.m_BleedEdge);
-    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
-}
-
-DefaultDataRequirements GuidesOptionsViewModel::GetDefaultDataRequirements() const
-{
-    return DefaultDataRequirements{
-        std::string{ m_Cfg.GetFirstValidCardSize() },
-        std::string{ m_Cfg.GetFirstValidPageSize() },
-    };
-}
-bool GuidesOptionsViewModel::GetAdvancedMode() const
-{
-    return m_Cfg.m_AdvancedMode;
-}
-Unit GuidesOptionsViewModel::GetBaseUnit() const
-{
-    return m_Cfg.m_BaseUnit;
-}
-
-std::optional<Length> GuidesOptionsViewModel::GetCardCornerRadius() const
-{
-    if (m_Project.IsCardRoundedRect())
-    {
-        return m_Project.CardCornerRadius();
-    }
-    return std::nullopt;
-}
-bool GuidesOptionsViewModel::GetCornerGuidesEnabled() const
-{
-    return m_Project.m_Data.m_CornerGuides;
-}
-Length GuidesOptionsViewModel::GetBleedEdge() const
-{
-    return m_Project.m_Data.m_BleedEdge;
-}
-Length GuidesOptionsViewModel::GetEnvelopeBleedEdge() const
-{
-    return m_Project.m_Data.m_EnvelopeBleedEdge;
 }

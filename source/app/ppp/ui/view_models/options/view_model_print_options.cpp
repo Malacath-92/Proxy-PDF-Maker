@@ -24,6 +24,128 @@ PrintOptionsViewModel::PrintOptionsViewModel(Project& project,
 {
 }
 
+DefaultDataRequirements PrintOptionsViewModel::GetDefaultDataRequirements() const
+{
+    return DefaultDataRequirements{
+        std::string{ m_Cfg.GetFirstValidCardSize() },
+        std::string{ m_Cfg.GetFirstValidPageSize() },
+    };
+}
+bool PrintOptionsViewModel::GetAdvancedMode() const
+{
+    return m_Cfg.m_AdvancedMode;
+}
+Unit PrintOptionsViewModel::GetBaseUnit() const
+{
+    return m_Cfg.m_BaseUnit;
+}
+
+const CardSizes& PrintOptionsViewModel::GetCardSizes() const
+{
+    return m_Cfg.m_CardSizes;
+}
+const CardSizes& PrintOptionsViewModel::GetDefaultCardSizes() const
+{
+    return Config::g_DefaultCardSizes;
+}
+
+const PageSizes& PrintOptionsViewModel::GetPageSizes() const
+{
+    return m_Cfg.m_PageSizes;
+}
+const PageSizes& PrintOptionsViewModel::GetDefaultPageSizes() const
+{
+    return Config::g_DefaultPageSizes;
+}
+
+std::vector<std::string> PrintOptionsViewModel::GetBasePdfNames() const
+{
+    TRACY_AUTO_SCOPE();
+
+    auto& application{ *ppApp };
+
+    std::vector<std::string> base_pdf_names{ "Empty A4" };
+
+    ForEachFile(
+        application.GetBasePdfsFolder(),
+        [&](const fs::path& file_name)
+        {
+            std::string base_name{ file_name.stem().string() };
+            if (!std::ranges::contains(base_pdf_names, base_name))
+            {
+                base_pdf_names.push_back(std::move(base_name));
+            }
+        },
+        std::array{ ".pdf"_p });
+
+    return base_pdf_names;
+}
+std::vector<std::string> PrintOptionsViewModel::GetUnderlayPdfNames() const
+{
+    TRACY_AUTO_SCOPE();
+
+    auto& application{ *ppApp };
+
+    std::vector<std::string> underlay_pdf_names{ "None" };
+
+    ForEachFile(
+        application.GetBasePdfsFolder(),
+        [&](const fs::path& file_name)
+        {
+            std::string base_name{ file_name.stem().string() };
+            if (!std::ranges::contains(underlay_pdf_names, base_name))
+            {
+                underlay_pdf_names.push_back(std::move(base_name));
+            }
+        },
+        std::array{ ".pdf"_p });
+
+    return underlay_pdf_names;
+}
+
+Size PrintOptionsViewModel::GetCardsSize() const
+{
+    return m_Project.ComputeCardsSize();
+}
+std::string_view PrintOptionsViewModel::GetPageSizeChoice() const
+{
+    return m_Project.m_Data.m_PageSize;
+}
+Size PrintOptionsViewModel::GetPageSize() const
+{
+    return m_Project.ComputePageSize();
+}
+CardOrientation PrintOptionsViewModel::GetCardOrientation() const
+{
+    return m_Project.m_Data.m_CardOrientation;
+}
+
+void PrintOptionsViewModel::EmitDefaults()
+{
+    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
+    BaseUnitChanged(m_Cfg.m_BaseUnit);
+    AvailableCardSizesChanged(m_Cfg.m_CardSizes);
+    AvailablePageSizesChanged(m_Cfg.m_PageSizes);
+    AvailableBasePdfsChanged(GetBasePdfNames());
+
+    OutputFilenameChanged(m_Project.m_Data.m_FileName);
+    PageHeaderEnabledChanged(m_Project.m_Data.m_RenderPageHeader);
+    CardSizeChoiceChanged(m_Project.m_Data.m_CardSizeChoice);
+    PageSizeChanged(m_Project.ComputePageSize());
+    PageSizeChoiceChanged(m_Project.m_Data.m_PageSize);
+    BasePdfChanged(m_Project.m_Data.m_BasePdf);
+    UnderlayPdfChanged(m_Project.m_Data.m_UnderlayPdf);
+    CardsSizeChanged(m_Project.ComputeCardsSize());
+    PageMarginsModeChanged(m_Project.m_Data.m_MarginsMode);
+    PageMarginsChanged(m_Project.ComputeMargins());
+    MaxPageMarginsChanged(m_Project.ComputeMaxMargins());
+    CardOrientationChanged(m_Project.m_Data.m_CardOrientation);
+    CardsLayoutVerticalChanged(m_Project.m_Data.m_CardLayoutVertical);
+    CardsLayoutHorizontalChanged(m_Project.m_Data.m_CardLayoutHorizontal);
+    PageOrientationChanged(m_Project.m_Data.m_Orientation);
+    FlipPageOnChanged(m_Project.m_Data.m_FlipOn);
+}
+
 void PrintOptionsViewModel::NewProjectOpened()
 {
     EmitDefaults();
@@ -126,126 +248,4 @@ void PrintOptionsViewModel::ChangeFlipPageOn(QString flip_on)
     m_Project.SetFlipPageOn(magic_enum::enum_cast<FlipPageOn>(
                                 flip_on.toStdString())
                                 .value_or(FlipPageOn::LeftEdge));
-}
-
-void PrintOptionsViewModel::EmitDefaults()
-{
-    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
-    BaseUnitChanged(m_Cfg.m_BaseUnit);
-    AvailableCardSizesChanged(m_Cfg.m_CardSizes);
-    AvailablePageSizesChanged(m_Cfg.m_PageSizes);
-    AvailableBasePdfsChanged(GetBasePdfNames());
-
-    OutputFilenameChanged(m_Project.m_Data.m_FileName);
-    PageHeaderEnabledChanged(m_Project.m_Data.m_RenderPageHeader);
-    CardSizeChoiceChanged(m_Project.m_Data.m_CardSizeChoice);
-    PageSizeChanged(m_Project.ComputePageSize());
-    PageSizeChoiceChanged(m_Project.m_Data.m_PageSize);
-    BasePdfChanged(m_Project.m_Data.m_BasePdf);
-    UnderlayPdfChanged(m_Project.m_Data.m_UnderlayPdf);
-    CardsSizeChanged(m_Project.ComputeCardsSize());
-    PageMarginsModeChanged(m_Project.m_Data.m_MarginsMode);
-    PageMarginsChanged(m_Project.ComputeMargins());
-    MaxPageMarginsChanged(m_Project.ComputeMaxMargins());
-    CardOrientationChanged(m_Project.m_Data.m_CardOrientation);
-    CardsLayoutVerticalChanged(m_Project.m_Data.m_CardLayoutVertical);
-    CardsLayoutHorizontalChanged(m_Project.m_Data.m_CardLayoutHorizontal);
-    PageOrientationChanged(m_Project.m_Data.m_Orientation);
-    FlipPageOnChanged(m_Project.m_Data.m_FlipOn);
-}
-
-DefaultDataRequirements PrintOptionsViewModel::GetDefaultDataRequirements() const
-{
-    return DefaultDataRequirements{
-        std::string{ m_Cfg.GetFirstValidCardSize() },
-        std::string{ m_Cfg.GetFirstValidPageSize() },
-    };
-}
-bool PrintOptionsViewModel::GetAdvancedMode() const
-{
-    return m_Cfg.m_AdvancedMode;
-}
-Unit PrintOptionsViewModel::GetBaseUnit() const
-{
-    return m_Cfg.m_BaseUnit;
-}
-
-const CardSizes& PrintOptionsViewModel::GetCardSizes() const
-{
-    return m_Cfg.m_CardSizes;
-}
-const CardSizes& PrintOptionsViewModel::GetDefaultCardSizes() const
-{
-    return Config::g_DefaultCardSizes;
-}
-
-const PageSizes& PrintOptionsViewModel::GetPageSizes() const
-{
-    return m_Cfg.m_PageSizes;
-}
-const PageSizes& PrintOptionsViewModel::GetDefaultPageSizes() const
-{
-    return Config::g_DefaultPageSizes;
-}
-
-std::vector<std::string> PrintOptionsViewModel::GetBasePdfNames() const
-{
-    TRACY_AUTO_SCOPE();
-
-    auto& application{ *ppApp };
-
-    std::vector<std::string> base_pdf_names{ "Empty A4" };
-
-    ForEachFile(
-        application.GetBasePdfsFolder(),
-        [&](const fs::path& file_name)
-        {
-            std::string base_name{ file_name.stem().string() };
-            if (!std::ranges::contains(base_pdf_names, base_name))
-            {
-                base_pdf_names.push_back(std::move(base_name));
-            }
-        },
-        std::array{ ".pdf"_p });
-
-    return base_pdf_names;
-}
-std::vector<std::string> PrintOptionsViewModel::GetUnderlayPdfNames() const
-{
-    TRACY_AUTO_SCOPE();
-
-    auto& application{ *ppApp };
-
-    std::vector<std::string> underlay_pdf_names{ "None" };
-
-    ForEachFile(
-        application.GetBasePdfsFolder(),
-        [&](const fs::path& file_name)
-        {
-            std::string base_name{ file_name.stem().string() };
-            if (!std::ranges::contains(underlay_pdf_names, base_name))
-            {
-                underlay_pdf_names.push_back(std::move(base_name));
-            }
-        },
-        std::array{ ".pdf"_p });
-
-    return underlay_pdf_names;
-}
-
-Size PrintOptionsViewModel::GetCardsSize() const
-{
-    return m_Project.ComputeCardsSize();
-}
-std::string_view PrintOptionsViewModel::GetPageSizeChoice() const
-{
-    return m_Project.m_Data.m_PageSize;
-}
-Size PrintOptionsViewModel::GetPageSize() const
-{
-    return m_Project.ComputePageSize();
-}
-CardOrientation PrintOptionsViewModel::GetCardOrientation() const
-{
-    return m_Project.m_Data.m_CardOrientation;
 }

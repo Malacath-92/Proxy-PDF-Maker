@@ -23,44 +23,6 @@ ActionsViewModel::ActionsViewModel(Project& project,
 {
 }
 
-void ActionsViewModel::RenderDocument() const
-{
-    TRACY_AUTO_SCOPE();
-
-    const auto& application{ *ppApp };
-    const auto& outputs_folder{ application.GetOutputsFolder() };
-    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project, m_Cfg, outputs_folder) };
-    OpenFolder(outputs_folder);
-    OpenFile(frontside_path);
-    if (backside_path.has_value())
-    {
-        OpenFile(backside_path.value());
-    }
-
-    if (m_Project.m_Data.m_ExportExactGuides)
-    {
-        GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
-        GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
-    }
-}
-
-fs::path ActionsViewModel::GetImageFolderBase() const
-{
-    const auto& application{ *ppApp };
-    return application.GetProjectsFolder();
-}
-
-void ActionsViewModel::SetImagesFolder(fs::path new_image_dir)
-{
-    TRACY_AUTO_SCOPE();
-    m_Project.SetImageDir(std::move(new_image_dir));
-}
-
-void ActionsViewModel::OpenImagesFolder() const
-{
-    OpenFolder(m_Project.m_Data.m_ImageDir);
-}
-
 void ActionsViewModel::EmitDefaults()
 {
     PdfBackendChanged(m_Cfg.m_Backend);
@@ -100,4 +62,42 @@ bool ActionsViewModel::VerifyProject() const
     }
 
     return true;
+}
+
+void ActionsViewModel::RenderDocument() const
+{
+    TRACY_AUTO_SCOPE();
+
+    const auto& application{ *ppApp };
+    const auto& outputs_folder{ application.GetOutputsFolder() };
+    const auto [frontside_path, backside_path]{ GeneratePdf(m_Project, m_Cfg, outputs_folder) };
+    OpenFolder(outputs_folder);
+    OpenFile(frontside_path);
+    if (backside_path.has_value())
+    {
+        OpenFile(backside_path.value());
+    }
+
+    if (m_Project.m_Data.m_ExportExactGuides)
+    {
+        GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
+        GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
+    }
+}
+
+fs::path ActionsViewModel::GetImageFolderBase() const
+{
+    const auto& application{ *ppApp };
+    return application.GetProjectsFolder();
+}
+
+void ActionsViewModel::SetImagesFolder(fs::path new_image_dir)
+{
+    TRACY_AUTO_SCOPE();
+    m_Project.SetImageDir(std::move(new_image_dir));
+}
+
+void ActionsViewModel::OpenImagesFolder() const
+{
+    OpenFolder(m_Project.m_Data.m_ImageDir);
 }

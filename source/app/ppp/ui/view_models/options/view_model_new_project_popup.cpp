@@ -18,6 +18,42 @@ NewProjectPopupViewModel::NewProjectPopupViewModel(const Config& config)
 {
 }
 
+std::string NewProjectPopupViewModel::GetDefaultCardSize() const
+{
+    auto* app{ ppApp };
+    auto user_default(app->GetProjectDefault("card_size"));
+    if (!user_default.is_null())
+    {
+        return user_default;
+    }
+    else
+    {
+        return std::string{ m_Cfg.GetFirstValidCardSize() };
+    }
+}
+const CardSizes& NewProjectPopupViewModel::GetCardSizes() const
+{
+    return m_Cfg.m_CardSizes;
+}
+
+std::string NewProjectPopupViewModel::GetDefaultPageSize() const
+{
+    auto* app{ ppApp };
+    auto user_default(app->GetProjectDefault("page_size"));
+    if (!user_default.is_null())
+    {
+        return user_default;
+    }
+    else
+    {
+        return std::string{ m_Cfg.GetFirstValidPageSize() };
+    }
+}
+const PageSizes& NewProjectPopupViewModel::GetPageSizes() const
+{
+    return m_Cfg.m_PageSizes;
+}
+
 bool NewProjectPopupViewModel::CreateNewProject() const
 {
     return m_Confirmed;
@@ -68,40 +104,4 @@ void NewProjectPopupViewModel::ChangePaperSize(const QString& paper_size)
 void NewProjectPopupViewModel::ChangeClearImages(Qt::CheckState clear_images)
 {
     m_ClearImages = clear_images != Qt::CheckState::Unchecked;
-}
-
-std::string NewProjectPopupViewModel::GetDefaultCardSize() const
-{
-    auto* app{ ppApp };
-    auto user_default(app->GetProjectDefault("card_size"));
-    if (!user_default.is_null())
-    {
-        return user_default;
-    }
-    else
-    {
-        return std::string{ m_Cfg.GetFirstValidCardSize() };
-    }
-}
-const CardSizes& NewProjectPopupViewModel::GetCardSizes() const
-{
-    return m_Cfg.m_CardSizes;
-}
-
-std::string NewProjectPopupViewModel::GetDefaultPageSize() const
-{
-    auto* app{ ppApp };
-    auto user_default(app->GetProjectDefault("page_size"));
-    if (!user_default.is_null())
-    {
-        return user_default;
-    }
-    else
-    {
-        return std::string{ m_Cfg.GetFirstValidPageSize() };
-    }
-}
-const PageSizes& NewProjectPopupViewModel::GetPageSizes() const
-{
-    return m_Cfg.m_PageSizes;
 }

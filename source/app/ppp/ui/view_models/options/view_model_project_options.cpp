@@ -22,6 +22,29 @@ ProjectOptionsViewModel::ProjectOptionsViewModel(Project& project,
 {
 }
 
+fs::path ProjectOptionsViewModel::GetProjectsRoot() const
+{
+    const auto* application{ ppApp };
+    return application->GetProjectPath().parent_path();
+}
+bool ProjectOptionsViewModel::IsCurrentProject(const fs::path& project_path) const
+{
+    auto& application{ *ppApp };
+    const auto current_project_path{ application.GetProjectPath() };
+    return project_path == current_project_path;
+}
+
+NewProjectPopupViewModel* ProjectOptionsViewModel::MakeProjectPopupViewModel() const
+{
+    return new NewProjectPopupViewModel{ m_Cfg };
+}
+
+void ProjectOptionsViewModel::EmitDefaults()
+{
+    const auto* application{ ppApp };
+    ProjectPathChanged(application->GetProjectPath());
+}
+
 void ProjectOptionsViewModel::ChangeProjectName(const QString& project_name)
 {
     auto* application{ ppApp };
@@ -187,27 +210,4 @@ void ProjectOptionsViewModel::LoadProject(const fs::path& project_path)
 
         m_Project.Load(project_path);
     }
-}
-
-void ProjectOptionsViewModel::EmitDefaults()
-{
-    const auto* application{ ppApp };
-    ProjectPathChanged(application->GetProjectPath());
-}
-
-fs::path ProjectOptionsViewModel::GetProjectsRoot() const
-{
-    const auto* application{ ppApp };
-    return application->GetProjectPath().parent_path();
-}
-bool ProjectOptionsViewModel::IsCurrentProject(const fs::path& project_path) const
-{
-    auto& application{ *ppApp };
-    const auto current_project_path{ application.GetProjectPath() };
-    return project_path == current_project_path;
-}
-
-NewProjectPopupViewModel* ProjectOptionsViewModel::MakeProjectPopupViewModel() const
-{
-    return new NewProjectPopupViewModel{ m_Cfg };
 }

@@ -37,11 +37,11 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
 
     auto* options{ new QWidget };
     {
-        auto* project_name{ new LineEditWithLabel{ "Project Name", m_ViewModel.m_ProjectName.toStdString() } };
+        auto* project_name{ new LineEditWithLabel{ "Project Name", m_ViewModel.NewProjectName().toStdString() } };
         m_ProjectName = project_name->GetWidget();
 
         m_ImageFolder = new QPushButton{ "images" };
-        m_ImageFolder->setText(ToQString(m_ViewModel.m_ImageFolder.filename()));
+        m_ImageFolder->setText(ToQString(m_ViewModel.NewImageFolder().filename()));
 
         auto* image_folder{ new WidgetWithLabel{ "Image Folder", m_ImageFolder } };
 
@@ -49,7 +49,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
             MakeComboBox(
                 m_ViewModel.GetCardSizes() | c_CardSizeNames,
                 m_ViewModel.GetCardSizes() | c_CardSizeHints,
-                m_ViewModel.m_CardSize.toStdString());
+                m_ViewModel.NewCardSize().toStdString());
         auto* card_size{
             new WidgetWithLabel{
                 "Card Size",
@@ -59,7 +59,7 @@ NewProjectPopup::NewProjectPopup(QWidget* parent,
         m_PaperSize =
             MakeComboBox(
                 m_ViewModel.GetPageSizes() | c_PageSizeNames,
-                m_ViewModel.m_PaperSize.toStdString());
+                m_ViewModel.NewPaperSize().toStdString());
         auto* paper_size{
             new WidgetWithLabel{
                 "Paper Size",

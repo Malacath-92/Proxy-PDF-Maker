@@ -18,11 +18,24 @@ class CardOptionsViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class CardOptionsWidget;
-
   public:
     CardOptionsViewModel(Project& project,
                          const Config& config);
+
+    CardViewModel* MakeBacksideCardViewModel() const;
+    BlankCardViewModel* MakeBlankCardViewModel() const;
+    ImageBrowseViewModel* MakeImageBrowserViewModel() const;
+
+    DefaultDataRequirements GetDefaultDataRequirements() const;
+    bool GetAdvancedMode() const;
+    Unit GetBaseUnit() const;
+
+    OptionalImageRef GetBacksideDefault() const;
+
+    Length GetFullBleed() const;
+    Length GetTotalBleed() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -54,7 +67,6 @@ class CardOptionsViewModel : public QObject
   public slots:
     void NewProjectOpened();
 
-  private slots:
     void ChangeBacksideEnabled(Qt::CheckState backside_enabled);
     void ChangeSeparateBacksidesEnabled(Qt::CheckState separate_backsides);
 
@@ -76,21 +88,6 @@ class CardOptionsViewModel : public QObject
     void ChangeCorners(const QString& corners);
 
   private:
-    void EmitDefaults();
-
-    CardViewModel* MakeBacksideCardViewModel() const;
-    BlankCardViewModel* MakeBlankCardViewModel() const;
-    ImageBrowseViewModel* MakeImageBrowserViewModel() const;
-
-    DefaultDataRequirements GetDefaultDataRequirements() const;
-    bool GetAdvancedMode() const;
-    Unit GetBaseUnit() const;
-
-    OptionalImageRef GetBacksideDefault() const;
-
-    Length GetFullBleed() const;
-    Length GetTotalBleed() const;
-
     Project& m_Project;
     const Config& m_Cfg;
 };

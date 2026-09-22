@@ -16,11 +16,29 @@ class PrintOptionsViewModel : public QObject
 {
     Q_OBJECT
 
-    friend class PrintOptionsWidget;
-
   public:
     PrintOptionsViewModel(Project& project,
                           Config& config);
+
+    DefaultDataRequirements GetDefaultDataRequirements() const;
+    bool GetAdvancedMode() const;
+    Unit GetBaseUnit() const;
+
+    const CardSizes& GetCardSizes() const;
+    const CardSizes& GetDefaultCardSizes() const;
+
+    const PageSizes& GetPageSizes() const;
+    const PageSizes& GetDefaultPageSizes() const;
+
+    std::vector<std::string> GetBasePdfNames() const;
+    std::vector<std::string> GetUnderlayPdfNames() const;
+
+    Size GetCardsSize() const;
+    std::string_view GetPageSizeChoice() const;
+    Size GetPageSize() const;
+    CardOrientation GetCardOrientation() const;
+
+    void EmitDefaults();
 
   signals:
     // forward
@@ -54,7 +72,6 @@ class PrintOptionsViewModel : public QObject
 
     void BasePdfAdded();
 
-  private slots:
     bool DoRenderAlignmentTest() const;
 
     void ChangeCardSizes(const CardSizes& card_sizes);
@@ -75,26 +92,6 @@ class PrintOptionsViewModel : public QObject
     void ChangeFlipPageOn(QString flip_on);
 
   private:
-    void EmitDefaults();
-
-    DefaultDataRequirements GetDefaultDataRequirements() const;
-    bool GetAdvancedMode() const;
-    Unit GetBaseUnit() const;
-
-    const CardSizes& GetCardSizes() const;
-    const CardSizes& GetDefaultCardSizes() const;
-
-    const PageSizes& GetPageSizes() const;
-    const PageSizes& GetDefaultPageSizes() const;
-
-    std::vector<std::string> GetBasePdfNames() const;
-    std::vector<std::string> GetUnderlayPdfNames() const;
-
-    Size GetCardsSize() const;
-    std::string_view GetPageSizeChoice() const;
-    Size GetPageSize() const;
-    CardOrientation GetCardOrientation() const;
-
     Project& m_Project;
     Config& m_Cfg;
 };

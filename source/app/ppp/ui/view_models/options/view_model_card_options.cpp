@@ -20,6 +20,80 @@ CardOptionsViewModel::CardOptionsViewModel(Project& project,
 {
 }
 
+CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel() const
+{
+    return new CardViewModel{ m_Project.m_Data.m_BacksideDefault.value_or("__back.jpeg"),
+                              CardViewParams{ .m_MinimumWidth{ 60_pix } },
+                              static_cast<const Project&>(m_Project) };
+}
+BlankCardViewModel* CardOptionsViewModel::MakeBlankCardViewModel() const
+{
+    return new BlankCardViewModel{ CardViewParams{ .m_MinimumWidth{ 60_pix } },
+                                   m_Project };
+}
+ImageBrowseViewModel* CardOptionsViewModel::MakeImageBrowserViewModel() const
+{
+    return new ImageBrowseViewModel{ m_Project };
+}
+
+DefaultDataRequirements CardOptionsViewModel::GetDefaultDataRequirements() const
+{
+    return DefaultDataRequirements{
+        std::string{ m_Cfg.GetFirstValidCardSize() },
+        std::string{ m_Cfg.GetFirstValidPageSize() },
+    };
+}
+bool CardOptionsViewModel::GetAdvancedMode() const
+{
+    return m_Cfg.m_AdvancedMode;
+}
+Unit CardOptionsViewModel::GetBaseUnit() const
+{
+    return m_Cfg.m_BaseUnit;
+}
+
+OptionalImageRef CardOptionsViewModel::GetBacksideDefault() const
+{
+    return m_Project.m_Data.m_BacksideDefault;
+}
+
+Length CardOptionsViewModel::GetFullBleed() const
+{
+    return m_Project.CardFullBleed();
+}
+Length CardOptionsViewModel::GetTotalBleed() const
+{
+    return m_Project.m_Data.m_BleedEdge +
+           m_Project.m_Data.m_EnvelopeBleedEdge;
+}
+
+void CardOptionsViewModel::EmitDefaults()
+{
+    TRACY_AUTO_SCOPE();
+
+    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
+    BaseUnitChanged(m_Cfg.m_BaseUnit);
+
+    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
+    SeparateBacksidesEnabledChanged(m_Project.m_Data.m_SeparateBacksides);
+
+    BacksideDefaultChanged(m_Project.m_Data.m_BacksideDefault);
+
+    BacksideOffsetChanged(m_Project.m_Data.m_BacksideOffset);
+    BacksideRotationChanged(m_Project.m_Data.m_BacksideRotation);
+    BacksideExtraBleedEdgeChanged(m_Project.m_Data.m_BacksideExtraBleedEdge);
+
+    BacksideAutoPatternChanged(m_Project.m_Data.m_BacksideAutoPattern);
+
+    BleedEdgeChanged(m_Project.m_Data.m_BleedEdge);
+    EnvelopeBleedEdgeChanged(m_Project.m_Data.m_EnvelopeBleedEdge);
+
+    SpacingChanged(m_Project.m_Data.m_Spacing);
+    SpacingLinkedChanged(m_Project.m_Data.m_SpacingLinked);
+
+    CornersChanged(m_Project.m_Data.m_Corners);
+}
+
 void CardOptionsViewModel::NewProjectOpened()
 {
     EmitDefaults();
@@ -82,78 +156,4 @@ void CardOptionsViewModel::ChangeCorners(const QString& corners)
 {
     m_Project.SetCorners(magic_enum::enum_cast<CardCorners>(corners.toStdString())
                              .value_or(CardCorners::Square));
-}
-
-void CardOptionsViewModel::EmitDefaults()
-{
-    TRACY_AUTO_SCOPE();
-
-    AdvancedModeChanged(m_Cfg.m_AdvancedMode);
-    BaseUnitChanged(m_Cfg.m_BaseUnit);
-
-    BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
-    SeparateBacksidesEnabledChanged(m_Project.m_Data.m_SeparateBacksides);
-
-    BacksideDefaultChanged(m_Project.m_Data.m_BacksideDefault);
-
-    BacksideOffsetChanged(m_Project.m_Data.m_BacksideOffset);
-    BacksideRotationChanged(m_Project.m_Data.m_BacksideRotation);
-    BacksideExtraBleedEdgeChanged(m_Project.m_Data.m_BacksideExtraBleedEdge);
-
-    BacksideAutoPatternChanged(m_Project.m_Data.m_BacksideAutoPattern);
-
-    BleedEdgeChanged(m_Project.m_Data.m_BleedEdge);
-    EnvelopeBleedEdgeChanged(m_Project.m_Data.m_EnvelopeBleedEdge);
-
-    SpacingChanged(m_Project.m_Data.m_Spacing);
-    SpacingLinkedChanged(m_Project.m_Data.m_SpacingLinked);
-
-    CornersChanged(m_Project.m_Data.m_Corners);
-}
-
-CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel() const
-{
-    return new CardViewModel{ m_Project.m_Data.m_BacksideDefault.value_or("__back.jpeg"),
-                              CardViewParams{ .m_MinimumWidth{ 60_pix } },
-                              static_cast<const Project&>(m_Project) };
-}
-BlankCardViewModel* CardOptionsViewModel::MakeBlankCardViewModel() const
-{
-    return new BlankCardViewModel{ CardViewParams{ .m_MinimumWidth{ 60_pix } },
-                                   m_Project };
-}
-ImageBrowseViewModel* CardOptionsViewModel::MakeImageBrowserViewModel() const
-{
-    return new ImageBrowseViewModel{ m_Project };
-}
-
-DefaultDataRequirements CardOptionsViewModel::GetDefaultDataRequirements() const
-{
-    return DefaultDataRequirements{
-        std::string{ m_Cfg.GetFirstValidCardSize() },
-        std::string{ m_Cfg.GetFirstValidPageSize() },
-    };
-}
-bool CardOptionsViewModel::GetAdvancedMode() const
-{
-    return m_Cfg.m_AdvancedMode;
-}
-Unit CardOptionsViewModel::GetBaseUnit() const
-{
-    return m_Cfg.m_BaseUnit;
-}
-
-OptionalImageRef CardOptionsViewModel::GetBacksideDefault() const
-{
-    return m_Project.m_Data.m_BacksideDefault;
-}
-
-Length CardOptionsViewModel::GetFullBleed() const
-{
-    return m_Project.CardFullBleed();
-}
-Length CardOptionsViewModel::GetTotalBleed() const
-{
-    return m_Project.m_Data.m_BleedEdge +
-           m_Project.m_Data.m_EnvelopeBleedEdge;
 }
