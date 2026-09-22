@@ -22,8 +22,6 @@ class CardOptionsWidget : public QWidget
 {
     Q_OBJECT
 
-    friend class CardOptionsViewModel;
-
   public:
     CardOptionsWidget(CardOptionsViewModel* view_model);
 

@@ -16,8 +16,6 @@ class GlobalOptionsWidget : public QWidget
 {
     Q_OBJECT
 
-    friend class GlobalOptionsViewModel;
-
   public:
     GlobalOptionsWidget(GlobalOptionsViewModel* view_model);
 

@@ -16,8 +16,6 @@ class GuidesOptionsWidget : public QWidget
 {
     Q_OBJECT
 
-    friend class GuidesOptionsViewModel;
-
   public:
     GuidesOptionsWidget(GuidesOptionsViewModel* view_model);
 
