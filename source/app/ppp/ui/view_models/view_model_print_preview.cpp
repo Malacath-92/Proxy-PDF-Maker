@@ -34,9 +34,9 @@ PagePreviewViewModel* PrintPreviewViewModel::MakePagePreviewViewModel(
     PagePreviewData data{
         .m_Page{ std::move(page) },
         .m_Transforms{ transforms },
-        .m_PageIndex{ page_index },
-        .m_TotalPages{ total_pages },
-        .m_IsBackside{ is_backside },
+        .m_PageIndex = page_index,
+        .m_TotalPages = total_pages,
+        .m_IsBackside = is_backside,
     };
     auto* page_preview_view_model{
         new PagePreviewViewModel{ m_Project, m_Cfg, std::move(data) }
