@@ -683,9 +683,10 @@ void Project::Dump(const fs::path& json_path) const
 
 std::string Project::DumpToJson() const
 {
-    return Project::DumpToJson(m_Data);
+    return Project::DumpToJson(m_Data, m_Cfg.m_DeterminsticPdfOutput);
 }
-std::string Project::DumpToJson(const ProjectData& data)
+std::string Project::DumpToJson(const ProjectData& data,
+                                bool deterministic_output)
 {
     TRACY_AUTO_SCOPE();
 
@@ -717,10 +718,13 @@ std::string Project::DumpToJson(const ProjectData& data)
             {
                 card_json["external_path"] = card.m_ExternalPath.value().string();
             }
-            card_json["time_added"] = static_cast<uint64_t>(
-                std::chrono::duration_cast<std::chrono::seconds>(
-                    card.m_TimeAdded.time_since_epoch())
-                    .count());
+            if (!deterministic_output)
+            {
+                card_json["time_added"] = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::seconds>(
+                        card.m_TimeAdded.time_since_epoch())
+                        .count());
+            }
         }
     }
     json["cards"] = cards;

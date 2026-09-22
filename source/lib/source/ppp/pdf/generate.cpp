@@ -808,10 +808,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
         }
     }
 
-    frontside_pdf->WriteMetaData("Project", project.DumpToJson());
+    const auto project_json{ project.DumpToJson() };
+    frontside_pdf->WriteMetaData("Project", project_json);
     if (backside_pdf != frontside_pdf.get())
     {
-        backside_pdf->WriteMetaData("Project", project.DumpToJson());
+        backside_pdf->WriteMetaData("Project", project_json);
     }
 
     auto frontside_pdf_full_path{ frontside_pdf->Write(frontside_pdf_path, config.m_VersionOutput) };

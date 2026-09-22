@@ -175,7 +175,8 @@ class Project : public QObject
 
     void Dump(const fs::path& json_path) const;
     std::string DumpToJson() const;
-    static std::string DumpToJson(const ProjectData& data);
+    static std::string DumpToJson(const ProjectData& data,
+                                  bool deterministic_output = false);
 
     bool DiffersWithFile(const fs::path& json_path) const;
 
