@@ -21,6 +21,8 @@ GuidesOverlay::GuidesOverlay(GuidesOverlayViewModel* view_model, const PageImage
 
     FORWARD_SIGNAL_FROM_VIEW_MODEL(Redraw);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(GuidesColorsChanged);
+
+    view_model->EmitDefaults();
 }
 
 void GuidesOverlay::paintEvent(QPaintEvent* /*event*/)
