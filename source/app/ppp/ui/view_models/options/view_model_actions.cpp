@@ -39,8 +39,8 @@ void ActionsViewModel::RenderDocument() const
 
     if (m_Project.m_Data.m_ExportExactGuides)
     {
-        GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode);
-        GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode);
+        GenerateCardsSvg(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
+        GenerateCardsDxf(m_Project, m_Cfg.m_NoCropMode, outputs_folder);
     }
 }
 

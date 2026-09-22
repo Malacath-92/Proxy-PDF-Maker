@@ -97,9 +97,9 @@ QPainterPath GenerateCardsPath(const Project& project, bool no_crop_mode)
                              no_crop_mode);
 }
 
-void GenerateCardsSvg(const Project& project, bool no_crop_mode)
+void GenerateCardsSvg(const Project& project, bool no_crop_mode, const fs::path& output_folder)
 {
-    const auto svg_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
+    const auto svg_path{ output_folder / fs::path{ project.m_Data.m_FileName }.replace_extension(".svg") };
 
     const auto svg_dpi{ 600 };
     const auto mm_to_in{ 1_in / 1_mm };
@@ -136,7 +136,7 @@ void GenerateCardsSvg(const Project& project, bool no_crop_mode)
     painter.end();
 }
 
-void GenerateCardsDxf(const Project& project, bool no_crop_mode)
+void GenerateCardsDxf(const Project& project, bool no_crop_mode, const fs::path& output_folder)
 {
     /*
      * Tbh, .dxf files kinda suck, but some tools will require subscriptions for importiong .svg files, so here we are
@@ -153,7 +153,7 @@ void GenerateCardsDxf(const Project& project, bool no_crop_mode)
      *   66      : "Entities Follow" flag
      *   70 - 78 : Various integer values
      */
-    const auto dxf_path{ fs::path{ project.m_Data.m_FileName }.replace_extension(".dxf") };
+    const auto dxf_path{ output_folder / fs::path{ project.m_Data.m_FileName }.replace_extension(".dxf") };
 
     LogInfo("Generating card path...");
     std::ofstream output{ dxf_path, std::ios_base::trunc };
