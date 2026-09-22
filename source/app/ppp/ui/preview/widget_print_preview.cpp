@@ -137,6 +137,15 @@ void PrintPreview::Refresh()
     {
         m_FrontsideTransforms.clear();
 
+        auto* empty_page_view_model{
+            m_ViewModel.MakePagePreviewViewModel(
+                Page{},
+                m_FrontsideTransforms,
+                0,
+                1,
+                false)
+        };
+
         auto* empty_label{ new QLabel{ "No cards can fit on the page with current settings.\nPlease adjust page size, margins, or card size." } };
         empty_label->setAlignment(Qt::AlignCenter);
         empty_label->setStyleSheet("QLabel{ color: red; font-size: 14px; }");
@@ -147,10 +156,8 @@ void PrintPreview::Refresh()
 
         empty_layout->addWidget(empty_label);
         empty_layout->addWidget(new PagePreview{
-            m_ViewModel.MakePagePreviewViewModel(false),
+            empty_page_view_model,
             nullptr,
-            Page{},
-            m_FrontsideTransforms,
         });
 
         auto* empty_widget{ new QWidget };
@@ -170,6 +177,7 @@ void PrintPreview::Refresh()
         Page m_Page;
         std::reference_wrapper<const PageImageTransforms> m_Transforms;
         bool m_Backside;
+        size_t m_Index;
     };
     auto pages{ raw_pages |
                 std::views::transform([this](const Page& page)
@@ -177,6 +185,7 @@ void PrintPreview::Refresh()
                                             page,
                                             m_FrontsideTransforms,
                                             false,
+                                            0,
                                         }; }) |
                 std::ranges::to<std::vector>() };
 
@@ -191,6 +200,7 @@ void PrintPreview::Refresh()
                                                                page,
                                                                m_BacksideTransforms,
                                                                true,
+                                                               0,
                                                            }; }) |
                                    std::ranges::to<std::vector>() };
 
@@ -200,16 +210,27 @@ void PrintPreview::Refresh()
         }
     }
 
+    for (size_t i = 0; i < pages.size(); ++i)
+    {
+        pages[i].m_Index = i;
+    }
+
     auto page_widgets{
         pages |
         std::views::transform(
             [&, this](const TempPage& page)
             {
+                auto* view_model{
+                    m_ViewModel.MakePagePreviewViewModel(
+                        std::move(page.m_Page),
+                        page.m_Transforms.get(),
+                        page.m_Index,
+                        pages.size(),
+                        page.m_Backside)
+                };
                 return new PagePreview{
-                    m_ViewModel.MakePagePreviewViewModel(page.m_Backside),
+                    view_model,
                     this,
-                    page.m_Page,
-                    page.m_Transforms.get(),
                 };
             }) |
         std::ranges::to<std::vector>()

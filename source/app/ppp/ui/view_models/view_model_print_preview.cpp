@@ -5,6 +5,7 @@
 #include <ppp/config.hpp>
 #include <ppp/pdf/util.hpp>
 #include <ppp/project/project.hpp>
+#include <ppp/render_pdf.hpp>
 
 #include <ppp/ui/widget_util/card/card_widget_util.hpp>
 
@@ -23,10 +24,22 @@ PrintPreviewViewModel::PrintPreviewViewModel(Project& project,
                      &PrintPreviewViewModel::RequestRefresh);
 }
 
-PagePreviewViewModel* PrintPreviewViewModel::MakePagePreviewViewModel(bool is_backside) const
+PagePreviewViewModel* PrintPreviewViewModel::MakePagePreviewViewModel(
+    Page page,
+    const PageImageTransforms& transforms,
+    size_t page_index,
+    size_t total_pages,
+    bool is_backside) const
 {
+    PagePreviewData data{
+        .m_Page{ std::move(page) },
+        .m_Transforms{ transforms },
+        .m_PageIndex{ page_index },
+        .m_TotalPages{ total_pages },
+        .m_IsBackside{ is_backside },
+    };
     auto* page_preview_view_model{
-        new PagePreviewViewModel{ m_Project, m_Cfg, is_backside }
+        new PagePreviewViewModel{ m_Project, m_Cfg, std::move(data) }
     };
     QObject::connect(this,
                      &PrintPreviewViewModel::PageBackgroundChanged,

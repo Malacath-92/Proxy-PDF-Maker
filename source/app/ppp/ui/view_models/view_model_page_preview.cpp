@@ -1,6 +1,7 @@
 #include <ppp/ui/view_models/view_model_page_preview.hpp>
 
 #include <ppp/project/project.hpp>
+#include <ppp/qt_util.hpp>
 
 #include <ppp/ui/view_models/overlays/view_model_borders_overlay.hpp>
 #include <ppp/ui/view_models/overlays/view_model_guides_overlay.hpp>
@@ -9,11 +10,19 @@
 
 PagePreviewViewModel::PagePreviewViewModel(Project& project,
                                            const Config& config,
-                                           bool is_backside)
+                                           PagePreviewData page)
     : m_Project{ project }
     , m_Cfg{ config }
-    , m_IsBackside{ is_backside }
+    , m_Page{ std::move(page) }
 {
+    QObject::connect(&project,
+                     &Project::OutputFilenameChanged,
+                     this,
+                     &PagePreviewViewModel::OutputFilenameChanged);
+    QObject::connect(&project,
+                     &Project::PageHeaderEnabledChanged,
+                     this,
+                     &PagePreviewViewModel::PageHeaderEnabledChanged);
 }
 
 CardViewModel* PagePreviewViewModel::MakeCardViewModel(const fs::path& card_name,
@@ -23,7 +32,7 @@ CardViewModel* PagePreviewViewModel::MakeCardViewModel(const fs::path& card_name
         card_name,
         CardViewParams{
             .m_RoundedCorners = HasRoundedCorners(),
-            .m_Backside = m_IsBackside,
+            .m_Backside = m_Page.m_IsBackside,
             .m_Rotation = rotation,
             .m_BleedEdge{ GetBleedEdge() },
         },
@@ -44,6 +53,29 @@ MarginsOverlayViewModel* PagePreviewViewModel::MakeMarginsOverlayViewModel(bool 
     return new MarginsOverlayViewModel{ m_Project, is_backside };
 }
 
+QString PagePreviewViewModel::GetPageName() const
+{
+    const auto pdf_name{ m_Project.m_Data.m_FileName.stem().string() };
+    return ToQString(::GetPageName(pdf_name + (m_Page.m_IsBackside ? "_backside" : ""),
+                                   m_Page.m_PageIndex,
+                                   m_Page.m_TotalPages,
+                                   m_Page.m_Transforms,
+                                   m_Page.m_Page));
+}
+Length PagePreviewViewModel::GetHeaderSpace() const
+{
+    return m_Project.ComputeMargins().m_Top;
+}
+
+const PageImageTransforms& PagePreviewViewModel::GetTransforms() const
+{
+    return m_Page.m_Transforms;
+}
+std::span<const PageImage> PagePreviewViewModel::GetImages() const
+{
+    return m_Page.m_Page.m_Images;
+}
+
 Size PagePreviewViewModel::GetPageSize() const
 {
     return m_Project.ComputePageSize();
@@ -56,7 +88,7 @@ Length PagePreviewViewModel::GetBleedEdge() const
     }
 
     const auto total_bleed_edge{
-        m_IsBackside
+        m_Page.m_IsBackside
             ? m_Project.m_Data.m_BleedEdge +
                   m_Project.m_Data.m_EnvelopeBleedEdge +
                   m_Project.m_Data.m_BacksideExtraBleedEdge
@@ -73,7 +105,7 @@ bool PagePreviewViewModel::HasRoundedCorners() const
     }
 
     const auto total_bleed_edge{
-        m_IsBackside
+        m_Page.m_IsBackside
             ? m_Project.m_Data.m_BleedEdge +
                   m_Project.m_Data.m_EnvelopeBleedEdge +
                   m_Project.m_Data.m_BacksideExtraBleedEdge
@@ -84,7 +116,12 @@ bool PagePreviewViewModel::HasRoundedCorners() const
 }
 bool PagePreviewViewModel::IsBackside() const
 {
-    return m_IsBackside;
+    return m_Page.m_IsBackside;
+}
+
+void PagePreviewViewModel::EmitDefaults()
+{
+    PageHeaderEnabledChanged(m_Project.m_Data.m_RenderPageHeader);
 }
 
 void PagePreviewViewModel::ReorderCards(size_t from, size_t to)

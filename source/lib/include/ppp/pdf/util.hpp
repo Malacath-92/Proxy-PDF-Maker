@@ -55,4 +55,8 @@ PageImageTransforms ComputeBacksideTransforms(
 std::vector<Page> DistributeCardsToPages(const Project& project);
 std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Page>& pages);
 
-class Image RenderPdf(const fs::path& pdf_path);
+std::string GetPageName(std::string_view pdf_name,
+                        size_t page_index,
+                        size_t page_amount,
+                        const PageImageTransforms& transforms,
+                        const Page& page);

@@ -521,5 +521,25 @@ std::vector<Page> MakeBacksidePages(const Project& project, const std::vector<Pa
     return backside_pages;
 }
 
+std::string GetPageName(std::string_view pdf_name,
+                        size_t page_index,
+                        size_t page_amount,
+                        const PageImageTransforms& transforms,
+                        const Page& page)
+{
+
+    return transforms.size() == 1
+               ? fmt::format("{}/{} - {}",
+                             page_index + 1,
+                             page_amount,
+                             page.m_Images.front().m_Image.has_value()
+                                 ? page.m_Images.front().m_Image.value().get().string()
+                                 : "<empty>")
+               : fmt::format("{} - {}/{}",
+                             pdf_name,
+                             page_index + 1,
+                             page_amount);
+}
+
 const fs::path g_ExeDir{ GetExePath().parent_path() };
 const fs::path g_ExeName{ GetExePath().filename() };

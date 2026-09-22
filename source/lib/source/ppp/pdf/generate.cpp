@@ -659,19 +659,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
                 }
             }
 
-            const auto page_name{
-                transforms.size() == 1
-                    ? fmt::format("{}/{} - {}",
-                                  page_index + 1,
-                                  num_pages,
-                                  page.m_Images.front().m_Image.has_value()
-                                      ? page.m_Images.front().m_Image.value().get().string()
-                                      : "<empty>")
-                    : fmt::format("{} - {}/{}",
-                                  frontside_pdf_name,
-                                  page_index + 1,
-                                  num_pages)
-            };
+            const auto page_name{ GetPageName(frontside_pdf_name,
+                                              page_index,
+                                              num_pages,
+                                              transforms,
+                                              page) };
             front_page->SetPageName(page_name);
 
             if (!config.m_DeterminsticPdfOutput && do_render_header)
@@ -745,19 +737,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
                 }
             }
 
-            const auto page_name{
-                backside_transforms.size() == 1
-                    ? fmt::format("{}/{} - {}",
-                                  page_index + 1,
-                                  num_pages,
-                                  backside_page.m_Images.front().m_Image.has_value()
-                                      ? backside_page.m_Images.front().m_Image.value().get().string()
-                                      : "<empty>")
-                    : fmt::format("{} - {}/{}",
-                                  backside_pdf_name,
-                                  page_index + 1,
-                                  num_pages)
-            };
+            const auto page_name{ GetPageName(backside_pdf_name,
+                                              page_index,
+                                              num_pages,
+                                              backside_transforms,
+                                              backside_page) };
             back_page->SetPageName(page_name);
 
             if (!config.m_DeterminsticPdfOutput && do_render_header)

@@ -1,5 +1,7 @@
 #include <ppp/ui/preview/widget_print_preview_page.hpp>
 
+#include <QFontMetrics>
+#include <QLabel>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QStyleOption>
@@ -14,8 +16,64 @@
 #include <ppp/ui/preview/overlays/widget_guides_overlay.hpp>
 #include <ppp/ui/preview/overlays/widget_margins_overlay.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
 #include <ppp/ui/view_models/view_model_card.hpp>
 #include <ppp/ui/view_models/view_model_page_preview.hpp>
+
+class PageHeader : public QWidget
+{
+  public:
+    PageHeader(const PagePreviewViewModel& view_model)
+        : m_ViewModel{ view_model }
+    {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(OutputFilenameChanged);
+    }
+
+  protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        const auto page_size{ m_ViewModel.GetPageSize() };
+        const auto pixel_ratio{ dla::tvec2{ width(), height() } / page_size };
+
+        const auto header_text{ m_ViewModel.GetPageName() };
+
+        QPainter painter{ this };
+        painter.setPen(Qt::black);
+
+        auto font{ painter.font() };
+        font.setPointSize(20);
+        painter.setFont(font);
+
+        auto header_space{ rect() };
+        header_space.setHeight(m_ViewModel.GetHeaderSpace() * pixel_ratio.y);
+
+        const QFontMetrics metrics{ font };
+        auto header_rect{ metrics.boundingRect(header_text)
+                              .marginsAdded({ 10, 10, 10, 10 }) };
+        header_rect.moveLeft(header_space.left() + (header_space.width() - header_rect.width()) / 2);
+        header_rect.moveTop(header_space.top() + (header_space.height() - header_rect.height()) / 2);
+
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QBrush{ Qt::white });
+        painter.drawRect(header_rect);
+
+        painter.setPen(Qt::black);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawText(header_space, Qt::AlignCenter, header_text);
+    }
+
+  private slots:
+    void OutputFilenameChanged()
+    {
+        update();
+    }
+
+  private:
+    const PagePreviewViewModel& m_ViewModel;
+};
 
 class PageBackground : public QLabel
 {
@@ -121,9 +179,8 @@ class PageImageContainer : public QWidget
 };
 
 PagePreview::PagePreview(PagePreviewViewModel* view_model,
-                         QObject* event_filter,
-                         const Page& page,
-                         const PageImageTransforms& transforms)
+                         QObject* event_filter)
+    : m_ViewModel{ *view_model }
 {
     view_model->setParent(this);
 
@@ -142,15 +199,17 @@ PagePreview::PagePreview(PagePreviewViewModel* view_model,
         setLayout(bg_layout);
     }
 
-    const bool is_backside{ view_model->IsBackside() };
-
-    m_ImageContainer = new PageImageContainer{ transforms, view_model->GetPageSize() };
+    const auto& transforms{ view_model->GetTransforms() };
+    m_ImageContainer = new PageImageContainer{ transforms,
+                                               view_model->GetPageSize() };
     m_ImageContainer->setParent(this);
 
-    for (size_t i = 0; i < page.m_Images.size(); ++i)
+    const auto& images{ view_model->GetImages() };
+    const bool is_backside{ view_model->IsBackside() };
+    for (size_t i = 0; i < images.size(); ++i)
     {
         const auto& [card_name, backside_short_edge, index, slot]{
-            page.m_Images[i]
+            images[i]
         };
         const auto& [position, size, base_rotation, card, clip_rect]{
             transforms[i]
@@ -241,12 +300,30 @@ PagePreview::PagePreview(PagePreviewViewModel* view_model,
 
     m_Margins = new MarginsOverlay{ view_model->MakeMarginsOverlayViewModel(is_backside) };
     m_Margins->setParent(this);
+
+    m_Header = new PageHeader{ m_ViewModel };
+    m_Header->setParent(this);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(PageHeaderEnabledChanged);
+
+    view_model->EmitDefaults();
 }
 
 void PagePreview::resizeEvent(QResizeEvent* event)
 {
-    m_ImageContainer->resize(event->size());
-    m_Guides->resize(event->size());
-    m_Borders->resize(event->size());
-    m_Margins->resize(event->size());
+    const auto size{ event->size() };
+    m_ImageContainer->resize(size);
+    m_Guides->resize(size);
+    m_Borders->resize(size);
+    m_Margins->resize(size);
+    m_Header->resize(size);
+}
+void PagePreview::paintEvent(QPaintEvent* event)
+{
+    QWidget::paintEvent(event);
+}
+
+void PagePreview::PageHeaderEnabledChanged(bool page_header_enabled)
+{
+    m_Header->setVisible(page_header_enabled);
 }

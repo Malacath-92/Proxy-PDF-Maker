@@ -18,7 +18,12 @@ class PrintPreviewViewModel : public QObject
     PrintPreviewViewModel(Project& project,
                           const Config& config);
 
-    PagePreviewViewModel* MakePagePreviewViewModel(bool is_backside) const;
+    PagePreviewViewModel* MakePagePreviewViewModel(
+        Page page,
+        const PageImageTransforms& transforms,
+        size_t page_index,
+        size_t total_pages,
+        bool is_backside) const;
 
     void ImmediateRefresh();
     void QueueRefresh();
