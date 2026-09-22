@@ -831,6 +831,25 @@ PoDoFoPage* PoDoFoDocument::NextPage(bool is_backside)
     return &m_Pages.back();
 }
 
+void PoDoFoDocument::WriteMetaData(std::string_view key, std::string_view data)
+{
+    using PoDoFo::operator""_n;
+    const auto meta_data_key{ "Metadata"_n };
+
+    auto& catalog{ m_Document.GetCatalog().GetDictionary() };
+
+    auto* meta_data{ catalog.GetKey(meta_data_key) };
+    if (meta_data == nullptr)
+    {
+        const PoDoFo::PdfDictionary new_metadata{};
+        meta_data = &catalog.AddKey(meta_data_key, std::move(new_metadata));
+    };
+
+    const PoDoFo::PdfName pdf_key{ key };
+    const PoDoFo::PdfString pdf_value{ data };
+    meta_data->GetDictionary().AddKey(pdf_key, pdf_value);
+}
+
 fs::path PoDoFoDocument::Write(fs::path path, bool version_output)
 {
     TRACY_AUTO_SCOPE();

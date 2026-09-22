@@ -393,6 +393,10 @@ PngPage* PngDocument::NextPage(bool /*is_backside*/)
     return &new_page;
 }
 
+void PngDocument::WriteMetaData(std::string_view /* key */, std::string_view /* data */)
+{
+}
+
 fs::path PngDocument::Write(fs::path path, bool version_output)
 {
     const auto png_folder{
