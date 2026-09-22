@@ -36,7 +36,7 @@ class PageHeader : public QWidget
     void paintEvent(QPaintEvent*) override
     {
         const auto page_size{ m_ViewModel.GetPageSize() };
-        const auto pixel_ratio{ dla::tvec2{ width(), height() } / page_size };
+        const auto pixel_ratio{ dla::ivec2{ width(), height() } / page_size };
 
         const auto header_text{ m_ViewModel.GetPageName() };
 
