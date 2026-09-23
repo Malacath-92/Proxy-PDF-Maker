@@ -120,6 +120,8 @@ bool AutoUpdateDownloadRelease(std::string_view version)
                 {
                     return asset_obj["browser_download_url"].toString();
                 }
+                
+                LogInfo("Asset {} not matching current platform and arch.", asset_name.toStdString());
             }
 
             return std::nullopt;
