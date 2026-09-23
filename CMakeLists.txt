@@ -72,7 +72,7 @@ endif()
 # --------------------------------------------------
 # Get version tag
 if(PPP_BUILD_FAKE_VERSION)
-	set(PROXY_PDF_GIT_VERSION "0.0.1")
+	set(PROXY_PDF_GIT_VERSION "v0.0.1")
 else()
 	find_package(Git)
 	if(NOT GIT_FOUND)
