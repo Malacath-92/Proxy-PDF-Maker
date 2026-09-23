@@ -764,6 +764,7 @@ int main(int argc, char** argv)
                 [&](const QString&)
                 {
                     OpenFolder(project_backup_folder);
+                    return false;
                 });
         }
     }
@@ -872,6 +873,7 @@ int main(int argc, char** argv)
                             [=](const QString& /*link*/)
                             {
                                 Reboot();
+                                return true;
                             });
                     }
                 }
@@ -887,27 +889,43 @@ int main(int argc, char** argv)
                     .arg(ReleaseURL(new_version.value()).c_str())
                     .arg(new_version.value().c_str())
                     .arg(c_AutoUpdate),
-                [=](const QString& link)
+                [new_version, main_window, &main_log](const QString& link)
                 {
                     if (link == c_AutoUpdate)
                     {
-                        try
-                        {
-                            s_AutoUpdate(new_version.value());
-                        }
-                        catch (const std::exception& e)
-                        {
-                            LogError("Error during Auto-Update: {}", e.what());
-                            main_window->Toast(
-                                ToastType::Error,
-                                "Auto-Update Error",
-                                "Failed downloading new version...");
-                        }
+                        QTimer::singleShot(
+                            0,
+                            [new_version, main_window, &main_log]()
+                            {
+                                const auto log_hook{
+                                    main_log.InstallTemporaryHook(
+                                        [&](const Log::DetailInformation&, Log::LogLevel log_level, std::string_view message)
+                                        {
+                                            if (log_level == Log::LogLevel::Error)
+                                            {
+                                                main_window->Toast(ToastType::Error,
+                                                                   "Auto-Update Error",
+                                                                   QString{ "Failed downloading new version: %1" }.arg(ToQString(message)));
+                                            }
+                                        })
+                                };
+
+                                try
+                                {
+                                    s_AutoUpdate(new_version.value());
+                                }
+                                catch (const std::exception& e)
+                                {
+                                    LogError("Exception '{}' thrown", e.what());
+                                }
+                            });
                     }
                     else
                     {
                         QDesktopServices::openUrl(link);
                     }
+
+                    return true;
                 });
         }
     }

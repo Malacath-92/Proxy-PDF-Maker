@@ -17,6 +17,7 @@
 
 #include <fmt/format.h>
 
+#include <ppp/util/at_scope_exit.hpp>
 #include <ppp/util/type_traits.hpp>
 #include <ppp/util/typedefs.hpp>
 
@@ -79,6 +80,17 @@ class Log
     using LogHook = std::function<void(const Log::DetailInformation&, Log::LogLevel, std::string_view)>;
     uint32_t InstallHook(LogHook hook);
     void UninstallHook(uint32_t hook_id);
+
+    auto InstallTemporaryHook(LogHook hook)
+    {
+        const auto id{ InstallHook(std::move(hook)) };
+        return AtScopeExit{
+            [this, id]()
+            {
+                UninstallHook(id);
+            },
+        };
+    }
 
     /*
             Wrapper for a log message, ensures that used strings are constant expressions

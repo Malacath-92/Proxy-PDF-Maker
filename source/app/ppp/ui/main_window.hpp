@@ -26,7 +26,7 @@ class PrintProxyPrepMainWindow : public QMainWindow
 
     void OpenAboutPopup(const Project& project);
 
-    using OnLinkFn = std::function<void(const QString& link)>;
+    using OnLinkFn = std::function<bool(const QString& link)>;
     void Toast(ToastType type,
                QString title,
                QString message,
