@@ -145,7 +145,7 @@ std::optional<std::string> NewAvailableVersion()
 
             if (latest_time.toMSecsSinceEpoch() <= this_time.toMSecsSinceEpoch())
             {
-                LogWarning("Latest pre-release is not newer that this release...");
+                LogWarning("Latest pre-release is not newer than this release...");
                 return std::nullopt;
             }
 

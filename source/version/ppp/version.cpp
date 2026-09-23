@@ -27,7 +27,12 @@ std::string_view ProxyPdfBuildTime()
 
 SemanticVersion ProxyPdfToSemanticVersion(std::string_view version)
 {
-    SemanticVersion semver{ 0 };
+    SemanticVersion semver{};
+
+    if (!version.starts_with("v"))
+    {
+        return semver;
+    }
 
     auto part_to_int{
         [](std::string_view part)

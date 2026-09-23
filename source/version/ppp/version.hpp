@@ -10,9 +10,9 @@ std::string_view ProxyPdfBuildTime();
 
 struct SemanticVersion
 {
-    int32_t m_Major{};
-    int32_t m_Minor{};
-    int32_t m_Bugfix{};
+    int32_t m_Major{ 0 };
+    int32_t m_Minor{ 0 };
+    int32_t m_Bugfix{ 0 };
 
     auto operator<=>(const SemanticVersion&) const = default;
 };
