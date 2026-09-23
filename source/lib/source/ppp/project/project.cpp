@@ -830,7 +830,12 @@ std::string Project::DumpToJson(const ProjectData& data,
     json["guides_thickness_cm"] = data.m_GuidesThickness / 1_cm;
     json["guides_length_cm"] = data.m_GuidesLength / 1_cm;
 
-    return json.dump();
+    auto json_str{ json.dump() };
+    if (deterministic_output)
+    {
+        std::ranges::replace(json_str, '\\', '/');
+    }
+    return json_str;
 }
 
 bool Project::DiffersWithFile(const fs::path& json_path) const
