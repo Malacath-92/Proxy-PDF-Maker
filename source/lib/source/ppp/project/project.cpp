@@ -693,8 +693,8 @@ std::string Project::DumpToJson(const ProjectData& data,
     nlohmann::json json{};
     json["version"] = JsonFormatVersion();
 
-    json["image_dir"] = data.m_ImageDir.string();
-    json["img_cache"] = data.m_ImageCache.string();
+    json["image_dir"] = data.m_ImageDir.generic_string();
+    json["img_cache"] = data.m_ImageCache.generic_string();
 
     std::vector<nlohmann::json> cards;
     for (const auto& card : data.m_Cards)
@@ -702,12 +702,12 @@ std::string Project::DumpToJson(const ProjectData& data,
         if (!card.m_Transient)
         {
             nlohmann::json& card_json{ cards.emplace_back() };
-            card_json["name"] = card.m_Name.string();
+            card_json["name"] = card.m_Name.generic_string();
             card_json["num"] = card.m_Num;
             card_json["hidden"] = card.m_Hidden;
             if (card.m_Backside.has_value())
             {
-                card_json["backside"] = card.m_Backside.value().string();
+                card_json["backside"] = card.m_Backside.value().generic_string();
             }
             card_json["backside_short_edge"] = card.m_BacksideShortEdge;
             card_json["backside_auto_assigned"] = card.m_BacksideAutoAssigned;
@@ -716,7 +716,7 @@ std::string Project::DumpToJson(const ProjectData& data,
             card_json["ratio_handling"] = magic_enum::enum_name(card.m_BadAspectRatioHandling);
             if (card.m_ExternalPath.has_value())
             {
-                card_json["external_path"] = card.m_ExternalPath.value().string();
+                card_json["external_path"] = card.m_ExternalPath.value().generic_string();
             }
             if (!deterministic_output)
             {
@@ -830,12 +830,7 @@ std::string Project::DumpToJson(const ProjectData& data,
     json["guides_thickness_cm"] = data.m_GuidesThickness / 1_cm;
     json["guides_length_cm"] = data.m_GuidesLength / 1_cm;
 
-    auto json_str{ json.dump() };
-    if (deterministic_output)
-    {
-        std::ranges::replace(json_str, '\\', '/');
-    }
-    return json_str;
+    return json.dump();
 }
 
 bool Project::DiffersWithFile(const fs::path& json_path) const
