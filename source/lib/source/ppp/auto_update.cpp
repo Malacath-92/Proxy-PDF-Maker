@@ -47,7 +47,8 @@ constexpr char c_AutoUpdateCopyNewVersion[]{ AUTO_UPDATE_ARG_START "execute" };
 constexpr char c_AutoUpdateCleanup[]{ AUTO_UPDATE_ARG_START "cleanup" };
 #undef AUTO_UPDATE_ARG_START
 
-bool AutoUpdateDownloadRelease(std::string_view version)
+bool AutoUpdateDownloadRelease(std::string_view version,
+                               ProgressFn progress_fn)
 {
     QNetworkAccessManager network_manager;
 
@@ -59,6 +60,18 @@ bool AutoUpdateDownloadRelease(std::string_view version)
         QEventLoop loop;
         QObject::connect(release_json_reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
+    }
+
+    if (progress_fn)
+    {
+        progress_fn("Downloading Release Information", 0.0f);
+        QObject::connect(release_json_reply,
+                         &QNetworkReply::downloadProgress,
+                         [progress_fn](qint64 bytesReceived, qint64 bytesTotal)
+                         {
+                             const auto progress{ static_cast<float>(bytesReceived) / bytesTotal };
+                             progress_fn("Downloading Release Information", progress);
+                         });
     }
 
     AtScopeExit delete_json_reply{
@@ -120,7 +133,7 @@ bool AutoUpdateDownloadRelease(std::string_view version)
                 {
                     return asset_obj["browser_download_url"].toString();
                 }
-                
+
                 LogInfo("Asset {} not matching current platform and arch.", asset_name.toStdString());
             }
 
@@ -137,6 +150,18 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     QNetworkRequest release_data_request{ PrepareGithubRequest(asset_url.value()) };
     QNetworkReply* release_data_reply{ network_manager.get(std::move(release_data_request)) };
+
+    if (progress_fn)
+    {
+        progress_fn("Downloading Asset", 0.0f);
+        QObject::connect(release_data_reply,
+                         &QNetworkReply::downloadProgress,
+                         [progress_fn](qint64 bytesReceived, qint64 bytesTotal)
+                         {
+                             const auto progress{ static_cast<float>(bytesReceived) / bytesTotal };
+                             progress_fn("Downloading Asset", progress);
+                         });
+    }
 
     {
         QEventLoop loop;
@@ -165,8 +190,19 @@ bool AutoUpdateDownloadRelease(std::string_view version)
 
     auto* unzip_worker{ new UnzipWorker{ std::move(release_data), c_UpdateFolder } };
     unzip_worker->setAutoDelete(false);
-    QThreadPool::globalInstance()->start(unzip_worker, 100);
 
+    if (progress_fn)
+    {
+        progress_fn("Extracting Asset", 0.0f);
+        QObject::connect(unzip_worker,
+                         &UnzipWorker::Progress,
+                         [progress_fn](float progress)
+                         {
+                             progress_fn("Extracting Asset", progress);
+                         });
+    }
+
+    QThreadPool::globalInstance()->start(unzip_worker, 100);
     {
         QEventLoop loop;
         QObject::connect(unzip_worker, &UnzipWorker::Done, &loop, &QEventLoop::quit);

@@ -13,8 +13,12 @@ enum class AutoUpdateConclusion
     Error,
 };
 
+// Callback on progress, giving "Work Title" and progress
+using ProgressFn = std::function<void(std::string_view, float)>;
+
 // Download binaries and extract to a sub-folder
-bool AutoUpdateDownloadRelease(std::string_view version);
+bool AutoUpdateDownloadRelease(std::string_view version,
+                               ProgressFn progress_fn = nullptr);
 
 // Try to start the auto-update progress
 AutoUpdateConclusion AutoUpdateTryInitialize(std::span<char*> argv);
