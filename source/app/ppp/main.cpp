@@ -860,7 +860,47 @@ int main(int argc, char** argv)
             static auto s_AutoUpdate{
                 [main_window](std::string_view version)
                 {
-                    if (AutoUpdateDownloadRelease(version))
+                    class DownloadToastHandler : public ToastHandler
+                    {
+                      public:
+                        virtual bool hasDynamicText() const
+                        {
+                            return true;
+                        }
+
+                        virtual bool hasOnLink() const
+                        {
+                            return false;
+                        }
+                        virtual bool onLink(const QString& /* link */)
+                        {
+                            return false;
+                        }
+
+                        virtual bool hasProgress() const
+                        {
+                            return true;
+                        }
+                    };
+
+                    DownloadToastHandler toast_handler;
+                    ToastData download_toast{
+                        .m_Type = ToastType::Info,
+                        .m_Title{ "Downloading new version" },
+                        .m_Message{ "Download progress..." },
+                        .m_Handler{ &toast_handler },
+                        .m_HandlerExternallyOwned{ true },
+                    };
+                    main_window->Toast(download_toast);
+
+                    const auto download_progress_fn{
+                        [&toast_handler](std::string_view work_title, float progress)
+                        {
+                            toast_handler.textChanged(ToQString(work_title) + "...");
+                            toast_handler.progress(progress / 100.0f);
+                        }
+                    };
+                    if (AutoUpdateDownloadRelease(version, download_progress_fn))
                     {
                         static constexpr char c_Restart[]{ "#restart" };
                         main_window->Toast(
