@@ -85,9 +85,6 @@ void UnzipWorker::run()
     archive_entry* entry;
     while (archive_read_next_header(reader, &entry) == ARCHIVE_OK)
     {
-        int64_t bytes_read{ archive_filter_bytes(reader, 0) };
-        Progress(100.0f * static_cast<float>(bytes_read) / m_ArchiveData.size());
-
         const auto current_path{ archive_entry_pathname(entry) };
         const auto full_output_path{ m_OutputFolder / current_path };
         const auto full_output_path_str{ full_output_path.string() };
@@ -113,6 +110,14 @@ void UnzipWorker::run()
                 const auto read_block_res{
                     archive_read_data_block(reader, &buff, &size, &offset)
                 };
+
+                if (read_block_res == ARCHIVE_OK)
+                {
+                    const int64_t total_bytes_read{ archive_filter_bytes(reader, -1) };
+                    const auto progress{ static_cast<float>(total_bytes_read) / m_ArchiveData.size() };
+                    Progress(100.0f * progress);
+                }
+
                 if (read_block_res == ARCHIVE_EOF)
                 {
                     break;
