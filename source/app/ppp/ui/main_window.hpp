@@ -20,8 +20,16 @@ class ToastHandler : public QObject
     Q_OBJECT
 
   public:
+    virtual bool hasDynamicText() const = 0;
+
     virtual bool hasOnLink() const = 0;
     virtual bool onLink(const QString& link) = 0;
+
+    virtual bool hasProgress() const = 0;
+
+  signals:
+    void textChanged(QString text) const;
+    void progress(float progress) const;
 };
 
 struct ToastData

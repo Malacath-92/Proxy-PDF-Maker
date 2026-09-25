@@ -108,8 +108,13 @@ void PrintProxyPrepMainWindow::Toast(ToastData toast_data)
         toast->setRichText(std::move(toast_data.m_Message));
     }
 
-    if (!toast_data.m_Handler)
+    if (toast_data.m_Handler != nullptr)
     {
+        if (toast_data.m_Handler->hasProgress())
+        {
+            toast->setShowProgress(true);
+        }
+
         toast->setHandler(toast_data.m_Handler);
 
         if (!toast_data.m_HandlerExternallyOwned)
@@ -157,6 +162,11 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
         {
         }
 
+        virtual bool hasDynamicText() const override
+        {
+            return false;
+        }
+
         virtual bool hasOnLink() const override
         {
             return true;
@@ -166,14 +176,26 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
             return m_OnLink(link);
         }
 
+        virtual bool hasProgress() const override
+        {
+            return false;
+        }
+
       private:
         PrintProxyPrepMainWindow::OnLinkFn m_OnLink;
     };
+
+    OnLinkFnWrapper* handler{ nullptr };
+    if (on_link)
+    {
+        handler = new OnLinkFnWrapper{ std::move(on_link) };
+    }
+
     return Toast(ToastData{
         .m_Type = type,
         .m_Title{ std::move(title) },
         .m_Message{ std::move(message) },
-        .m_Handler{ new OnLinkFnWrapper{ std::move(on_link) } },
+        .m_Handler{ handler },
     });
 }
 
