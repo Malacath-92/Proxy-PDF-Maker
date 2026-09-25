@@ -33,7 +33,7 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/data_migration.hpp>
 #include <ppp/style.hpp>
 #include <ppp/terminate_handler.hpp>
-#include <ppp/version_check.hpp>
+#include <ppp/update_flow.hpp>
 
 #include <ppp/qt_util.hpp>
 #include <ppp/render_pdf.hpp>
@@ -72,14 +72,6 @@ class PluginRouter : public PluginInterface
         return nullptr;
     }
 };
-
-void Reboot()
-{
-    QProcess::startDetached(
-        QApplication::arguments()[0],
-        QApplication::arguments().mid(1));
-    QApplication::exit();
-}
 
 int main(int argc, char** argv)
 {
@@ -851,123 +843,7 @@ int main(int argc, char** argv)
 
     if (config.m_CheckVersionOnStartup)
     {
-        TRACY_AUTO_SCOPE();
-        TRACY_SCOPE_NAME(check_version);
-
-        if (auto new_version{ NewAvailableVersion() })
-        {
-            static constexpr char c_AutoUpdate[]{ "#auto-update" };
-            static auto s_AutoUpdate{
-                [main_window](std::string_view version)
-                {
-                    class DownloadToastHandler : public ToastHandler
-                    {
-                      public:
-                        virtual bool hasDynamicText() const
-                        {
-                            return true;
-                        }
-
-                        virtual bool hasOnLink() const
-                        {
-                            return false;
-                        }
-                        virtual bool onLink(const QString& /* link */)
-                        {
-                            return false;
-                        }
-
-                        virtual bool hasProgress() const
-                        {
-                            return true;
-                        }
-                    };
-
-                    DownloadToastHandler toast_handler;
-                    ToastData download_toast{
-                        .m_Type = ToastType::Info,
-                        .m_Title{ "Downloading new version" },
-                        .m_Message{ "Download progress..." },
-                        .m_Handler{ &toast_handler },
-                        .m_HandlerExternallyOwned{ true },
-                    };
-                    main_window->Toast(download_toast);
-
-                    const auto download_progress_fn{
-                        [&toast_handler](std::string_view work_title, float progress)
-                        {
-                            toast_handler.textChanged(ToQString(work_title) + "...");
-                            toast_handler.progress(progress / 100.0f);
-                        }
-                    };
-                    if (AutoUpdateDownloadRelease(version, download_progress_fn))
-                    {
-                        static constexpr char c_Restart[]{ "#restart" };
-                        main_window->Toast(
-                            ToastType::Info,
-                            "Restart to Update",
-                            QString{ "New version downloaded, <a style=\"color:CornflowerBlue\" href=\"%1\">"
-                                     "restart app"
-                                     "</a> to finish" }
-                                .arg(c_Restart),
-                            [=](const QString& /*link*/)
-                            {
-                                Reboot();
-                                return true;
-                            });
-                    }
-                }
-            };
-            main_window->Toast(
-                ToastType::Info,
-                "New version available",
-                QString{ "<a style=\"color:CornflowerBlue\" href=\"%1\">"
-                         "Download the new version %2 from GitHub"
-                         "</a> or <a style=\"color:CornflowerBlue\" href=\"%3\">"
-                         "Auto-Update"
-                         "</a>" }
-                    .arg(ReleaseURL(new_version.value()).c_str())
-                    .arg(new_version.value().c_str())
-                    .arg(c_AutoUpdate),
-                [new_version, main_window, &main_log](const QString& link)
-                {
-                    if (link == c_AutoUpdate)
-                    {
-                        QTimer::singleShot(
-                            0,
-                            [new_version, main_window, &main_log]()
-                            {
-                                const auto log_hook{
-                                    main_log.InstallTemporaryHook(
-                                        [&](const Log::DetailInformation&, Log::LogLevel log_level, std::string_view message)
-                                        {
-                                            if (log_level == Log::LogLevel::Error)
-                                            {
-                                                main_window->Toast(ToastType::Error,
-                                                                   "Auto-Update Error",
-                                                                   QString{ "Failed downloading new version: %1" }.arg(ToQString(message)));
-                                            }
-                                        })
-                                };
-
-                                try
-                                {
-                                    s_AutoUpdate(new_version.value());
-                                }
-                                catch (const std::exception& e)
-                                {
-                                    LogError("Exception '{}' thrown", e.what());
-                                }
-                            });
-                    }
-                    else
-                    {
-                        QDesktopServices::openUrl(link);
-                    }
-
-                    return true;
-                });
-        }
+        RunUpdateFlow(main_window);
     }
 
     const auto ret{
