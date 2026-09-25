@@ -195,7 +195,7 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
         .m_Type = type,
         .m_Title{ std::move(title) },
         .m_Message{ std::move(message) },
-        .m_Handler{ handler },
+        .m_Handler = handler,
     });
 }
 

@@ -57,8 +57,8 @@ void DoAutoUpdate(PrintProxyPrepMainWindow* main_window,
         .m_Type = ToastType::Info,
         .m_Title{ "Downloading new version" },
         .m_Message{ "Download progress..." },
-        .m_Handler{ &toast_handler },
-        .m_HandlerExternallyOwned{ true },
+        .m_Handler = &toast_handler,
+        .m_HandlerExternallyOwned = true,
     };
     main_window->Toast(download_toast);
 
