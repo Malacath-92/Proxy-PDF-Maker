@@ -15,6 +15,24 @@ enum class ToastType
     Error,
 };
 
+class ToastHandler : public QObject
+{
+    Q_OBJECT
+
+  public:
+    virtual bool hasOnLink() const = 0;
+    virtual bool onLink(const QString& link) = 0;
+};
+
+struct ToastData
+{
+    ToastType m_Type{ ToastType::Info };
+    QString m_Title{ "Toast" };
+    QString m_Message{ "Message" };
+    ToastHandler* m_Handler{ nullptr };
+    bool m_HandlerExternallyOwned{ false };
+};
+
 class PrintProxyPrepMainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -25,6 +43,8 @@ class PrintProxyPrepMainWindow : public QMainWindow
                              const Config& config);
 
     void OpenAboutPopup(const Project& project);
+
+    void Toast(ToastData toast_data);
 
     using OnLinkFn = std::function<bool(const QString& link)>;
     void Toast(ToastType type,

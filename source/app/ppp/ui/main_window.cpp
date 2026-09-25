@@ -83,10 +83,7 @@ void PrintProxyPrepMainWindow::OpenAboutPopup(const Project& project)
     setEnabled(true);
 }
 
-void PrintProxyPrepMainWindow::Toast(ToastType type,
-                                     QString title,
-                                     QString message,
-                                     OnLinkFn on_link)
+void PrintProxyPrepMainWindow::Toast(ToastData toast_data)
 {
     if (m_Cfg.m_ToastTimeoutMS == 0)
     {
@@ -99,15 +96,36 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
 
     auto* toast{ new ::Toast };
     toast->setDuration(m_Cfg.m_ToastTimeoutMS);
-    toast->setTitle(std::move(title));
-    toast->setRichText(std::move(message));
     toast->setPosition(ToastPosition::BOTTOM_LEFT);
-    toast->setOnLink(std::move(on_link));
+
+    if (!toast_data.m_Title.isEmpty())
+    {
+        toast->setTitle(std::move(toast_data.m_Title));
+    }
+
+    if (!toast_data.m_Message.isEmpty())
+    {
+        toast->setRichText(std::move(toast_data.m_Message));
+    }
+
+    if (!toast_data.m_Handler)
+    {
+        toast->setHandler(toast_data.m_Handler);
+
+        if (!toast_data.m_HandlerExternallyOwned)
+        {
+            QObject::connect(
+                toast,
+                &QDialog::close,
+                toast_data.m_Handler,
+                &QObject::deleteLater);
+        }
+    }
 
     const bool dark_mode{
         QApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark
     };
-    switch (type)
+    switch (toast_data.m_Type)
     {
     case ToastType::Info:
         toast->applyPreset(dark_mode ? ToastPreset::INFORMATION_DARK
@@ -125,6 +143,40 @@ void PrintProxyPrepMainWindow::Toast(ToastType type,
 
     toast->show();
 }
+
+void PrintProxyPrepMainWindow::Toast(ToastType type,
+                                     QString title,
+                                     QString message,
+                                     OnLinkFn on_link)
+{
+    class OnLinkFnWrapper : public ToastHandler
+    {
+      public:
+        OnLinkFnWrapper(PrintProxyPrepMainWindow::OnLinkFn on_link)
+            : m_OnLink{ std::move(on_link) }
+        {
+        }
+
+        virtual bool hasOnLink() const override
+        {
+            return true;
+        }
+        virtual bool onLink(const QString& link) override
+        {
+            return m_OnLink(link);
+        }
+
+      private:
+        PrintProxyPrepMainWindow::OnLinkFn m_OnLink;
+    };
+    return Toast(ToastData{
+        .m_Type = type,
+        .m_Title{ std::move(title) },
+        .m_Message{ std::move(message) },
+        .m_Handler{ new OnLinkFnWrapper{ std::move(on_link) } },
+    });
+}
+
 void PrintProxyPrepMainWindow::ImageDropRejected(const fs::path& absolute_image_path)
 {
     if (m_Cfg.m_ToastTimeoutMS == 0)
@@ -134,10 +186,12 @@ void PrintProxyPrepMainWindow::ImageDropRejected(const fs::path& absolute_image_
 
     TRACY_AUTO_SCOPE();
 
-    Toast(ToastType::Info,
-          "Drag 'N Drop Failed",
-          QString{ "An image with name %1 is already part of the project." }
-              .arg(ToQString(absolute_image_path.filename())));
+    Toast(ToastData{
+        .m_Type = ToastType::Info,
+        .m_Title{ "Drag 'N Drop Failed" },
+        .m_Message{ QString{ "An image with name %1 is already part of the project." }
+                        .arg(ToQString(absolute_image_path.filename())) },
+    });
 }
 
 void PrintProxyPrepMainWindow::closeEvent(QCloseEvent* event)
