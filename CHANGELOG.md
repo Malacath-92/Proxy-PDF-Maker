@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-??-09
+## [2.0.0] - 2026-25-09
 
 ### Added
 - In the `F1` popup there is a new button added that automatically zips up the current project and all config to make it easier to report a bug.
@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `MtG Card Downloader` plugin is sped up significantly with both Scryfall and MPCFill as a source.
 - The cropper threads should be significantly faster now when they don't have work to do.
 - Loading a project now uses a drop-down instead of opening a file browser.
+- The auto-update flow now includes more progress-updates via toast notifications.
 
 ### Fixed
 - All known cases where custom card shapes would not correctly be clipped have been fixed.
