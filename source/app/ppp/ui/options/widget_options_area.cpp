@@ -12,7 +12,7 @@
 #include <ppp/plugins/plugin_interface.hpp>
 #include <ppp/qt_util.hpp>
 
-#include <ppp/ui/widget_util/widget_collapse_button.hpp>
+#include <ppp/ui/widget_util/widget_collapse_container.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -87,15 +87,27 @@ void OptionsAreaWidget::PluginDisabled(std::string_view plugin_name)
         auto* plugin_widget{ plugin->Widget() };
 
         auto* layout{ static_cast<QVBoxLayout*>(widget()->layout()) };
-        const auto plugin_widget_index{ layout->indexOf(plugin_widget) };
-        if (plugin_widget_index >= 0)
-        {
-            if (auto* collapse_button{ layout->itemAt(plugin_widget_index - 1)->widget() })
+        const auto plugin_widget_container{
+            [layout, plugin_widget]() -> CollapseContainer*
             {
-                layout->removeWidget(collapse_button);
-                delete collapse_button;
-            }
-            layout->removeWidget(plugin_widget);
+                for (int i = 0; i < layout->count(); ++i)
+                {
+                    QLayoutItem* item{ layout->itemAt(i) };
+                    CollapseContainer* widget{ dynamic_cast<CollapseContainer*>(item->widget()) };
+
+                    if (widget != nullptr && widget->GetHandledWidget() == plugin_widget)
+                    {
+                        return widget;
+                    }
+                }
+                return nullptr;
+            }()
+        };
+        if (plugin_widget_container != nullptr)
+        {
+            layout->removeWidget(plugin_widget_container);
+            plugin_widget_container->ReleaseHandledWidget();
+            delete plugin_widget_container;
         }
 
         m_Plugins.erase(plugin_name);
@@ -108,15 +120,14 @@ void OptionsAreaWidget::AddCollapsible(QVBoxLayout* layout, QWidget* widget)
     TRACY_AUTO_SCOPE();
 
     auto& application{ *ppApp };
-    auto* collapse_button{ new CollapseButton{
+    auto* collapse_container{ new CollapseContainer{
         widget,
         !application.GetObjectVisibility(widget->objectName()),
     } };
-    layout->insertWidget(layout->count() - 1, collapse_button);
-    layout->insertWidget(layout->count() - 1, widget);
+    layout->insertWidget(layout->count() - 1, collapse_container);
 
-    QObject::connect(collapse_button,
-                     &CollapseButton::SetObjectVisibility,
+    QObject::connect(collapse_container,
+                     &CollapseContainer::SetObjectVisibility,
                      this,
                      [this, widget](bool visible)
                      {
