@@ -1,10 +1,12 @@
-#include <ppp/terminate_handler.hpp>
+#include <ppp/util/terminate_handler.hpp>
 
+#include <csignal>
+#include <cstdlib>
 #include <exception>
 
 #include <ppp/util/log.hpp>
 
-void CppTraceTerminateHandler()
+void TerminateHandler()
 {
     try
     {
@@ -40,7 +42,13 @@ void CppTraceTerminateHandler()
     std::abort();
 }
 
+void SegFaultHandler(int /* signal */)
+{
+    TerminateHandler();
+}
+
 void RegisterTerminateHandler()
 {
-    std::set_terminate(CppTraceTerminateHandler);
+    std::set_terminate(&TerminateHandler);
+    std::signal(SIGSEGV, &SegFaultHandler);
 }

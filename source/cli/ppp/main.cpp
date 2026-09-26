@@ -23,6 +23,7 @@ Q_IMPORT_PLUGIN(QTlsBackendOpenSSL)
 #include <ppp/project/project.hpp>
 
 #include <ppp/util/log.hpp>
+#include <ppp/util/terminate_handler.hpp>
 
 #include <ppp/config.hpp>
 #include <ppp/json_util.hpp>
@@ -265,6 +266,8 @@ int main(int argc, char** raw_argv)
         LogFlags::DetailStacktrace
     };
     Log main_log{ log_flags, Log::c_MainLogName };
+
+    RegisterTerminateHandler();
 
     Q_INIT_RESOURCE(cli_resources);
 

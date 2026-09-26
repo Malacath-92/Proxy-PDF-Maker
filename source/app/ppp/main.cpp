@@ -32,12 +32,12 @@ Q_IMPORT_PLUGIN(QSvgIconPlugin)
 #include <ppp/cubes.hpp>
 #include <ppp/data_migration.hpp>
 #include <ppp/style.hpp>
-#include <ppp/terminate_handler.hpp>
 #include <ppp/update_flow.hpp>
 
 #include <ppp/qt_util.hpp>
 #include <ppp/render_pdf.hpp>
 #include <ppp/util/log.hpp>
+#include <ppp/util/terminate_handler.hpp>
 
 #include <ppp/ui/view_models/options/view_model_actions.hpp>
 #include <ppp/ui/view_models/options/view_model_card_options.hpp>
