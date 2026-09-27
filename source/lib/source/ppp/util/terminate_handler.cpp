@@ -50,5 +50,8 @@ void SegFaultHandler(int /* signal */)
 void RegisterTerminateHandler()
 {
     std::set_terminate(&TerminateHandler);
+
+#ifndef _WIN32
     std::signal(SIGSEGV, &SegFaultHandler);
+#endif
 }
