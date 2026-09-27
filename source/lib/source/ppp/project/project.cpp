@@ -141,7 +141,7 @@ Project::~Project()
 
 bool Project::Load(const fs::path& json_path)
 {
-    return Load(json_path, {});
+    return Load(json_path, nullptr);
 }
 bool Project::Load(const fs::path& json_path,
                    const JsonProvider* overrides)
