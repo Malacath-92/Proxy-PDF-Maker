@@ -16,6 +16,8 @@
 #include <ppp/plugins/mtg_card_downloader/download_scryfall.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
 
+#include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_settings.hpp>
+
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
                                        Project& project,
                                        const Config& config,
@@ -26,27 +28,31 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
+    const auto settings{ MtgDownloaderSettings::Read() };
+
+    m_UpscaleModel->setCurrentText(settings.m_UpscaleModel);
+
     m_TextInput->setPlaceholderText("Paste decklist (Moxfield, Archidekt, MODO, or MTGA), "
                                     " Scryfall decklist json, MPC Autofill xml, "
                                     "or a Scryfall query prepended with $");
 
     m_Settings = new QCheckBox{ "Adjust Settings" };
-    m_Settings->setChecked(true);
+    m_Settings->setChecked(settings.m_AdjustSettings);
 
     m_Backsides = new QCheckBox{ "Download Backsides" };
-    m_Backsides->setChecked(true);
+    m_Backsides->setChecked(settings.m_DownloadBacksides);
     m_Backsides->setToolTip("If unticked, will maintain current default backside if any.");
 
     m_ArtCropCheckbox = new QCheckBox{ "Art Crops" };
-    m_ArtCropCheckbox->setChecked(false);
+    m_ArtCropCheckbox->setChecked(settings.m_ArtCrops);
     m_ArtCropCheckbox->setToolTip("If ticked, only the art crop will be downloaded from Scryfall.");
     m_ArtCropCheckbox->setVisible(m_Cfg.m_CardSizes.contains("Scryfall Art Crop"));
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
-    m_ClearCheckbox->setChecked(true);
+    m_ClearCheckbox->setChecked(settings.m_ClearImages);
 
     m_FillCornersCheckbox = new QCheckBox{ "Fill Corners" };
-    m_FillCornersCheckbox->setChecked(true);
+    m_FillCornersCheckbox->setChecked(settings.m_FillCorners);
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
@@ -60,6 +66,18 @@ MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
     layout->addWidget(m_ProgressBar);
     layout->addWidget(m_Buttons);
     setLayout(layout);
+}
+MtgDownloaderPopup::~MtgDownloaderPopup()
+{
+    MtgDownloaderSettings settings{
+        .m_UpscaleModel{ m_UpscaleModel->currentText() },
+        .m_AdjustSettings = m_Settings->isChecked(),
+        .m_DownloadBacksides = m_Backsides->isChecked(),
+        .m_ArtCrops = m_ArtCropCheckbox->isChecked(),
+        .m_ClearImages = m_ClearCheckbox->isChecked(),
+        .m_FillCorners = m_FillCornersCheckbox->isChecked(),
+    };
+    settings.Write();
 }
 
 bool MtgDownloaderPopup::ClearImageFolder() const

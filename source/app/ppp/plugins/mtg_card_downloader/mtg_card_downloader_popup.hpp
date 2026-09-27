@@ -24,6 +24,7 @@ class MtgDownloaderPopup : public CardDownloaderPopup
                        Project& project,
                        const Config& config,
                        PluginInterface& router);
+    ~MtgDownloaderPopup();
 
   private:
     virtual bool ClearImageFolder() const override;
