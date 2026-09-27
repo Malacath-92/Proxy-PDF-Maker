@@ -2426,37 +2426,27 @@ void Project::SetImageDir(fs::path new_image_dir)
 
 void Project::EnsureOutputFolder() const
 {
-    static constexpr auto c_CreateDirectories{
+    static constexpr auto c_EnsureDirectories{
         [](const auto& path)
         {
-            std::error_code error_code;
-            if (!fs::create_directories(path, error_code))
+            if (!fs::exists(path))
             {
-                LogError("Failed to create directories: {}", error_code.message());
+                std::error_code error_code;
+                if (!fs::create_directories(path, error_code))
+                {
+                    LogError("Failed to create directories: {}", error_code.message());
+                }
             }
         }
     };
 
+    if (!m_Cfg.m_NoCropMode)
     {
-        const auto output_dir{ GetOutputFolder() };
-        if (!fs::exists(output_dir))
-        {
-            c_CreateDirectories(output_dir);
-        }
+        c_EnsureDirectories(GetOutputFolder());
+        c_EnsureDirectories(GetBacksideOutputFolder());
     }
 
-    {
-        const auto output_dir{ GetBacksideOutputFolder() };
-        if (!fs::exists(output_dir))
-        {
-            c_CreateDirectories(output_dir);
-        }
-    }
-
-    if (!fs::exists(m_Data.m_UncropDir))
-    {
-        c_CreateDirectories(m_Data.m_UncropDir);
-    }
+    c_EnsureDirectories(m_Data.m_UncropDir);
 }
 
 void Project::SetBleedEdge(Length bleed_edge)
