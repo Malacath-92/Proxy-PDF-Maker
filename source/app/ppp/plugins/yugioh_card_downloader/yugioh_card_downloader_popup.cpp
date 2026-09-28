@@ -11,6 +11,7 @@
 #include <ppp/plugins/decklist_textbox.hpp>
 #include <ppp/plugins/plugin_interface.hpp>
 #include <ppp/plugins/yugioh_card_downloader/download_ygoprodeck.hpp>
+#include <ppp/plugins/yugioh_card_downloader/yugioh_card_downloader_settings.hpp>
 
 YuGiOhDownloaderPopup::YuGiOhDownloaderPopup(QWidget* parent,
                                              Project& project,
@@ -21,13 +22,17 @@ YuGiOhDownloaderPopup::YuGiOhDownloaderPopup(QWidget* parent,
     m_AutoCenter = false;
     setWindowFlags(Qt::WindowType::Dialog);
 
+    const auto settings{ YuGiOhDownloaderSettings::Read() };
+
+    m_UpscaleModel->setCurrentText(settings.m_UpscaleModel);
+
     m_TextInput->setPlaceholderText("Paste a decklist ydk or ydke decklist");
 
     m_Settings = new QCheckBox{ "Adjust Settings" };
-    m_Settings->setChecked(true);
+    m_Settings->setChecked(settings.m_AdjustSettings);
 
     m_ClearCheckbox = new QCheckBox{ "Clear Image Folder" };
-    m_ClearCheckbox->setChecked(true);
+    m_ClearCheckbox->setChecked(settings.m_ClearImages);
 
     auto* layout{ new QVBoxLayout };
     layout->addWidget(m_TextInput);
@@ -38,6 +43,15 @@ YuGiOhDownloaderPopup::YuGiOhDownloaderPopup(QWidget* parent,
     layout->addWidget(m_ProgressBar);
     layout->addWidget(m_Buttons);
     setLayout(layout);
+}
+YuGiOhDownloaderPopup::~YuGiOhDownloaderPopup()
+{
+    YuGiOhDownloaderSettings settings{
+        .m_UpscaleModel{ m_UpscaleModel->currentText() },
+        .m_AdjustSettings = m_Settings->isChecked(),
+        .m_ClearImages = m_ClearCheckbox->isChecked(),
+    };
+    settings.Write();
 }
 
 bool YuGiOhDownloaderPopup::ClearImageFolder() const

@@ -17,6 +17,7 @@ class YuGiOhDownloaderPopup : public CardDownloaderPopup
                           Project& project,
                           const Config& config,
                           PluginInterface& router);
+    ~YuGiOhDownloaderPopup();
 
   private:
     virtual bool ClearImageFolder() const override;
