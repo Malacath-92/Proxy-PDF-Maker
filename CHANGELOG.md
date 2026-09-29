@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-29-09
+
+### Fixed
+- Fix a crash during downloading images if those images are new to the project.
+
 ## [2.0.0] - 2026-25-09
 
 ### Added
