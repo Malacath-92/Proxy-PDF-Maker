@@ -60,7 +60,7 @@ void PrintPreviewViewModel::QueueRefresh()
 
 bool PrintPreviewViewModel::HasBacksides() const
 {
-    return m_Project.m_Data.m_BacksideEnabled;
+    return m_Project.m_Data.m_BacksideEnabled && !m_Project.m_Data.m_InlineBacksides;
 }
 
 std::vector<Page> PrintPreviewViewModel::GetFrontsidePages() const

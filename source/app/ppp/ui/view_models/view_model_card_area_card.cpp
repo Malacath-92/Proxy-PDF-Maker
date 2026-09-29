@@ -158,7 +158,7 @@ void CardAreaCardViewModel::ThisCardBacksideChanged(OptionalImageRef backside)
 {
     if (backside.has_value() && backside.value() == ""_p)
     {
-        CardBacksideChanged(m_Project.m_Data.m_BacksideDefault);
+        CardBacksideChanged(m_Project.GetBacksideDefault());
     }
     else
     {

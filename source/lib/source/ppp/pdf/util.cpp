@@ -426,8 +426,22 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     std::vector<Page> pages;
     pages.emplace_back();
 
+    auto backside_of_image{
+        [&](const PageImage& image)
+        {
+            return PageImage{
+                image.m_Image.has_value()
+                    ? project.GetBacksideImage(image.m_Image.value().get())
+                    : std::nullopt,
+                image.m_BacksideShortEdge,
+                image.m_Index,
+                image.m_Slot,
+            };
+        }
+    };
+
     auto push_card{
-        [&, index = size_t{ 0 }](const auto& info) mutable
+        [&, index = size_t{ 0 }](this auto& self, const auto& info) -> void
         {
             while (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, index % images_per_page_no_skip))
             {
@@ -453,6 +467,17 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
                 card_index,
                 card_slot,
             });
+
+            if (project.m_Data.m_InlineBacksides && project.HasNonDefaultBacksideImage(img))
+            {
+                if (const auto backside{ project.GetBacksideImage(img) })
+                {
+                    if (const auto* backside_info{ project.FindCard(backside.value()) })
+                    {
+                        self(*backside_info);
+                    }
+                }
+            }
         }
     };
 

@@ -47,6 +47,7 @@ struct ProjectData
 
     // Backside options
     bool m_BacksideEnabled{ false };
+    bool m_InlineBacksides{ false };
     bool m_SeparateBacksides{ false };
     std::optional<fs::path> m_BacksideDefault{ "__back.png" };
     Offset m_BacksideOffset{ 0_mm, 0_mm };
@@ -282,9 +283,11 @@ class Project : public QObject
     void SetGuidesThickness(Length guides_thickness);
 
     bool SetBacksideEnabled(bool backside_enabled);
+    void SetInlineBacksides(bool inline_backsides);
     void SetSeparateBacksidesEnabled(bool separate_backsides);
 
     bool HasValidDefaultBackside() const;
+    const std::optional<fs::path>& GetBacksideDefault() const;
     void SetBacksideDefault(const fs::path& backside_card_name);
     void ClearBacksideDefault();
 
@@ -411,6 +414,7 @@ class Project : public QObject
     void GuidesThicknessChanged(Length guides_thickness);
 
     void BacksideEnabledChanged(bool backside_enabled);
+    void InlineBacksidesChanged(bool inline_backsides);
     void SeparateBacksidesEnabledChanged(bool separate_backsides);
 
     void BacksideDefaultChanged(OptionalImageRef backside_card_name);

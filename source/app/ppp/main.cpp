@@ -486,6 +486,7 @@ int main(int argc, char** argv)
         QObject::connect(&project, &Project::SpacingChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::CornersChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideEnabledChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
+        QObject::connect(&project, &Project::InlineBacksidesChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideDefaultChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideOffsetChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&project, &Project::BacksideExtraBleedEdgeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
@@ -552,8 +553,8 @@ int main(int argc, char** argv)
         FORWARD_SIGNAL_FROM_PROJECT(GuidesThicknessChanged);
 
         FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(InlineBacksidesChanged);
         FORWARD_SIGNAL_FROM_PROJECT(BleedEdgeChanged);
-        FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
 
 #undef FORWARD_SIGNAL_FROM_PROJECT
 
@@ -574,6 +575,7 @@ int main(int argc, char** argv)
     FORWARD_SIGNAL_FROM_TO(project, *card_options_view_model, sig)
 
         FORWARD_SIGNAL_FROM_PROJECT(BacksideEnabledChanged);
+        FORWARD_SIGNAL_FROM_PROJECT(InlineBacksidesChanged);
         FORWARD_SIGNAL_FROM_PROJECT(SeparateBacksidesEnabledChanged);
         FORWARD_SIGNAL_FROM_PROJECT(BacksideDefaultChanged);
         FORWARD_SIGNAL_FROM_PROJECT(BacksideOffsetChanged);

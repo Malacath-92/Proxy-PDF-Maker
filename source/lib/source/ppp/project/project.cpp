@@ -392,6 +392,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
         }
 
         m_Data.m_BacksideEnabled = get_value("backside_enabled");
+        m_Data.m_InlineBacksides = get_value("inline_backsides", false);
         {
             // no-{}
             const auto separate_backsides(get_value("separate_backsides"));
@@ -776,6 +777,7 @@ std::string Project::DumpToJson(const ProjectData& data,
     json["corners"] = magic_enum::enum_name(data.m_Corners);
 
     json["backside_enabled"] = data.m_BacksideEnabled;
+    json["inline_backsides"] = data.m_InlineBacksides;
     json["separate_backsides"] = data.m_SeparateBacksides;
 
     if (data.m_BacksideDefault.has_value())
@@ -1014,7 +1016,7 @@ bool Project::IsCardRendered(const fs::path& card_name) const
 
         if (card->m_Hidden > 0)
         {
-            if (m_Data.m_BacksideDefault == card_name)
+            if (GetBacksideDefault() == card_name)
             {
                 return true;
             }
@@ -2039,6 +2041,17 @@ bool Project::SetBacksideEnabled(bool backside_enabled)
     return false;
 }
 
+void Project::SetInlineBacksides(bool inline_backsides)
+{
+    if (m_Data.m_InlineBacksides != inline_backsides)
+    {
+        m_Data.m_InlineBacksides = inline_backsides;
+
+        BacksideDefaultChanged(GetBacksideDefault());
+        InlineBacksidesChanged(inline_backsides);
+    }
+}
+
 void Project::SetSeparateBacksidesEnabled(bool separate_backsides)
 {
     if (m_Data.m_SeparateBacksides != separate_backsides)
@@ -2054,6 +2067,13 @@ bool Project::HasValidDefaultBackside() const
            fs::exists(GetCardImagePath(m_Data.m_BacksideDefault.value()));
 }
 
+const std::optional<fs::path>& Project::GetBacksideDefault() const
+{
+    thread_local const std::optional<fs::path> s_NullBackside{ std::nullopt };
+    return m_Data.m_InlineBacksides ? s_NullBackside
+                                    : m_Data.m_BacksideDefault;
+}
+
 void Project::SetBacksideDefault(const fs::path& backside_card_name)
 {
     if (m_Data.m_BacksideDefault != backside_card_name)
@@ -2065,7 +2085,10 @@ void Project::SetBacksideDefault(const fs::path& backside_card_name)
         m_Data.m_BacksideDefault = backside_card_name;
         HideCard(m_Data.m_BacksideDefault.value());
 
-        BacksideDefaultChanged(m_Data.m_BacksideDefault);
+        if (!m_Data.m_InlineBacksides)
+        {
+            BacksideDefaultChanged(m_Data.m_BacksideDefault);
+        }
     }
 }
 
@@ -2076,7 +2099,10 @@ void Project::ClearBacksideDefault()
         UnhideCard(m_Data.m_BacksideDefault.value());
         m_Data.m_BacksideDefault.reset();
 
-        BacksideDefaultChanged(std::nullopt);
+        if (!m_Data.m_InlineBacksides)
+        {
+            BacksideDefaultChanged(std::nullopt);
+        }
     }
 }
 
@@ -2144,9 +2170,9 @@ OptionalImageRef Project::GetBacksideImage(const fs::path& card_name) const
         }
     }
 
-    if (m_Data.m_BacksideDefault.has_value())
+    if (const auto& backside_default{ GetBacksideDefault() })
     {
-        return m_Data.m_BacksideDefault.value();
+        return backside_default.value();
     }
     return std::nullopt;
 }
@@ -2946,7 +2972,7 @@ const Svg& ProjectData::CardSvgData(const ConfigData& config) const
     const auto& card_size_info{ CardSizeInfo(config) };
     if (!card_size_info.m_SvgInfo.has_value())
     {
-        static Svg s_Fallback{};
+        thread_local Svg s_Fallback{};
         return s_Fallback;
     }
     return card_size_info.m_SvgInfo.value().m_Svg;

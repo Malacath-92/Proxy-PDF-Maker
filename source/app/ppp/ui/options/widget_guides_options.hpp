@@ -41,7 +41,8 @@ class GuidesOptionsWidget : public QWidget
 
     void CardSizeChanged(Size card_size);
     void BleedEdgeChanged(Length bleed_edge);
-    void BacksideEnabledChanged(bool backside_enabled);
+    void BacksideEnabledChanged();
+    void InlineBacksidesChanged();
 
   private:
     static ColorRGB8 ColorFromBackgroundStyle(const QString& style);

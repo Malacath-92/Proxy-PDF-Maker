@@ -447,7 +447,7 @@ void CardDownloaderPopup::FinalizeDownload()
         for (const auto& card_info : m_Project.m_Data.m_Cards)
         {
             if (!DownloadBacksides() &&
-                card_info.m_Name == m_Project.m_Data.m_BacksideDefault)
+                card_info.m_Name == m_Project.GetBacksideDefault())
             {
                 LogInfo("Skip deleting old file {} from {} because it is the current default backside",
                         card_info.m_Name.string(),

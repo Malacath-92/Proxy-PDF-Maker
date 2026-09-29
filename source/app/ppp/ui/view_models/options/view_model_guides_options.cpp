@@ -58,6 +58,11 @@ Length GuidesOptionsViewModel::GetEnvelopeBleedEdge() const
     return m_Project.m_Data.m_EnvelopeBleedEdge;
 }
 
+bool GuidesOptionsViewModel::HasBacksidePages() const
+{
+    return m_Project.m_Data.m_BacksideEnabled && !m_Project.m_Data.m_InlineBacksides;
+}
+
 void GuidesOptionsViewModel::EmitDefaults()
 {
     TRACY_AUTO_SCOPE();

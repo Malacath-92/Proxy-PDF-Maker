@@ -30,6 +30,8 @@ class GuidesOptionsViewModel : public QObject
     Length GetBleedEdge() const;
     Length GetEnvelopeBleedEdge() const;
 
+    bool HasBacksidePages() const;
+
     void EmitDefaults();
 
   signals:
@@ -53,6 +55,7 @@ class GuidesOptionsViewModel : public QObject
     void CardSizeChanged(Size card_size);
     void BleedEdgeChanged(Length bleed_edge);
     void BacksideEnabledChanged(bool backside_enabled);
+    void InlineBacksidesChanged(bool inline_backsides);
 
   public slots:
     void NewProjectOpened();

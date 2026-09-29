@@ -22,7 +22,7 @@ CardOptionsViewModel::CardOptionsViewModel(Project& project,
 
 CardViewModel* CardOptionsViewModel::MakeBacksideCardViewModel() const
 {
-    return new CardViewModel{ m_Project.m_Data.m_BacksideDefault.value_or("__back.jpeg"),
+    return new CardViewModel{ m_Project.GetBacksideDefault().value_or("__back.jpeg"),
                               CardViewParams{ .m_MinimumWidth{ 60_pix } },
                               static_cast<const Project&>(m_Project) };
 }
@@ -54,7 +54,7 @@ Unit CardOptionsViewModel::GetBaseUnit() const
 
 OptionalImageRef CardOptionsViewModel::GetBacksideDefault() const
 {
-    return m_Project.m_Data.m_BacksideDefault;
+    return m_Project.GetBacksideDefault();
 }
 
 Length CardOptionsViewModel::GetFullBleed() const
@@ -75,9 +75,10 @@ void CardOptionsViewModel::EmitDefaults()
     BaseUnitChanged(m_Cfg.m_BaseUnit);
 
     BacksideEnabledChanged(m_Project.m_Data.m_BacksideEnabled);
+    InlineBacksidesChanged(m_Project.m_Data.m_InlineBacksides);
     SeparateBacksidesEnabledChanged(m_Project.m_Data.m_SeparateBacksides);
 
-    BacksideDefaultChanged(m_Project.m_Data.m_BacksideDefault);
+    BacksideDefaultChanged(m_Project.GetBacksideDefault());
 
     BacksideOffsetChanged(m_Project.m_Data.m_BacksideOffset);
     BacksideRotationChanged(m_Project.m_Data.m_BacksideRotation);
@@ -102,6 +103,10 @@ void CardOptionsViewModel::NewProjectOpened()
 void CardOptionsViewModel::ChangeBacksideEnabled(Qt::CheckState backside_enabled)
 {
     m_Project.SetBacksideEnabled(backside_enabled != Qt::CheckState::Unchecked);
+}
+void CardOptionsViewModel::ChangeInlineBacksides(Qt::CheckState inline_backsides)
+{
+    m_Project.SetInlineBacksides(inline_backsides != Qt::CheckState::Unchecked);
 }
 void CardOptionsViewModel::ChangeSeparateBacksidesEnabled(Qt::CheckState separate_backsides)
 {

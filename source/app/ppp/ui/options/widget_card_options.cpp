@@ -84,6 +84,9 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     m_BacksideCheckbox = new QCheckBox{ "Enable Backside" };
     EnableOptionWidgetForDefaults(m_BacksideCheckbox, config_reqs, "backside_enabled");
 
+    m_InlineBacksides = new QCheckBox{ "Inline Backsides" };
+    EnableOptionWidgetForDefaults(m_InlineBacksides, config_reqs, "inline_backsides");
+
     m_SeparateBacksidesCheckbox = new QCheckBox{ "Separate Backsides-PDF" };
     m_SeparateBacksidesCheckbox->setToolTip("Generate two PDFs, one from the frontsides and one for the backsides.");
     EnableOptionWidgetForDefaults(m_SeparateBacksidesCheckbox, config_reqs, "separate_backsides");
@@ -179,6 +182,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     layout->addWidget(spacing);
     layout->addWidget(corners);
     layout->addWidget(m_BacksideCheckbox);
+    layout->addWidget(m_InlineBacksides);
     layout->addWidget(m_SeparateBacksidesCheckbox);
     layout->addWidget(m_BacksideDefaultButton);
     layout->addWidget(m_BacksideDefaultPreview);
@@ -242,6 +246,10 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
                      &QCheckBox::checkStateChanged,
                      &m_ViewModel,
                      &CardOptionsViewModel::ChangeBacksideEnabled);
+    QObject::connect(m_InlineBacksides,
+                     &QCheckBox::checkStateChanged,
+                     &m_ViewModel,
+                     &CardOptionsViewModel::ChangeInlineBacksides);
     QObject::connect(m_SeparateBacksidesCheckbox,
                      &QCheckBox::checkStateChanged,
                      &m_ViewModel,
@@ -278,6 +286,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     FORWARD_SIGNAL_FROM_VIEW_MODEL(AdvancedModeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BaseUnitChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(InlineBacksidesChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(SeparateBacksidesEnabledChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideDefaultChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideOffsetChanged);
@@ -297,6 +306,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
 void CardOptionsWidget::AdvancedModeChanged(bool advanced_mode)
 {
     // Note: Everything else currently available in basic mode
+    m_InlineBacksides->setVisible(m_BacksideCheckbox->isChecked() && advanced_mode);
     m_BacksideExtraBleedEdge->setVisible(m_BacksideCheckbox->isChecked() && advanced_mode);
     m_BacksideRotation->setVisible(m_BacksideCheckbox->isChecked() && advanced_mode);
 }
@@ -305,28 +315,55 @@ void CardOptionsWidget::BacksideEnabledChanged(bool backside_enabled)
 {
     TRACY_AUTO_SCOPE();
 
-    m_BacksideCheckbox->setChecked(backside_enabled);
+    m_InlineBacksides->setEnabled(backside_enabled);
+    m_InlineBacksides->setVisible(backside_enabled);
 
-    m_SeparateBacksidesCheckbox->setEnabled(backside_enabled);
-    m_SeparateBacksidesCheckbox->setVisible(backside_enabled);
+    const bool has_backside_pages{ !m_InlineBacksides->isChecked() && backside_enabled };
 
-    m_BacksideDefaultButton->setEnabled(backside_enabled);
-    m_BacksideDefaultButton->setVisible(backside_enabled);
+    m_SeparateBacksidesCheckbox->setEnabled(has_backside_pages);
+    m_SeparateBacksidesCheckbox->setVisible(has_backside_pages);
 
-    m_BacksideDefaultPreview->setVisible(backside_enabled);
+    m_BacksideDefaultButton->setEnabled(has_backside_pages);
+    m_BacksideDefaultButton->setVisible(has_backside_pages);
 
-    m_BacksideOffset->setEnabled(backside_enabled);
-    m_BacksideOffset->setVisible(backside_enabled);
+    m_BacksideDefaultPreview->setVisible(has_backside_pages);
+
+    m_BacksideOffset->setEnabled(has_backside_pages);
+    m_BacksideOffset->setVisible(has_backside_pages);
 
     m_BacksideAuto->setEnabled(backside_enabled);
     m_BacksideAuto->setVisible(backside_enabled);
 
-    m_BacksideExtraBleedEdge->setVisible(backside_enabled && m_ViewModel.GetAdvancedMode());
-    m_BacksideRotation->setVisible(backside_enabled && m_ViewModel.GetAdvancedMode());
+    m_BacksideExtraBleedEdge->setVisible(has_backside_pages && m_ViewModel.GetAdvancedMode());
+    m_BacksideRotation->setVisible(has_backside_pages && m_ViewModel.GetAdvancedMode());
 
     m_BacksideCheckbox->blockSignals(true);
     m_BacksideCheckbox->setChecked(backside_enabled);
     m_BacksideCheckbox->blockSignals(false);
+}
+void CardOptionsWidget::InlineBacksidesChanged(bool inline_backsides)
+{
+    TRACY_AUTO_SCOPE();
+
+    const bool has_backside_pages{ !inline_backsides && m_BacksideCheckbox->isChecked() };
+
+    m_SeparateBacksidesCheckbox->setEnabled(has_backside_pages);
+    m_SeparateBacksidesCheckbox->setVisible(has_backside_pages);
+
+    m_BacksideDefaultButton->setEnabled(has_backside_pages);
+    m_BacksideDefaultButton->setVisible(has_backside_pages);
+
+    m_BacksideDefaultPreview->setVisible(has_backside_pages);
+
+    m_BacksideOffset->setEnabled(has_backside_pages);
+    m_BacksideOffset->setVisible(has_backside_pages);
+
+    m_BacksideExtraBleedEdge->setVisible(has_backside_pages && m_ViewModel.GetAdvancedMode());
+    m_BacksideRotation->setVisible(has_backside_pages && m_ViewModel.GetAdvancedMode());
+
+    m_InlineBacksides->blockSignals(true);
+    m_InlineBacksides->setChecked(inline_backsides);
+    m_InlineBacksides->blockSignals(false);
 }
 void CardOptionsWidget::SeparateBacksidesEnabledChanged(bool separate_backsides)
 {

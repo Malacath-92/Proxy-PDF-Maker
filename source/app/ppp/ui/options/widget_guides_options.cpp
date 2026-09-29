@@ -247,6 +247,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(GuidesOptionsViewModel* view_model)
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardSizeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BleedEdgeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideEnabledChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(InlineBacksidesChanged);
 
     m_ViewModel.EmitDefaults();
 }
@@ -358,9 +359,15 @@ void GuidesOptionsWidget::BleedEdgeChanged(Length bleed_edge)
 {
     m_GuidesOffsetSpin->SetRange(0_mm, bleed_edge + m_ViewModel.GetEnvelopeBleedEdge());
 }
-void GuidesOptionsWidget::BacksideEnabledChanged(bool backside_enabled)
+void GuidesOptionsWidget::BacksideEnabledChanged()
 {
-    m_EnableBacksideGuidesCheckbox->setEnabled(backside_enabled);
+    const bool has_backside_pages{ m_ViewModel.HasBacksidePages() };
+    m_EnableBacksideGuidesCheckbox->setEnabled(has_backside_pages);
+}
+void GuidesOptionsWidget::InlineBacksidesChanged()
+{
+    const bool has_backside_pages{ m_ViewModel.HasBacksidePages() };
+    m_EnableBacksideGuidesCheckbox->setEnabled(has_backside_pages);
 }
 
 ColorRGB8 GuidesOptionsWidget::ColorFromBackgroundStyle(const QString& style)

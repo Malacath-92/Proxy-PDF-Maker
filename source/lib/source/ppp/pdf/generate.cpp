@@ -285,15 +285,18 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
     const auto pages{ DistributeCardsToPages(project) };
     const auto transforms{ ComputeTransforms(project, config.m_NoCropMode) };
 
+    const auto has_backside_pages{
+        project.m_Data.m_BacksideEnabled && !project.m_Data.m_InlineBacksides
+    };
     const auto backside_pages{
-        project.m_Data.m_BacksideEnabled ? MakeBacksidePages(project, pages)
-                                         : std::vector<Page>{}
+        has_backside_pages ? MakeBacksidePages(project, pages)
+                           : std::vector<Page>{}
     };
     const auto backside_transforms{
-        project.m_Data.m_BacksideEnabled ? ComputeBacksideTransforms(project,
-                                                                     transforms,
-                                                                     config.m_NoCropMode)
-                                         : PageImageTransforms{}
+        has_backside_pages ? ComputeBacksideTransforms(project,
+                                                       transforms,
+                                                       config.m_NoCropMode)
+                           : PageImageTransforms{}
     };
 
     const auto num_pages{ pages.size() };
@@ -410,11 +413,11 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
         backside_extended_guides = generate_extended_guides(backside_transforms);
     }
 
-    const bool backsides_on_same_pdf{
-        project.m_Data.m_BacksideEnabled && !project.m_Data.m_SeparateBacksides
+    const auto backsides_on_same_pdf{
+        has_backside_pages && !project.m_Data.m_SeparateBacksides
     };
-    const bool backsides_on_separate_pdf{
-        project.m_Data.m_BacksideEnabled && project.m_Data.m_SeparateBacksides
+    const auto backsides_on_separate_pdf{
+        has_backside_pages && project.m_Data.m_SeparateBacksides
     };
 
     auto frontside_pdf{ CreatePdfDocument(config.m_Backend, project, config) };
@@ -774,7 +777,7 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
         generate_work.push_back([draw_front_page, front_page, &page, p]()
                                 { draw_front_page(front_page, page, p); });
 
-        if (project.m_Data.m_BacksideEnabled)
+        if (has_backside_pages)
         {
             PdfPage* back_page{ backside_pdf->NextPage(true) };
             const auto& backside_page{ backside_pages[p] };

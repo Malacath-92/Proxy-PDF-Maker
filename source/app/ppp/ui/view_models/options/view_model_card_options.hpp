@@ -44,6 +44,7 @@ class CardOptionsViewModel : public QObject
     void BaseUnitChanged(Unit base_unit);
 
     void BacksideEnabledChanged(bool backside_enabled);
+    void InlineBacksidesChanged(bool inline_backsides);
     void SeparateBacksidesEnabledChanged(bool separate_backsides);
 
     void BacksideDefaultChanged(OptionalImageRef backside_card_name);
@@ -68,6 +69,7 @@ class CardOptionsViewModel : public QObject
     void NewProjectOpened();
 
     void ChangeBacksideEnabled(Qt::CheckState backside_enabled);
+    void ChangeInlineBacksides(Qt::CheckState inline_backsides);
     void ChangeSeparateBacksidesEnabled(Qt::CheckState separate_backsides);
 
     void ChangeBacksideDefault(const QString& backside_card_name);

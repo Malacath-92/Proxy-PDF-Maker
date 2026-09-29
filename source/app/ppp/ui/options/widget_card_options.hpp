@@ -34,6 +34,7 @@ class CardOptionsWidget : public QWidget
     void AdvancedModeChanged(bool advanced_mode);
 
     void BacksideEnabledChanged(bool backside_enabled);
+    void InlineBacksidesChanged(bool inline_backsides);
     void SeparateBacksidesEnabledChanged(bool separate_backsides);
 
     void BacksideDefaultChanged(OptionalImageRef backside_card_name);
@@ -64,6 +65,7 @@ class CardOptionsWidget : public QWidget
     LinkedSpinBoxes* m_Spacing{ nullptr };
     QComboBox* m_Corners{ nullptr };
     QCheckBox* m_BacksideCheckbox{ nullptr };
+    QCheckBox* m_InlineBacksides{ nullptr };
     QCheckBox* m_SeparateBacksidesCheckbox{ nullptr };
     QPushButton* m_BacksideDefaultButton{ nullptr };
     ClearableCardImage* m_BacksideDefaultPreview{ nullptr };
