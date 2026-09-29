@@ -440,8 +440,8 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
         }
     };
 
-    auto push_card{
-        [&, index = size_t{ 0 }](this auto& self, const auto& info) -> void
+    auto push_card_impl{
+        [&, index = size_t{ 0 }](const auto& info, auto& self) mutable -> void
         {
             while (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, index % images_per_page_no_skip))
             {
@@ -474,10 +474,17 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
                 {
                     if (const auto* backside_info{ project.FindCard(backside.value()) })
                     {
-                        self(*backside_info);
+                        self(*backside_info, self);
                     }
                 }
             }
+        }
+    };
+
+    auto push_card{
+        [&](const auto& info)
+        {
+            push_card_impl(info, push_card_impl);
         }
     };
 
