@@ -368,6 +368,18 @@ std::vector<QString> MPCFillDownloader::GetDuplicates(const QString& file_name) 
     return {};
 }
 
+std::unordered_map<std::string, std::string> MPCFillDownloader::GetMeta(const QString& file_name) const
+{
+    auto card{ std::ranges::find(m_Set.m_Frontsides, file_name, &MPCFillCard::m_Name) };
+    if (card != m_Set.m_Frontsides.end())
+    {
+        return {
+            { "query", card->m_Query.toStdString() },
+        };
+    }
+    return {};
+}
+
 QString MPCFillDownloader::DefaultBackside() const
 {
     return m_DefaultBackside;
@@ -398,6 +410,7 @@ MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDo
         name += ".jpg";
     }
 
+    auto query{ element.firstChildElement("query").text() };
     auto id{ element.firstChildElement("id").text() };
     auto slots_str{ element.firstChildElement("slots").text().split(",") };
     auto amount{ slots_str.size() };
@@ -411,6 +424,7 @@ MPCFillDownloader::CardParseResult MPCFillDownloader::ParseMPCFillCard(const QDo
     return CardParseResult{
         .m_Card{
             .m_Name{ std::move(name) },
+            .m_Query{ std::move(query) },
             .m_Id{ std::move(id) },
             .m_Amount = static_cast<uint32_t>(amount),
 

@@ -503,6 +503,11 @@ void CardDownloaderPopup::FinalizeDownload()
         m_Project.CardAdded(path);
         m_Project.SetCardCount(path, m_Downloader->GetAmount(card));
 
+        for (auto&& [key, value] : m_Downloader->GetMeta(card))
+        {
+            m_Project.SetCardMeta(path, key, value);
+        }
+
         m_Project.SetBacksideImageDefault(path);
         if (DownloadBacksides())
         {

@@ -133,6 +133,11 @@ std::vector<QString> YGOProDeckDownloader::GetDuplicates(const QString& /*file_n
     return {};
 }
 
+std::unordered_map<std::string, std::string> YGOProDeckDownloader::GetMeta(const QString& /* file_name */) const
+{
+    return {};
+}
+
 QString YGOProDeckDownloader::DefaultBackside() const
 {
     return "__back.png";

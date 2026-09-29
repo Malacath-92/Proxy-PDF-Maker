@@ -302,6 +302,14 @@ bool Project::LoadFromJson(const std::string& json_blob,
                     }
                 };
             }
+
+            if (card_json.contains("meta"))
+            {
+                for (const auto& [key, value] : card_json["meta"].items())
+                {
+                    card.m_MetaInfo[key] = value;
+                }
+            }
         }
 
         {
@@ -724,6 +732,16 @@ std::string Project::DumpToJson(const ProjectData& data,
                     std::chrono::duration_cast<std::chrono::seconds>(
                         card.m_TimeAdded.time_since_epoch())
                         .count());
+            }
+
+            if (!card.m_MetaInfo.empty())
+            {
+                nlohmann::json meta;
+                for (const auto& [key, value] : card.m_MetaInfo)
+                {
+                    meta[key] = value;
+                }
+                card_json["meta"] = std::move(meta);
             }
         }
     }
@@ -1182,6 +1200,14 @@ void Project::ResetAllCardCounts()
     for (auto& card : m_Data.m_Cards)
     {
         SetCardCount(card.m_Name, 0);
+    }
+}
+
+void Project::SetCardMeta(const fs::path& card_name, std::string key, std::string value)
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        card->m_MetaInfo[std::move(key)] = std::move(value);
     }
 }
 

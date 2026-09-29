@@ -29,6 +29,8 @@ struct CardInfo
 
     bool m_Transient{ false };
 
+    std::unordered_map<std::string, std::string> m_MetaInfo{};
+
     fs::path Stem() const;
 
     fs::path GetSourcePath(const ProjectData& data) const;

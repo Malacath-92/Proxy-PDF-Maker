@@ -132,6 +132,18 @@ std::vector<QString> ScryfallDownloader::GetDuplicates(const QString& /*file_nam
     return {};
 }
 
+std::unordered_map<std::string, std::string> ScryfallDownloader::GetMeta(const QString& file_name) const
+{
+    const auto it{ std::ranges::find(m_Cards, file_name, &DecklistCard::m_FileName) };
+    if (it != m_Cards.end())
+    {
+        return {
+            { "card_name", it->m_Name.toStdString() },
+        };
+    }
+    return {};
+}
+
 QString ScryfallDownloader::DefaultBackside() const
 {
     for (const auto& card : m_Cards)

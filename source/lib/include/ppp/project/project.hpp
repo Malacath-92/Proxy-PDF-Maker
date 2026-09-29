@@ -233,6 +233,8 @@ class Project : public QObject
     void IncrementAllCardCounts();
     void ResetAllCardCounts();
 
+    void SetCardMeta(const fs::path& card_name, std::string key, std::string value);
+
     void CardOrderChanged();
     void CardOrderDirectionChanged();
 

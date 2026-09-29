@@ -29,6 +29,8 @@ class CardArtDownloader : public QObject
     virtual std::optional<QString> GetBackside(const QString& file_name) const = 0;
     virtual std::vector<QString> GetDuplicates(const QString& file_name) const = 0;
 
+    virtual std::unordered_map<std::string, std::string> GetMeta(const QString& file_name) const = 0;
+
     virtual QString DefaultBackside() const = 0;
 
     virtual bool ProvidesBleedEdge() const = 0;

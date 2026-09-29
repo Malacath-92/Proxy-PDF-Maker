@@ -24,6 +24,8 @@ class MPCFillDownloader : public CardArtDownloader
     virtual std::optional<QString> GetBackside(const QString& file_name) const override;
     virtual std::vector<QString> GetDuplicates(const QString& file_name) const override;
 
+    virtual std::unordered_map<std::string, std::string> GetMeta(const QString& file_name) const override;
+
     virtual QString DefaultBackside() const override;
 
     virtual bool ProvidesBleedEdge() const override;
@@ -39,6 +41,7 @@ class MPCFillDownloader : public CardArtDownloader
     struct MPCFillCard
     {
         QString m_Name;
+        QString m_Query;
         QString m_Id;
         uint32_t m_Amount;
 
