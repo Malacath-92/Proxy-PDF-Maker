@@ -1289,9 +1289,6 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
         }
     }
 
-    AutoMatchBackside(card_name);
-    AppendCardToList(card_name);
-
     if (!m_CardSignallers.contains(card_name))
     {
         const auto [it, _]{
@@ -1302,6 +1299,9 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
         };
         CardSignallerAdded(card_name, it->second.get());
     }
+
+    AutoMatchBackside(card_name);
+    AppendCardToList(card_name);
 
     if (m_Data.m_StalePreviews.contains(card_name))
     {
