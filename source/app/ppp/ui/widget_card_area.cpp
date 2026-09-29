@@ -246,6 +246,13 @@ class CardAreaCardWidget : public QFrame
             m_CardWidget->setVisible(true);
             m_ExtraOptions->setVisible(false);
         }
+
+        if (auto* parent_widget{ dynamic_cast<QWidget*>(parent()) })
+        {
+            parent_widget->updateGeometry();
+            parent_widget->adjustSize();
+            parent_widget->layout()->invalidate();
+        }
     }
     void CardCountChanged(uint32_t count)
     {
