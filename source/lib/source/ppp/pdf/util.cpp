@@ -426,20 +426,6 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     std::vector<Page> pages;
     pages.emplace_back();
 
-    auto backside_of_image{
-        [&](const PageImage& image)
-        {
-            return PageImage{
-                image.m_Image.has_value()
-                    ? project.GetBacksideImage(image.m_Image.value().get())
-                    : std::nullopt,
-                image.m_BacksideShortEdge,
-                image.m_Index,
-                image.m_Slot,
-            };
-        }
-    };
-
     auto push_card_impl{
         [&, index = size_t{ 0 }](const auto& info, auto& self) mutable -> void
         {
