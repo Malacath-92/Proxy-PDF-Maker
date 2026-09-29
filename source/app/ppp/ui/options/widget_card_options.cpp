@@ -85,6 +85,7 @@ CardOptionsWidget::CardOptionsWidget(CardOptionsViewModel* view_model)
     EnableOptionWidgetForDefaults(m_BacksideCheckbox, config_reqs, "backside_enabled");
 
     m_InlineBacksides = new QCheckBox{ "Inline Backsides" };
+    m_InlineBacksides->setToolTip("Put backsides directly next to their frontsides as opposed to putting them on another page.");
     EnableOptionWidgetForDefaults(m_InlineBacksides, config_reqs, "inline_backsides");
 
     m_SeparateBacksidesCheckbox = new QCheckBox{ "Separate Backsides-PDF" };
