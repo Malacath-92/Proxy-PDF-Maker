@@ -257,11 +257,20 @@ bool Project::LoadFromJson(const std::string& json_blob,
         m_Data.m_ImageCache = m_Data.m_CropDir / "preview.cache";
 
         // Note: Not using get_value as we don't support overriding card values right now
+        bool needs_to_count_backsides{ false };
         for (const nlohmann::json& card_json : json["cards"])
         {
             CardInfo& card{ PushCard(card_json["name"]) };
             card.m_Num = card_json["num"];
             card.m_Hidden = card_json["hidden"];
+            if (card_json.contains("is_backside"))
+            {
+                card.m_IsBackside = card_json["is_backside"];
+            }
+            else
+            {
+                needs_to_count_backsides = true;
+            }
             if (card_json.contains("backside"))
             {
                 card.m_Backside = card_json["backside"].get<std::string>();
@@ -308,6 +317,24 @@ bool Project::LoadFromJson(const std::string& json_blob,
                 for (const auto& [key, value] : card_json["meta"].items())
                 {
                     card.m_MetaInfo[key] = value;
+                }
+            }
+        }
+
+        if (needs_to_count_backsides)
+        {
+            for (auto& card : m_Data.m_Cards)
+            {
+                card.m_IsBackside = 0;
+            }
+            for (auto& card : m_Data.m_Cards)
+            {
+                if (HasNonClearNonDefaultBackside(card))
+                {
+                    if (auto* backside{ FindCard(card.m_Backside.value()) })
+                    {
+                        backside->m_IsBackside++;
+                    }
                 }
             }
         }
@@ -714,6 +741,7 @@ std::string Project::DumpToJson(const ProjectData& data,
             card_json["name"] = card.m_Name.generic_string();
             card_json["num"] = card.m_Num;
             card_json["hidden"] = card.m_Hidden;
+            card_json["is_backside"] = card.m_IsBackside;
             if (card.m_Backside.has_value())
             {
                 card_json["backside"] = card.m_Backside.value().generic_string();
@@ -2049,6 +2077,38 @@ void Project::SetInlineBacksides(bool inline_backsides)
 
         BacksideDefaultChanged(GetBacksideDefault());
         InlineBacksidesChanged(inline_backsides);
+
+        if (IsManuallySorted())
+        {
+            if (inline_backsides)
+            {
+                for (auto it{ m_Data.m_CardsList.begin() }; it != m_Data.m_CardsList.end(); ++it)
+                {
+                    if (auto* card{ FindCard(*it) })
+                    {
+                        if (HasNonClearNonDefaultBackside(*card))
+                        {
+                            it = m_Data.m_CardsList.insert(it, card->m_Backside.value());
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (auto it{ m_Data.m_CardsList.begin() }; it != m_Data.m_CardsList.end();)
+                {
+                    if (auto* card{ FindCard(*it) })
+                    {
+                        if (card->m_Hidden > 0)
+                        {
+                            it = m_Data.m_CardsList.erase(it);
+                            continue;
+                        }
+                    }
+                    ++it;
+                }
+            }
+        }
     }
 }
 
@@ -2205,6 +2265,15 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
             }
         }
 
+        if (auto* old_backside_card{ old_backside.has_value() ? FindCard(old_backside.value()) : nullptr })
+        {
+            old_backside_card->m_IsBackside--;
+        }
+        if (auto* backside_card{ FindCard(card->m_Backside.value()) })
+        {
+            backside_card->m_IsBackside++;
+        }
+
         const bool old_backside_shown{ old_backside.has_value() ? UnhideCard(old_backside.value()) : false };
         const bool new_backside_hidden{ HideCard(card->m_Backside.value()) };
         return old_backside_shown || new_backside_hidden;
@@ -2248,6 +2317,15 @@ void Project::SetCardBacksideShortEdge(const fs::path& card_name, bool has_backs
         card->m_BacksideShortEdge = has_backside_short_edge;
         m_CardSignallers.at(card_name)->CardBacksideShortEdgeChanged(has_backside_short_edge);
     }
+}
+
+bool Project::IsBacksideOfAnother(const fs::path& card_name) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        return card->m_IsBackside > 0;
+    }
+    return false;
 }
 
 bool Project::SetBacksideAutoPattern(std::string pattern)
@@ -3001,9 +3079,15 @@ CardSorting ProjectData::GenerateDefaultCardsSorting() const
     {
         if (card.m_Hidden == 0)
         {
+            const auto push_backside{ m_InlineBacksides && HasNonClearNonDefaultBackside(card) };
             for (uint32_t j = 0; j < card.m_Num; j++)
             {
                 default_cards_list.push_back(card.m_Name);
+
+                if (push_backside)
+                {
+                    default_cards_list.push_back(card.m_Backside.value());
+                }
             }
         }
     }
@@ -3140,10 +3224,16 @@ void Project::AppendCardToList(const fs::path& card_name)
 
         if (card->m_Hidden == 0)
         {
+            const auto push_backside{ m_Data.m_InlineBacksides && HasNonClearNonDefaultBackside(*card) };
             const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
             for (auto i{ current_count }; i < card->m_Num; ++i)
             {
                 m_Data.m_CardsList.push_back(card_name);
+
+                if (push_backside)
+                {
+                    m_Data.m_CardsList.push_back(card->m_Backside.value());
+                }
             }
         }
     }
@@ -3157,29 +3247,46 @@ void Project::RemoveCardFromList(const fs::path& card_name)
         return;
     }
 
+    static constexpr auto remove_n{
+        [](auto& vec, const auto& val, const std::ptrdiff_t n)
+        {
+            auto removed{ 0 };
+            for (auto jt = vec.rbegin(); jt != vec.rend() && removed < n;)
+            {
+                if (*jt == val)
+                {
+                    using iter_t = decltype(jt);
+                    jt = iter_t{ vec.erase(std::next(jt).base()) };
+                    ++removed;
+                }
+                else
+                {
+                    ++jt;
+                }
+            }
+        }
+    };
+
     auto* card{ FindCard(card_name) };
+    const auto kill_backside{ m_Data.m_InlineBacksides && HasNonClearNonDefaultBackside(*card) };
     if (card == nullptr || card->m_Num == 0)
     {
-        std::erase(m_Data.m_CardsList, card_name);
+        const auto removed{ std::erase(m_Data.m_CardsList, card_name) };
+
+        if (kill_backside)
+        {
+            remove_n(m_Data.m_CardsList, card->m_Backside.value(), removed);
+        }
     }
     else
     {
         const auto current_count{ std::ranges::count(m_Data.m_CardsList, card_name) };
         const auto to_remove{ current_count - card->m_Num };
 
-        auto removed{ 0 };
-        for (auto jt = m_Data.m_CardsList.rbegin(); jt != m_Data.m_CardsList.rend() && removed < to_remove;)
+        remove_n(m_Data.m_CardsList, card_name, to_remove);
+        if (card != nullptr && kill_backside)
         {
-            if (*jt == card_name)
-            {
-                using iter_t = decltype(jt);
-                jt = iter_t{ m_Data.m_CardsList.erase(std::next(jt).base()) };
-                ++removed;
-            }
-            else
-            {
-                ++jt;
-            }
+            remove_n(m_Data.m_CardsList, card->m_Backside.value(), to_remove);
         }
     }
 }

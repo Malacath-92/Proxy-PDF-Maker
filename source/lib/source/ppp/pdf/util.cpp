@@ -427,7 +427,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     pages.emplace_back();
 
     auto push_card_impl{
-        [&, index = size_t{ 0 }](const auto& info, auto& self) mutable -> void
+        [&, index = size_t{ 0 }](const auto& info, bool allow_push_backsides, auto& self) mutable -> void
         {
             while (std::ranges::contains(project.m_Data.m_SkippedLayoutSlots, index % images_per_page_no_skip))
             {
@@ -454,13 +454,13 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
                 card_slot,
             });
 
-            if (project.m_Data.m_InlineBacksides && project.HasNonDefaultBacksideImage(img))
+            if (allow_push_backsides && project.m_Data.m_InlineBacksides && project.HasNonDefaultBacksideImage(img))
             {
                 if (const auto backside{ project.GetBacksideImage(img) })
                 {
                     if (const auto* backside_info{ project.FindCard(backside.value()) })
                     {
-                        self(*backside_info, self);
+                        self(*backside_info, false, self);
                     }
                 }
             }
@@ -468,9 +468,9 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
     };
 
     auto push_card{
-        [&](const auto& info)
+        [&](const auto& info, bool allow_push_backsides)
         {
-            push_card_impl(info, push_card_impl);
+            push_card_impl(info, allow_push_backsides, push_card_impl);
         }
     };
 
@@ -481,12 +481,13 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
         {
             if (const auto* info{ project.FindCard(img) })
             {
-                if (info->m_Hidden > 0 || info->m_Transient)
+                const bool is_hidden{ info->m_Hidden > 0 || info->m_Transient };
+                if (is_hidden && !project.m_Data.m_InlineBacksides && !project.IsBacksideOfAnother(img))
                 {
                     continue;
                 }
 
-                push_card(*info);
+                push_card(*info, false);
             }
         }
     }
@@ -501,7 +502,7 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
 
             for (uint32_t i = 0; i < info.m_Num; i++)
             {
-                push_card(info);
+                push_card(info, true);
             }
         }
     }

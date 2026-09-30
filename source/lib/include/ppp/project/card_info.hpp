@@ -15,6 +15,7 @@ struct CardInfo
 
     uint32_t m_Num{ 1 };
     uint32_t m_Hidden{ 0 };
+    uint32_t m_IsBackside{ 0 };
 
     std::optional<fs::path> m_Backside{ ""_p };
     bool m_BacksideShortEdge{ false };
