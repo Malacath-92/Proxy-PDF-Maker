@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-30-09
+
+### Added
+- Under `Card Options` there is now a `Inline Backsides` option which will place backsides of cards right next to the card.
+
+### Fixed
+- Cards will no longer stretch in the card area when enabling/disabling backsides.
+- When loading a project the cards will now be directly sorted in the same order they were saved in.
+
 ## [2.0.1] - 2026-29-09
 
 ### Fixed
