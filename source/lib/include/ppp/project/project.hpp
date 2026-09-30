@@ -455,6 +455,8 @@ class Project : public QObject
     Project& operator=(const Project&) = delete;
     Project& operator=(Project&&) = delete;
 
+    CardInfo& PushCard(const fs::path& card_name);
+
     void AppendCardToList(const fs::path& card_name);
     void RemoveCardFromList(const fs::path& card_name);
 

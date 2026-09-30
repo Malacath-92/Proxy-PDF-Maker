@@ -259,7 +259,7 @@ bool Project::LoadFromJson(const std::string& json_blob,
         // Note: Not using get_value as we don't support overriding card values right now
         for (const nlohmann::json& card_json : json["cards"])
         {
-            CardInfo& card{ PutCard(card_json["name"]) };
+            CardInfo& card{ PushCard(card_json["name"]) };
             card.m_Num = card_json["num"];
             card.m_Hidden = card_json["hidden"];
             if (card_json.contains("backside"))
@@ -3106,6 +3106,25 @@ void Project::AvailablePageSizesChanged(const PageSizes& page_sizes)
     {
         SetPageSizeChoice(std::string{ m_Cfg.GetFirstValidPageSize() });
     }
+}
+
+CardInfo& Project::PushCard(const fs::path& card_name)
+{
+    if (auto* existing_card{ FindCard(card_name) })
+    {
+        return *existing_card;
+    }
+
+    CardInfo new_card{
+        .m_Name{ card_name },
+        .m_Num = 1,
+        .m_Hidden = card_name.string().starts_with("__") ? 1u : 0u,
+        .m_LastWriteTime{ TryGetLastWriteTime(m_Data.m_ImageDir / card_name) },
+        .m_TimeAdded{ CardInfoClock::now() },
+    };
+
+    m_Data.m_Cards.push_back(std::move(new_card));
+    return m_Data.m_Cards.back();
 }
 
 void Project::AppendCardToList(const fs::path& card_name)
