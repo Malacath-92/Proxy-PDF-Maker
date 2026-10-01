@@ -2576,6 +2576,7 @@ void Project::EnsureOutputFolder() const
         c_EnsureDirectories(GetBacksideOutputFolder());
     }
 
+    c_EnsureDirectories(m_Data.m_CropDir);
     c_EnsureDirectories(m_Data.m_UncropDir);
 }
 
