@@ -50,6 +50,8 @@ constexpr char c_AutoUpdateCleanup[]{ AUTO_UPDATE_ARG_START "cleanup" };
 bool AutoUpdateDownloadRelease(std::string_view version,
                                ProgressFn progress_fn)
 {
+    LogInfo("Attempting to download release {}", version);
+
     QNetworkAccessManager network_manager;
 
     const auto release_url{ fmt::format("https://api.github.com/repos/Malacath-92/Proxy-PDF-Maker/releases/tags/{}", version) };
@@ -81,15 +83,15 @@ bool AutoUpdateDownloadRelease(std::string_view version,
 
     if (release_json_reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        LogWarning("Failed fetching release json: {}",
-                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
+        LogError("Failed fetching release json: {}",
+                 QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
         return false;
     }
 
     const auto reply_json{ QJsonDocument::fromJson(release_json_reply->readAll()) };
     if (reply_json.isEmpty())
     {
-        LogWarning("Empty reply for release json.");
+        LogError("Empty reply for release json.");
         return false;
     }
 
@@ -131,6 +133,7 @@ bool AutoUpdateDownloadRelease(std::string_view version,
                 const auto asset_name{ asset_obj["name"].toString() };
                 if (asset_name.endsWith(c_AssetSuffix))
                 {
+                    LogInfo("Asset {} matches current platform and arch.", asset_name.toStdString());
                     return asset_obj["browser_download_url"].toString();
                 }
 
@@ -143,10 +146,11 @@ bool AutoUpdateDownloadRelease(std::string_view version,
 
     if (!asset_url.has_value())
     {
-        LogError("No asset ending with {}",
-                 PLATFORM ARCH ZIP);
+        LogError("No asset ending with {}", c_AssetSuffix);
         return false;
     }
+
+    LogInfo("Downloading asset {}.", asset_url.value().toStdString());
 
     QNetworkRequest release_data_request{ PrepareGithubRequest(asset_url.value()) };
     QNetworkReply* release_data_reply{ network_manager.get(std::move(release_data_request)) };
@@ -176,17 +180,19 @@ bool AutoUpdateDownloadRelease(std::string_view version,
 
     if (release_data_reply->error() != QNetworkReply::NetworkError::NoError)
     {
-        LogWarning("Failed fetching release data: {}",
-                   QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
+        LogError("Failed fetching release data: {}",
+                 QMetaEnum::fromType<QNetworkReply::NetworkError>().valueToKey(release_json_reply->error()));
         return false;
     }
 
     auto release_data{ release_data_reply->readAll() };
     if (release_data.isEmpty())
     {
-        LogWarning("Empty reply for release data.");
+        LogError("Empty reply for release data.");
         return false;
     }
+
+    LogInfo("Unzipping asset...");
 
     auto* unzip_worker{ new UnzipWorker{ std::move(release_data), c_UpdateFolder } };
     unzip_worker->setAutoDelete(false);
@@ -217,7 +223,7 @@ bool AutoUpdateDownloadRelease(std::string_view version,
     default:
         if (unzip_worker->HasError())
         {
-            LogFatal("Unzip Error: {}", unzip_worker->GetError());
+            LogError("Unzip Error: {}", unzip_worker->GetError());
         }
         return false;
     }
