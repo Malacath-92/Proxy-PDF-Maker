@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-01-10
+
+### Fixed
+- Creating a new project with a completely empty image folder will no longer crash.
+
 ## [2.1.0] - 2026-30-09
 
 ### Added
