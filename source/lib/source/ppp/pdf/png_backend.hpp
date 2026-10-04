@@ -62,7 +62,7 @@ class PngPage final : public PdfPage
 class PngImageCache
 {
   public:
-    PngImageCache(const Project& project);
+    PngImageCache();
 
     const Image* GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const;
 
@@ -71,8 +71,6 @@ class PngImageCache
 
   private:
     mutable std::shared_mutex m_Mutex;
-
-    const Project& m_Project;
 
     struct ImageCacheEntry
     {

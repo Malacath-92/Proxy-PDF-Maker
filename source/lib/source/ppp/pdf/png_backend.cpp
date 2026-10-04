@@ -274,10 +274,7 @@ cv::Mat& PngPage::TargetImage()
                                    : m_RotatedImages.back().m_Image;
 }
 
-PngImageCache::PngImageCache(const Project& project)
-    : m_Project{ project }
-{
-}
+PngImageCache::PngImageCache() = default;
 
 const Image* PngImageCache::GetImage(const fs::path& image_path, int32_t w, int32_t h, Image::Rotation rotation) const
 {
@@ -362,7 +359,7 @@ PngDocument::PngDocument(const Project& project, const Config& config)
         };
     }
 
-    m_ImageCache = std::make_unique<PngImageCache>(project);
+    m_ImageCache = std::make_unique<PngImageCache>();
 }
 PngDocument::~PngDocument()
 {
