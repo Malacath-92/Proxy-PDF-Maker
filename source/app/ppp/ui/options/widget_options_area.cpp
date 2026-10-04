@@ -60,6 +60,13 @@ OptionsAreaWidget::OptionsAreaWidget(
         }
     }
 }
+OptionsAreaWidget::~OptionsAreaWidget()
+{
+    for (auto& [plugin_name, plugin] : m_Plugins)
+    {
+        DestroyPlugin(plugin_name, plugin);
+    }
+}
 
 void OptionsAreaWidget::PluginEnabled(std::string_view plugin_name)
 {
