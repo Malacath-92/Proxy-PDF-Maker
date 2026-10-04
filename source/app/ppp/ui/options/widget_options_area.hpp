@@ -22,6 +22,7 @@ class OptionsAreaWidget : public QScrollArea
         QWidget* guides_options,
         QWidget* card_options,
         QWidget* global_options);
+    virtual ~OptionsAreaWidget() override;
 
   public slots:
     void PluginEnabled(std::string_view plugin_name);
