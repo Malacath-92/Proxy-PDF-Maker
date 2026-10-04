@@ -19,7 +19,7 @@ void DrawSvg(QPainter& painter, const QPainterPath& path, QColor color)
     painter.setRenderHint(QPainter::RenderHint::Antialiasing, true);
 
     QPen pen{};
-    pen.setWidth(0.1);
+    pen.setWidth(0);
     pen.setColor(color);
     painter.setPen(pen);
     painter.drawPath(path);
