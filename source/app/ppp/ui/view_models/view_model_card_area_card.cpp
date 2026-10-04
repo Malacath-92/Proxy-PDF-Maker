@@ -1,5 +1,7 @@
 #include <ppp/ui/view_models/view_model_card_area_card.hpp>
 
+#include <QTimer>
+
 #include <ppp/project/project.hpp>
 
 #include <ppp/ui/view_models/popups/view_model_image_browse_popup.hpp>
@@ -9,9 +11,11 @@
 #include <ppp/profile/profile.hpp>
 
 CardAreaCardViewModel::CardAreaCardViewModel(const fs::path& card_name,
-                                             Project& project)
+                                             Project& project,
+                                             const Config& config)
     : m_CardName{ card_name }
     , m_Project{ project }
+    , m_Cfg{ config }
 {
     TRACY_AUTO_SCOPE();
 
@@ -57,6 +61,12 @@ CardAreaCardViewModel::CardAreaCardViewModel(const fs::path& card_name,
                      &Project::BacksideDefaultChanged,
                      this,
                      &CardAreaCardViewModel::ThisBacksideDefaultChanged);
+
+    QObject::connect(&m_Cfg,
+                     &Config::PluginEnabled,
+                     this,
+                     &CardAreaCardViewModel::PluginEnabled,
+                     Qt::ConnectionType::QueuedConnection);
 }
 
 const fs::path& CardAreaCardViewModel::GetCardName() const
@@ -111,6 +121,20 @@ void CardAreaCardViewModel::EmitDefaults()
 
     const auto backside{ m_Project.GetBacksideImage(m_CardName) };
     ThisCardBacksideChanged(backside);
+
+    // Delay by a "frame" to be sure that all plugins were already instantiated
+    QTimer::singleShot(
+        0,
+        [this]()
+        {
+            for (const auto& [plugin_name, enabled] : m_Cfg.m_PluginsState)
+            {
+                if (enabled)
+                {
+                    PluginEnabled(plugin_name);
+                }
+            }
+        });
 }
 
 void CardAreaCardViewModel::DecrementCard()

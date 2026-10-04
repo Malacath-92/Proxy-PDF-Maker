@@ -4,6 +4,9 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/plugins.hpp>
+#include <ppp/plugins/plugin_interface.hpp>
+
 #include <ppp/qt_util.hpp>
 
 #include <ppp/ui/view_models/popups/view_model_decklist_popup.hpp>
@@ -28,7 +31,7 @@ CardAreaViewModel::CardAreaViewModel(Project& project,
 
 CardAreaCardViewModel* CardAreaViewModel::MakeCardViewModel(const fs::path& card_name) const
 {
-    return new CardAreaCardViewModel{ card_name, m_Project };
+    return new CardAreaCardViewModel{ card_name, m_Project, m_Cfg };
 }
 DecklistPopupViewModel* CardAreaViewModel::MakeDecklistPopupViewModel() const
 {

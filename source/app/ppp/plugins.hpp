@@ -8,8 +8,10 @@ class Project;
 class Config;
 class PluginInterface;
 
-std::vector<std::string_view> GetPluginNames();
+std::span<const std::string_view> GetPluginNames();
 PluginInterface* InitPlugin(std::string_view plugin_name,
                             Project& project,
                             const Config& config);
 void DestroyPlugin(std::string_view plugin_name, PluginInterface* plugin);
+
+PluginInterface* GetPlugin(std::string_view plugin_name);

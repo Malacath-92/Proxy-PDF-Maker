@@ -6,6 +6,7 @@
 #include <ppp/util.hpp>
 
 class Project;
+class Config;
 
 class CardViewModel;
 class BlankCardViewModel;
@@ -17,7 +18,8 @@ class CardAreaCardViewModel : public QObject
 
   public:
     CardAreaCardViewModel(const fs::path& card_name,
-                          Project& project);
+                          Project& project,
+                          const Config& config);
 
     const fs::path& GetCardName() const;
     bool HasBackside() const;
@@ -40,6 +42,8 @@ class CardAreaCardViewModel : public QObject
 
     void CardBacksideChanged(OptionalImageRef backside);
 
+    void PluginEnabled(std::string_view plugin_name);
+
   public slots:
     void DecrementCard();
     void IncrementCard();
@@ -56,4 +60,5 @@ class CardAreaCardViewModel : public QObject
   private:
     fs::path m_CardName;
     Project& m_Project;
+    const Config& m_Cfg;
 };

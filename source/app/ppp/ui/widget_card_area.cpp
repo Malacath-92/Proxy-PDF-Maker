@@ -17,6 +17,9 @@
 
 #include <ppp/project/project.hpp>
 
+#include <ppp/plugins.hpp>
+#include <ppp/plugins/plugin_interface.hpp>
+
 #include <ppp/ui/popups/popups.hpp>
 #include <ppp/ui/widget_util/widget_card.hpp>
 
@@ -111,6 +114,7 @@ class CardAreaCardWidget : public QFrame
         FORWARD_SIGNAL_FROM_VIEW_MODEL(CardCountChanged);
         FORWARD_SIGNAL_FROM_VIEW_MODEL(CardBacksideShortEdgeChanged);
         FORWARD_SIGNAL_FROM_VIEW_MODEL(CardBacksideChanged);
+        FORWARD_SIGNAL_FROM_VIEW_MODEL(PluginEnabled);
 
         m_ViewModel.EmitDefaults();
     }
@@ -238,13 +242,13 @@ class CardAreaCardWidget : public QFrame
         {
             vbox_layout->insertWidget(0, m_WithBacksideWidget);
             m_WithBacksideWidget->setVisible(true);
-            m_ExtraOptions->setVisible(true);
+            m_BacksideShortEdge->setVisible(true);
         }
         else
         {
             vbox_layout->insertWidget(0, m_CardWidget);
             m_CardWidget->setVisible(true);
-            m_ExtraOptions->setVisible(false);
+            m_BacksideShortEdge->setVisible(false);
         }
 
         if (auto* parent_widget{ dynamic_cast<QWidget*>(parent()) })
@@ -265,6 +269,18 @@ class CardAreaCardWidget : public QFrame
     void CardBacksideChanged(OptionalImageRef backside)
     {
         m_WithBacksideWidget->RefreshBackside(backside);
+    }
+
+    void PluginEnabled(std::string_view plugin_name)
+    {
+        auto* plugin{ GetPlugin(plugin_name) };
+        if (plugin != nullptr && plugin->ProvidesWidgetExtension(PluginWidgetExtensionType::CardWidgetExtension))
+        {
+            auto* extra_options_layout{ static_cast<QHBoxLayout*>(m_ExtraOptions->layout()) };
+            extra_options_layout->insertWidget(
+                extra_options_layout->count() - 1,
+                plugin->MakeCardWidgetExtension(m_ViewModel.GetCardName()));
+        }
     }
 
   private:
