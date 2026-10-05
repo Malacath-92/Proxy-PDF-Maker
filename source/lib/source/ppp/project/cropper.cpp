@@ -221,6 +221,11 @@ void Cropper::CardModified(const fs::path& card_name)
 
 void Cropper::PauseWork()
 {
+    if (m_State == State::Paused)
+    {
+        return;
+    }
+
     m_State = State::Paused;
 
     for (auto& [_, work] : m_CropWork)
@@ -240,6 +245,11 @@ void Cropper::PauseWork()
 
 void Cropper::RestartWork()
 {
+    if (m_State != State::Paused)
+    {
+        return;
+    }
+
     for (auto& [_, work] : m_CropWork)
     {
         work->Restart();
