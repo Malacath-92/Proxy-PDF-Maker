@@ -22,10 +22,18 @@ option(PPP_BUILD_FAKE_VERSION "Build target with fake version, used to test auto
 option(PPP_PROFILE "Enabling profiling via Tracy" OFF)
 option(PPP_FORMAT_TARGETS "Including clang-format targets" ON)
 option(PPP_BUILD_RELEASE_TARGETS "Include additional code that is only relevant in released binaries" OFF)
+option(PPP_WITH_ASAN "Build with Address-Sanitizer" OFF)
 
 # --------------------------------------------------
 # Install to custom location
 set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/publish")
+
+# --------------------------------------------------
+# Enable sanitizer options
+if (PPP_WITH_ASAN)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif()
 
 # --------------------------------------------------
 # Run conan, needs to happen before project definition
