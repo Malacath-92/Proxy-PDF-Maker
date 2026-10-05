@@ -151,6 +151,11 @@ ImgDict ReadPreviews(const fs::path& img_cache_file, const fs::path& fallback_na
         {
             const auto read = [&in_file]<class T>(TagT<T>) -> T
             {
+                if (in_file.eof())
+                {
+                    throw std::logic_error{ "Reading past end of file" };
+                }
+
                 T val;
                 in_file.read(reinterpret_cast<char*>(&val), sizeof(val));
                 return val;
@@ -159,6 +164,11 @@ ImgDict ReadPreviews(const fs::path& img_cache_file, const fs::path& fallback_na
             {
                 const size_t size{ read(c_Tag<size_t>) };
                 std::vector<T> buffer(size, T{});
+
+                if (in_file.eof())
+                {
+                    throw std::logic_error{ "Reading past end of file" };
+                }
 
                 const size_t data_size{ size * sizeof(T) };
                 in_file.read(reinterpret_cast<char*>(buffer.data()), data_size);
@@ -201,7 +211,7 @@ ImgDict ReadPreviews(const fs::path& img_cache_file, const fs::path& fallback_na
     }
     catch (std::exception& e)
     {
-        fmt::print("Failed loading previews: {}", e.what());
+        LogError("Failed loading previews: {}", e.what());
         if (fs::exists(img_cache_file))
         {
             fs::remove(img_cache_file);

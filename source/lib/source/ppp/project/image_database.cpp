@@ -112,7 +112,7 @@ ImageDataBase ImageDataBase::FromFile(const fs::path& path)
         }
         catch (const std::exception& e)
         {
-            fmt::print("Failed loading image database, continuing with an empty image database: {}", e.what());
+            LogError("Failed loading image database, continuing with an empty image database: {}", e.what());
         }
     }
     return ImageDataBase{ path };
@@ -136,7 +136,7 @@ ImageDataBase& ImageDataBase::Read(const fs::path& path)
     }
     catch (const std::exception& e)
     {
-        fmt::print("{}", e.what());
+        LogError("{}", e.what());
 
         // Failed loading image database, continuing with an empty image database...
         TRACY_SCOPED_LOCK(m_Mutex);
