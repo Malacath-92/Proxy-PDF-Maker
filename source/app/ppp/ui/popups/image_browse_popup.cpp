@@ -319,17 +319,6 @@ ImageBrowsePopup::ImageBrowsePopup(QWidget* parent,
     m_Filter = new QLineEdit;
     m_Filter->setPlaceholderText("Filter");
 
-    // const auto& cards{ project.GetCards() };
-    // const auto num_valid_ignored_images{
-    //     std::ranges::count_if(ignored_images, [&](const auto& img)
-    //                           { return project.HasCard(img); })
-    // };
-    // const auto num_valid_images{
-    //     std::ranges::count_if(cards,
-    //                           [&](const auto& img)
-    //                           { return !img.m_Transient; })
-    // };
-    // const auto has_cards{ num_valid_images > num_valid_ignored_images };
     const auto has_cards{ m_ViewModel.HasCards() };
 
     QWidget* grid{ nullptr };
