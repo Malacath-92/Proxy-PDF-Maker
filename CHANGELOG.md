@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-05-10
+
+### Fixed
+- The app will no longer crash when reading a corrupted image cache, but will just discard it instead.
+- A card's backside tooltip will now display correctly.
+- The app will no longer crash when the user closes the downloader window too eagerly after a download finishes.
+
 ## [2.1.1] - 2026-01-10
 
 ### Fixed
