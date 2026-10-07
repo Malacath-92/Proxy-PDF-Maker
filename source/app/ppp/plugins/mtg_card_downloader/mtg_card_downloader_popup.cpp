@@ -19,10 +19,11 @@
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_settings.hpp>
 
 MtgDownloaderPopup::MtgDownloaderPopup(QWidget* parent,
+                                       QNetworkAccessManager& network_manager,
                                        Project& project,
                                        const Config& config,
                                        PluginInterface& router)
-    : CardDownloaderPopup{ parent, project, config.m_MaxDPI, router }
+    : CardDownloaderPopup{ parent, network_manager, project, config.m_MaxDPI, router }
     , m_Cfg{ config }
 {
     m_AutoCenter = false;

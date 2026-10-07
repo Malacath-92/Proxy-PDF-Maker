@@ -1,22 +1,72 @@
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader.hpp>
 
+#include <ranges>
+
+#include <fmt/ranges.h>
+
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
 
-class DownloaderPlugin : public PluginInterface
+class MtGDownloaderPlugin : public PluginInterface
 {
   public:
-    DownloaderPlugin(const QString& text)
-        : m_Widget{ new QWidget{} }
+    MtGDownloaderPlugin(const QString& text,
+                        Project& project,
+                        const Config& config)
+        : m_Project{ project }
+        , m_Cfg{ config }
+        , m_Widget{ new QWidget{} }
         , m_Button{ new QPushButton{ text } }
     {
         auto* layout{ new QVBoxLayout };
         layout->addWidget(m_Button);
         m_Widget->setLayout(layout);
         m_Widget->setObjectName("MtG Card Downloader");
+
+        const auto open_downloader_popup{
+            [this]()
+            {
+                m_Button->window()->setEnabled(false);
+                {
+                    MtgDownloaderPopup downloader{
+                        nullptr,
+                        m_NetworkManager,
+                        m_Project,
+                        m_Cfg,
+                        *this
+                    };
+                    downloader.Show();
+                }
+                m_Button->window()->setEnabled(true);
+            }
+        };
+
+        QObject::connect(m_Button,
+                         &QPushButton::clicked,
+                         this,
+                         open_downloader_popup);
+
+        connect(&m_NetworkManager,
+                &QNetworkAccessManager::sslErrors,
+                this,
+                [](QNetworkReply* reply, const QList<QSslError>& errors)
+                {
+                    auto error_strings{
+                        errors |
+                        std::views::transform([](QSslError error)
+                                              { return error.errorString().toStdString(); })
+                    };
+                    LogError("SSL errors during request {}: {}",
+                             reply->url().toString().toStdString(),
+                             error_strings);
+                });
     }
 
     virtual QWidget* Widget() override
@@ -29,33 +79,18 @@ class DownloaderPlugin : public PluginInterface
     }
 
   private:
+    Project& m_Project;
+    const Config& m_Cfg;
+
     QWidget* m_Widget;
     QPushButton* m_Button;
+
+    QNetworkAccessManager m_NetworkManager;
 };
 
 PluginInterface* InitMtGCardDownloaderPlugin(Project& project, const Config& config)
 {
-    auto* plugin{ new DownloaderPlugin{ "Open" } };
-    auto* button{ plugin->Button() };
-
-    const auto open_downloader_popup{
-        [plugin, button, &project, &config]()
-        {
-            button->window()->setEnabled(false);
-            {
-                MtgDownloaderPopup downloader{ nullptr, project, config, *plugin };
-                downloader.Show();
-            }
-            button->window()->setEnabled(true);
-        }
-    };
-
-    QObject::connect(button,
-                     &QPushButton::clicked,
-                     button,
-                     open_downloader_popup);
-
-    return plugin;
+    return new MtGDownloaderPlugin{ "Open", project, config };
 }
 
 void DestroyMtGCardDownloaderPlugin(PluginInterface* widget)

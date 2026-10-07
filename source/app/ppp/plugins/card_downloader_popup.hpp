@@ -59,6 +59,7 @@ class CardDownloaderPopup : public PopupBase
 
   public:
     CardDownloaderPopup(QWidget* parent,
+                        QNetworkAccessManager& network_manager,
                         Project& project,
                         PixelDensity max_density,
                         PluginInterface& router);
@@ -92,7 +93,7 @@ class CardDownloaderPopup : public PopupBase
 
     QString OutputDir() const;
 
-    std::unique_ptr<QNetworkAccessManager> m_NetworkManager{ nullptr };
+    QNetworkAccessManager& m_NetworkManager;
 
     DecklistTextEdit* m_TextInput{ nullptr };
     QLabel* m_Hint{ nullptr };

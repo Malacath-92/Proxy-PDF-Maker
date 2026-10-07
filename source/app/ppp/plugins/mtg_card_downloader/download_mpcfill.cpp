@@ -453,6 +453,10 @@ bool MPCFillDownloader::PushSingleRequest()
                              "*/*");
 
     QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+    connect(reply,
+            &QNetworkReply::finished,
+            this,
+            std::bind_front(&MPCFillDownloader::HandleReply, this, reply));
 
     QObject::connect(reply,
                      &QNetworkReply::errorOccurred,

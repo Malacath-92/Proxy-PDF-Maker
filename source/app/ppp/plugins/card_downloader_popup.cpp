@@ -4,8 +4,6 @@
 
 #include <magic_enum/magic_enum.hpp>
 
-#include <fmt/ranges.h>
-
 #include <QApplication>
 #include <QComboBox>
 #include <QFileInfo>
@@ -108,10 +106,12 @@ void CardDownloaderImageWorker::run()
 }
 
 CardDownloaderPopup::CardDownloaderPopup(QWidget* parent,
+                                         QNetworkAccessManager& network_manager,
                                          Project& project,
                                          PixelDensity max_density,
                                          PluginInterface& router)
     : PopupBase{ parent }
+    , m_NetworkManager{ network_manager }
     , m_Project{ project }
     , m_MaxDensity{ max_density }
     , m_Router{ router }
@@ -269,22 +269,6 @@ void CardDownloaderPopup::StartDownload()
 
     PreDownload();
 
-    m_NetworkManager = std::make_unique<QNetworkAccessManager>(this);
-    connect(m_NetworkManager.get(),
-            &QNetworkAccessManager::sslErrors,
-            this,
-            [](QNetworkReply* reply, const QList<QSslError>& errors)
-            {
-                auto error_strings{
-                    errors |
-                    std::views::transform([](QSslError error)
-                                          { return error.errorString().toStdString(); })
-                };
-                LogError("SSL errors during request {}: {}",
-                         reply->url().toString().toStdString(),
-                         error_strings);
-            });
-
     InstallLogHook();
 
     const auto upscale_model{ UpscaleModel().toStdString() };
@@ -317,11 +301,6 @@ void CardDownloaderPopup::StartDownload()
 
             if (m_Downloader->ParseInput(m_TextInput->toPlainText()))
             {
-                connect(m_NetworkManager.get(),
-                        &QNetworkAccessManager::finished,
-                        m_Downloader.get(),
-                        &CardArtDownloader::HandleReply);
-
                 connect(m_Downloader.get(),
                         &CardArtDownloader::Progress,
                         this,
@@ -331,7 +310,7 @@ void CardDownloaderPopup::StartDownload()
                         this,
                         &CardDownloaderPopup::ImageAvailable);
 
-                if (m_Downloader->BeginDownload(*m_NetworkManager))
+                if (m_Downloader->BeginDownload(m_NetworkManager))
                 {
                     m_ProgressBar->setVisible(true);
                 }
@@ -363,7 +342,7 @@ void CardDownloaderPopup::StartDownload()
                     m_ProgressBar->setVisible(true);
 
                     QNetworkRequest get_request{ ToQString(url.value()) };
-                    QNetworkReply* reply{ m_NetworkManager->get(std::move(get_request)) };
+                    QNetworkReply* reply{ m_NetworkManager.get(std::move(get_request)) };
 
                     QObject::connect(reply,
                                      &QNetworkReply::finished,

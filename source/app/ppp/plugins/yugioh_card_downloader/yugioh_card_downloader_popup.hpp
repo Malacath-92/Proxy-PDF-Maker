@@ -1,10 +1,11 @@
 #pragma once
 
+#include <QNetworkAccessManager>
+
 #include <ppp/plugins/card_downloader_popup.hpp>
 #include <ppp/plugins/download_interface.hpp>
 
 class QCheckBox;
-class QNetworkAccessManager;
 
 class Config;
 
@@ -34,6 +35,8 @@ class YuGiOhDownloaderPopup : public CardDownloaderPopup
     virtual void PostDownload() override;
 
     virtual void ValidateSettings() override;
+
+    QNetworkAccessManager m_NetworkManager;
 
     QCheckBox* m_Settings{ nullptr };
     QCheckBox* m_ClearCheckbox{ nullptr };

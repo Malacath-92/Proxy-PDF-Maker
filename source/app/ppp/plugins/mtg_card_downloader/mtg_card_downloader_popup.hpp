@@ -21,6 +21,7 @@ class MtgDownloaderPopup : public CardDownloaderPopup
 
   public:
     MtgDownloaderPopup(QWidget* parent,
+                       QNetworkAccessManager& network_manager,
                        Project& project,
                        const Config& config,
                        PluginInterface& router);
