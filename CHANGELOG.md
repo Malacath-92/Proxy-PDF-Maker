@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.1.2] - 2026-05-10
+## [2.1.2] - 2026-07-10
 
 ### Fixed
 - The app will no longer crash when reading a corrupted image cache, but will just discard it instead.
