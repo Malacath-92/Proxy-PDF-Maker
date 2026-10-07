@@ -54,10 +54,10 @@ class ScryfallDownloader : public CardArtDownloader
     void DownloadCardDatas();
     void DownloadCardImages();
 
-    std::unique_ptr<ScryfallCollectionEndpoint> m_CollectionEndpoint;
-    std::unique_ptr<ScryfallDataEndpoint> m_DataEndpoint;
+    std::shared_ptr<ScryfallCollectionEndpoint> m_CollectionEndpoint;
+    std::shared_ptr<ScryfallDataEndpoint> m_DataEndpoint;
 
-    std::unique_ptr<ScryfallSearchEndpoint> m_SearchEndpoint;
+    std::shared_ptr<ScryfallSearchEndpoint> m_SearchEndpoint;
 
     bool m_DownloadArtCrops;
 

@@ -12,6 +12,8 @@
 #include <QString>
 #include <QTimer>
 
+#include <ppp/util/leaky_singleton.hpp>
+
 class QNetworkAccessManager;
 class QNetworkReply;
 class QNetworkRequest;
@@ -53,13 +55,16 @@ class ScryfallEndpoint : public QObject
     std::deque<QueuedRequest> m_RequestQueue;
 };
 
-class ScryfallSearchEndpoint : public ScryfallEndpoint
+class ScryfallSearchEndpoint
+    : public ScryfallEndpoint,
+      public LeakySingleton<ScryfallSearchEndpoint>
 {
     Q_OBJECT
 
-  public:
+    friend class LeakySingleton;
     ScryfallSearchEndpoint(QNetworkAccessManager& network_manager);
 
+  public:
     using OnDoneFun = std::function<void(const QJsonDocument&)>;
     void Queue(const QString& query, OnDoneFun on_done);
 
@@ -78,26 +83,32 @@ class ScryfallSearchEndpoint : public ScryfallEndpoint
     std::deque<Query> m_Queue;
 };
 
-class ScryfallCollectionEndpoint : public ScryfallEndpoint
+class ScryfallCollectionEndpoint
+    : public ScryfallEndpoint,
+      public LeakySingleton<ScryfallCollectionEndpoint>
 {
     Q_OBJECT
 
-  public:
+    friend class LeakySingleton;
     ScryfallCollectionEndpoint(QNetworkAccessManager& network_manager);
 
+  public:
     inline static constexpr size_t c_BatchSize{ 75 };
 
     using OnDoneFun = std::function<void(const QJsonDocument& batch, const QJsonDocument& result)>;
     void Queue(QJsonDocument batch, OnDoneFun on_done);
 };
 
-class ScryfallDataEndpoint : public ScryfallEndpoint
+class ScryfallDataEndpoint
+    : public ScryfallEndpoint,
+      public LeakySingleton<ScryfallDataEndpoint>
 {
     Q_OBJECT
 
-  public:
+    friend class LeakySingleton;
     ScryfallDataEndpoint(QNetworkAccessManager& network_manager);
 
+  public:
     using OnDoneFun = std::function<void(const QByteArray&)>;
     void Call(const QString& uri, OnDoneFun on_done);
 };

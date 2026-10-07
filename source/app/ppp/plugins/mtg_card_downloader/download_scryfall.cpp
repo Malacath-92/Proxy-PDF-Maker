@@ -54,13 +54,13 @@ bool ScryfallDownloader::ParseInput(const QString& input)
 
 bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 {
-    m_CollectionEndpoint = std::make_unique<ScryfallCollectionEndpoint>(network_manager);
+    m_CollectionEndpoint = ScryfallCollectionEndpoint::Get(network_manager);
     QObject::connect(m_CollectionEndpoint.get(),
                      &ScryfallEndpoint::OnError,
                      this,
                      &ScryfallDownloader::OnError);
 
-    m_DataEndpoint = std::make_unique<ScryfallDataEndpoint>(network_manager);
+    m_DataEndpoint = ScryfallDataEndpoint::Get(network_manager);
     QObject::connect(m_DataEndpoint.get(),
                      &ScryfallEndpoint::OnError,
                      this,
@@ -68,7 +68,7 @@ bool ScryfallDownloader::BeginDownload(QNetworkAccessManager& network_manager)
 
     if (!m_Queries.empty())
     {
-        m_SearchEndpoint = std::make_unique<ScryfallSearchEndpoint>(network_manager);
+        m_SearchEndpoint = ScryfallSearchEndpoint::Get(network_manager);
         QObject::connect(m_SearchEndpoint.get(),
                          &ScryfallEndpoint::OnError,
                          this,
