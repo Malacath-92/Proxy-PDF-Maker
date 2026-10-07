@@ -6,7 +6,7 @@
 
 #include <ppp/project/project_types.hpp>
 
-class CardViewModel;
+class SelectableCardGridViewModel;
 
 class Project;
 
@@ -20,11 +20,8 @@ class ImageBrowseViewModel : public QObject
 
     bool HasCards() const;
     bool HasIgnoredCards() const;
-
-    bool IsCardIgnored(const fs::path& card_name) const;
-    CardViewModel* MakeCardViewModel(const fs::path& card_name) const;
-
-    const CardContainer& GetCards() const;
+    
+    SelectableCardGridViewModel* MakeGridViewModel();
 
   private:
     const Project& m_Project;

@@ -4,7 +4,7 @@
 
 #include <ppp/project/project.hpp>
 
-#include <ppp/ui/view_models/view_model_card.hpp>
+#include <ppp/ui/view_models/view_model_selectable_card_grid.hpp>
 
 #include <ppp/profile/profile.hpp>
 
@@ -40,16 +40,7 @@ bool ImageBrowseViewModel::HasIgnoredCards() const
     return num_valid_ignored_images > 0;
 }
 
-bool ImageBrowseViewModel::IsCardIgnored(const fs::path& card_name) const
+SelectableCardGridViewModel* ImageBrowseViewModel::MakeGridViewModel()
 {
-    return std::ranges::contains(m_IgnoredImages, card_name);
-}
-CardViewModel* ImageBrowseViewModel::MakeCardViewModel(const fs::path& card_name) const
-{
-    return new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80_pix } }, m_Project };
-}
-
-const CardContainer& ImageBrowseViewModel::GetCards() const
-{
-    return m_Project.GetCards();
+    return new SelectableCardGridViewModel{ m_Project, m_IgnoredImages };
 }

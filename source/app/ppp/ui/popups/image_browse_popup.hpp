@@ -31,7 +31,7 @@ class ImageBrowsePopup : public PopupBase
   private:
     void CloseWithChoice(Choice choice);
 
-    const ImageBrowseViewModel& m_ViewModel;
+    ImageBrowseViewModel& m_ViewModel;
 
     QLineEdit* m_Filter{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };
