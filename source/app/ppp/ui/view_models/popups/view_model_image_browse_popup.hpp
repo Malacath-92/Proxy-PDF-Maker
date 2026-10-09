@@ -20,7 +20,7 @@ class ImageBrowseViewModel : public QObject
 
     bool HasCards() const;
     bool HasIgnoredCards() const;
-    
+
     SelectableCardGridViewModel* MakeGridViewModel();
 
   private:
