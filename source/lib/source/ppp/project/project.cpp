@@ -1240,6 +1240,18 @@ void Project::SetCardMeta(const fs::path& card_name, std::string key, std::strin
         card->m_MetaInfo[std::move(key)] = std::move(value);
     }
 }
+std::optional<std::string_view> Project::GetCardMeta(const fs::path& card_name, std::string key) const
+{
+    if (auto* card{ FindCard(card_name) })
+    {
+        auto it{ card->m_MetaInfo.find(key) };
+        if (it != card->m_MetaInfo.end())
+        {
+            return it->second;
+        }
+    }
+    return std::nullopt;
+}
 
 void Project::CardOrderChanged()
 {

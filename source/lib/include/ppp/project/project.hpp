@@ -235,6 +235,7 @@ class Project : public QObject
     void ResetAllCardCounts();
 
     void SetCardMeta(const fs::path& card_name, std::string key, std::string value);
+    std::optional<std::string_view> GetCardMeta(const fs::path& card_name, std::string key) const;
 
     void CardOrderChanged();
     void CardOrderDirectionChanged();
