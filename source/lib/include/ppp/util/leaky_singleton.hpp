@@ -17,7 +17,8 @@ class LeakySingleton
     LeakySingleton& operator=(LeakySingleton&&) = delete;
 
     template<class... ArgsT>
-    static std::atomic<std::shared_ptr<T>> Get(ArgsT&&... args)
+    static auto Get(ArgsT&&... args)
+        -> std::atomic<std::shared_ptr<decltype(T{ std::forward<ArgsT>(args)... })>>
     {
         auto ptr{ m_Instance.load().lock() };
         if (ptr != nullptr)
