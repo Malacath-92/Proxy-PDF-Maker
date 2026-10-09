@@ -18,7 +18,7 @@ class SelectableCardGrid : public QWidget
   public:
     SelectableCardGrid(SelectableCardGridViewModel* view_model);
 
-    void ApplyFilter(const QString& filter);
+    void ApplyFilter(const QString& filter, bool force = false);
 
     int TotalWidthFromItemWidth(int item_width) const;
 
@@ -31,7 +31,13 @@ class SelectableCardGrid : public QWidget
 
     virtual bool eventFilter(QObject* obj, QEvent* event) override;
 
-  public:
+  public slots:
+    void CardAdded(const fs::path& card_name);
+
+  private:
+    QWidget* FirstItem() const;
+    bool IsFiltered(const QString& card_name_lowercase);
+
     SelectableCardGridViewModel& m_ViewModel;
 
     QObject* m_ClickStart{ nullptr };
@@ -44,6 +50,8 @@ class SelectableCardGrid : public QWidget
     };
     std::vector<Card> m_Cards;
     std::vector<QWidget*> m_Dummies;
+
+    QString m_CurrentFilter{ "" };
 
     static inline constexpr uint32_t c_Columns{ 6 };
     uint32_t m_Rows;

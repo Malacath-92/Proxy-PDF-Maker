@@ -9,6 +9,7 @@
 
 #include <ppp/ui/widget_util/card/widget_selectable_card.hpp>
 
+#include <ppp/ui/view_models/util.hpp>
 #include <ppp/ui/view_models/view_model_selectable_card_grid.hpp>
 
 SelectableCardGrid::SelectableCardGrid(SelectableCardGridViewModel* view_model)
@@ -45,11 +46,20 @@ SelectableCardGrid::SelectableCardGrid(SelectableCardGridViewModel* view_model)
         }
     }
 
-    ApplyFilter("");
+    ApplyFilter("", true);
+
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAdded);
 }
 
-void SelectableCardGrid::ApplyFilter(const QString& filter)
+void SelectableCardGrid::ApplyFilter(const QString& filter, bool force)
 {
+    QString filter_lower{ filter.toLower() };
+    if (!force && m_CurrentFilter == filter_lower)
+    {
+        return;
+    }
+    m_CurrentFilter = std::move(filter_lower);
+
     // Remove cards from the old layout
     if (auto* old_layout{ static_cast<QGridLayout*>(layout()) })
     {
@@ -67,15 +77,15 @@ void SelectableCardGrid::ApplyFilter(const QString& filter)
     }
 
     auto* grid_layout{ new QGridLayout };
+    setLayout(grid_layout);
 
     {
-        const QString filter_lower{ filter.toLower() };
         size_t i{ 0 };
 
         // Put cards into the layout, if the filter permits
         for (auto& [card, card_name] : m_Cards)
         {
-            if (filter.isEmpty() || card_name.contains(filter_lower))
+            if (IsFiltered(card_name))
             {
                 const auto x{ static_cast<int>(i / c_Columns) };
                 const auto y{ static_cast<int>(i % c_Columns) };
@@ -104,9 +114,7 @@ void SelectableCardGrid::ApplyFilter(const QString& filter)
         m_Rows = static_cast<uint32_t>(std::ceil(static_cast<float>(i) / c_Columns));
     }
 
-    setLayout(grid_layout);
-
-    setMinimumWidth(TotalWidthFromItemWidth(m_Cards[0].m_Widget->minimumWidth()));
+    setMinimumWidth(TotalWidthFromItemWidth(FirstItem()->minimumWidth()));
     setMinimumHeight(SelectableCardGrid::heightForWidth(minimumWidth()));
     adjustSize();
 }
@@ -138,7 +146,7 @@ int SelectableCardGrid::heightForWidth(int width) const
     const auto spacing{ layout()->spacing() };
 
     const auto item_width{ static_cast<float>(width - margins.left() - margins.right() - spacing * (c_Columns - 1)) / c_Columns };
-    const auto item_height{ m_Cards[0].m_Widget->heightForWidth(static_cast<int>(item_width)) };
+    const auto item_height{ FirstItem()->heightForWidth(static_cast<int>(item_width)) };
 
     const auto height{ item_height * m_Rows + margins.top() + margins.bottom() + spacing * (m_Rows - 1) };
     return static_cast<int>(height);
@@ -187,4 +195,34 @@ bool SelectableCardGrid::eventFilter(QObject* obj, QEvent* event)
     }
 
     return QWidget::eventFilter(obj, event);
+}
+
+void SelectableCardGrid::CardAdded(const fs::path& card_name)
+{
+    const auto name_lowercase{ ToQString(card_name).toLower() };
+    if (!std::ranges::contains(m_Cards, name_lowercase, &Card::m_NameLowercase))
+    {
+        auto* card_view_model{ m_ViewModel.MakeCardViewModel(card_name) };
+        auto* card_widget{ new SelectableCard{ card_view_model } };
+        card_widget->installEventFilter(this);
+        m_Cards.push_back({ card_widget, std::move(name_lowercase) });
+
+        if (IsFiltered(m_Cards.back().m_NameLowercase))
+        {
+            auto current_filter{ std::move(m_CurrentFilter) };
+            m_CurrentFilter.clear();
+            ApplyFilter(std::move(current_filter), true);
+        }
+    }
+}
+
+QWidget* SelectableCardGrid::FirstItem() const
+{
+    return m_Cards.empty() ? m_Dummies[0]
+                           : m_Cards[0].m_Widget;
+}
+bool SelectableCardGrid::IsFiltered(const QString& card_name_lowercase)
+{
+    return m_CurrentFilter.isEmpty() ||
+           card_name_lowercase.contains(m_CurrentFilter);
 }

@@ -18,15 +18,21 @@ class SelectableCardGridViewModel : public QObject
     SelectableCardGridViewModel(const Project& project,
                                 std::span<const fs::path> ignored_images = {});
 
-    bool HasCards() const;
-    bool HasIgnoredCards() const;
+    virtual bool HasCards() const;
+    virtual bool HasIgnoredCards() const;
 
-    bool IsCardIgnored(const fs::path& card_name) const;
-    CardViewModel* MakeCardViewModel(const fs::path& card_name) const;
+    virtual bool IsCardIgnored(const fs::path& card_name) const;
 
-    const CardContainer& GetCards() const;
+    virtual CardViewModel* MakeCardViewModel(const fs::path& card_name);
 
-  private:
+    virtual const CardContainer& GetCards() const;
+
+  signals:
+    // forward
+
+    void CardAdded(const fs::path& card_name);
+
+  protected:
     const Project& m_Project;
     std::span<const fs::path> m_IgnoredImages;
 };

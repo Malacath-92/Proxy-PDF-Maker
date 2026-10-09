@@ -40,7 +40,8 @@ bool SelectableCardGridViewModel::IsCardIgnored(const fs::path& card_name) const
 {
     return std::ranges::contains(m_IgnoredImages, card_name);
 }
-CardViewModel* SelectableCardGridViewModel::MakeCardViewModel(const fs::path& card_name) const
+
+CardViewModel* SelectableCardGridViewModel::MakeCardViewModel(const fs::path& card_name)
 {
     return new CardViewModel{ card_name, CardViewParams{ .m_MinimumWidth{ 80_pix } }, m_Project };
 }
