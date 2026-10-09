@@ -276,10 +276,11 @@ class CardAreaCardWidget : public QFrame
         auto* plugin{ GetPlugin(plugin_name) };
         if (plugin != nullptr && plugin->ProvidesWidgetExtension(PluginWidgetExtensionType::CardWidgetExtension))
         {
-            auto* extra_options_layout{ static_cast<QHBoxLayout*>(m_ExtraOptions->layout()) };
-            extra_options_layout->insertWidget(
-                extra_options_layout->count() - 1,
-                plugin->MakeCardWidgetExtension(m_ViewModel.GetCardName()));
+            if (auto* extension{ plugin->MakeCardWidgetExtension(m_ViewModel.GetCardName()) })
+            {
+                auto* extra_options_layout{ static_cast<QHBoxLayout*>(m_ExtraOptions->layout()) };
+                extra_options_layout->insertWidget(extra_options_layout->count() - 1, extension);
+            }
         }
     }
 
