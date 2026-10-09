@@ -459,7 +459,7 @@ void CardDownloaderPopup::FinalizeDownload()
 
     for (const auto& [card, path] : std::views::zip(downloaded_files, downloaded_file_paths))
     {
-        if (fs::exists(output_dir / path))
+        if (fs::exists(output_dir / path) && !fs::exists(target_dir / path))
         {
             if (can_move)
             {
