@@ -7,15 +7,19 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QPushButton>
+#include <QThreadPool>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 
 #include <ppp/project/project.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/mtg_card_browser_popup.hpp>
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
+#include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_settings.hpp>
+#include <ppp/plugins/mtg_card_downloader/scryfall_endpoints.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/view_models/view_model_mtg_card_browser.hpp>
 
@@ -110,21 +114,68 @@ class MtGDownloaderPlugin : public PluginInterface
         QObject::connect(ext,
                          &QPushButton::pressed,
                          this,
-                         [this, card_name]()
-                         {
-                             MtGCardBrowserPopup browser{
-                                 nullptr,
-                                 new MtGCardBrowserViewModel{
-                                     m_Project,
-                                     card_name,
-                                     m_NetworkManager }
-                             };
-                             browser.Show();
-                         });
+                         std::bind_front(&MtGDownloaderPlugin::ShowCardBrowser, this, std::cref(card_name)));
         return ext;
     }
 
   private:
+    void ShowCardBrowser(const fs::path& card_name)
+    {
+        MtGCardBrowserPopup browser{
+            nullptr,
+            new MtGCardBrowserViewModel{
+                m_Project,
+                card_name,
+                m_NetworkManager }
+        };
+        if (const auto png_uri{ browser.Show() })
+        {
+            if (const auto preview{ browser.GetSelectedPreview() })
+            {
+                auto it{ m_Project.m_CardSignallers.find(card_name) };
+                if (it != m_Project.m_CardSignallers.end())
+                {
+                    it->second->PreviewUpdated(preview.value());
+                }
+            }
+
+            PauseCropper();
+            AtScopeExit unpause{ [this]
+                                 { UnpauseCropper(); } };
+
+            auto scryfall_data_endpoint{ ScryfallDataEndpoint::Get(std::ref(m_NetworkManager)) };
+
+            QEventLoop evt_loop{};
+            scryfall_data_endpoint->Call(
+                png_uri.value(),
+                [&, this](const QByteArray& image_data)
+                {
+                    const auto settings{ MtgDownloaderSettings::Read() };
+
+                    auto* worker{
+                        new CardDownloaderImageWorker{
+                            m_Project,
+                            ToQString(card_name),
+                            image_data,
+                            settings.m_FillCorners,
+                            settings.m_UpscaleModel == "None"
+                                ? ""
+                                : settings.m_UpscaleModel,
+                            m_Project.CardSize(),
+                            m_Cfg.m_MaxDPI,
+                            { ToQString(m_Project.GetCardImagePath(card_name)) },
+                        }
+                    };
+                    QObject::connect(worker,
+                                     &CardDownloaderImageWorker::Done,
+                                     &evt_loop,
+                                     &QEventLoop::quit);
+                    QThreadPool::globalInstance()->start(worker);
+                });
+            evt_loop.exec();
+        }
+    }
+
     Project& m_Project;
     const Config& m_Cfg;
 

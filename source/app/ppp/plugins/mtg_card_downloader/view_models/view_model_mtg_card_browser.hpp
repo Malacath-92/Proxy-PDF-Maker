@@ -8,7 +8,7 @@
 
 class QNetworkAccessManager;
 
-class SelectableCardGridViewModel;
+class DownloadedMtGCardGridViewModel;
 
 class Project;
 
@@ -21,7 +21,7 @@ class MtGCardBrowserViewModel : public QObject
                             const fs::path& card_name,
                             QNetworkAccessManager& network_manager);
 
-    SelectableCardGridViewModel* MakeGridViewModel();
+    DownloadedMtGCardGridViewModel* MakeGridViewModel();
 
   private:
     const Project& m_Project;

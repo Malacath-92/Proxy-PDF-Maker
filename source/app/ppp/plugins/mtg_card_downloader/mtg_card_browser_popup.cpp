@@ -20,6 +20,7 @@
 #include <ppp/ui/widget_util/card/widget_selectable_card.hpp>
 #include <ppp/ui/widget_util/card/widget_selectable_card_grid.hpp>
 
+#include <ppp/plugins/mtg_card_downloader/view_models/view_model_downloaded_mtg_card_grid.hpp>
 #include <ppp/plugins/mtg_card_downloader/view_models/view_model_mtg_card_browser.hpp>
 
 MtGCardBrowserPopup::MtGCardBrowserPopup(QWidget* parent,
@@ -38,7 +39,8 @@ MtGCardBrowserPopup::MtGCardBrowserPopup(QWidget* parent,
     m_Filter = new QLineEdit;
     m_Filter->setPlaceholderText("Filter");
 
-    m_Grid = new SelectableCardGrid{ m_ViewModel.MakeGridViewModel() };
+    m_GridViewModel = m_ViewModel.MakeGridViewModel();
+    m_Grid = new SelectableCardGrid{ m_GridViewModel };
 
     auto* grid_scroll{ new QScrollArea };
     grid_scroll->setWidget(m_Grid);
@@ -95,10 +97,28 @@ MtGCardBrowserPopup::MtGCardBrowserPopup(QWidget* parent,
     resize(parent_rect.width() - 100, parent_rect.height() - 100);
 }
 
-void MtGCardBrowserPopup::Show()
+std::optional<QString> MtGCardBrowserPopup::Show()
 {
     PopupBase::Show();
-    // return m_Choice == Choice::Ok ? m_Grid->GetSelectedCardName() : std::nullopt;
+    if (m_Choice == Choice::Ok)
+    {
+        if (auto selected_card_name{ m_Grid->GetSelectedCardName() })
+        {
+            return m_GridViewModel->GetFullResImageURI(ToQString(selected_card_name.value()));
+        }
+    }
+    return std::nullopt;
+}
+std::optional<ImagePreview> MtGCardBrowserPopup::GetSelectedPreview()
+{
+    if (m_Choice == Choice::Ok)
+    {
+        if (auto selected_card_name{ m_Grid->GetSelectedCardName() })
+        {
+            return m_GridViewModel->GetPreview(ToQString(selected_card_name.value()));
+        }
+    }
+    return std::nullopt;
 }
 
 MtGCardBrowserPopup::Choice MtGCardBrowserPopup::GetChoice() const

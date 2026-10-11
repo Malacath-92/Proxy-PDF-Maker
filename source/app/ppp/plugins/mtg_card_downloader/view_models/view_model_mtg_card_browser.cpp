@@ -17,7 +17,7 @@ MtGCardBrowserViewModel::MtGCardBrowserViewModel(const Project& project,
 {
 }
 
-SelectableCardGridViewModel* MtGCardBrowserViewModel::MakeGridViewModel()
+DownloadedMtGCardGridViewModel* MtGCardBrowserViewModel::MakeGridViewModel()
 {
     return new DownloadedMtGCardGridViewModel{ m_Project, m_CardName, m_NetworkManager };
 }

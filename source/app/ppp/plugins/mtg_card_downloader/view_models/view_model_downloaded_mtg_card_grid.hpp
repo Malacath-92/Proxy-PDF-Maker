@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <ppp/project/project_types.hpp>
+
 #include <ppp/ui/view_models/view_model_selectable_card_grid.hpp>
 
 class QNetworkAccessManager;
@@ -31,8 +33,13 @@ class DownloadedMtGCardGridViewModel : public SelectableCardGridViewModel
 
     virtual const CardContainer& GetCards() const override;
 
+    QString GetFullResImageURI(const QString& card_name) const;
+    ImagePreview GetPreview(const QString& card_name) const;
+
   private:
     std::unordered_map<QString, ProjectCardSignaller> m_CardSignallers;
+    std::unordered_map<QString, QString> m_PngURIs;
+    std::unordered_map<QString, ImagePreview> m_Previews;
 
     std::shared_ptr<ScryfallSearchEndpoint> m_ScryfallSearch;
     std::shared_ptr<ScryfallDataEndpoint> m_ScryfallData;

@@ -7,6 +7,8 @@
 class QLineEdit;
 
 class MtGCardBrowserViewModel;
+class DownloadedMtGCardGridViewModel;
+
 class SelectableCardGrid;
 
 class MtGCardBrowserPopup : public PopupBase
@@ -17,7 +19,8 @@ class MtGCardBrowserPopup : public PopupBase
     MtGCardBrowserPopup(QWidget* parent,
                         MtGCardBrowserViewModel* view_model);
 
-    void Show();
+    std::optional<QString> Show();
+    std::optional<ImagePreview> GetSelectedPreview();
 
     enum class Choice
     {
@@ -32,6 +35,8 @@ class MtGCardBrowserPopup : public PopupBase
     MtGCardBrowserViewModel& m_ViewModel;
 
     QLineEdit* m_Filter{ nullptr };
+
+    DownloadedMtGCardGridViewModel* m_GridViewModel{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };
 
     Choice m_Choice{ Choice::Ok };

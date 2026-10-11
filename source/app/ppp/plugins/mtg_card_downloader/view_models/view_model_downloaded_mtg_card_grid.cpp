@@ -65,18 +65,18 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
                                     static_cast<size_t>(image_data.size()),
                                 }),
                             };
-                            // image = image.RoundCorners(m_Project.CardSize(), m_Project.CardCornerRadius());
-                            m_CardSignallers[card_file_name].PreviewUpdated(ImagePreview{
+                            m_Previews[card_file_name] = ImagePreview{
                                 .m_UncroppedImage{},
                                 .m_CroppedImage{ std::move(image) },
                                 .m_BadAspectRatio = false,
                                 .m_BadRotation = false,
-                            });
+                            };
+                            m_CardSignallers[card_file_name].PreviewUpdated(m_Previews[card_file_name]);
                         }
                     };
 
                     auto download_image{
-                        [this, &on_image](const QJsonObject& json)
+                        [this, &on_image, card_file_name](const QJsonObject& json)
                         {
                             const auto image_uris{ json["image_uris"].toObject() };
                             if (image_uris.contains("normal"))
@@ -91,6 +91,8 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
                             {
                                 m_ScryfallData->Call(image_uris["display"].toString(), on_image);
                             }
+
+                            m_PngURIs[card_file_name] = image_uris["png"].toString();
                         }
                     };
 
@@ -140,4 +142,19 @@ const CardContainer& DownloadedMtGCardGridViewModel::GetCards() const
     // This is only initial cards
     static const CardContainer c_NoCards;
     return c_NoCards;
+}
+
+QString DownloadedMtGCardGridViewModel::GetFullResImageURI(const QString& card_name) const
+{
+    auto it{ m_PngURIs.find(card_name) };
+    return it != m_PngURIs.end()
+               ? it->second
+               : QString{};
+}
+ImagePreview DownloadedMtGCardGridViewModel::GetPreview(const QString& card_name) const
+{
+    auto it{ m_Previews.find(card_name) };
+    return it != m_Previews.end()
+               ? it->second
+               : ImagePreview{};
 }
