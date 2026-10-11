@@ -74,6 +74,8 @@ void ScryfallEndpoint::QueueRequest(QNetworkRequest request, OnDoneFun on_done, 
 
 void ScryfallEndpoint::DoRequest(QNetworkRequest request, OnDoneFun on_done, QByteArray body)
 {
+    request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::PreferCache);
+
     QNetworkReply* reply{
         body.isEmpty() ? m_NetworkManager.get(std::move(request))
                        : m_NetworkManager.post(std::move(request), std::move(body))

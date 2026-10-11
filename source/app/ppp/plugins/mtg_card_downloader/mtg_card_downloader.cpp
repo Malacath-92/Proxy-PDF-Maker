@@ -11,10 +11,14 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include <ppp/app.hpp>
+
 #include <ppp/qt_util.hpp>
 #include <ppp/util/log.hpp>
 
 #include <ppp/project/project.hpp>
+
+#include <ppp/expiring_network_cache.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/mtg_card_browser_popup.hpp>
 #include <ppp/plugins/mtg_card_downloader/mtg_card_downloader_popup.hpp>
@@ -34,6 +38,12 @@ class MtGDownloaderPlugin : public PluginInterface
         , m_Widget{ new QWidget{} }
         , m_Button{ new QPushButton{ text } }
     {
+        const auto cache_path{ ppApp->GetCacheFolder() / "mtg_cache" };
+        auto* network_cache{ new FixedExpiryDiskCache };
+        network_cache->setCacheDirectory(ToQString(cache_path));
+        network_cache->setMaximumCacheSize(100 * 1024 * 1024);
+        m_NetworkManager.setCache(network_cache);
+
         auto* layout{ new QVBoxLayout };
         layout->addWidget(m_Button);
         m_Widget->setLayout(layout);
