@@ -53,6 +53,9 @@ class MtGDownloaderPlugin : public PluginInterface
             [this]()
             {
                 m_Button->window()->setEnabled(false);
+                AtScopeExit enable{ [this]
+                                    { m_Button->window()->setEnabled(true); } };
+
                 {
                     MtgDownloaderPopup downloader{
                         nullptr,
@@ -63,7 +66,6 @@ class MtGDownloaderPlugin : public PluginInterface
                     };
                     downloader.Show();
                 }
-                m_Button->window()->setEnabled(true);
             }
         };
 
@@ -122,7 +124,7 @@ class MtGDownloaderPlugin : public PluginInterface
                          { std::erase(m_CardExtensions,
                                       static_cast<QWidget*>(obj)); });
         QObject::connect(ext,
-                         &QPushButton::pressed,
+                         &QPushButton::clicked,
                          this,
                          std::bind_front(&MtGDownloaderPlugin::ShowCardBrowser, this, std::cref(card_name)));
         return ext;
@@ -138,6 +140,10 @@ class MtGDownloaderPlugin : public PluginInterface
                 card_name,
                 m_NetworkManager }
         };
+        m_Button->window()->setEnabled(false);
+        AtScopeExit enable{ [this]
+                            { m_Button->window()->setEnabled(true); } };
+
         if (const auto png_uri{ browser.Show() })
         {
             if (const auto preview{ browser.GetSelectedPreview() })
