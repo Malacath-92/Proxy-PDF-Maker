@@ -19,6 +19,8 @@
 
 #include <ppp/ui/widget_util/card/widget_selectable_card.hpp>
 #include <ppp/ui/widget_util/card/widget_selectable_card_grid.hpp>
+#include <ppp/ui/widget_util/widget_collapse_container.hpp>
+#include <ppp/ui/widget_util/widget_label.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/view_models/view_model_downloaded_mtg_card_grid.hpp>
 #include <ppp/plugins/mtg_card_downloader/view_models/view_model_mtg_card_browser.hpp>
@@ -39,17 +41,32 @@ MtGCardBrowserPopup::MtGCardBrowserPopup(QWidget* parent,
     m_Filter = new QLineEdit;
     m_Filter->setPlaceholderText("Filter");
 
+    auto* scryfall_query{ new LineEditWithLabel{ "Query", m_ViewModel.GetQuery().toStdString() } };
+    m_ScryfallQuery = scryfall_query->GetWidget();
+
     m_GridViewModel = m_ViewModel.MakeGridViewModel();
     m_Grid = new SelectableCardGrid{ m_GridViewModel };
 
-    auto* grid_scroll{ new QScrollArea };
-    grid_scroll->setWidget(m_Grid);
-    grid_scroll->setWidgetResizable(true);
-    grid_scroll->setMinimumWidth(
+    auto* scryfall_layout{ new QVBoxLayout };
+    scryfall_layout->addWidget(scryfall_query);
+    scryfall_layout->addWidget(m_Grid);
+
+    auto* widget_scryfall{ new QWidget };
+    widget_scryfall->setObjectName("Scryfall");
+    widget_scryfall->setLayout(scryfall_layout);
+
+    auto* container_scryfall{ new CollapseContainer{ widget_scryfall, false } };
+    container_scryfall->SetRelativeRate(6000_pix / 1_s);
+
+    auto* content_scroll{ new QScrollArea };
+    content_scroll->setWidget(container_scryfall);
+    content_scroll->setWidgetResizable(true);
+    content_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    content_scroll->setMinimumWidth(
         [=, this]()
         {
             const auto margins{ m_Grid->layout()->contentsMargins() };
-            return m_Grid->minimumWidth() + 2 * grid_scroll->verticalScrollBar()->width() + margins.left() + margins.right();
+            return m_Grid->minimumWidth() + 2 * content_scroll->verticalScrollBar()->width() + margins.left() + margins.right();
         }());
 
     auto* ok_button{ new QPushButton{ "OK" } };
@@ -64,10 +81,11 @@ MtGCardBrowserPopup::MtGCardBrowserPopup(QWidget* parent,
 
     auto* window_buttons{ new QWidget };
     window_buttons->setLayout(buttons_layout);
+    window_buttons->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
     auto* outer_layout{ new QVBoxLayout };
     outer_layout->addWidget(m_Filter);
-    outer_layout->addWidget(grid_scroll);
+    outer_layout->addWidget(content_scroll);
     outer_layout->addWidget(window_buttons);
 
     setLayout(outer_layout);

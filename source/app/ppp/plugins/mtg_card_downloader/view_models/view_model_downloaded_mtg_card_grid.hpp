@@ -20,7 +20,7 @@ class DownloadedMtGCardGridViewModel : public SelectableCardGridViewModel
 
   public:
     DownloadedMtGCardGridViewModel(const Project& project,
-                                   const fs::path& card_name,
+                                   const QString& query,
                                    QNetworkAccessManager& network_manager);
     ~DownloadedMtGCardGridViewModel();
 

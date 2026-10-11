@@ -36,6 +36,7 @@ class MtGCardBrowserPopup : public PopupBase
 
     QLineEdit* m_Filter{ nullptr };
 
+    QLineEdit* m_ScryfallQuery{ nullptr };
     DownloadedMtGCardGridViewModel* m_GridViewModel{ nullptr };
     SelectableCardGrid* m_Grid{ nullptr };
 

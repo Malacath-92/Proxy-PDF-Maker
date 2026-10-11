@@ -2,6 +2,8 @@
 
 #include <ranges>
 
+#include <ppp/qt_util.hpp>
+
 #include <ppp/project/project.hpp>
 
 #include <ppp/plugins/mtg_card_downloader/view_models/view_model_downloaded_mtg_card_grid.hpp>
@@ -19,5 +21,16 @@ MtGCardBrowserViewModel::MtGCardBrowserViewModel(const Project& project,
 
 DownloadedMtGCardGridViewModel* MtGCardBrowserViewModel::MakeGridViewModel()
 {
-    return new DownloadedMtGCardGridViewModel{ m_Project, m_CardName, m_NetworkManager };
+    return new DownloadedMtGCardGridViewModel{ m_Project, GetQuery(), m_NetworkManager };
+}
+
+QString MtGCardBrowserViewModel::GetQuery() const
+{
+    if (auto orig_card_name{ m_Project.GetCardMeta(m_CardName, "card_name") })
+    {
+        return QString{ "@@ !\"%1\" sort:released prefer:finish:nonfoil" }
+            .arg(ToQString(orig_card_name.value()));
+    }
+    return QString{ "@@ !\"%1\" sort:released prefer:finish:nonfoil" }
+        .arg(ToQString(m_CardName));
 }

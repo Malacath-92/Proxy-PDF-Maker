@@ -23,6 +23,8 @@ class MtGCardBrowserViewModel : public QObject
 
     DownloadedMtGCardGridViewModel* MakeGridViewModel();
 
+    QString GetQuery() const;
+
   private:
     const Project& m_Project;
     const fs::path& m_CardName;

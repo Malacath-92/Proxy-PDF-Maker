@@ -13,100 +13,97 @@
 #include <ppp/ui/view_models/view_model_card.hpp>
 
 DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& project,
-                                                               const fs::path& card_name,
+                                                               const QString& query,
                                                                QNetworkAccessManager& network_manager)
     : SelectableCardGridViewModel{ project, {} }
 {
-    if (auto orig_card_name{ project.GetCardMeta(card_name, "card_name") })
-    {
-        m_ScryfallSearch = ScryfallSearchEndpoint::Get(std::ref(network_manager));
+    m_ScryfallSearch = ScryfallSearchEndpoint::Get(std::ref(network_manager));
 
-        m_ScryfallSearch->Queue(
-            QString{ "@@ !\"%1\" sort:released prefer:finish:nonfoil" }.arg(ToQString(orig_card_name.value())),
-            [&, this](const QJsonDocument& doc)
+    m_ScryfallSearch->Queue(
+        query,
+        [&, this](const QJsonDocument& doc)
+        {
+            // Using curly-braces for initializers here makes gcc and clang
+            // create an array-of-array, hence we are forced to use parens
+            const auto data(doc["data"].toArray());
+
+            if (data.size() > 0)
             {
-                // Using curly-braces for initializers here makes gcc and clang
-                // create an array-of-array, hence we are forced to use parens
-                const auto data(doc["data"].toArray());
+                m_ScryfallData = ScryfallDataEndpoint::Get(std::ref(network_manager));
+            }
 
-                if (data.size() > 0)
-                {
-                    m_ScryfallData = ScryfallDataEndpoint::Get(std::ref(network_manager));
-                }
-
-                for (const auto& card : data)
-                {
-                    const auto card_obj{ card.toObject() };
-                    auto card_name{
-                        [&]()
-                        {
-                            if (card_obj.contains("card_faces"))
-                            {
-                                return card_obj["card_faces"][0]["name"].toString();
-                            }
-                            return card_obj["name"].toString();
-                        }()
-                    };
-                    auto card_set{ card_obj["set"].toString() };
-                    auto card_collector_number{ card_obj["collector_number"].toString() };
-                    auto card_file_name{ QString{ "%1 - %2 (%3)" }
-                                             .arg(card_name)
-                                             .arg(card_set.toUpper())
-                                             .arg(card_collector_number.rightJustified(4, '0'))
-                                             .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
-                    CardAdded(card_file_name.toStdString());
-
-                    auto on_image{
-                        [&, card_file_name](const QByteArray& image_data)
-                        {
-                            auto image{
-                                Image::Decode(EncodedImageView{
-                                    reinterpret_cast<const std::byte*>(image_data.constData()),
-                                    static_cast<size_t>(image_data.size()),
-                                }),
-                            };
-                            m_Previews[card_file_name] = ImagePreview{
-                                .m_UncroppedImage{},
-                                .m_CroppedImage{ std::move(image) },
-                                .m_BadAspectRatio = false,
-                                .m_BadRotation = false,
-                            };
-                            m_CardSignallers[card_file_name].PreviewUpdated(m_Previews[card_file_name]);
-                        }
-                    };
-
-                    auto download_image{
-                        [this, &on_image, card_file_name](const QJsonObject& json)
-                        {
-                            const auto image_uris{ json["image_uris"].toObject() };
-                            if (image_uris.contains("normal"))
-                            {
-                                m_ScryfallData->Call(image_uris["normal"].toString(), on_image);
-                            }
-                            else if (image_uris.contains("grid"))
-                            {
-                                m_ScryfallData->Call(image_uris["grid"].toString(), on_image);
-                            }
-                            else if (image_uris.contains("display"))
-                            {
-                                m_ScryfallData->Call(image_uris["display"].toString(), on_image);
-                            }
-
-                            m_PngURIs[card_file_name] = image_uris["png"].toString();
-                        }
-                    };
-
-                    if (card_obj.contains("card_faces"))
+            for (const auto& card : data)
+            {
+                const auto card_obj{ card.toObject() };
+                auto card_name{
+                    [&]()
                     {
-                        download_image(card_obj["card_faces"][0].toObject());
-                    }
-                    else
+                        if (card_obj.contains("card_faces"))
+                        {
+                            return card_obj["card_faces"][0]["name"].toString();
+                        }
+                        return card_obj["name"].toString();
+                    }()
+                };
+                auto card_set{ card_obj["set"].toString() };
+                auto card_collector_number{ card_obj["collector_number"].toString() };
+                auto card_file_name{ QString{ "%1 - %2 (%3)" }
+                                         .arg(card_name)
+                                         .arg(card_set.toUpper())
+                                         .arg(card_collector_number.rightJustified(4, '0'))
+                                         .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
+                CardAdded(card_file_name.toStdString());
+
+                auto on_image{
+                    [&, card_file_name](const QByteArray& image_data)
                     {
-                        download_image(card_obj);
+                        auto image{
+                            Image::Decode(EncodedImageView{
+                                reinterpret_cast<const std::byte*>(image_data.constData()),
+                                static_cast<size_t>(image_data.size()),
+                            }),
+                        };
+                        m_Previews[card_file_name] = ImagePreview{
+                            .m_UncroppedImage{},
+                            .m_CroppedImage{ std::move(image) },
+                            .m_BadAspectRatio = false,
+                            .m_BadRotation = false,
+                        };
+                        m_CardSignallers[card_file_name].PreviewUpdated(m_Previews[card_file_name]);
                     }
+                };
+
+                auto download_image{
+                    [this, &on_image, card_file_name](const QJsonObject& json)
+                    {
+                        const auto image_uris{ json["image_uris"].toObject() };
+                        if (image_uris.contains("normal"))
+                        {
+                            m_ScryfallData->Call(image_uris["normal"].toString(), on_image);
+                        }
+                        else if (image_uris.contains("grid"))
+                        {
+                            m_ScryfallData->Call(image_uris["grid"].toString(), on_image);
+                        }
+                        else if (image_uris.contains("display"))
+                        {
+                            m_ScryfallData->Call(image_uris["display"].toString(), on_image);
+                        }
+
+                        m_PngURIs[card_file_name] = image_uris["png"].toString();
+                    }
+                };
+
+                if (card_obj.contains("card_faces"))
+                {
+                    download_image(card_obj["card_faces"][0].toObject());
                 }
-            });
-    }
+                else
+                {
+                    download_image(card_obj);
+                }
+            }
+        });
 
     // TODO: Double-sided cards
 }
