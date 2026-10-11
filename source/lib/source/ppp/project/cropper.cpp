@@ -366,6 +366,10 @@ void Cropper::PushWorkImpl(const fs::path& key,
             {
                 crop_work->Start();
             }
+            else if (m_State == State::Paused)
+            {
+                crop_work->Delay();
+            }
         }
     }
 
@@ -432,6 +436,10 @@ void Cropper::PushWorkImpl(const fs::path& key,
                     PreviewWorkStart();
                 }
                 preview_work->Start();
+            }
+            else if (m_State == State::Paused)
+            {
+                preview_work->Delay();
             }
         }
     }

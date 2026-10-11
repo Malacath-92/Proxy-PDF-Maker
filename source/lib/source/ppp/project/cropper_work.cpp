@@ -160,8 +160,16 @@ void CropperWork::Restart()
 
 void CropperWork::Cancel()
 {
-    State expected{ State::Waiting };
-    m_State.compare_exchange_strong(expected, State::Cancelled);
+    State expected_delayed{ State::Delayed };
+    if (m_State.compare_exchange_strong(expected_delayed, State::Cancelled))
+    {
+        Finished(Conclusion::Cancelled);
+    }
+    else
+    {
+        State expected{ State::Waiting };
+        m_State.compare_exchange_strong(expected, State::Cancelled);
+    }
 
     m_CancelRequested.store(true, std::memory_order_relaxed);
 }
