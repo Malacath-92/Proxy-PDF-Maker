@@ -2,6 +2,8 @@
 
 #include <QWidget>
 
+#include <ppp/util.hpp>
+
 class CollapseContainer : public QWidget
 {
     Q_OBJECT
@@ -11,6 +13,10 @@ class CollapseContainer : public QWidget
 
     QWidget* GetHandledWidget() const;
     void ReleaseHandledWidget();
+
+    using RelativeRate = decltype(1_pix / 1_s);
+    void SetRelativeRate(RelativeRate rate);
+    void SetRate(dla::time_unit rate);
 
   signals:
     void SetObjectVisibility(bool visible);

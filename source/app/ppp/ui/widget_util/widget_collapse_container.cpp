@@ -33,3 +33,12 @@ void CollapseContainer::ReleaseHandledWidget()
     m_HandledWidget->setParent(nullptr);
     m_HandledWidget = nullptr;
 }
+
+void CollapseContainer::SetRelativeRate(RelativeRate rate)
+{
+    m_CollapseButton->SetRelativeRate(rate);
+}
+void CollapseContainer::SetRate(dla::time_unit rate)
+{
+    m_CollapseButton->SetRate(rate);
+}

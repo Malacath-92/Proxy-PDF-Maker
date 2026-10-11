@@ -141,6 +141,11 @@ QWidgetItem* CollapseButton::GetLayoutItem()
 
 void CollapseButton::Uncheck()
 {
+    if (m_RelativeRate.has_value())
+    {
+        const auto duration{ qRound(1_pix * m_HandledWidget->height() / 0.001_s / m_RelativeRate.value()) };
+        m_Animation->setDuration(qMax(300, duration));
+    }
     m_Animator.setDirection(QAbstractAnimation::Backward);
     m_Animator.start();
     SetObjectVisibility(false);
@@ -151,4 +156,15 @@ void CollapseButton::Check()
     m_Animator.setDirection(QAbstractAnimation::Forward);
     m_Animator.start();
     SetObjectVisibility(true);
+}
+
+void CollapseButton::SetRelativeRate(RelativeRate rate)
+{
+    m_RelativeRate = rate;
+}
+void CollapseButton::SetRate(dla::time_unit rate)
+{
+    const auto duration{ qRound(rate / 0.001_s) };
+    m_RelativeRate.reset();
+    m_Animation->setDuration(qMax(300, duration));
 }

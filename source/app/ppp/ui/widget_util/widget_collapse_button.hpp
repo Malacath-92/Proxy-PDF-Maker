@@ -4,6 +4,8 @@
 #include <QToolButton>
 #include <QWidgetItem>
 
+#include <ppp/util.hpp>
+
 class QPropertyAnimation;
 
 class CollapsibleLayoutItem : public QObject, public QWidgetItem
@@ -43,6 +45,10 @@ class CollapseButton : public QToolButton
     void Uncheck();
     void Check();
 
+    using RelativeRate = decltype(1_pix / 1_s);
+    void SetRelativeRate(RelativeRate rate);
+    void SetRate(dla::time_unit rate);
+
   signals:
     void SetObjectVisibility(bool visible);
 
@@ -51,4 +57,6 @@ class CollapseButton : public QToolButton
     CollapsibleLayoutItem* m_LayoutItem;
     QPropertyAnimation* m_Animation;
     QParallelAnimationGroup m_Animator;
+
+    std::optional<RelativeRate> m_RelativeRate;
 };
