@@ -18,7 +18,7 @@ class LeakySingleton
 
     template<class... ArgsT>
     static auto Get(ArgsT&&... args)
-        -> std::atomic<std::shared_ptr<decltype(T{ std::forward<ArgsT>(args)... })>>
+        -> std::shared_ptr<decltype(T{ std::forward<ArgsT>(args)... })>
     {
         auto ptr{ m_Instance.load().lock() };
         if (ptr != nullptr)
