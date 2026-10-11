@@ -39,6 +39,7 @@ class PluginInterface : public QObject
                      &PluginInterface::method)
         ROUTE(PauseCropper);
         ROUTE(UnpauseCropper);
+        ROUTE(PrimeCropper);
         ROUTE(RefreshCardGrid);
         ROUTE(SetCardSizeChoice);
         ROUTE(SetEnableBackside);
@@ -49,6 +50,7 @@ class PluginInterface : public QObject
   signals:
     void PauseCropper();
     void UnpauseCropper();
+    void PrimeCropper();
     void RefreshCardGrid();
 
     void SetCardSizeChoice(const std::string& card_size_choice);

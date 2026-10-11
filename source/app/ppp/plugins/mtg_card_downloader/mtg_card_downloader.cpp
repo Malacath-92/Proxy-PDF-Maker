@@ -142,6 +142,7 @@ class MtGDownloaderPlugin : public PluginInterface
             PauseCropper();
             AtScopeExit unpause{ [this]
                                  { UnpauseCropper(); } };
+            PrimeCropper();
 
             auto scryfall_data_endpoint{ ScryfallDataEndpoint::Get(std::ref(m_NetworkManager)) };
 

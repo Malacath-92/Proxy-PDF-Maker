@@ -293,6 +293,7 @@ int main(int argc, char** argv)
     PluginRouter plugin_router{};
     QObject::connect(&plugin_router, &PluginRouter::PauseCropper, &cropper, &Cropper::PauseWork);
     QObject::connect(&plugin_router, &PluginRouter::UnpauseCropper, &cropper, &Cropper::RestartWork);
+    QObject::connect(&plugin_router, &PluginRouter::PrimeCropper, &cropper, &Cropper::CropWorkStart);
     QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area_view_model, &CardAreaViewModel::RequestRefresh);
 
     QObject::connect(
