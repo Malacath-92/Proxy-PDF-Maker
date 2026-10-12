@@ -2,7 +2,11 @@
 
 #include <QVBoxLayout>
 
+#include <ppp/util/log.hpp>
+
 #include <ppp/ui/widget_util/card/widget_card_image.hpp>
+#include <ppp/ui/widget_util/card/widget_clearable_card_image.hpp>
+#include <ppp/ui/widget_util/card/widget_stacked_card_backside_view.hpp>
 
 #include <ppp/ui/view_models/view_model_card.hpp>
 
@@ -20,6 +24,29 @@ SelectableCard::SelectableCard(CardViewModel* view_model)
     setStyleSheet("QFrame{ background-color: transparent; }");
 
     setMinimumWidth(m_CardImage->minimumWidth() + lineWidth() * 2);
+}
+
+void SelectableCard::SetBackside(CardViewModel* view_model)
+{
+    if (m_StackedView == nullptr)
+    {
+        m_BacksideCardImage = new ClearableCardImage{
+            view_model,
+            view_model->BlankFromThis(),
+            false,
+        };
+        m_StackedView = new StackedCardBacksideView{
+            m_ViewModel->BlankFromThis(),
+            m_CardImage,
+            m_BacksideCardImage,
+        };
+        static_cast<QVBoxLayout*>(layout())->addWidget(m_StackedView);
+    }
+    else
+    {
+        LogWarning("Discarding request to set backside on selectable card because it already has a backside!");
+        view_model->deleteLater();
+    }
 }
 
 bool SelectableCard::ToggleSelected()

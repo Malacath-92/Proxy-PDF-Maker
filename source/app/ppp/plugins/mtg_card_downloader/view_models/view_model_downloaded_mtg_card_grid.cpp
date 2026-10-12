@@ -45,37 +45,37 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
                         return card_obj["name"].toString();
                     }()
                 };
-                auto card_set{ card_obj["set"].toString() };
+                auto card_set{ card_obj["set"].toString().toUpper() };
                 auto card_collector_number{ card_obj["collector_number"].toString() };
                 auto card_file_name{ QString{ "%1 - %2 (%3)" }
                                          .arg(card_name)
-                                         .arg(card_set.toUpper())
+                                         .arg(card_set)
                                          .arg(card_collector_number.rightJustified(4, '0'))
                                          .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
                 CardAdded(card_file_name.toStdString());
 
-                auto on_image{
-                    [&, card_file_name](const QByteArray& image_data)
-                    {
-                        auto image{
-                            Image::Decode(EncodedImageView{
-                                reinterpret_cast<const std::byte*>(image_data.constData()),
-                                static_cast<size_t>(image_data.size()),
-                            }),
-                        };
-                        m_Previews[card_file_name] = ImagePreview{
-                            .m_UncroppedImage{},
-                            .m_CroppedImage{ std::move(image) },
-                            .m_BadAspectRatio = false,
-                            .m_BadRotation = false,
-                        };
-                        m_CardSignallers[card_file_name].PreviewUpdated(m_Previews[card_file_name]);
-                    }
-                };
-
                 auto download_image{
-                    [this, &on_image, card_file_name](const QJsonObject& json)
+                    [this, card_file_name](QString card, const QJsonObject& json)
                     {
+                        auto on_image{
+                            [this, card = std::move(card)](const QByteArray& image_data)
+                            {
+                                auto image{
+                                    Image::Decode(EncodedImageView{
+                                        reinterpret_cast<const std::byte*>(image_data.constData()),
+                                        static_cast<size_t>(image_data.size()),
+                                    }),
+                                };
+                                m_Previews[card] = ImagePreview{
+                                    .m_UncroppedImage{},
+                                    .m_CroppedImage{ std::move(image) },
+                                    .m_BadAspectRatio = false,
+                                    .m_BadRotation = false,
+                                };
+                                m_CardSignallers[card].PreviewUpdated(m_Previews[card]);
+                            }
+                        };
+
                         const auto image_uris{ json["image_uris"].toObject() };
                         if (image_uris.contains("normal"))
                         {
@@ -96,16 +96,23 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
 
                 if (card_obj.contains("card_faces"))
                 {
-                    download_image(card_obj["card_faces"][0].toObject());
+                    auto backside_name{ card_obj["card_faces"][1]["name"].toString() };
+                    auto backside_file_name{ QString{ "%1 - %2 (%3) <back>" }
+                                                 .arg(backside_name)
+                                                 .arg(card_set)
+                                                 .arg(card_collector_number.rightJustified(4, '0'))
+                                                 .replace(QRegularExpression{ "[/\\:*?\"<>|]" }, "_") };
+                    BacksideAdded(card_file_name.toStdString(), backside_file_name.toStdString());
+
+                    download_image(card_file_name, card_obj["card_faces"][0].toObject());
+                    download_image(backside_file_name, card_obj["card_faces"][1].toObject());
                 }
                 else
                 {
-                    download_image(card_obj);
+                    download_image(card_file_name, card_obj);
                 }
             }
         });
-
-    // TODO: Double-sided cards
 }
 DownloadedMtGCardGridViewModel::~DownloadedMtGCardGridViewModel() = default;
 

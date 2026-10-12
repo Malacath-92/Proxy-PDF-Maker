@@ -12,6 +12,8 @@
 
 #include <ppp/ui/widget_util/card/card_widget_util.hpp>
 
+#include <ppp/ui/view_models/view_model_blank_card.hpp>
+
 #include <ppp/profile/profile.hpp>
 
 CardViewModel::CardViewModel(fs::path card_name,
@@ -181,6 +183,11 @@ CardContextMenuEntries CardViewModel::GetEnabledContextMenuEntries() const
     enabled_entries |= CardContextMenuEntries::SkipSlot;
 
     return enabled_entries;
+}
+
+BlankCardViewModel* CardViewModel::BlankFromThis() const
+{
+    return new BlankCardViewModel{ m_ViewParams, m_Project.Get() };
 }
 
 void CardViewModel::EmitDefaults()

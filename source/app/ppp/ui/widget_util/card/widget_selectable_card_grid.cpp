@@ -49,6 +49,7 @@ SelectableCardGrid::SelectableCardGrid(SelectableCardGridViewModel* view_model)
     ApplyFilter("", true);
 
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CardAdded);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(BacksideAdded);
 }
 
 void SelectableCardGrid::ApplyFilter(const QString& filter, bool force)
@@ -213,6 +214,16 @@ void SelectableCardGrid::CardAdded(const fs::path& card_name)
             m_CurrentFilter.clear();
             ApplyFilter(std::move(current_filter), true);
         }
+    }
+}
+void SelectableCardGrid::BacksideAdded(const fs::path& card_name, const fs::path& backside_name)
+{
+    const auto name_lowercase{ ToQString(card_name).toLower() };
+    auto it{ std::ranges::find(m_Cards, name_lowercase, &Card::m_NameLowercase) };
+    if (it != m_Cards.end())
+    {
+        auto* backside_view_model{ m_ViewModel.MakeCardViewModel(backside_name) };
+        it->m_Widget->SetBackside(backside_view_model);
     }
 }
 

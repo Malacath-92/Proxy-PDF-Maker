@@ -6,6 +6,8 @@
 
 class CardViewModel;
 class CardImage;
+class ClearableCardImage;
+class StackedCardBacksideView;
 
 class SelectableCard : public QFrame
 {
@@ -13,6 +15,8 @@ class SelectableCard : public QFrame
 
   public:
     SelectableCard(CardViewModel* view_model);
+
+    void SetBackside(CardViewModel* view_model);
 
     bool ToggleSelected();
     void Select();
@@ -29,5 +33,9 @@ class SelectableCard : public QFrame
   private:
     CardViewModel* m_ViewModel;
     CardImage* m_CardImage{ nullptr };
+
+    ClearableCardImage* m_BacksideCardImage{ nullptr };
+    StackedCardBacksideView* m_StackedView{ nullptr };
+
     bool m_Selected{ false };
 };

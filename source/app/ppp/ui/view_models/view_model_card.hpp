@@ -12,8 +12,9 @@
 
 class Project;
 
-class Image;
 struct ImagePreview;
+
+class BlankCardViewModel;
 
 enum class CardContextMenuEntries
 {
@@ -60,6 +61,8 @@ class CardViewModel : public QObject
 
     CardContextMenuEntries GetVisibleContextMenuEntries() const;
     CardContextMenuEntries GetEnabledContextMenuEntries() const;
+
+    BlankCardViewModel* BlankFromThis() const;
 
     void EmitDefaults();
 

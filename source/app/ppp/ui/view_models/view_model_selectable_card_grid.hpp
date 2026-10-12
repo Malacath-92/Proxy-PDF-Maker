@@ -31,6 +31,7 @@ class SelectableCardGridViewModel : public QObject
     // forward
 
     void CardAdded(const fs::path& card_name);
+    void BacksideAdded(const fs::path& card_name, const fs::path& backside_name);
 
   protected:
     const Project& m_Project;

@@ -33,6 +33,7 @@ class SelectableCardGrid : public QWidget
 
   public slots:
     void CardAdded(const fs::path& card_name);
+    void BacksideAdded(const fs::path& card_name, const fs::path& backside_name);
 
   private:
     QWidget* FirstItem() const;
