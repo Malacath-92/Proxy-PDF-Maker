@@ -198,27 +198,27 @@ void MtgDownloaderPopup::ValidateSettings()
     {
         if (m_Project.m_Data.m_CardSizeChoice != "Scryfall Art Crop")
         {
-            m_Router.SetCardSizeChoice("Scryfall Art Crop");
+            m_Project.SetCardSizeChoice("Scryfall Art Crop");
         }
     }
     else if (m_Project.m_Data.m_CardSizeChoice != "Standard" && m_Project.m_Data.m_CardSizeChoice != "Standard x2")
     {
-        m_Router.SetCardSizeChoice("Standard");
+        m_Project.SetCardSizeChoice("Standard");
     }
 
     const bool download_backsides{ m_Backsides->isChecked() };
     if (download_backsides || m_Project.HasValidDefaultBackside())
     {
-        m_Router.SetEnableBackside(true);
+        m_Project.SetBacksideEnabled(true);
     }
     else
     {
-        m_Router.SetEnableBackside(false);
+        m_Project.SetBacksideEnabled(false);
     }
 
     if (m_Project.m_Data.m_BacksideAutoPattern.empty())
     {
-        m_Router.SetBacksideAutoPattern("__back_$");
+        m_Project.SetBacksideAutoPattern("__back_$");
     }
 }
 

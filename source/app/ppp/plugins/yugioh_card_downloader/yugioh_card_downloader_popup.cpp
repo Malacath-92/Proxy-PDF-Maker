@@ -109,13 +109,13 @@ void YuGiOhDownloaderPopup::ValidateSettings()
 
     if (m_Project.m_Data.m_CardSizeChoice != "Japanese")
     {
-        m_Router.SetCardSizeChoice("Japanese");
+        m_Project.SetCardSizeChoice("Japanese");
     }
 
-    m_Router.SetEnableBackside(m_Project.HasValidDefaultBackside());
+    m_Project.SetBacksideEnabled(m_Project.HasValidDefaultBackside());
 
     if (m_Project.m_Data.m_BacksideAutoPattern.empty())
     {
-        m_Router.SetBacksideAutoPattern("__back_$");
+        m_Project.SetBacksideAutoPattern("__back_$");
     }
 }

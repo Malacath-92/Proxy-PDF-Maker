@@ -41,9 +41,6 @@ class PluginInterface : public QObject
         ROUTE(UnpauseCropper);
         ROUTE(PrimeCropper);
         ROUTE(RefreshCardGrid);
-        ROUTE(SetCardSizeChoice);
-        ROUTE(SetEnableBackside);
-        ROUTE(SetBacksideAutoPattern);
 #undef ROUTE
     }
 
@@ -52,11 +49,6 @@ class PluginInterface : public QObject
     void UnpauseCropper();
     void PrimeCropper();
     void RefreshCardGrid();
-
-    void SetCardSizeChoice(const std::string& card_size_choice);
-    void SetEnableBackside(bool enabled);
-
-    void SetBacksideAutoPattern(const std::string& pattern);
 };
 
 using PluginInit = PluginInterface*(Project& project, const Config& config);

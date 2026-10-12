@@ -296,22 +296,6 @@ int main(int argc, char** argv)
     QObject::connect(&plugin_router, &PluginRouter::PrimeCropper, &cropper, &Cropper::CropWorkStart);
     QObject::connect(&plugin_router, &PluginRouter::RefreshCardGrid, card_area_view_model, &CardAreaViewModel::RequestRefresh);
 
-    QObject::connect(
-        &plugin_router,
-        &PluginRouter::SetCardSizeChoice,
-        &project,
-        &Project::SetCardSizeChoice);
-    QObject::connect(
-        &plugin_router,
-        &PluginRouter::SetEnableBackside,
-        &project,
-        &Project::SetBacksideEnabled);
-    QObject::connect(
-        &plugin_router,
-        &PluginRouter::SetBacksideAutoPattern,
-        &project,
-        &Project::SetBacksideAutoPattern);
-
     auto* options_area{
         new OptionsAreaWidget{
             project,
