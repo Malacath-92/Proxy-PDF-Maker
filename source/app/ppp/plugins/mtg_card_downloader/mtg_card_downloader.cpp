@@ -140,9 +140,9 @@ class MtGDownloaderPlugin : public PluginInterface
                 card_name,
                 m_NetworkManager }
         };
-        m_Button->window()->setEnabled(false);
-        AtScopeExit enable{ [this]
-                            { m_Button->window()->setEnabled(true); } };
+
+        auto* window{ m_Button->window() };
+        window->setEnabled(false);
 
         if (const auto card_uri{ browser.Show() })
         {
@@ -179,6 +179,7 @@ class MtGDownloaderPlugin : public PluginInterface
             AtScopeExit unpause{ [this]
                                  { UnpauseCropper(); } };
             PrimeCropper();
+            window->setEnabled(true);
 
             auto scryfall_data_endpoint{ ScryfallDataEndpoint::Get(std::ref(m_NetworkManager)) };
 
@@ -220,6 +221,10 @@ class MtGDownloaderPlugin : public PluginInterface
                 download_image(backside_uri.value(), backside_name);
             }
             evt_loop.exec();
+        }
+        else
+        {
+            window->setEnabled(true);
         }
     }
 
