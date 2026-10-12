@@ -30,6 +30,7 @@ void SelectableCard::SetBackside(CardViewModel* view_model)
 {
     if (m_StackedView == nullptr)
     {
+        m_BacksideViewModel = view_model;
         m_BacksideCardImage = new ClearableCardImage{
             view_model,
             view_model->BlankFromThis(),
@@ -75,6 +76,14 @@ void SelectableCard::Unselect()
 const fs::path& SelectableCard::GetCardName() const
 {
     return m_ViewModel->GetCardName();
+}
+std::optional<std::reference_wrapper<const fs::path>> SelectableCard::GetBacksideCardName() const
+{
+    if (m_BacksideViewModel != nullptr)
+    {
+        return m_BacksideViewModel->GetCardName();
+    }
+    return std::nullopt;
 }
 
 void SelectableCard::enterEvent(QEnterEvent* event)

@@ -23,6 +23,7 @@ class SelectableCardGrid : public QWidget
     int TotalWidthFromItemWidth(int item_width) const;
 
     std::optional<fs::path> GetSelectedCardName() const;
+    std::optional<fs::path> GetSelectedBacksideName() const;
 
     virtual bool hasHeightForWidth() const override;
     virtual int heightForWidth(int width) const override;

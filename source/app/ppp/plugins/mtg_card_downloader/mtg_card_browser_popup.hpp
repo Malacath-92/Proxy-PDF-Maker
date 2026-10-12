@@ -20,7 +20,11 @@ class MtGCardBrowserPopup : public PopupBase
                         MtGCardBrowserViewModel* view_model);
 
     std::optional<QString> Show();
-    std::optional<ImagePreview> GetSelectedPreview();
+    std::optional<ImagePreview> GetSelectedPreview() const;
+
+    std::optional<QString> GetSelectedBackside() const;
+    std::optional<QString> GetSelectedBacksideURI() const;
+    std::optional<ImagePreview> GetSelectedBacksidePreview() const;
 
     enum class Choice
     {

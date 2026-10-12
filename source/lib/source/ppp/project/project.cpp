@@ -2367,6 +2367,24 @@ bool Project::SetBacksideAutoPattern(std::string pattern)
 
     return any_backside_change;
 }
+fs::path Project::GetBacksideAutoName(const fs::path& card_name) const
+{
+    const auto pattern{ std::string_view{ m_Data.m_BacksideAutoPattern } };
+    if (pattern.empty())
+    {
+        return fmt::format("__back_{}",
+                           card_name.string());
+    }
+
+    const auto placeholder_pos{ pattern.find('$') };
+    const auto front{ pattern.substr(0, placeholder_pos) };
+    const auto back{ pattern.substr(placeholder_pos + 1, std::string::npos) };
+    return fmt::format("{}{}{}{}",
+                       front,
+                       card_name.stem().string(),
+                       back,
+                       card_name.extension().string());
+}
 
 bool Project::CacheCardLayout()
 {

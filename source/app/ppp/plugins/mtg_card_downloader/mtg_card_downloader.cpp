@@ -144,7 +144,7 @@ class MtGDownloaderPlugin : public PluginInterface
         AtScopeExit enable{ [this]
                             { m_Button->window()->setEnabled(true); } };
 
-        if (const auto png_uri{ browser.Show() })
+        if (const auto card_uri{ browser.Show() })
         {
             if (const auto preview{ browser.GetSelectedPreview() })
             {
@@ -155,6 +155,26 @@ class MtGDownloaderPlugin : public PluginInterface
                 }
             }
 
+            const auto backside_name{ m_Project.GetBacksideAutoName(card_name) };
+            const auto backside_uri{ browser.GetSelectedBacksideURI() };
+            if (backside_uri.has_value())
+            {
+                m_Project.SetBacksideImage(card_name, backside_name);
+
+                if (const auto backside_preview{ browser.GetSelectedBacksidePreview() })
+                {
+                    auto it{ m_Project.m_CardSignallers.find(backside_name) };
+                    if (it != m_Project.m_CardSignallers.end())
+                    {
+                        it->second->PreviewUpdated(backside_preview.value());
+                    }
+                }
+            }
+            else
+            {
+                m_Project.SetBacksideImageDefault(card_name);
+            }
+
             PauseCropper();
             AtScopeExit unpause{ [this]
                                  { UnpauseCropper(); } };
@@ -163,32 +183,42 @@ class MtGDownloaderPlugin : public PluginInterface
             auto scryfall_data_endpoint{ ScryfallDataEndpoint::Get(std::ref(m_NetworkManager)) };
 
             QEventLoop evt_loop{};
-            scryfall_data_endpoint->Call(
-                png_uri.value(),
-                [&, this](const QByteArray& image_data)
+            auto download_image{
+                [this, &evt_loop, scryfall_data_endpoint](const QString& card_uri, const fs::path& card_name)
                 {
-                    const auto settings{ MtgDownloaderSettings::Read() };
+                    scryfall_data_endpoint->Call(
+                        card_uri,
+                        [this, &evt_loop, card_name](const QByteArray& image_data)
+                        {
+                            const auto settings{ MtgDownloaderSettings::Read() };
 
-                    auto* worker{
-                        new CardDownloaderImageWorker{
-                            m_Project,
-                            ToQString(card_name),
-                            image_data,
-                            settings.m_FillCorners,
-                            settings.m_UpscaleModel == "None"
-                                ? ""
-                                : settings.m_UpscaleModel,
-                            m_Project.CardSize(),
-                            m_Cfg.m_MaxDPI,
-                            { ToQString(m_Project.GetCardImagePath(card_name)) },
-                        }
-                    };
-                    QObject::connect(worker,
-                                     &CardDownloaderImageWorker::Done,
-                                     &evt_loop,
-                                     &QEventLoop::quit);
-                    QThreadPool::globalInstance()->start(worker);
-                });
+                            auto* worker{
+                                new CardDownloaderImageWorker{
+                                    m_Project,
+                                    ToQString(card_name),
+                                    image_data,
+                                    settings.m_FillCorners,
+                                    settings.m_UpscaleModel == "None"
+                                        ? ""
+                                        : settings.m_UpscaleModel,
+                                    m_Project.CardSize(),
+                                    m_Cfg.m_MaxDPI,
+                                    { ToQString(m_Project.GetCardImagePath(card_name)) },
+                                }
+                            };
+                            QObject::connect(worker,
+                                             &CardDownloaderImageWorker::Done,
+                                             &evt_loop,
+                                             &QEventLoop::quit);
+                            QThreadPool::globalInstance()->start(worker);
+                        });
+                }
+            };
+            download_image(card_uri.value(), card_name);
+            if (backside_uri.has_value())
+            {
+                download_image(backside_uri.value(), backside_name);
+            }
             evt_loop.exec();
         }
     }

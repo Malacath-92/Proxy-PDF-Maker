@@ -55,10 +55,10 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
                 CardAdded(card_file_name.toStdString());
 
                 auto download_image{
-                    [this, card_file_name](QString card, const QJsonObject& json)
+                    [this](QString card, const QJsonObject& json)
                     {
                         auto on_image{
-                            [this, card = std::move(card)](const QByteArray& image_data)
+                            [this, card](const QByteArray& image_data)
                             {
                                 auto image{
                                     Image::Decode(EncodedImageView{
@@ -90,7 +90,7 @@ DownloadedMtGCardGridViewModel::DownloadedMtGCardGridViewModel(const Project& pr
                             m_ScryfallData->Call(image_uris["display"].toString(), on_image);
                         }
 
-                        m_PngURIs[card_file_name] = image_uris["png"].toString();
+                        m_PngURIs[card] = image_uris["png"].toString();
                     }
                 };
 

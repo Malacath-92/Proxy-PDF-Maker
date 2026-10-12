@@ -127,13 +127,47 @@ std::optional<QString> MtGCardBrowserPopup::Show()
     }
     return std::nullopt;
 }
-std::optional<ImagePreview> MtGCardBrowserPopup::GetSelectedPreview()
+std::optional<ImagePreview> MtGCardBrowserPopup::GetSelectedPreview() const
 {
     if (m_Choice == Choice::Ok)
     {
         if (auto selected_card_name{ m_Grid->GetSelectedCardName() })
         {
             return m_GridViewModel->GetPreview(ToQString(selected_card_name.value()));
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<QString> MtGCardBrowserPopup::GetSelectedBackside() const
+{
+    if (m_Choice == Choice::Ok)
+    {
+        if (auto selected_backside_name{ m_Grid->GetSelectedBacksideName() })
+        {
+            return ToQString(selected_backside_name.value());
+        }
+    }
+    return std::nullopt;
+}
+std::optional<QString> MtGCardBrowserPopup::GetSelectedBacksideURI() const
+{
+    if (m_Choice == Choice::Ok)
+    {
+        if (auto selected_backside_name{ m_Grid->GetSelectedBacksideName() })
+        {
+            return m_GridViewModel->GetFullResImageURI(ToQString(selected_backside_name.value()));
+        }
+    }
+    return std::nullopt;
+}
+std::optional<ImagePreview> MtGCardBrowserPopup::GetSelectedBacksidePreview() const
+{
+    if (m_Choice == Choice::Ok)
+    {
+        if (auto selected_backside_name{ m_Grid->GetSelectedBacksideName() })
+        {
+            return m_GridViewModel->GetPreview(ToQString(selected_backside_name.value()));
         }
     }
     return std::nullopt;

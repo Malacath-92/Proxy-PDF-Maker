@@ -136,6 +136,14 @@ std::optional<fs::path> SelectableCardGrid::GetSelectedCardName() const
     }
     return m_Selected->GetCardName();
 }
+std::optional<fs::path> SelectableCardGrid::GetSelectedBacksideName() const
+{
+    if (m_Selected == nullptr)
+    {
+        return std::nullopt;
+    }
+    return m_Selected->GetBacksideCardName();
+}
 
 bool SelectableCardGrid::hasHeightForWidth() const
 {

@@ -309,6 +309,7 @@ class Project : public QObject
     bool IsBacksideOfAnother(const fs::path& card_name) const;
 
     bool SetBacksideAutoPattern(std::string pattern);
+    fs::path GetBacksideAutoName(const fs::path& card_name) const;
 
     bool CacheCardLayout();
 

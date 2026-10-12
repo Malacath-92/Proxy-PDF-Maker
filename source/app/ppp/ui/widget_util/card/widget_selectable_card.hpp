@@ -23,6 +23,7 @@ class SelectableCard : public QFrame
     void Unselect();
 
     const fs::path& GetCardName() const;
+    std::optional<std::reference_wrapper<const fs::path>> GetBacksideCardName() const;
 
     virtual void enterEvent(QEnterEvent* event) override;
     virtual void leaveEvent(QEvent* event) override;
@@ -34,7 +35,9 @@ class SelectableCard : public QFrame
     CardViewModel* m_ViewModel;
     CardImage* m_CardImage{ nullptr };
 
+    CardViewModel* m_BacksideViewModel{ nullptr };
     ClearableCardImage* m_BacksideCardImage{ nullptr };
+
     StackedCardBacksideView* m_StackedView{ nullptr };
 
     bool m_Selected{ false };
