@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-13
+
+### Added
+- Under `Global Config` an option to `Skip Empty Backsides` was added, which does what it says and nothing more.
+
+### Fixed
+- Reduce the chance for crashes when the project loads images in an unexpected order.
+- The guides will be visible on the preview on backsides only when the corresponding option is enabled.
+
 ## [2.1.3] - 2026-07-13
 
 ### Fixed
