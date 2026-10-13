@@ -22,7 +22,7 @@ CardViewModel::CardViewModel(fs::path card_name,
     , m_Project{ project }
 {
     const auto& connect_signals{
-        [this](const fs::path& card_name, ProjectCardSignaller* sig)
+        [this](const fs::path& card_name, const ProjectCardSignaller* sig)
         {
             if (card_name == m_CardName)
             {
@@ -34,7 +34,7 @@ CardViewModel::CardViewModel(fs::path card_name,
 
     if (m_Project.Get().m_CardSignallers.contains(m_CardName))
     {
-        connect_signals(m_CardName, m_Project.Get().m_CardSignallers.at(m_CardName).get());
+        connect_signals(m_CardName, &m_Project.Get().m_CardSignallers.at(m_CardName));
     }
     else
     {

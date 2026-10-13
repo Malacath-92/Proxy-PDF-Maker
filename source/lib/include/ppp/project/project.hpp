@@ -449,7 +449,7 @@ class Project : public QObject
     const Config& m_Cfg;
     bool m_PendingStalePreviewCleanup{ false };
 
-    std::unordered_map<fs::path, std::unique_ptr<ProjectCardSignaller>> m_CardSignallers;
+    std::unordered_map<fs::path, ProjectCardSignaller> m_CardSignallers;
 
   private:
     Project(const Project&) = delete;

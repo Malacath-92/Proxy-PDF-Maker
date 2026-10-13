@@ -998,7 +998,7 @@ bool Project::HideCard(const fs::path& card_name)
         if (was_visible)
         {
             RemoveCardFromList(card_name);
-            m_CardSignallers.at(card_name)->CardVisibilityChanged(false);
+            m_CardSignallers[card_name].CardVisibilityChanged(false);
             return true;
         }
     }
@@ -1021,7 +1021,7 @@ bool Project::UnhideCard(const fs::path& card_name)
         if (visible)
         {
             AppendCardToList(card_name);
-            m_CardSignallers.at(card_name)->CardVisibilityChanged(true);
+            m_CardSignallers[card_name].CardVisibilityChanged(true);
             return true;
         }
     }
@@ -1082,7 +1082,7 @@ bool Project::RotateCardLeft(const fs::path& card_name)
         card->m_Rotation = Image::Rotation{
             (std::to_underlying(card->m_Rotation) + 3) % 4
         };
-        m_CardSignallers.at(card_name)->CardRotationChanged(card->m_Rotation);
+        m_CardSignallers[card_name].CardRotationChanged(card->m_Rotation);
         return true;
     }
     return false;
@@ -1095,7 +1095,7 @@ bool Project::RotateCardRight(const fs::path& card_name)
         card->m_Rotation = Image::Rotation{
             (std::to_underlying(card->m_Rotation) + 1) % 4
         };
-        m_CardSignallers.at(card_name)->CardRotationChanged(card->m_Rotation);
+        m_CardSignallers[card_name].CardRotationChanged(card->m_Rotation);
         return true;
     }
     return false;
@@ -1115,7 +1115,7 @@ bool Project::SetCardBleedType(const fs::path& card_name, BleedType bleed_type)
     if (auto* card{ FindCard(card_name) })
     {
         card->m_BleedType = bleed_type;
-        m_CardSignallers.at(card_name)->CardBleedTypeChanged(bleed_type);
+        m_CardSignallers[card_name].CardBleedTypeChanged(bleed_type);
         return true;
     }
     return false;
@@ -1135,7 +1135,7 @@ bool Project::SetCardBadAspectRatioHandling(const fs::path& card_name, BadAspect
     if (auto* card{ FindCard(card_name) })
     {
         card->m_BadAspectRatioHandling = ratio_handling;
-        m_CardSignallers.at(card_name)->CardBadAspectRatioHandlingChanged(ratio_handling);
+        m_CardSignallers[card_name].CardBadAspectRatioHandlingChanged(ratio_handling);
         return true;
     }
     return false;
@@ -1169,7 +1169,7 @@ uint32_t Project::SetCardCount(const fs::path& card_name, uint32_t num)
             {
                 RemoveCardFromList(card_name);
             }
-            m_CardSignallers.at(card_name)->CardCountChanged(card->m_Num);
+            m_CardSignallers[card_name].CardCountChanged(card->m_Num);
 
             return clamped_num;
         }
@@ -1186,7 +1186,7 @@ uint32_t Project::IncrementCardCount(const fs::path& card_name)
         {
             ++card->m_Num;
             AppendCardToList(card_name);
-            m_CardSignallers.at(card_name)->CardCountChanged(card->m_Num);
+            m_CardSignallers[card_name].CardCountChanged(card->m_Num);
             return card->m_Num;
         }
     }
@@ -1203,7 +1203,7 @@ uint32_t Project::DecrementCardCount(const fs::path& card_name)
         {
             --card->m_Num;
             RemoveCardFromList(card_name);
-            m_CardSignallers.at(card_name)->CardCountChanged(card->m_Num);
+            m_CardSignallers[card_name].CardCountChanged(card->m_Num);
             return card->m_Num;
         }
     }
@@ -1347,13 +1347,7 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
 
     if (!m_CardSignallers.contains(card_name))
     {
-        const auto [it, _]{
-            m_CardSignallers.insert(std::pair{
-                card_name,
-                std::make_unique<ProjectCardSignaller>(),
-            })
-        };
-        CardSignallerAdded(card_name, it->second.get());
+        CardSignallerAdded(card_name, &m_CardSignallers[card_name]);
     }
 
     AutoMatchBackside(card_name);
@@ -1363,7 +1357,7 @@ CardInfo& Project::CardAdded(const fs::path& card_name)
     {
         m_Data.m_Previews[card_name] = std::move(m_Data.m_StalePreviews.at(card_name));
         m_Data.m_StalePreviews.erase(card_name);
-        m_CardSignallers.at(card_name)->PreviewUpdated(m_Data.m_Previews.at(card_name));
+        m_CardSignallers[card_name].PreviewUpdated(m_Data.m_Previews.at(card_name));
     }
 
     return *card;
@@ -1394,7 +1388,7 @@ void Project::CardRemoved(const fs::path& card_name)
         {
             m_Data.m_StalePreviews[card_name] = std::move(m_Data.m_Previews.at(card_name));
             m_Data.m_Previews.erase(card_name);
-            m_CardSignallers.at(card_name)->PreviewRemoved();
+            m_CardSignallers[card_name].PreviewRemoved();
 
             if (!m_PendingStalePreviewCleanup)
             {
@@ -2253,7 +2247,7 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         auto old_backside{ std::move(card->m_Backside) };
         card->m_Backside = std::move(backside_image);
 
-        m_CardSignallers.at(card_name)->CardBacksideChanged(card->m_Backside.value());
+        m_CardSignallers[card_name].CardBacksideChanged(card->m_Backside.value());
 
         if (m_Cfg.m_CardOrder == CardOrder::Backside)
         {
@@ -2293,7 +2287,7 @@ bool Project::ClearBacksideImage(const fs::path& card_name)
         {
             const bool old_backside_shown{ UnhideCard(card->m_Backside.value()) };
             card->m_Backside = std::nullopt;
-            m_CardSignallers.at(card_name)->CardBacksideChanged(std::nullopt);
+            m_CardSignallers[card_name].CardBacksideChanged(std::nullopt);
             return old_backside_shown;
         }
     }
@@ -2315,7 +2309,7 @@ void Project::SetCardBacksideShortEdge(const fs::path& card_name, bool has_backs
     if (auto* card{ FindCard(card_name) })
     {
         card->m_BacksideShortEdge = has_backside_short_edge;
-        m_CardSignallers.at(card_name)->CardBacksideShortEdgeChanged(has_backside_short_edge);
+        m_CardSignallers[card_name].CardBacksideShortEdgeChanged(has_backside_short_edge);
     }
 }
 
@@ -3103,7 +3097,7 @@ void Project::SetPreview(const fs::path& card_name,
     {
         if (rotation == card->m_Rotation)
         {
-            m_CardSignallers.at(card_name)->PreviewUpdated(preview);
+            m_CardSignallers[card_name].PreviewUpdated(preview);
             const auto update_visibility{
                 preview.m_BadRotation ||
                 m_Data.m_Previews[card_name].m_BadRotation
@@ -3111,7 +3105,7 @@ void Project::SetPreview(const fs::path& card_name,
             m_Data.m_Previews[card_name] = std::move(preview);
             if (update_visibility)
             {
-                m_CardSignallers.at(card_name)->CardVisibilityChanged(true);
+                m_CardSignallers[card_name].CardVisibilityChanged(true);
             }
         }
     }

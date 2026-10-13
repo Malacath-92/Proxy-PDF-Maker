@@ -38,7 +38,7 @@ CardAreaCardViewModel::CardAreaCardViewModel(const fs::path& card_name,
 
     if (m_Project.m_CardSignallers.contains(m_CardName))
     {
-        connect_signals(m_CardName, m_Project.m_CardSignallers.at(m_CardName).get());
+        connect_signals(m_CardName, &m_Project.m_CardSignallers.at(m_CardName));
     }
     else
     {
