@@ -91,7 +91,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(GuidesOptionsViewModel* view_model)
         },
         [this]()
         {
-            const auto guides_color{ ColorFromBackgroundStyle(m_GuidesColorA->styleSheet()) };
+            const auto guides_color{ ColorFromBackgroundStyle(m_GuidesColorA->GetWidget()->styleSheet()) };
             return std::array{
                 guides_color.r,
                 guides_color.g,
@@ -116,7 +116,7 @@ GuidesOptionsWidget::GuidesOptionsWidget(GuidesOptionsViewModel* view_model)
         },
         [this]()
         {
-            const auto guides_color{ ColorFromBackgroundStyle(m_GuidesColorB->styleSheet()) };
+            const auto guides_color{ ColorFromBackgroundStyle(m_GuidesColorB->GetWidget()->styleSheet()) };
             return std::array{
                 guides_color.r,
                 guides_color.g,
