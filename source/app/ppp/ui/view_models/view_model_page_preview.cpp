@@ -42,7 +42,7 @@ CardViewModel* PagePreviewViewModel::MakeCardViewModel(const fs::path& card_name
 
 GuidesOverlayViewModel* PagePreviewViewModel::MakeGuidesOverlayViewModel() const
 {
-    return new GuidesOverlayViewModel{ m_Project };
+    return new GuidesOverlayViewModel{ m_Project, m_Page.m_IsBackside };
 }
 BordersOverlayViewModel* PagePreviewViewModel::MakeBordersOverlayViewModel(bool is_backside) const
 {

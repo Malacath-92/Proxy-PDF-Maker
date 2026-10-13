@@ -5,8 +5,10 @@
 #include <ppp/pdf/util.hpp>
 #include <ppp/svg/util.hpp>
 
-GuidesOverlayViewModel::GuidesOverlayViewModel(const Project& project)
+GuidesOverlayViewModel::GuidesOverlayViewModel(const Project& project,
+                                               bool is_backside)
     : m_Project{ project }
+    , m_IsBackside{ is_backside }
 {
     QObject::connect(&project, &Project::GuidesEnabledChanged, this, &GuidesOverlayViewModel::Redraw);
     QObject::connect(&project, &Project::BacksideGuidesEnabledChanged, this, &GuidesOverlayViewModel::Redraw);
@@ -25,7 +27,8 @@ GuidesOverlayViewModel::GuidesOverlayViewModel(const Project& project)
 
 bool GuidesOverlayViewModel::ShouldDrawGuides() const
 {
-    return m_Project.m_Data.m_EnableGuides;
+    return m_Project.m_Data.m_EnableGuides &&
+           (!m_IsBackside || m_Project.m_Data.m_BacksideEnableGuides);
 }
 bool GuidesOverlayViewModel::ShouldDrawCornerGuides() const
 {

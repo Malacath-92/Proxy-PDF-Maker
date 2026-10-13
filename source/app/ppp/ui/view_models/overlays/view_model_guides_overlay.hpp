@@ -14,7 +14,8 @@ class GuidesOverlayViewModel : public QObject
     Q_OBJECT
 
   public:
-    GuidesOverlayViewModel(const Project& project);
+    GuidesOverlayViewModel(const Project& project,
+                           bool is_backside);
 
     bool ShouldDrawGuides() const;
     bool ShouldDrawCornerGuides() const;
@@ -39,4 +40,5 @@ class GuidesOverlayViewModel : public QObject
 
   private:
     const Project& m_Project;
+    const bool m_IsBackside;
 };
