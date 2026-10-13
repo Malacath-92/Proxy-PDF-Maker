@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-07-13
+
+### Fixed
+- When the user loads a project which points to an image folder that can not be created the app will no longer crash.
+- Setting the current guides colors as default now works as expected instead of always falling back to pure black.
+
 ## [2.1.2] - 2026-07-10
 
 ### Fixed
