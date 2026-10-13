@@ -18,6 +18,8 @@ struct ConfigData
 
     bool m_NoCropMode{ true };
 
+    bool m_SkipEmptyBacksides{ false };
+
     bool m_CheckVersionOnStartup{ true };
     uint32_t m_ToastTimeoutMS{ 8000 };
 
@@ -180,6 +182,8 @@ class Config
 
     void SetNoCropMode(bool no_crop_mode);
 
+    void SetSkipEmptyBacksides(bool skip_empty_backsides);
+
     void SetCheckVersionOnStartup(bool check_version);
     void SetToastTimeoutMS(uint32_t toast_timeout_ms);
 
@@ -217,6 +221,8 @@ class Config
     void AdvancedModeChanged(bool advanced_mode);
 
     void NoCropModeChanged(bool no_crop_mode);
+
+    void SkipEmptyBacksidesChanged(bool skip_empty_backsides);
 
     void CheckVersionOnStartupChanged(bool check_version);
     void ToastTimeoutMSChanged(uint32_t toast_timeout_ms);

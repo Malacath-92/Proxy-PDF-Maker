@@ -612,6 +612,15 @@ void Config::SetNoCropMode(bool no_crop_mode)
     }
 }
 
+void Config::SetSkipEmptyBacksides(bool skip_empty_backsides)
+{
+    if (m_SkipEmptyBacksides != skip_empty_backsides)
+    {
+        m_SkipEmptyBacksides = skip_empty_backsides;
+        SkipEmptyBacksidesChanged(skip_empty_backsides);
+    }
+}
+
 void Config::SetCheckVersionOnStartup(bool check_version)
 {
     if (m_CheckVersionOnStartup != check_version)

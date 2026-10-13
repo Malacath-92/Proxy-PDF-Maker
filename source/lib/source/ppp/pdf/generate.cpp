@@ -499,14 +499,14 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
 
     if (backsides_on_same_pdf)
     {
-        frontside_pdf->ReservePages(2 * pages.size());
+        frontside_pdf->ReservePages(pages.size() + backside_pages.size());
     }
     else
     {
         frontside_pdf->ReservePages(pages.size());
         if (backsides_on_separate_pdf)
         {
-            backside_pdf->ReservePages(pages.size());
+            backside_pdf->ReservePages(backside_pages.size());
         }
     }
 
@@ -779,8 +779,20 @@ PdfResults GeneratePdf(const Project& project, const Config& config, const fs::p
 
         if (has_backside_pages)
         {
-            PdfPage* back_page{ backside_pdf->NextPage(true) };
             const auto& backside_page{ backside_pages[p] };
+
+            if (config.m_SkipEmptyBacksides &&
+                std::ranges::all_of(
+                    backside_page.m_Images,
+                    [](const PageImage& image)
+                    {
+                        return !image.m_Image.has_value();
+                    }))
+            {
+                continue;
+            }
+
+            PdfPage* back_page{ backside_pdf->NextPage(true) };
             generate_work.push_back([draw_back_page, back_page, &backside_page, p]()
                                     { draw_back_page(back_page, backside_page, p); });
         }

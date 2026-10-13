@@ -31,6 +31,8 @@ void GlobalOptionsViewModel::EmitDefaults()
 
     NoCropModeChanged(m_Cfg.m_NoCropMode);
 
+    SkipEmptyBacksidesChanged(m_Cfg.m_SkipEmptyBacksides);
+
     CheckVersionOnStartupChanged(m_Cfg.m_CheckVersionOnStartup);
     ToastTimeoutMSChanged(m_Cfg.m_ToastTimeoutMS);
 
@@ -67,6 +69,12 @@ void GlobalOptionsViewModel::ChangeNoCropMode(Qt::CheckState no_crop_mode)
 {
     TRACY_AUTO_SCOPE();
     m_Cfg.SetNoCropMode(no_crop_mode != Qt::CheckState::Unchecked);
+}
+
+void GlobalOptionsViewModel::ChangeSkipEmptyBacksides(Qt::CheckState skip_empty_backsides)
+{
+    TRACY_AUTO_SCOPE();
+    m_Cfg.SetSkipEmptyBacksides(skip_empty_backsides != Qt::CheckState::Unchecked);
 }
 
 void GlobalOptionsViewModel::ChangeCheckVersionOnStartup(Qt::CheckState check_version)

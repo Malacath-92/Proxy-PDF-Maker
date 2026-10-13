@@ -168,6 +168,9 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
     m_NoCropMode = new QCheckBox{ "No &Crop Mode" };
     m_NoCropMode->setToolTip("If checked, images won't be cropped. Speeds up work while making pdfs slightly bigger.");
 
+    m_SkipEmptyBacksides = new QCheckBox{ "S&kip Empty Pages" };
+    m_SkipEmptyBacksides->setToolTip("If checked, backsides with only clear images will be skipped.");
+
     m_MaxDPI = MakeDoubleSpinBox();
     m_MaxDPI->setDecimals(0);
     m_MaxDPI->setRange(300, 1200);
@@ -222,6 +225,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
     layout->addWidget(color_cube);
     layout->addWidget(preview_width);
     layout->addWidget(m_NoCropMode);
+    layout->addWidget(m_SkipEmptyBacksides);
     layout->addWidget(max_dpi);
     layout->addWidget(card_order);
     layout->addWidget(card_order_direction);
@@ -273,6 +277,10 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
                      &QCheckBox::checkStateChanged,
                      &m_ViewModel,
                      &GlobalOptionsViewModel::ChangeNoCropMode);
+    QObject::connect(m_SkipEmptyBacksides,
+                     &QCheckBox::checkStateChanged,
+                     &m_ViewModel,
+                     &GlobalOptionsViewModel::ChangeSkipEmptyBacksides);
     QObject::connect(m_PreviewWidth,
                      &QDoubleSpinBox::valueChanged,
                      &m_ViewModel,
@@ -313,6 +321,7 @@ GlobalOptionsWidget::GlobalOptionsWidget(GlobalOptionsViewModel* view_model)
 
     FORWARD_SIGNAL_FROM_VIEW_MODEL(AdvancedModeChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(NoCropModeChanged);
+    FORWARD_SIGNAL_FROM_VIEW_MODEL(SkipEmptyBacksidesChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(CheckVersionOnStartupChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(ToastTimeoutMSChanged);
     FORWARD_SIGNAL_FROM_VIEW_MODEL(BasePreviewWidthChanged);
@@ -367,6 +376,13 @@ void GlobalOptionsWidget::NoCropModeChanged(bool no_crop_mode)
     m_NoCropMode->blockSignals(true);
     m_NoCropMode->setChecked(no_crop_mode);
     m_NoCropMode->blockSignals(false);
+}
+
+void GlobalOptionsWidget::SkipEmptyBacksidesChanged(bool skip_empty_backsides)
+{
+    m_SkipEmptyBacksides->blockSignals(true);
+    m_SkipEmptyBacksides->setChecked(skip_empty_backsides);
+    m_SkipEmptyBacksides->blockSignals(false);
 }
 
 void GlobalOptionsWidget::CheckVersionOnStartupChanged(bool check_version)

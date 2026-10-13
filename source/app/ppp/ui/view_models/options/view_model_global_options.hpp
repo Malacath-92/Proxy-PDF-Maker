@@ -23,6 +23,8 @@ class GlobalOptionsViewModel : public QObject
 
     void NoCropModeChanged(bool no_crop_mode);
 
+    void SkipEmptyBacksidesChanged(bool skip_empty_backsides);
+
     void CheckVersionOnStartupChanged(bool check_version);
     void ToastTimeoutMSChanged(uint32_t toast_timeout_ms);
 
@@ -57,6 +59,8 @@ class GlobalOptionsViewModel : public QObject
     void ChangeAdvancedMode(Qt::CheckState advanced_mode);
 
     void ChangeNoCropMode(Qt::CheckState no_crop_mode);
+
+    void ChangeSkipEmptyBacksides(Qt::CheckState skip_empty_backsides);
 
     void ChangeCheckVersionOnStartup(Qt::CheckState check_version);
     void ChangeToastTimeoutMS(double toast_timeout_ms);

@@ -29,6 +29,7 @@ class PrintPreviewViewModel : public QObject
     void QueueRefresh();
 
     bool HasBacksides() const;
+    bool SkipEmptyBacksides() const;
 
     std::vector<Page> GetFrontsidePages() const;
     std::vector<PageImageTransform> GetFrontsideTransforms() const;

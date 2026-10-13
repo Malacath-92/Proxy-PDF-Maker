@@ -62,6 +62,10 @@ bool PrintPreviewViewModel::HasBacksides() const
 {
     return m_Project.m_Data.m_BacksideEnabled && !m_Project.m_Data.m_InlineBacksides;
 }
+bool PrintPreviewViewModel::SkipEmptyBacksides() const
+{
+    return m_Cfg.m_SkipEmptyBacksides;
+}
 
 std::vector<Page> PrintPreviewViewModel::GetFrontsidePages() const
 {

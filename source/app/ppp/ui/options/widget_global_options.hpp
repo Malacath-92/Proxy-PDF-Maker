@@ -24,6 +24,8 @@ class GlobalOptionsWidget : public QWidget
 
     void NoCropModeChanged(bool no_crop_mode);
 
+    void SkipEmptyBacksidesChanged(bool skip_empty_backsides);
+
     void CheckVersionOnStartupChanged(bool check_version);
     void ToastTimeoutMSChanged(uint32_t toast_timeout_ms);
 
@@ -59,6 +61,10 @@ class GlobalOptionsWidget : public QWidget
 
     QCheckBox* m_AdvancedMode{ nullptr };
 
+    QCheckBox* m_NoCropMode{ nullptr };
+
+    QCheckBox* m_SkipEmptyBacksides{ nullptr };
+
     QComboBox* m_BaseUnit{ nullptr };
 
     QDoubleSpinBox* m_DisplayColumns{ nullptr };
@@ -72,8 +78,6 @@ class GlobalOptionsWidget : public QWidget
     QComboBox* m_ColorCube{ nullptr };
 
     QDoubleSpinBox* m_PreviewWidth{ nullptr };
-
-    QCheckBox* m_NoCropMode{ nullptr };
 
     QDoubleSpinBox* m_MaxDPI{ nullptr };
 

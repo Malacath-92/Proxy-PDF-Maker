@@ -215,6 +215,26 @@ void PrintPreview::Refresh()
         pages[i].m_Index = i;
     }
 
+    if (m_ViewModel.SkipEmptyBacksides())
+    {
+        for (auto it{ pages.begin() }; it != pages.end();)
+        {
+            if (std::ranges::all_of(
+                    it->m_Page.m_Images,
+                    [](const PageImage& image)
+                    {
+                        return !image.m_Image.has_value();
+                    }))
+            {
+                it = pages.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
+    }
+
     auto page_widgets{
         pages |
         std::views::transform(
