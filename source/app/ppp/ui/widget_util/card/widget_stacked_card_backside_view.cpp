@@ -32,7 +32,9 @@ StackedCardBacksideView::StackedCardBacksideView(BlankCardViewModel* view_model,
     backside_layout->setContentsMargins(0, 0, 0, 0);
 
     m_BacksideContainer = new QWidget{ this };
+    m_BacksideContainer->setObjectName("BacksideContainer");
     m_BacksideContainer->setLayout(backside_layout);
+    m_BacksideContainer->setStyleSheet("#BacksideContainer{ background-color: transparent }");
 
     m_Image->setMouseTracking(true);
     m_Backside->setMouseTracking(true);
