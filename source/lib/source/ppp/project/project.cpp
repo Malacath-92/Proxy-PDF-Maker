@@ -2247,6 +2247,9 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
         auto old_backside{ std::move(card->m_Backside) };
         card->m_Backside = std::move(backside_image);
 
+        // If this is an auto-assign the caller has to set this true again
+        card->m_BacksideAutoAssigned = false;
+
         m_CardSignallers[card_name].CardBacksideChanged(card->m_Backside.value());
 
         if (m_Cfg.m_CardOrder == CardOrder::Backside)
