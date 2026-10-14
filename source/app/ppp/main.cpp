@@ -493,6 +493,7 @@ int main(int argc, char** argv)
 
         QObject::connect(&project, &Project::SkippedSlotsChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
 
+        QObject::connect(&config, &Config::SkipEmptyBacksidesChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
         QObject::connect(&config, &Config::ColorCubeChanged, print_preview_view_model, &PrintPreviewViewModel::QueueRefresh);
     }
 
