@@ -2057,6 +2057,18 @@ bool Project::SetBacksideEnabled(bool backside_enabled)
             }
         }
 
+        if (m_Data.m_BacksideDefault.has_value())
+        {
+            if (backside_enabled)
+            {
+                HideCard(m_Data.m_BacksideDefault.value());
+            }
+            else
+            {
+                UnhideCard(m_Data.m_BacksideDefault.value());
+            }
+        }
+
         BacksideEnabledChanged(backside_enabled);
         return true;
     }
