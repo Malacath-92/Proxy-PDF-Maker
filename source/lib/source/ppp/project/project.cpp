@@ -2264,16 +2264,6 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 
         m_CardSignallers[card_name].CardBacksideChanged(card->m_Backside.value());
 
-        if (m_Cfg.m_CardOrder == CardOrder::Backside)
-        {
-            std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
-            CardSortingChanged();
-            if (!IsManuallySorted())
-            {
-                RenderSortingChanged();
-            }
-        }
-
         if (auto* old_backside_card{ old_backside.has_value() ? FindCard(old_backside.value()) : nullptr })
         {
             old_backside_card->m_IsBackside--;
@@ -2285,6 +2275,17 @@ bool Project::SetBacksideImage(const fs::path& card_name, fs::path backside_imag
 
         const bool old_backside_shown{ old_backside.has_value() ? UnhideCard(old_backside.value()) : false };
         const bool new_backside_hidden{ HideCard(card->m_Backside.value()) };
+
+        if (m_Cfg.m_CardOrder == CardOrder::Backside)
+        {
+            std::ranges::sort(m_Data.m_Cards, GetSortFunction(m_Cfg));
+            CardSortingChanged();
+            if (!IsManuallySorted())
+            {
+                RenderSortingChanged();
+            }
+        }
+
         return old_backside_shown || new_backside_hidden;
     }
 
