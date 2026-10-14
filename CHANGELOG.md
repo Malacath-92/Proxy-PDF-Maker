@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-07-14
+
+### Fixed
+- When sorting cards by their backside there is no longer the chance that the hidden flag of backsides gets messed up. It may still be messed up for existing projects.
+- The preview now refreshes when it is open while changing the `Skip Empty Backsides` setting.
+- When changing the default backside it should now hide/unhide that card correctly.
+- After having a backside automatically matched to its frontside we no longer keep that flag permanently, which would prevent the user from changing the backside to some other choice.
+- Fixed a visual bug on Windows where the frontside of a stacked view would be hidden while hovering the backside.
+
 ## [2.2.0] - 2026-07-13
 
 ### Added
