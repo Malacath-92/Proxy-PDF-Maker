@@ -482,9 +482,16 @@ std::vector<Page> DistributeCardsToPages(const Project& project)
             if (const auto* info{ project.FindCard(img) })
             {
                 const bool is_hidden{ info->m_Hidden > 0 || info->m_Transient };
-                if (is_hidden && !project.m_Data.m_InlineBacksides && !project.IsBacksideOfAnother(img))
+                if (is_hidden)
                 {
-                    continue;
+                    const bool should_be_inlined{
+                        project.m_Data.m_InlineBacksides &&
+                        project.IsBacksideOfAnother(img)
+                    };
+                    if (!should_be_inlined)
+                    {
+                        continue;
+                    }
                 }
 
                 push_card(*info, false);
