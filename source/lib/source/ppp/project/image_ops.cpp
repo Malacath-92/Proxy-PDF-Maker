@@ -109,10 +109,12 @@ Image UncropImage(const Image& image,
 
     switch (uncrop_mode)
     {
-    case UncropMode::Black:
-        return image.AddBlackBorder(c, c, c, c);
     case UncropMode::Mirror:
         return image.AddReflectBorder(c, c, c, c);
+    case UncropMode::BlackBorder:
+        return image.AddBlackBorder(c, c, c, c);
+    case UncropMode::BorderExtend:
+        return image.AddExtendBorder(c, c, c, c);
     case UncropMode::Transparent:
         return image.AddTransparentBorder(c, c, c, c);
     default:

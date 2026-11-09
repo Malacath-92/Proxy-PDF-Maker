@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <ppp/config_types.hpp>
 #include <ppp/image.hpp>
 #include <ppp/util.hpp>
 
@@ -34,13 +35,6 @@ inline const std::array g_LossyImageExtensions{
     // This is not exactly accurate, but most likely with the types images
     // we are dealing with most likely they are compressed lossily
     ".webp"_p
-};
-
-enum class UncropMode
-{
-    Black,
-    Mirror,
-    Transparent,
 };
 
 size_t CountImageFiles(const fs::path& path);

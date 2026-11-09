@@ -25,6 +25,14 @@ enum class CardOrderDirection
     Descending,
 };
 
+enum class UncropMode
+{
+    Mirror,
+    BlackBorder,
+    BorderExtend,
+    Transparent,
+};
+
 enum class PdfBackend
 {
     PoDoFo,

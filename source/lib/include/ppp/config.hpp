@@ -23,7 +23,7 @@ struct ConfigData
     bool m_CheckVersionOnStartup{ true };
     uint32_t m_ToastTimeoutMS{ 8000 };
 
-    bool m_EnableFancyUncrop{ true };
+    UncropMode m_UncropMode{ UncropMode::Mirror };
 
     Pixel m_BasePreviewWidth{ 512_pix };
     PixelDensity m_MaxDPI{ 1200_dpi };

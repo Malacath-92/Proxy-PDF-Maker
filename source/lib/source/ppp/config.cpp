@@ -236,7 +236,19 @@ void Config::Load(const fs::path& config_path,
 
             m_NoCropMode = settings.value("No.Crop.Mode", true).toBool();
 
-            m_EnableFancyUncrop = settings.value("Enable.Fancy.Uncrop", true).toBool();
+            {
+                const auto fancy_uncrop{ settings.value("Fancy.Uncrop.Mode") };
+                if (fancy_uncrop.isValid() && fancy_uncrop.toBool())
+                {
+                    m_UncropMode = UncropMode::Mirror;
+                }
+                else
+                {
+                    m_UncropMode = magic_enum::enum_cast<UncropMode>(settings.value("Uncrop.Mode", "Mirror").toString().toStdString())
+                                       .value_or(UncropMode::Mirror);
+                }
+            }
+
             m_BasePreviewWidth = settings.value("Base.Preview.Width", 248).toInt() * 1_pix;
             m_MaxDPI = settings.value("Max.DPI", 1200).toInt() * 1_dpi;
 
@@ -490,6 +502,8 @@ void Config::Save(const fs::path& config_path) const
             settings.setValue("Advanced.Mode", m_AdvancedMode);
 
             settings.setValue("No.Crop.Mode", m_NoCropMode);
+
+            settings.setValue("Uncrop.Mode", ToQString(magic_enum::enum_name(m_UncropMode)));
 
             settings.setValue("Base.Preview.Width", m_BasePreviewWidth / 1_pix);
             settings.setValue("Max.DPI", m_MaxDPI / 1_dpi);

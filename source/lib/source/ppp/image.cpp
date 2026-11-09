@@ -586,6 +586,22 @@ Image Image::AddReflectBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) 
     return img;
 }
 
+Image Image::AddExtendBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
+{
+    TRACY_AUTO_SCOPE();
+
+    Image img{};
+    cv::copyMakeBorder(m_Impl,
+                       img.m_Impl,
+                       static_cast<int>(top.value),
+                       static_cast<int>(bottom.value),
+                       static_cast<int>(left.value),
+                       static_cast<int>(right.value),
+                       cv::BORDER_REPLICATE,
+                       0xFFFFFFFF);
+    return img;
+}
+
 Image Image::AddTransparentBorder(Pixel left, Pixel top, Pixel right, Pixel bottom) const
 {
     TRACY_AUTO_SCOPE();

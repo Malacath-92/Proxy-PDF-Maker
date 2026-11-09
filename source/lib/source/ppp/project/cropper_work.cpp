@@ -30,6 +30,7 @@ static ConfigData CopyRelevant(const Config& config)
     TRACY_AUTO_SCOPE();
     return ConfigData{
         .m_NoCropMode = config.m_NoCropMode,
+        .m_UncropMode = config.m_UncropMode,
         .m_BasePreviewWidth{ config.m_BasePreviewWidth },
         .m_MaxDPI{ config.m_MaxDPI },
         .m_ColorCube{ config.m_ColorCube },
@@ -271,8 +272,6 @@ void CropperCropWork::run()
         const auto card_size_with_bleed{ m_Data.CardSizeWithBleed(m_Cfg) };
         const auto card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
 
-        const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
-
         const fs::path output_dir{ m_Data.GetOutputFolder(m_Cfg) };
 
         const fs::path input_file{ m_ImagePath };
@@ -400,8 +399,7 @@ void CropperCropWork::run()
                                                    m_CardName,
                                                    card_size,
                                                    full_bleed_edge,
-                                                   fancy_uncrop ? UncropMode::Mirror
-                                                                : UncropMode::Black) };
+                                                   m_Cfg.m_UncropMode) };
                 uncropped_image.Write(uncropped_file_path, 3, 100, card_size_with_full_bleed);
                 m_ImageDB.PutEntry(uncropped_file_path, std::move(uncrop_input_file_hash), image_params);
 
@@ -536,8 +534,6 @@ void CropperPreviewWork::run()
         const auto full_bleed_edge{ m_Data.CardFullBleed(m_Cfg) };
         const Size card_size{ m_Data.CardSize(m_Cfg) };
         const Size card_size_with_full_bleed{ m_Data.CardSizeWithFullBleed(m_Cfg) };
-
-        const bool fancy_uncrop{ m_Cfg.m_EnableFancyUncrop };
 
         const fs::path input_file{ m_ImagePath };
 
@@ -685,8 +681,7 @@ void CropperPreviewWork::run()
                                                                   m_CardName,
                                                                   card_size,
                                                                   full_bleed_edge,
-                                                                  fancy_uncrop ? UncropMode::Mirror
-                                                                               : UncropMode::Black);
+                                                                  m_Cfg.m_UncropMode);
                     image_preview->m_BadAspectRatio = bad_aspect_ratio && bad_aspect_ratio_ignored;
                     image_preview->m_BadRotation = bad_rotation;
                 }
