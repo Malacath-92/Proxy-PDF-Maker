@@ -13,7 +13,7 @@ jobs:
     with:
       os: MacOS-x86
       compiler: AppleClang
-      runs_on: macos-14
+      runs_on: macos-15
       build_type: Debug
       arch: x86_64
       cache_key: MacOS-x86
@@ -22,7 +22,7 @@ jobs:
     with:
       os: MacOS-x86
       compiler: AppleClang
-      runs_on: macos-14
+      runs_on: macos-15
       build_type: Release
       arch: x86_64
       cache_key: MacOS-x86

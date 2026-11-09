@@ -34,14 +34,14 @@ jobs:
             cache_key: Ubuntu-x86-Release
           - os: MacOS-ARM64
             compiler: AppleClang
-            runs_on: macos-14
+            runs_on: macos-15
             arch: arm64
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_arm64.zip
             tar_args: -a -c -f
             cache_key: MacOS-ARM64
           - os: MacOS-x86
             compiler: AppleClang
-            runs_on: macos-14
+            runs_on: macos-15
             arch: x86_64
             asset_name: ${{ github.event.repository.name }}-${{ github.ref_name }}-osx_x86_64.zip
             tar_args: -a -c -f
