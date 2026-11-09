@@ -51,7 +51,7 @@ class ProxyPDF(ConanFile):
         self.requires("openjpeg/2.5.4", override=True)
         self.requires("icu/74.2", override=True)
         self.requires("freetype/2.14.3", override=True)
-        self.requires("brotli/1.1.1", override=True)
+        self.requires("brotli/1.1.1", force=True)
 
     def configure(self):
         self.options["qt"].shared = False
