@@ -7,7 +7,7 @@ class ProxyPDF(ConanFile):
 
     def requirements(self):
         # GUI and App Framework
-        self.requires("qt/6.11.1")
+        self.requires("qt/6.11.3")
 
         # File System Watcher
         self.requires("efsw/1.4.1")
@@ -88,5 +88,3 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pfm = False
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
-
-        self.options["freetype"].with_brotli = False
