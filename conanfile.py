@@ -47,11 +47,13 @@ class ProxyPDF(ConanFile):
         # Unit Testing
         self.requires("catch2/3.7.1")
 
+        # Vulnerability Mitigation
+        self.requires("brotli/1.2.1", force=True)
+
         # Conflict Resolution
         self.requires("openjpeg/2.5.4", override=True)
         self.requires("icu/74.2", override=True)
         self.requires("freetype/2.14.3", override=True)
-        self.requires("brotli/1.1.1", force=True)
 
     def configure(self):
         self.options["qt"].shared = False
@@ -86,3 +88,5 @@ class ProxyPDF(ConanFile):
         self.options["opencv"].with_imgcodec_pfm = False
         self.options["opencv"].with_imgcodec_pxm = False
         self.options["opencv"].with_imgcodec_sunraster = False
+
+        self.options["freetype"].with_brotli = False
